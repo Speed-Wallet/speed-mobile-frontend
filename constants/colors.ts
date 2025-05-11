@@ -21,12 +21,17 @@ export default {
   warning: '#FFD600',
   warningLight: '#332B00',
   warningDark: '#CCB100',
+
+  // Overlay colors
+  overlay: 'rgba(0, 0, 0, 0.5)', // Example overlay color
   
   // Crypto colors
   bitcoin: '#F7931A',
   ethereum: '#627EEA',
   solana: '#00FFA3',
   polygon: '#8247E5',
+  usdc: '#2775CA',
+  usdt: '#26A17B',
   
   // Card gradient
   cardGradientStart: '#2C2C2C',

@@ -5,30 +5,30 @@ import Animated, { FadeIn, SlideInUp } from 'react-native-reanimated';
 import colors from '@/constants/colors';
 import { formatCurrency } from '@/utils/formatters';
 
-type CryptoSelectorProps = {
-  cryptoList: any[];
-  selectedCrypto: any;
-  excludeCryptoId?: string;
-  onSelectCrypto: (crypto: any) => void;
+type TokenSelectorProps = {
+  tokenList: any[];
+  selectedToken: any;
+  excludeTokenId?: string;
+  onSelectToken: (token: any) => void;
   onClose: () => void;
 };
 
-const CryptoSelector = ({ 
-  cryptoList, 
-  selectedCrypto, 
-  excludeCryptoId, 
-  onSelectCrypto, 
+const TokenSelector = ({
+  tokenList,
+  selectedToken,
+  excludeTokenId,
+  onSelectToken,
   onClose 
-}: CryptoSelectorProps) => {
+}: TokenSelectorProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   
-  const filteredCryptos = cryptoList
-    .filter(crypto => 
-      excludeCryptoId ? crypto.id !== excludeCryptoId : true
+  const filteredTokens = tokenList
+    .filter(token =>
+      excludeTokenId ? token.id !== excludeTokenId : true
     )
-    .filter(crypto => 
-      crypto.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      crypto.symbol.toLowerCase().includes(searchQuery.toLowerCase())
+    .filter(token =>
+      token.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      token.symbol.toLowerCase().includes(searchQuery.toLowerCase())
     );
   
   return (
@@ -44,7 +44,7 @@ const CryptoSelector = ({
           style={styles.modalContainer}
         >
           <View style={styles.header}>
-            <Text style={styles.title}>Select Crypto</Text>
+            <Text style={styles.title}>Select Token</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <X size={24} color={colors.textPrimary} />
             </TouchableOpacity>
@@ -62,22 +62,22 @@ const CryptoSelector = ({
           </View>
           
           <FlatList
-            data={filteredCryptos}
+            data={filteredTokens}
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => (
               <TouchableOpacity 
                 style={[
-                  styles.cryptoItem,
-                  selectedCrypto?.id === item.id && styles.selectedCryptoItem
+                  styles.tokenItem,
+                  selectedToken?.id === item.id && styles.selectedTokenItem
                 ]}
-                onPress={() => onSelectCrypto(item)}
+                onPress={() => onSelectToken(item)}
               >
-                <Image source={{ uri: item.iconUrl }} style={styles.cryptoIcon} />
-                <View style={styles.cryptoInfo}>
-                  <Text style={styles.cryptoName}>{item.name}</Text>
-                  <Text style={styles.cryptoSymbol}>{item.symbol}</Text>
+                <Image source={{ uri: item.iconUrl }} style={styles.tokenIcon} />
+                <View style={styles.tokenInfo}>
+                  <Text style={styles.tokenName}>{item.name}</Text>
+                  <Text style={styles.tokenSymbol}>{item.symbol}</Text>
                 </View>
-                <View style={styles.cryptoBalance}>
+                <View style={styles.tokenBalance}>
                   <Text style={styles.balanceText}>{item.balance.toFixed(4)}</Text>
                   <Text style={styles.balanceValue}>
                     {formatCurrency(item.balance * item.price)}
@@ -96,22 +96,24 @@ const CryptoSelector = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    justifyContent: 'flex-end',
+    backgroundColor: colors.overlay,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   modalContainer: {
-    backgroundColor: colors.backgroundDark,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingTop: 16,
+    width: '90%',
     maxHeight: '80%',
+    backgroundColor: colors.backgroundDark,
+    borderRadius: 16,
+    overflow: 'hidden',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingBottom: 16,
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.backgroundMedium,
   },
   title: {
     fontSize: 18,
@@ -129,27 +131,25 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.backgroundMedium,
-    borderRadius: 12,
-    marginHorizontal: 16,
-    marginBottom: 16,
-    paddingHorizontal: 12,
-    height: 48,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.backgroundMedium,
   },
   searchIcon: {
     marginRight: 8,
   },
   searchInput: {
     flex: 1,
-    color: colors.textPrimary,
-    fontFamily: 'Inter-Regular',
     fontSize: 16,
+    fontFamily: 'Inter-Regular',
+    color: colors.textPrimary,
   },
   listContent: {
     paddingHorizontal: 16,
     paddingBottom: 24,
   },
-  cryptoItem: {
+  tokenItem: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 16,
@@ -157,29 +157,29 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 8,
   },
-  selectedCryptoItem: {
+  selectedTokenItem: {
     backgroundColor: colors.backgroundMedium,
   },
-  cryptoIcon: {
+  tokenIcon: {
     width: 40,
     height: 40,
     borderRadius: 20,
     marginRight: 12,
   },
-  cryptoInfo: {
+  tokenInfo: {
     flex: 1,
   },
-  cryptoName: {
+  tokenName: {
     fontSize: 16,
     fontFamily: 'Inter-SemiBold',
     color: colors.textPrimary,
   },
-  cryptoSymbol: {
+  tokenSymbol: {
     fontSize: 14,
     fontFamily: 'Inter-Regular',
     color: colors.textSecondary,
   },
-  cryptoBalance: {
+  tokenBalance: {
     alignItems: 'flex-end',
   },
   balanceText: {
@@ -194,4 +194,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default CryptoSelector;
+export default TokenSelector;

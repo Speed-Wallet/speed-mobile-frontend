@@ -7,15 +7,16 @@ import { LinearGradient } from 'expo-linear-gradient';
 import colors from '@/constants/colors';
 import { formatCurrency } from '@/utils/formatters';
 import Avatar from '@/components/Avatar';
-import CryptoList from '@/components/CryptoList';
+import TokenList from '@/components/TokenList';
 import ActionButton from '@/components/ActionButton';
 import UserData from '@/data/user';
-import { getCryptoData } from '@/data/crypto';
+import { getAllTokenInfo } from '@/data/tokens';
+import { EnrichedTokenEntry } from '@/data/types';
 
 export default function HomeScreen() {
   const router = useRouter();
   const [userData, setUserData] = useState(UserData);
-  const [cryptoData, setCryptoData] = useState([]);
+  const [cryptoData, setTokenData] = useState<EnrichedTokenEntry[]>([]);
 
   useEffect(() => {
     loadData();
@@ -23,8 +24,8 @@ export default function HomeScreen() {
 
   const loadData = async () => {
     // In a real app, this would fetch data from an API
-    const data = await getCryptoData();
-    setCryptoData(data);
+    const data = await getAllTokenInfo();
+    setTokenData(data);
   };
 
   const handleCopyBalance = () => {
@@ -99,9 +100,9 @@ export default function HomeScreen() {
             <Text style={styles.sectionTitle}>YOUR TOTAL ASSETS</Text>
           </View>
           
-          <CryptoList 
+          <TokenList 
             data={cryptoData} 
-            onSelectCrypto={(crypto) => router.push(`/crypto/${crypto.id}`)}
+            onSelectToken={(token: EnrichedTokenEntry) => router.push(`/token/${token.address}`)}
           />
         </View>
       </ScrollView>

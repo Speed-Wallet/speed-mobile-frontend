@@ -2,7 +2,7 @@
 const transactions = [
   {
     id: 't1',
-    cryptoId: 'btc',
+    tokenId: 'btc',
     type: 'receive',
     amount: 0.05,
     price: 52000,
@@ -12,7 +12,7 @@ const transactions = [
   },
   {
     id: 't2',
-    cryptoId: 'eth',
+    tokenId: 'eth',
     type: 'send',
     amount: 0.75,
     price: 3050,
@@ -22,7 +22,7 @@ const transactions = [
   },
   {
     id: 't3',
-    cryptoId: 'btc',
+    tokenId: 'btc',
     type: 'trade',
     amount: 0.02,
     price: 53000,
@@ -32,7 +32,7 @@ const transactions = [
   },
   {
     id: 't4',
-    cryptoId: 'sol',
+    tokenId: 'sol',
     type: 'receive',
     amount: 5.25,
     price: 120,
@@ -42,7 +42,7 @@ const transactions = [
   },
   {
     id: 't5',
-    cryptoId: 'eth',
+    tokenId: 'eth',
     type: 'withdraw',
     amount: 1.5,
     price: 3100,
@@ -52,7 +52,7 @@ const transactions = [
   },
   {
     id: 't6',
-    cryptoId: 'matic',
+    tokenId: 'matic',
     type: 'receive',
     amount: 500,
     price: 0.82,
@@ -62,7 +62,7 @@ const transactions = [
   },
   {
     id: 't7',
-    cryptoId: 'sol',
+    tokenId: 'sol',
     type: 'send',
     amount: 10,
     price: 123,
@@ -72,7 +72,7 @@ const transactions = [
   },
   {
     id: 't8',
-    cryptoId: 'btc',
+    tokenId: 'btc',
     type: 'trade',
     amount: 0.1,
     price: 51000,
@@ -87,8 +87,8 @@ export const getTransactionHistory = () => {
   return Promise.resolve(transactions);
 };
 
-// Get transaction history for a specific cryptocurrency
-export const getTransactionHistoryForCrypto = (cryptoId: string) => {
-  const filtered = transactions.filter(tx => tx.cryptoId === cryptoId);
+// Get transaction history for a specific token
+export const getTransactionHistoryForToken = (tokenId: string) => {
+  const filtered = transactions.filter(tx => tx.tokenId === tokenId);
   return Promise.resolve(filtered);
 };

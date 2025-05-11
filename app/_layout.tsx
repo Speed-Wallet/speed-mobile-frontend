@@ -1,10 +1,18 @@
-import { useEffect } from 'react';
-import { Stack } from 'expo-router';
+import 'react-native-get-random-values'; // Ensure this is at the very top
+import { Buffer } from 'buffer'; // Import Buffer
+global.Buffer = Buffer; // Polyfill global Buffer
+
+import { useEffect, useState } from 'react';
+import { Stack, SplashScreen } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import { useFonts } from 'expo-font';
 import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
-import { SplashScreen } from 'expo-router';
+import { View, ActivityIndicator, StyleSheet, Text } from 'react-native';
+import { checkStoredWallet } from '@/services/walletService';
+import SetupWalletScreen from '@/app/wallet/SetupWalletScreen';
+import EnterPinScreen from '@/app/wallet/EnterPinScreen';
+import colors from '@/constants/colors';
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -19,16 +27,58 @@ export default function RootLayout() {
     'Inter-Bold': Inter_700Bold,
   });
 
-  // Hide splash screen once fonts are loaded
+  const [walletState, setWalletState] = useState<'loading' | 'no_wallet' | 'locked' | 'unlocked'>('loading');
+  const [storedPublicKey, setStoredPublicKey] = useState<string | null>(null);
+
   useEffect(() => {
+    async function checkWalletStatus() {
+      try {
+        const walletInfo = await checkStoredWallet();
+        if (walletInfo.isEncrypted && walletInfo.publicKey) {
+          setStoredPublicKey(walletInfo.publicKey);
+          setWalletState('locked');
+        } else {
+          setWalletState('no_wallet');
+        }
+      } catch (e) {
+        console.error("Failed to check wallet status:", e);
+        setWalletState('no_wallet');
+      }
+    }
     if (fontsLoaded || fontError) {
-      SplashScreen.hideAsync();
+      checkWalletStatus();
     }
   }, [fontsLoaded, fontError]);
 
-  // Return null to keep splash screen visible while fonts load
+  useEffect(() => {
+    if ((fontsLoaded || fontError) && walletState !== 'loading') {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded, fontError, walletState]);
+
+  const handleWalletUnlockedOrSetup = () => {
+    setWalletState('unlocked');
+  };
+
   if (!fontsLoaded && !fontError) {
     return null;
+  }
+
+  if (walletState === 'loading') {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={styles.loadingText}>Initializing...</Text>
+      </View>
+    );
+  }
+
+  if (walletState === 'no_wallet') {
+    return <SetupWalletScreen onWalletSetupComplete={handleWalletUnlockedOrSetup} />;
+  }
+
+  if (walletState === 'locked') {
+    return <EnterPinScreen onWalletUnlocked={handleWalletUnlockedOrSetup} publicKey={storedPublicKey} />;
   }
 
   return (
@@ -52,3 +102,18 @@ export default function RootLayout() {
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.backgroundDark,
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: colors.textPrimary,
+    fontFamily: 'Inter-Medium',
+  }
+});

@@ -6,48 +6,54 @@ import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
 import { LineChart } from 'react-native-chart-kit';
 import colors from '@/constants/colors';
 import { formatCurrency, formatPercentage } from '@/utils/formatters';
-import { getCryptoById } from '@/data/crypto';
-import { getCryptoChartData } from '@/data/charts';
+import { getTokenByAddress } from '@/data/tokens';
+import { getTokenChartData } from '@/data/charts';
 import TransactionItem from '@/components/TransactionItem';
-import { getTransactionHistoryForCrypto } from '@/data/transactions';
+import { getTransactionHistoryForToken } from '@/data/transactions';
+import { EnrichedTokenEntry } from '@/data/types';
 
 const screenWidth = Dimensions.get('window').width;
 
+
 export default function CryptoDetailScreen() {
-  const { id } = useLocalSearchParams();
+  const { address } = useLocalSearchParams();
   const router = useRouter();
-  const [crypto, setCrypto] = useState(null);
-  const [chartData, setChartData] = useState(null);
+  const [token, setToken] = useState<EnrichedTokenEntry | null>(null);
+  const [chartData, setChartData] = useState<any>(null); //
   const [timeframe, setTimeframe] = useState('1D');
-  const [transactions, setTransactions] = useState([]);
+  const [transactions, setTransactions] = useState<any>([]); // TODO: Define a proper type for transactions
   const [isFavorite, setIsFavorite] = useState(false);
 
   useEffect(() => {
     loadData();
-  }, [id]);
+  }, [address]);
 
   useEffect(() => {
-    if (crypto) {
+    if (token) {
       loadChartData();
     }
-  }, [crypto, timeframe]);
+  }, [token, timeframe]);
+
+  if (Array.isArray(address)) {
+    throw new Error('address should not be an array');
+  }
 
   const loadData = async () => {
-    const cryptoData = await getCryptoById(id);
-    setCrypto(cryptoData);
+    let tokenData = await getTokenByAddress(address) as unknown as EnrichedTokenEntry;
+    setToken(tokenData);
     
-    const txHistory = await getTransactionHistoryForCrypto(id);
+    const txHistory = await getTransactionHistoryForToken(address);
     setTransactions(txHistory);
   };
 
   const loadChartData = async () => {
-    const data = await getCryptoChartData(crypto.id, timeframe);
+    const data = await getTokenChartData(address, timeframe);
     setChartData(data);
   };
 
   const timeframes = ['1D', '1W', '1M', '3M', '1Y', 'ALL'];
 
-  if (!crypto || !chartData) {
+  if (!token || !chartData) {
     return (
       <View style={styles.loadingContainer}>
         <Text style={styles.loadingText}>Loading...</Text>
@@ -55,10 +61,10 @@ export default function CryptoDetailScreen() {
     );
   }
 
-  const navigateToTransaction = (type) => {
+  const navigateToTransaction = (type: any) => {
     router.push({
       pathname: `/transaction/${type}`,
-      params: { cryptoId: crypto.id }
+      params: { address: token.address }
     });
   };
 
@@ -72,8 +78,8 @@ export default function CryptoDetailScreen() {
           </TouchableOpacity>
           
           <View style={styles.titleContainer}>
-            <Text style={styles.cryptoSymbol}>{crypto.symbol}</Text>
-            <Text style={styles.cryptoName}>{crypto.name}</Text>
+            <Text style={styles.cryptoSymbol}>{token.symbol}</Text>
+            <Text style={styles.cryptoName}>{token.name}</Text>
           </View>
           
           <TouchableOpacity 
@@ -90,16 +96,16 @@ export default function CryptoDetailScreen() {
         
         {/* Price Info */}
         <Animated.View entering={FadeIn.duration(500)} style={styles.priceSection}>
-          <Text style={styles.priceValue}>{formatCurrency(crypto.price)}</Text>
+          <Text style={styles.priceValue}>{formatCurrency(token.price)}</Text>
           <View style={styles.changeContainer}>
             <Text 
               style={[
                 styles.changeValue, 
-                { color: crypto.priceChangePercentage >= 0 ? colors.success : colors.error }
+                { color: token.priceChangePercentage >= 0 ? colors.success : colors.error }
               ]}
             >
-              {crypto.priceChangePercentage >= 0 ? '+ ' : ''}
-              {formatPercentage(crypto.priceChangePercentage)}
+              {token.priceChangePercentage >= 0 ? '+ ' : ''}
+              {formatPercentage(token.priceChangePercentage)}
             </Text>
             <Text style={styles.changePeriod}>in the last 24h</Text>
           </View>
@@ -135,7 +141,7 @@ export default function CryptoDetailScreen() {
               datasets: [
                 {
                   data: chartData.values,
-                  color: () => crypto.priceChangePercentage >= 0 ? colors.success : colors.error,
+                  color: () => token.priceChangePercentage >= 0 ? colors.success : colors.error,
                   strokeWidth: 2,
                 },
               ],
@@ -171,18 +177,18 @@ export default function CryptoDetailScreen() {
         
         {/* Your Assets */}
         <View style={styles.assetsSection}>
-          <Text style={styles.sectionTitle}>Your {crypto.name} Assets</Text>
+          <Text style={styles.sectionTitle}>Your {token.name} Assets</Text>
           <View style={styles.assetCard}>
             <View style={styles.assetRow}>
               <Text style={styles.assetLabel}>Amount</Text>
               <Text style={styles.assetValue}>
-                {crypto.balance.toFixed(4)} {crypto.symbol}
+                {token.balance.toFixed(4)} {token.symbol}
               </Text>
             </View>
             <View style={styles.assetRow}>
               <Text style={styles.assetLabel}>Value</Text>
               <Text style={styles.assetValue}>
-                {formatCurrency(crypto.balance * crypto.price)}
+                {formatCurrency(token.balance * token.price)}
               </Text>
             </View>
           </View>
@@ -192,11 +198,11 @@ export default function CryptoDetailScreen() {
         <View style={styles.transactionsSection}>
           <Text style={styles.sectionTitle}>Recent Transactions</Text>
           {transactions.length > 0 ? (
-            transactions.map((transaction) => (
+            transactions.map((transaction: any) => (
               <TransactionItem 
                 key={transaction.id} 
                 transaction={transaction}
-                cryptoData={[crypto]}
+                tokenData={[token]}
                 showDate
               />
             ))
@@ -207,28 +213,28 @@ export default function CryptoDetailScreen() {
         
         {/* About Section */}
         <View style={styles.aboutSection}>
-          <Text style={styles.sectionTitle}>About {crypto.name}</Text>
+          <Text style={styles.sectionTitle}>About {token.name}</Text>
           <Text style={styles.aboutText}>
-            {crypto.description || `${crypto.name} is a cryptocurrency that uses blockchain technology to enable secure, decentralized transactions. It was created to provide a more efficient and transparent financial system.`}
+            {token.description || `${token.name} is a cryptocurrency that uses blockchain technology to enable secure, decentralized transactions. It was created to provide a more efficient and transparent financial system.`}
           </Text>
           
           <View style={styles.statsContainer}>
             <View style={styles.statItem}>
               <Text style={styles.statLabel}>Market Cap</Text>
-              <Text style={styles.statValue}>{formatCurrency(crypto.marketCap)}</Text>
+              <Text style={styles.statValue}>{formatCurrency(token.marketCap)}</Text>
             </View>
             <View style={styles.statItem}>
               <Text style={styles.statLabel}>Volume (24h)</Text>
-              <Text style={styles.statValue}>{formatCurrency(crypto.volume24h)}</Text>
+              <Text style={styles.statValue}>{formatCurrency(token.volume24h)}</Text>
             </View>
             <View style={styles.statItem}>
               <Text style={styles.statLabel}>Circulating Supply</Text>
-              <Text style={styles.statValue}>{crypto.circulatingSupply.toLocaleString()} {crypto.symbol}</Text>
+              <Text style={styles.statValue}>{token.circulatingSupply.toLocaleString()} {token.symbol}</Text>
             </View>
             <View style={styles.statItem}>
               <Text style={styles.statLabel}>Max Supply</Text>
               <Text style={styles.statValue}>
-                {crypto.maxSupply ? crypto.maxSupply.toLocaleString() : '∞'} {crypto.symbol}
+                {token.maxSupply ? token.maxSupply.toLocaleString() : '∞'} {token.symbol}
               </Text>
             </View>
           </View>

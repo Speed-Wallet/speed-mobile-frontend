@@ -5,8 +5,9 @@ import { X, ArrowRight, ChevronDown, Info, CreditCard } from 'lucide-react-nativ
 import Animated, { FadeIn } from 'react-native-reanimated';
 import colors from '@/constants/colors';
 import { formatCurrency } from '@/utils/formatters';
-import { getCryptoData, getCryptoById } from '@/data/crypto';
-import CryptoSelector from '@/components/CryptoSelector';
+import { getAllTokenInfo, getTokenByAddress } from '@/data/tokens';
+import TokenSelector from '@/components/TokenSelector';
+import { EnrichedTokenEntry } from '@/data/types';
 
 const paymentMethods = [
   {
@@ -38,27 +39,31 @@ const paymentMethods = [
 const quickAmounts = [10, 100, 1000];
 
 export default function BuyScreen() {
-  const { cryptoId } = useLocalSearchParams();
+  const { tokenAddress } = useLocalSearchParams();
   const router = useRouter();
-  const [selectedCrypto, setSelectedCrypto] = useState(null);
-  const [cryptoList, setCryptoList] = useState([]);
+  const [selectedToken, setSelectedToken] = useState<EnrichedTokenEntry | null>(null);
+  const [tokenList, setTokenList] = useState<EnrichedTokenEntry[]>([]);
   const [amount, setAmount] = useState('');
-  const [showCryptoSelector, setShowCryptoSelector] = useState(false);
+  const [showTokenSelector, setShowTokenSelector] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState(paymentMethods[0]);
 
   useEffect(() => {
     loadData();
-  }, [cryptoId]);
+  }, [tokenAddress]);
+
+  if (Array.isArray(tokenAddress)) {
+    throw new Error('tokenAddress should not be an array');
+  }
 
   const loadData = async () => {
-    const cryptos = await getCryptoData();
-    setCryptoList(cryptos);
+    const tokens = await getAllTokenInfo();
+    setTokenList(tokens);
     
-    if (cryptoId) {
-      const crypto = await getCryptoById(cryptoId);
-      setSelectedCrypto(crypto);
-    } else if (cryptos.length > 0) {
-      setSelectedCrypto(cryptos[0]);
+    if (tokenAddress) {
+      const token = await getTokenByAddress(tokenAddress);
+      setSelectedToken(token);
+    } else if (tokens.length > 0) {
+      setSelectedToken(tokens[0]);
     }
   };
 
@@ -72,9 +77,9 @@ export default function BuyScreen() {
     Linking.openURL(selectedMethod.url);
   };
 
-  const getCryptoAmount = () => {
-    if (!amount || !selectedCrypto) return '0';
-    return (parseFloat(amount) / selectedCrypto.price).toFixed(8);
+  const getTokenAmount = () => {
+    if (!amount || !selectedToken) return '0';
+    return (parseFloat(amount) / selectedToken.price).toFixed(8);
   };
 
   const handleQuickAmount = (value: number) => {
@@ -87,7 +92,7 @@ export default function BuyScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
           <X size={24} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Buy {selectedCrypto?.symbol}</Text>
+        <Text style={styles.headerTitle}>Buy {selectedToken?.symbol}</Text>
         <View style={styles.placeholder} />
       </View>
 
@@ -95,7 +100,7 @@ export default function BuyScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
       >
-        {selectedCrypto && (
+        {selectedToken && (
           <>
             {/* Amount Input */}
             <Animated.View entering={FadeIn.delay(100)} style={styles.amountSection}>
@@ -111,8 +116,8 @@ export default function BuyScreen() {
                   onChangeText={setAmount}
                 />
               </View>
-              <Text style={styles.cryptoAmount}>
-                ≈ {getCryptoAmount()} {selectedCrypto.symbol}
+              <Text style={styles.tokenAmount}>
+                ≈ {getTokenAmount()} {selectedToken.symbol}
               </Text>
               
               <View style={styles.quickAmounts}>
@@ -191,16 +196,16 @@ export default function BuyScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Crypto Selector Modal */}
-      {showCryptoSelector && (
-        <CryptoSelector
-          cryptoList={cryptoList}
-          selectedCrypto={selectedCrypto}
-          onSelectCrypto={(crypto) => {
-            setSelectedCrypto(crypto);
-            setShowCryptoSelector(false);
+      {/* Token Selector Modal */}
+      {showTokenSelector && (
+        <TokenSelector
+          tokenList={tokenList}
+          selectedToken={selectedToken}
+          onSelectToken={(token) => {
+            setSelectedToken(token);
+            setShowTokenSelector(false);
           }}
-          onClose={() => setShowCryptoSelector(false)}
+          onClose={() => setShowTokenSelector(false)}
         />
       )}
     </View>
@@ -272,7 +277,7 @@ const styles = StyleSheet.create({
     minWidth: 120,
     textAlign: 'center',
   },
-  cryptoAmount: {
+  tokenAmount: {
     fontSize: 16,
     fontFamily: 'Inter-Regular',
     color: colors.textSecondary,

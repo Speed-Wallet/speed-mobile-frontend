@@ -5,15 +5,16 @@ import { X, ArrowDown, ArrowRightLeft } from 'lucide-react-native';
 import Animated, { FadeIn, SlideInUp } from 'react-native-reanimated';
 import colors from '@/constants/colors';
 import { formatCurrency } from '@/utils/formatters';
-import { getCryptoData, getCryptoById } from '@/data/crypto';
-import CryptoSelector from '@/components/CryptoSelector';
+import { getAllTokenInfo, getTokenByAddress } from '@/data/tokens';
+import TokenSelector from '@/components/TokenSelector';
+import { EnrichedTokenEntry } from '@/data/types';
 
 export default function TradeScreen() {
-  const { cryptoId } = useLocalSearchParams();
+  const { tokenAddress } = useLocalSearchParams();
   const router = useRouter();
-  const [fromCrypto, setFromCrypto] = useState(null);
-  const [toCrypto, setToCrypto] = useState(null);
-  const [cryptoList, setCryptoList] = useState([]);
+  const [fromToken, setFromToken] = useState<EnrichedTokenEntry | null>(null);
+  const [toToken, setToToken] = useState<EnrichedTokenEntry | null>(null);
+  const [tokenList, setTokenList] = useState<EnrichedTokenEntry[]>([]);
   const [fromAmount, setFromAmount] = useState('');
   const [toAmount, setToAmount] = useState('');
   const [showFromSelector, setShowFromSelector] = useState(false);
@@ -22,13 +23,13 @@ export default function TradeScreen() {
 
   useEffect(() => {
     loadData();
-  }, [cryptoId]);
+  }, [tokenAddress]);
 
   useEffect(() => {
-    if (fromCrypto && toCrypto) {
+    if (fromToken && toToken) {
       calculateExchangeRate();
     }
-  }, [fromCrypto, toCrypto]);
+  }, [fromToken, toToken]);
 
   useEffect(() => {
     if (fromAmount && exchangeRate) {
@@ -36,27 +37,31 @@ export default function TradeScreen() {
     }
   }, [fromAmount, exchangeRate]);
 
+  if (Array.isArray(tokenAddress)) {
+    throw new Error('tokenAddress should not be an array');
+  }
+
   const loadData = async () => {
-    const cryptos = await getCryptoData();
-    setCryptoList(cryptos);
-    
-    if (cryptoId) {
-      const crypto = await getCryptoById(cryptoId);
-      setFromCrypto(crypto);
-      
-      const defaultTo = cryptos.find(c => c.id !== crypto.id);
+    const tokens = await getAllTokenInfo();
+    setTokenList(tokens);
+
+    if (tokenAddress) {
+      const token = await getTokenByAddress(tokenAddress);
+      setFromToken(token);
+
+      const defaultTo = tokens.find(t => t.address !== token.address);
       if (defaultTo) {
-        setToCrypto(defaultTo);
+        setToToken(defaultTo);
       }
-    } else if (cryptos.length > 1) {
-      setFromCrypto(cryptos[0]);
-      setToCrypto(cryptos[1]);
+    } else if (tokens.length > 1) {
+      setFromToken(tokens[0]);
+      setToToken(tokens[1]);
     }
   };
 
   const calculateExchangeRate = () => {
-    if (!fromCrypto || !toCrypto) return;
-    const rate = fromCrypto.price / toCrypto.price;
+    if (!fromToken || !toToken) return;
+    const rate = fromToken.price / toToken.price;
     setExchangeRate(rate);
   };
 
@@ -67,21 +72,21 @@ export default function TradeScreen() {
   };
 
   const handlePercentageSelect = (percentage: string) => {
-    if (!fromCrypto) return;
-    
+    if (!fromToken) return;
+
     if (percentage === 'MAX') {
-      setFromAmount(fromCrypto.balance.toString());
+      setFromAmount(fromToken.balance.toString());
     } else {
       const percent = parseInt(percentage) / 100;
-      setFromAmount((fromCrypto.balance * percent).toFixed(6));
+      setFromAmount((fromToken.balance * percent).toFixed(6));
     }
   };
 
-  const handleSwapCryptos = () => {
-    const temp = fromCrypto;
-    setFromCrypto(toCrypto);
-    setToCrypto(temp);
-    
+  const handleSwapTokens = () => {
+    const temp = fromToken;
+    setFromToken(toToken);
+    setToToken(temp);
+
     if (fromAmount) {
       setFromAmount(toAmount);
       setToAmount('');
@@ -89,8 +94,7 @@ export default function TradeScreen() {
   };
 
   const handleTrade = () => {
-    // In a real app, this would execute the trade
-    alert(`Trading ${fromAmount} ${fromCrypto.symbol} for ${toAmount} ${toCrypto.symbol}`);
+    alert(`Trading ${fromAmount} ${fromToken?.symbol} for ${toAmount} ${toToken?.symbol}`);
     router.back();
   };
 
@@ -105,18 +109,18 @@ export default function TradeScreen() {
       </View>
 
       <View style={styles.content}>
-        {fromCrypto && toCrypto && (
+        {fromToken && toToken && (
           <>
-            {/* From Crypto */}
+            {/* From Token */}
             <Animated.View entering={FadeIn.delay(100)}>
-              <View style={styles.cryptoCard}>
-                <TouchableOpacity 
-                  style={styles.cryptoSelector}
+              <View style={styles.tokenCard}>
+                <TouchableOpacity
+                  style={styles.tokenSelectorButton}
                   onPress={() => setShowFromSelector(true)}
                 >
-                  <Text style={styles.cryptoSymbol}>{fromCrypto.symbol}</Text>
+                  <Text style={styles.tokenSymbol}>{fromToken.symbol}</Text>
                 </TouchableOpacity>
-                
+
                 <TextInput
                   style={styles.amountInput}
                   placeholder="0.00"
@@ -125,15 +129,15 @@ export default function TradeScreen() {
                   value={fromAmount}
                   onChangeText={setFromAmount}
                 />
-                
+
                 <Text style={styles.balanceText}>
-                  Balance: {fromCrypto.balance} {fromCrypto.symbol}
+                  Balance: {fromToken.balance} {fromToken.symbol}
                 </Text>
-                
+
                 <Text style={styles.fiatValue}>
-                  {fromAmount ? formatCurrency(parseFloat(fromAmount) * fromCrypto.price) : '$0.00'}
+                  {fromAmount ? formatCurrency(parseFloat(fromAmount) * fromToken.price) : '$0.00'}
                 </Text>
-                
+
                 <View style={styles.percentages}>
                   <TouchableOpacity
                     style={styles.percentageButton}
@@ -162,35 +166,35 @@ export default function TradeScreen() {
                 </View>
               </View>
             </Animated.View>
-            
+
             {/* Swap Button */}
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.swapButton}
-              onPress={handleSwapCryptos}
+              onPress={handleSwapTokens}
             >
               <ArrowDown size={20} color={colors.primary} />
             </TouchableOpacity>
-            
-            {/* To Crypto */}
+
+            {/* To Token */}
             <Animated.View entering={FadeIn.delay(200)}>
-              <View style={styles.cryptoCard}>
-                <TouchableOpacity 
-                  style={styles.cryptoSelector}
+              <View style={styles.tokenCard}>
+                <TouchableOpacity
+                  style={styles.tokenSelectorButton}
                   onPress={() => setShowToSelector(true)}
                 >
-                  <Text style={styles.cryptoSymbol}>{toCrypto.symbol}</Text>
+                  <Text style={styles.tokenSymbol}>{toToken.symbol}</Text>
                 </TouchableOpacity>
-                
+
                 <Text style={styles.amountText}>
                   {toAmount || '0.00'}
                 </Text>
-                
+
                 <Text style={styles.balanceText}>
-                  Balance: {toCrypto.balance} {toCrypto.symbol}
+                  Balance: {toToken.balance} {toToken.symbol}
                 </Text>
-                
+
                 <Text style={styles.fiatValue}>
-                  {toAmount ? formatCurrency(parseFloat(toAmount) * toCrypto.price) : '$0.00'}
+                  {toAmount ? formatCurrency(parseFloat(toAmount) * toToken.price) : '$0.00'}
                 </Text>
               </View>
             </Animated.View>
@@ -199,11 +203,11 @@ export default function TradeScreen() {
       </View>
 
       {/* Trade Button */}
-      <Animated.View 
+      <Animated.View
         entering={SlideInUp.duration(300)}
         style={styles.bottomContainer}
       >
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[
             styles.tradeButton,
             (!fromAmount || parseFloat(fromAmount) <= 0) && styles.tradeButtonDisabled
@@ -216,14 +220,14 @@ export default function TradeScreen() {
         </TouchableOpacity>
       </Animated.View>
 
-      {/* Crypto Selectors */}
+      {/* Token Selectors */}
       {showFromSelector && (
-        <CryptoSelector
-          cryptoList={cryptoList}
-          selectedCrypto={fromCrypto}
-          excludeCryptoId={toCrypto?.id}
-          onSelectCrypto={(crypto) => {
-            setFromCrypto(crypto);
+        <TokenSelector
+          tokenList={tokenList}
+          selectedToken={fromToken}
+          excludeTokenId={toToken?.address}
+          onSelectToken={(token) => {
+            setFromToken(token);
             setShowFromSelector(false);
           }}
           onClose={() => setShowFromSelector(false)}
@@ -231,12 +235,12 @@ export default function TradeScreen() {
       )}
 
       {showToSelector && (
-        <CryptoSelector
-          cryptoList={cryptoList}
-          selectedCrypto={toCrypto}
-          excludeCryptoId={fromCrypto?.id}
-          onSelectCrypto={(crypto) => {
-            setToCrypto(crypto);
+        <TokenSelector
+          tokenList={tokenList}
+          selectedToken={toToken}
+          excludeTokenId={fromToken?.address}
+          onSelectToken={(token) => {
+            setToToken(token);
             setShowToSelector(false);
           }}
           onClose={() => setShowToSelector(false)}
@@ -279,12 +283,12 @@ const styles = StyleSheet.create({
   content: {
     padding: 16,
   },
-  cryptoCard: {
+  tokenCard: {
     backgroundColor: colors.backgroundMedium,
     borderRadius: 16,
     padding: 16,
   },
-  cryptoSelector: {
+  tokenSelectorButton: {
     backgroundColor: colors.backgroundLight,
     alignSelf: 'flex-start',
     borderRadius: 20,
@@ -292,7 +296,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     marginBottom: 12,
   },
-  cryptoSymbol: {
+  tokenSymbol: {
     fontSize: 14,
     fontFamily: 'Inter-SemiBold',
     color: colors.textPrimary,

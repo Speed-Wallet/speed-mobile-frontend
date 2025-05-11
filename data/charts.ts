@@ -1,13 +1,13 @@
-import { getCryptoById } from './crypto';
+import { getTokenByAddress } from './tokens';
 
 // Mock chart data based on timeframe
-export const getCryptoChartData = async (cryptoId: string, timeframe: string) => {
-  const crypto = await getCryptoById(cryptoId);
-  if (!crypto) return null;
+export const getTokenChartData = async (tokenId: string, timeframe: string) => {
+  const token = await getTokenByAddress(tokenId);
+  if (!token) return null;
   
   // Generate some demo data based on timeframe
-  const isPositive = crypto.priceChangePercentage >= 0;
-  const priceVariance = crypto.price * 0.1; // 10% variance
+  const isPositive = token.priceChangePercentage >= 0;
+  const priceVariance = token.price * 0.1; // 10% variance
   
   let dataPoints = 24;
   let labels = [];
@@ -43,10 +43,10 @@ export const getCryptoChartData = async (cryptoId: string, timeframe: string) =>
   }
   
   const generateTrend = (isUp: boolean, points: number, baseValue: number, variance: number) => {
-    const values = [];
     let currentValue = baseValue;
+    const values = [currentValue];
     
-    for (let i = 0; i < points; i++) {
+    for (let i = 1; i < points; i++) {
       const change = Math.random() * variance * (isUp ? 1 : -1);
       currentValue += change;
       values.push(Math.max(currentValue, baseValue * 0.5)); // Ensure not too low
@@ -56,7 +56,7 @@ export const getCryptoChartData = async (cryptoId: string, timeframe: string) =>
   };
   
   // Create chart values
-  const values = generateTrend(isPositive, dataPoints, crypto.price, priceVariance);
+  const values = generateTrend(isPositive, dataPoints, token.price, priceVariance);
   
   return {
     labels: labels,

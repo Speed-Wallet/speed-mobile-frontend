@@ -6,10 +6,10 @@ import colors from '@/constants/colors';
 type AddressInputProps = {
   address: string;
   onChangeAddress: (address: string) => void;
-  selectedCrypto: any;
+  selectedToken: any;
 };
 
-const AddressInput = ({ address, onChangeAddress, selectedCrypto }: AddressInputProps) => {
+const AddressInput = ({ address, onChangeAddress, selectedToken }: AddressInputProps) => {
   const [isFocused, setIsFocused] = useState(false);
   
   const handleScanQR = () => {
@@ -20,7 +20,7 @@ const AddressInput = ({ address, onChangeAddress, selectedCrypto }: AddressInput
   return (
     <View style={styles.container}>
       <Text style={styles.label}>
-        {selectedCrypto.name} Address
+        {selectedToken.name} Address
       </Text>
       <View 
         style={[
@@ -30,7 +30,7 @@ const AddressInput = ({ address, onChangeAddress, selectedCrypto }: AddressInput
       >
         <TextInput
           style={styles.input}
-          placeholder={`Enter ${selectedCrypto.name} address`}
+          placeholder={`Enter ${selectedToken.name} address`}
           placeholderTextColor={colors.textSecondary}
           value={address}
           onChangeText={onChangeAddress}

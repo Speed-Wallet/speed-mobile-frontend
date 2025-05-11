@@ -4,58 +4,53 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { X, Copy, Download as DownloadSimple, Share as ShareIcon } from 'lucide-react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import colors from '@/constants/colors';
-import { getCryptoById, getCryptoData } from '@/data/crypto';
+import { getTokenByAddress, getAllTokenInfo } from '@/data/tokens';
 import UserData from '@/data/user';
-import CryptoSelector from '@/components/CryptoSelector';
+import TokenSelector from '@/components/TokenSelector';
 import QRCode from '@/components/QRCode';
+import { TokenEntry } from '@/data/types';
 
 const { width } = Dimensions.get('window');
 const QR_SIZE = width * 0.7;
 
 export default function ReceiveScreen() {
-  const { cryptoId } = useLocalSearchParams();
+  const { tokenAddress } = useLocalSearchParams();
   const router = useRouter();
-  const [selectedCrypto, setSelectedCrypto] = useState(null);
-  const [cryptoList, setCryptoList] = useState([]);
+  const [selectedToken, setSelectedToken] = useState<TokenEntry | null>(null);
+  const [tokenList, setTokenList] = useState<TokenEntry[]>([]);
   const [walletAddress, setWalletAddress] = useState('');
-  const [showCryptoSelector, setShowCryptoSelector] = useState(false);
+  const [showTokenSelector, setShowTokenSelector] = useState(false);
   const addressInputRef = useRef(null);
 
   useEffect(() => {
     loadData();
-  }, [cryptoId]);
+  }, [tokenAddress]);
+
+  if (Array.isArray(tokenAddress)) {
+    throw new Error('tokenAddress should not be an array');
+  }
 
   const loadData = async () => {
-    const cryptos = await getCryptoData();
-    setCryptoList(cryptos);
-    
-    if (cryptoId) {
-      const crypto = await getCryptoById(cryptoId);
-      setSelectedCrypto(crypto);
-      setWalletAddress(UserData.walletAddresses[crypto.id] || '');
-    } else if (cryptos.length > 0) {
-      setSelectedCrypto(cryptos[0]);
-      setWalletAddress(UserData.walletAddresses[cryptos[0].id] || '');
-    }
-  };
+    const allTokens = await getAllTokenInfo();
+    setTokenList(allTokens);
+    setWalletAddress(UserData.walletAddress);
+  }
 
   const handleCopyAddress = () => {
-    // In a real app, this would copy to clipboard
     alert('Address copied to clipboard!');
   };
 
   const handleShare = async () => {
-    try {
-      const result = await Share.share({
-        message: `My ${selectedCrypto.name} address: ${walletAddress}`,
-      });
-    } catch (error) {
-      alert(error.message);
-    }
+    // try {
+    //   const result = await Share.share({
+    //     message: `My ${tokenAddress.name} address: ${walletAddress}`,
+    //   });
+    // } catch (error) {
+    //   alert(error.message);
+    // }
   };
 
   const handleDownload = () => {
-    // In a real app, this would download the QR code as an image
     alert('QR code saved to photos!');
   };
 
@@ -65,51 +60,51 @@ export default function ReceiveScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
           <X size={24} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Receive {selectedCrypto?.symbol}</Text>
+        <Text style={styles.headerTitle}>Receive {selectedToken?.symbol}</Text>
         <View style={styles.placeholder} />
       </View>
 
       <View style={styles.content}>
-        {selectedCrypto && (
+        {selectedToken && (
           <>
-            <Animated.View entering={FadeIn} style={styles.cryptoSelector}>
-              <TouchableOpacity 
-                style={styles.cryptoButton}
-                onPress={() => setShowCryptoSelector(true)}
+            <Animated.View entering={FadeIn} style={styles.tokenSelector}>
+              <TouchableOpacity
+                style={styles.tokenButton}
+                onPress={() => setShowTokenSelector(true)}
               >
-                <View style={styles.cryptoInfo}>
-                  <View 
+                <View style={styles.tokenInfo}>
+                  <View
                     style={[
-                      styles.cryptoIconContainer,
-                      { backgroundColor: selectedCrypto.color + '33' } // Add transparency
+                      styles.tokenIconContainer,
+                      { backgroundColor: selectedToken.color + '33' }
                     ]}
                   >
-                    <Text style={styles.cryptoIconText}>{selectedCrypto.symbol.charAt(0)}</Text>
+                    <Text style={styles.tokenIconText}>{selectedToken.symbol.charAt(0)}</Text>
                   </View>
-                  <Text style={styles.cryptoName}>{selectedCrypto.name}</Text>
+                  <Text style={styles.tokenName}>{selectedToken.name}</Text>
                 </View>
-                <Text style={styles.cryptoNetwork}>{selectedCrypto.network}</Text>
+                <Text style={styles.tokenNetwork}>Solana</Text>
               </TouchableOpacity>
             </Animated.View>
 
             <View style={styles.qrSection}>
               <Text style={styles.qrTitle}>
-                Scan QR code to receive {selectedCrypto.name}
+                Scan QR code to receive {selectedToken.name}
               </Text>
-              
+
               <View style={styles.qrContainer}>
-                <QRCode 
+                <QRCode
                   value={walletAddress}
                   size={QR_SIZE}
                   color={colors.textPrimary}
                   backgroundColor={colors.white}
-                  logoUrl={selectedCrypto.iconUrl}
+                  logoUrl={selectedToken.logoURI}
                 />
               </View>
-              
+
               <View style={styles.addressContainer}>
                 <Text style={styles.addressLabel}>
-                  {selectedCrypto.name} Address ({selectedCrypto.network})
+                  {selectedToken.name} Address (Solana)
                 </Text>
                 <View style={styles.addressInputContainer}>
                   <TextInput
@@ -120,7 +115,7 @@ export default function ReceiveScreen() {
                     multiline={Platform.OS === 'ios'}
                     numberOfLines={1}
                   />
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.copyButton}
                     onPress={handleCopyAddress}
                   >
@@ -133,7 +128,7 @@ export default function ReceiveScreen() {
             <View style={styles.warning}>
               <Text style={styles.warningTitle}>Important!</Text>
               <Text style={styles.warningText}>
-                Only send {selectedCrypto.name} ({selectedCrypto.symbol}) to this address. 
+                Only send {selectedToken.name} ({selectedToken.symbol}) to this address.
                 Sending any other coins may result in permanent loss.
               </Text>
             </View>
@@ -142,15 +137,15 @@ export default function ReceiveScreen() {
       </View>
 
       <View style={styles.actionButtons}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.actionButton, styles.shareButton]}
           onPress={handleShare}
         >
           <ShareIcon size={20} color={colors.white} />
           <Text style={styles.actionButtonText}>Share</Text>
         </TouchableOpacity>
-        
-        <TouchableOpacity 
+
+        <TouchableOpacity
           style={styles.actionButton}
           onPress={handleDownload}
         >
@@ -159,17 +154,16 @@ export default function ReceiveScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Crypto Selector Modal */}
-      {showCryptoSelector && (
-        <CryptoSelector
-          cryptoList={cryptoList}
-          selectedCrypto={selectedCrypto}
-          onSelectCrypto={(crypto) => {
-            setSelectedCrypto(crypto);
-            setWalletAddress(UserData.walletAddresses[crypto.id] || '');
-            setShowCryptoSelector(false);
+      {showTokenSelector && (
+        <TokenSelector
+          tokenList={tokenList}
+          selectedToken={selectedToken}
+          onSelectToken={(token) => {
+            setSelectedToken(token);
+            setWalletAddress(UserData.walletAddress);
+            setShowTokenSelector(false);
           }}
-          onClose={() => setShowCryptoSelector(false)}
+          onClose={() => setShowTokenSelector(false)}
         />
       )}
     </View>
@@ -209,10 +203,10 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 16,
   },
-  cryptoSelector: {
+  tokenSelector: {
     marginBottom: 24,
   },
-  cryptoButton: {
+  tokenButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -220,11 +214,11 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
   },
-  cryptoInfo: {
+  tokenInfo: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  cryptoIconContainer: {
+  tokenIconContainer: {
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -232,17 +226,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: 12,
   },
-  cryptoIconText: {
+  tokenIconText: {
     fontSize: 16,
     fontFamily: 'Inter-Bold',
     color: colors.textPrimary,
   },
-  cryptoName: {
+  tokenName: {
     fontSize: 16,
     fontFamily: 'Inter-SemiBold',
     color: colors.textPrimary,
   },
-  cryptoNetwork: {
+  tokenNetwork: {
     fontSize: 14,
     fontFamily: 'Inter-Regular',
     color: colors.textSecondary,

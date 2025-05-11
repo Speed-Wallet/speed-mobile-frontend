@@ -1,24 +1,24 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import Animated, { FadeInRight } from 'react-native-reanimated';
-import CryptoItem from './CryptoItem';
+import TokenItem from './TokenItem';
 
-type CryptoListProps = {
+type TokenListProps = {
   data: any[];
-  onSelectCrypto: (crypto: any) => void;
+  onSelectToken: (token: any) => void;
 };
 
-const CryptoList = ({ data, onSelectCrypto }: CryptoListProps) => {
+const TokenList = ({ data, onSelectToken }: TokenListProps) => {
   return (
     <View style={styles.container}>
-      {data.map((crypto, index) => (
+      {data.map((token, index) => (
         <Animated.View 
-          key={crypto.id}
+          key={token.id}
           entering={FadeInRight.delay(100 + (index * 100)).duration(400)}
         >
-          <CryptoItem 
-            crypto={crypto}
-            onPress={() => onSelectCrypto(crypto)}
+          <TokenItem
+            token={token}
+            onPress={() => onSelectToken(token)}
           />
         </Animated.View>
       ))}
@@ -28,8 +28,9 @@ const CryptoList = ({ data, onSelectCrypto }: CryptoListProps) => {
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 8,
+    flex: 1,
+    paddingHorizontal: 16,
   },
 });
 
-export default CryptoList;
+export default TokenList;

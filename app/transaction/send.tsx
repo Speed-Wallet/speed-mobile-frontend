@@ -5,27 +5,28 @@ import { X, Search, Send, User, ArrowRight } from 'lucide-react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import colors from '@/constants/colors';
 import { formatCurrency } from '@/utils/formatters';
-import { getCryptoData, getCryptoById } from '@/data/crypto';
-import CryptoSelector from '@/components/CryptoSelector';
+import { getAllTokenInfo, getTokenByAddress } from '@/data/tokens';
+import TokenSelector from '@/components/TokenSelector';
 import AddressInput from '@/components/AddressInput';
 import RecentContacts from '@/data/contacts';
+import { EnrichedTokenEntry } from '@/data/types';
 
 export default function SendScreen() {
-  const { cryptoId } = useLocalSearchParams();
+  const { tokenAddress } = useLocalSearchParams();
   const router = useRouter();
-  const [selectedCrypto, setSelectedCrypto] = useState(null);
-  const [cryptoList, setCryptoList] = useState([]);
+  const [selectedToken, setSelectedToken] = useState<EnrichedTokenEntry | null>(null);
+  const [tokenList, setTokenList] = useState<EnrichedTokenEntry[]>([]);
   const [amount, setAmount] = useState('');
   const [address, setAddress] = useState('');
   const [note, setNote] = useState('');
-  const [showCryptoSelector, setShowCryptoSelector] = useState(false);
+  const [showTokenSelector, setShowTokenSelector] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedContact, setSelectedContact] = useState(null);
+  const [selectedContact, setSelectedContact] = useState<any>(null);
   const [filteredContacts, setFilteredContacts] = useState(RecentContacts);
 
   useEffect(() => {
     loadData();
-  }, [cryptoId]);
+  }, [tokenAddress]);
 
   useEffect(() => {
     if (searchQuery) {
@@ -39,26 +40,28 @@ export default function SendScreen() {
     }
   }, [searchQuery]);
 
+  if (Array.isArray(tokenAddress)) {
+    throw new Error('tokenAddress should not be an array');
+  }
+
   const loadData = async () => {
-    const cryptos = await getCryptoData();
-    setCryptoList(cryptos);
+    const tokens = await getAllTokenInfo();
+    setTokenList(tokens);
     
-    if (cryptoId) {
-      const crypto = await getCryptoById(cryptoId);
-      setSelectedCrypto(crypto);
-    } else if (cryptos.length > 0) {
-      setSelectedCrypto(cryptos[0]);
+    if (tokenAddress) {
+      const token = await getTokenByAddress(tokenAddress);
+      setSelectedToken(token);
+    } else if (tokens.length > 0) {
+      setSelectedToken(tokens[0]);
     }
   };
 
   const handleSend = () => {
-    // In a real app, this would connect to a blockchain API
-    // and initiate a transaction
-    alert(`Sending ${amount} ${selectedCrypto.symbol} to ${address || selectedContact?.username}`);
+    alert(`Sending ${amount} ${selectedToken?.symbol} to ${address || selectedContact?.username}`);
     router.back();
   };
 
-  const handleSelectContact = (contact) => {
+  const handleSelectContact = (contact: any) => {
     setSelectedContact(contact);
     setAddress(contact.address);
   };
@@ -69,7 +72,7 @@ export default function SendScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
           <X size={24} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Send {selectedCrypto?.symbol}</Text>
+        <Text style={styles.headerTitle}>Send {selectedToken?.symbol}</Text>
         <View style={styles.placeholder} />
       </View>
 
@@ -77,25 +80,25 @@ export default function SendScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
       >
-        {selectedCrypto && (
+        {selectedToken && (
           <>
-            {/* Crypto Selection */}
+            {/* Token Selection */}
             <TouchableOpacity 
-              style={styles.cryptoSelector}
-              onPress={() => setShowCryptoSelector(true)}
+              style={styles.tokenSelector}
+              onPress={() => setShowTokenSelector(true)}
             >
               <Image 
-                source={{ uri: selectedCrypto.iconUrl }} 
-                style={styles.cryptoIcon} 
+                source={{ uri: selectedToken.logoURI }} 
+                style={styles.tokenIcon} 
               />
-              <View style={styles.cryptoInfo}>
-                <Text style={styles.cryptoName}>{selectedCrypto.name}</Text>
-                <Text style={styles.cryptoBalance}>
-                  Balance: {selectedCrypto.balance.toFixed(4)} {selectedCrypto.symbol}
+              <View style={styles.tokenInfo}>
+                <Text style={styles.tokenName}>{selectedToken.name}</Text>
+                <Text style={styles.tokenBalance}>
+                  Balance: {selectedToken.balance.toFixed(4)} {selectedToken.symbol}
                 </Text>
               </View>
-              <Text style={styles.cryptoValue}>
-                {formatCurrency(selectedCrypto.balance * selectedCrypto.price)}
+              <Text style={styles.tokenValue}>
+                {formatCurrency(selectedToken.balance * selectedToken.price)}
               </Text>
             </TouchableOpacity>
 
@@ -111,33 +114,33 @@ export default function SendScreen() {
                   value={amount}
                   onChangeText={setAmount}
                 />
-                <Text style={styles.amountCurrency}>{selectedCrypto.symbol}</Text>
+                <Text style={styles.amountCurrency}>{selectedToken.symbol}</Text>
               </View>
               <Text style={styles.amountInFiat}>
-                {amount ? formatCurrency(parseFloat(amount) * selectedCrypto.price) : formatCurrency(0)}
+                {amount ? formatCurrency(parseFloat(amount) * selectedToken.price) : formatCurrency(0)}
               </Text>
               <View style={styles.amountOptions}>
                 <TouchableOpacity 
                   style={styles.amountOption}
-                  onPress={() => setAmount((selectedCrypto.balance * 0.25).toFixed(4))}
+                  onPress={() => setAmount((selectedToken.balance * 0.25).toFixed(4))}
                 >
                   <Text style={styles.amountOptionText}>25%</Text>
                 </TouchableOpacity>
                 <TouchableOpacity 
                   style={styles.amountOption}
-                  onPress={() => setAmount((selectedCrypto.balance * 0.5).toFixed(4))}
+                  onPress={() => setAmount((selectedToken.balance * 0.5).toFixed(4))}
                 >
                   <Text style={styles.amountOptionText}>50%</Text>
                 </TouchableOpacity>
                 <TouchableOpacity 
                   style={styles.amountOption}
-                  onPress={() => setAmount((selectedCrypto.balance * 0.75).toFixed(4))}
+                  onPress={() => setAmount((selectedToken.balance * 0.75).toFixed(4))}
                 >
                   <Text style={styles.amountOptionText}>75%</Text>
                 </TouchableOpacity>
                 <TouchableOpacity 
                   style={styles.amountOption}
-                  onPress={() => setAmount(selectedCrypto.balance.toFixed(4))}
+                  onPress={() => setAmount(selectedToken.balance.toFixed(4))}
                 >
                   <Text style={styles.amountOptionText}>MAX</Text>
                 </TouchableOpacity>
@@ -222,7 +225,7 @@ export default function SendScreen() {
                   <AddressInput 
                     address={address} 
                     onChangeAddress={setAddress} 
-                    selectedCrypto={selectedCrypto}
+                    selectedToken={selectedToken}
                   />
                 </>
               )}
@@ -245,7 +248,7 @@ export default function SendScreen() {
             <Animated.View entering={FadeIn.delay(400)} style={styles.feeContainer}>
               <Text style={styles.feeLabel}>Network Fee</Text>
               <Text style={styles.feeValue}>
-                0.00005 {selectedCrypto.symbol} (~{formatCurrency(0.00005 * selectedCrypto.price)})
+                0.00005 {selectedToken.symbol} (~{formatCurrency(0.00005 * selectedToken.price)})
               </Text>
             </Animated.View>
           </>
@@ -267,16 +270,16 @@ export default function SendScreen() {
         </TouchableOpacity>
       </Animated.View>
 
-      {/* Crypto Selector Modal */}
-      {showCryptoSelector && (
-        <CryptoSelector
-          cryptoList={cryptoList}
-          selectedCrypto={selectedCrypto}
-          onSelectCrypto={(crypto) => {
-            setSelectedCrypto(crypto);
-            setShowCryptoSelector(false);
+      {/* Token Selector Modal */}
+      {showTokenSelector && (
+        <TokenSelector
+          tokenList={tokenList}
+          selectedToken={selectedToken}
+          onSelectToken={(token) => {
+            setSelectedToken(token);
+            setShowTokenSelector(false);
           }}
-          onClose={() => setShowCryptoSelector(false)}
+          onClose={() => setShowTokenSelector(false)}
         />
       )}
     </View>
@@ -315,7 +318,7 @@ const styles = StyleSheet.create({
   content: {
     padding: 16,
   },
-  cryptoSelector: {
+  tokenSelector: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.backgroundMedium,
@@ -323,27 +326,27 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 24,
   },
-  cryptoIcon: {
+  tokenIcon: {
     width: 40,
     height: 40,
     borderRadius: 20,
     marginRight: 12,
   },
-  cryptoInfo: {
+  tokenInfo: {
     flex: 1,
   },
-  cryptoName: {
+  tokenName: {
     fontSize: 16,
     fontFamily: 'Inter-SemiBold',
     color: colors.textPrimary,
   },
-  cryptoBalance: {
+  tokenBalance: {
     fontSize: 14,
     fontFamily: 'Inter-Regular',
     color: colors.textSecondary,
     marginTop: 2,
   },
-  cryptoValue: {
+  tokenValue: {
     fontSize: 16,
     fontFamily: 'Inter-SemiBold',
     color: colors.textPrimary,

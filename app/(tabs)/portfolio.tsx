@@ -7,14 +7,15 @@ import colors from '@/constants/colors';
 import { formatCurrency, formatPercentage } from '@/utils/formatters';
 import PieChart from '@/components/PieChart';
 import TransactionItem from '@/components/TransactionItem';
-import { getCryptoData } from '@/data/crypto';
+import { getAllTokenInfo } from '@/data/tokens';
 import { getTransactionHistory } from '@/data/transactions';
 import UserData from '@/data/user';
+import { EnrichedTokenEntry } from '@/data/types';
 
 export default function PortfolioScreen() {
   const router = useRouter();
-  const [cryptoData, setCryptoData] = useState([]);
-  const [transactions, setTransactions] = useState([]);
+  const [tokenData, setTokenData] = useState<EnrichedTokenEntry[]>([]);
+  const [transactions, setTransactions] = useState<any>([]);
   const [portfolioChange, setPortfolioChange] = useState(0);
   const [timeframe, setTimeframe] = useState('1D');
 
@@ -23,11 +24,11 @@ export default function PortfolioScreen() {
   }, []);
 
   const loadData = async () => {
-    const data = await getCryptoData();
-    setCryptoData(data);
+    const data = await getAllTokenInfo();
+    setTokenData(data);
     
     // Calculate total portfolio change based on owned assets
-    const totalChange = data.reduce((sum, crypto) => sum + (crypto.priceChangePercentage * crypto.balance / 100), 0);
+    const totalChange = data.reduce((sum, token) => sum + (token.priceChangePercentage * token.balance / 100), 0);
     setPortfolioChange(totalChange);
     
     const history = await getTransactionHistory();
@@ -90,7 +91,7 @@ export default function PortfolioScreen() {
           
           {/* Portfolio Distribution Chart */}
           <View style={styles.chartContainer}>
-            <PieChart data={cryptoData} />
+            <PieChart data={tokenData} />
           </View>
         </Animated.View>
         
@@ -98,22 +99,22 @@ export default function PortfolioScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Asset Distribution</Text>
           <View style={styles.distributionList}>
-            {cryptoData.map((crypto) => {
-              const percentage = (crypto.balance * crypto.price / UserData.totalBalance) * 100;
+            {tokenData.map((token) => {
+              const percentage = (token.balance * token.price / UserData.totalBalance) * 100;
               return (
                 <TouchableOpacity 
-                  key={crypto.id}
+                  key={token.address}
                   style={styles.distributionItem}
-                  onPress={() => router.push(`/crypto/${crypto.id}`)}
+                  onPress={() => router.push(`/token/${token.address}`)}
                 >
                   <View style={styles.distributionLeft}>
                     <View 
                       style={[
                         styles.colorIndicator, 
-                        { backgroundColor: crypto.color }
+                        { backgroundColor: token.color }
                       ]} 
                     />
-                    <Text style={styles.cryptoName}>{crypto.name}</Text>
+                    <Text style={styles.tokenName}>{token.name}</Text>
                   </View>
                   <Text style={styles.distributionPercentage}>
                     {percentage.toFixed(1)}%
@@ -127,11 +128,11 @@ export default function PortfolioScreen() {
         {/* Recent Transactions */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Recent Transactions</Text>
-          {transactions.slice(0, 5).map((transaction, index) => (
+          {transactions.slice(0, 5).map((transaction: any, index: any) => (
             <TransactionItem 
               key={transaction.id} 
               transaction={transaction}
-              cryptoData={cryptoData}
+              tokenData={tokenData}
             />
           ))}
           
@@ -252,7 +253,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginRight: 12,
   },
-  cryptoName: {
+  tokenName: {
     fontSize: 16,
     color: colors.textPrimary,
     fontFamily: 'Inter-Regular',

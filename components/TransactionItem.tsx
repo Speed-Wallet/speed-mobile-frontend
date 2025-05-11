@@ -6,14 +6,14 @@ import { formatCurrency, formatDate } from '@/utils/formatters';
 
 type TransactionItemProps = {
   transaction: any;
-  cryptoData: any[];
+  tokenData: any[];
   showDate?: boolean;
 };
 
-const TransactionItem = ({ transaction, cryptoData, showDate = false }: TransactionItemProps) => {
-  const crypto = cryptoData.find(c => c.id === transaction.cryptoId);
+const TransactionItem = ({ transaction, tokenData, showDate = false }: TransactionItemProps) => {
+  const token = tokenData.find(c => c.id === transaction.tokenId);
   
-  if (!crypto) return null;
+  if (!token) return null;
   
   const getTransactionIcon = () => {
     switch (transaction.type) {
@@ -31,15 +31,15 @@ const TransactionItem = ({ transaction, cryptoData, showDate = false }: Transact
   const getTransactionTitle = () => {
     switch (transaction.type) {
       case 'receive':
-        return `Received ${crypto.symbol}`;
+        return `Received ${token.symbol}`;
       case 'send':
-        return `Sent ${crypto.symbol}`;
+        return `Sent ${token.symbol}`;
       case 'trade':
-        return `Traded ${crypto.symbol}`;
+        return `Traded ${token.symbol}`;
       case 'withdraw':
-        return `Withdrew ${crypto.symbol}`;
+        return `Withdrew ${token.symbol}`;
       default:
-        return `${crypto.name} Transaction`;
+        return `${token.name} Transaction`;
     }
   };
   
@@ -79,7 +79,7 @@ const TransactionItem = ({ transaction, cryptoData, showDate = false }: Transact
             transaction.type === 'receive' ? styles.receiveAmount : styles.otherAmount
           ]}
         >
-          {transaction.type === 'receive' ? '+' : '-'} {transaction.amount} {crypto.symbol}
+          {transaction.type === 'receive' ? '+' : '-'} {transaction.amount} {token.symbol}
         </Text>
         <Text style={styles.fiatAmount}>
           {formatCurrency(transaction.amount * transaction.price)}

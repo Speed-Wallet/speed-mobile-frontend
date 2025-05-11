@@ -4,16 +4,17 @@ import { useRouter } from 'expo-router';
 import { Search, TrendingUp, TrendingDown, ArrowUpDown } from 'lucide-react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import colors from '@/constants/colors';
-import { getAllCryptoData } from '@/data/crypto';
-import CryptoItem from '@/components/CryptoItem';
+import { getAllTokenInfo } from '@/data/tokens';
+import TokenItem from '@/components/TokenItem';
+import { EnrichedTokenEntry } from '@/data/types';
 
 type SortOption = 'price' | 'name' | 'change';
 type SortDirection = 'asc' | 'desc';
 
 export default function MarketScreen() {
   const router = useRouter();
-  const [cryptoData, setCryptoData] = useState([]);
-  const [filteredData, setFilteredData] = useState([]);
+  const [tokenData, setTokenData] = useState<EnrichedTokenEntry[]>([]);
+  const [filteredData, setFilteredData] = useState<EnrichedTokenEntry[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('price');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
@@ -24,16 +25,16 @@ export default function MarketScreen() {
 
   useEffect(() => {
     filterAndSortData();
-  }, [searchQuery, sortBy, sortDirection, cryptoData]);
+  }, [searchQuery, sortBy, sortDirection, tokenData]);
 
   const loadData = async () => {
-    const data = await getAllCryptoData();
-    setCryptoData(data);
+    const data = await getAllTokenInfo();
+    setTokenData(data);
     setFilteredData(data);
   };
 
   const filterAndSortData = () => {
-    let filtered = [...cryptoData];
+    let filtered = [...tokenData];
     
     // Filter by search query
     if (searchQuery) {
@@ -128,15 +129,15 @@ export default function MarketScreen() {
         </TouchableOpacity>
       </View>
       
-      {/* Crypto List */}
+      {/* Token List */}
       <Animated.FlatList
         data={filteredData}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.address}
         renderItem={({ item, index }) => (
           <Animated.View entering={FadeInUp.delay(index * 100).duration(400)}>
-            <CryptoItem 
-              crypto={item} 
-              onPress={() => router.push(`/crypto/${item.id}`)}
+            <TokenItem 
+              token={item} 
+              onPress={() => router.push(`/token/${item.address}`)}
               showBalance={false}
             />
           </Animated.View>

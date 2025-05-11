@@ -4,43 +4,43 @@ import { ArrowUpRight, ArrowDownRight } from 'lucide-react-native';
 import colors from '@/constants/colors';
 import { formatCurrency, formatPercentage } from '@/utils/formatters';
 
-type CryptoItemProps = {
-  crypto: any;
+type TokenItemProps = {
+  token: any;
   onPress: () => void;
   showBalance?: boolean;
 };
 
-const CryptoItem = ({ crypto, onPress, showBalance = true }: CryptoItemProps) => {
-  const isPositiveChange = crypto.priceChangePercentage >= 0;
-  
+const TokenItem = ({ token, onPress, showBalance = true }: TokenItemProps) => {
+  const isPositiveChange = token.priceChangePercentage >= 0;
+
   return (
     <TouchableOpacity style={styles.container} onPress={onPress}>
       <View style={styles.leftSection}>
-        <Image source={{ uri: crypto.iconUrl }} style={styles.icon} />
+        <Image source={{ uri: token.iconUrl }} style={styles.icon} />
         <View style={styles.symbolContainer}>
-          <Text style={styles.symbol}>{crypto.symbol}</Text>
+          <Text style={styles.symbol}>{token.symbol}</Text>
         </View>
       </View>
       
       <View style={styles.infoContainer}>
-        <Text style={styles.name}>{crypto.name}</Text>
-        <Text style={styles.network}>{crypto.network}</Text>
+        <Text style={styles.name}>{token.name}</Text>
+        <Text style={styles.network}>{token.network}</Text>
       </View>
       
       <View style={styles.priceContainer}>
         {showBalance ? (
           <>
             <Text style={styles.balance}>
-              {crypto.balance.toFixed(4)} {crypto.symbol}
+              {token.balance.toFixed(4)} {token.symbol}
             </Text>
             <Text style={styles.price}>
-              {formatCurrency(crypto.balance * crypto.price)}
+              {formatCurrency(token.balance * token.price)}
             </Text>
           </>
         ) : (
           <>
             <Text style={styles.price}>
-              {formatCurrency(crypto.price)}
+              {formatCurrency(token.price)}
             </Text>
             <View style={styles.changeContainer}>
               {isPositiveChange ? (
@@ -54,7 +54,7 @@ const CryptoItem = ({ crypto, onPress, showBalance = true }: CryptoItemProps) =>
                   { color: isPositiveChange ? colors.success : colors.error }
                 ]}
               >
-                {formatPercentage(crypto.priceChangePercentage)}
+                {formatPercentage(token.priceChangePercentage)}
               </Text>
             </View>
           </>
@@ -69,26 +69,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.backgroundMedium,
+    paddingHorizontal: 16,
+    backgroundColor: colors.backgroundMedium,
+    borderRadius: 16,
+    marginBottom: 8,
   },
   leftSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    width: 80,
+    marginRight: 16,
   },
   icon: {
     width: 40,
     height: 40,
     borderRadius: 20,
+    marginRight: 8,
   },
   symbolContainer: {
     backgroundColor: colors.backgroundLight,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-    marginLeft: -12,
-    marginTop: 24,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
   },
   symbol: {
     fontSize: 10,
@@ -98,13 +99,11 @@ const styles = StyleSheet.create({
   },
   infoContainer: {
     flex: 1,
-    marginLeft: 4,
   },
   name: {
     fontSize: 16,
     fontFamily: 'Inter-SemiBold',
     color: colors.textPrimary,
-    marginBottom: 2,
   },
   network: {
     fontSize: 12,
@@ -114,23 +113,23 @@ const styles = StyleSheet.create({
   priceContainer: {
     alignItems: 'flex-end',
   },
-  price: {
-    fontSize: 16,
-    fontFamily: 'Inter-SemiBold',
+  balance: {
+    fontSize: 14,
+    fontFamily: 'Inter-Medium',
     color: colors.textPrimary,
   },
-  balance: {
+  price: {
     fontSize: 14,
     fontFamily: 'Inter-Regular',
     color: colors.textSecondary,
-    marginBottom: 2,
   },
   changeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginTop: 4,
   },
   changeIcon: {
-    marginRight: 2,
+    marginRight: 4,
   },
   change: {
     fontSize: 14,
@@ -138,4 +137,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default CryptoItem;
+export default TokenItem;
