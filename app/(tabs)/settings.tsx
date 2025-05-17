@@ -1,6 +1,6 @@
-import React from 'react';
-import { View, Text, StyleSheet, Switch, ScrollView, TouchableOpacity, Linking } from 'react-native';
-import { ChevronRight, Shield, Bell, Globe, Wallet, Moon, User, CircleHelp as HelpCircle, LogOut, Plus, MessageCircle } from 'lucide-react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, Switch, ScrollView, TouchableOpacity, Linking, Modal, TextInput } from 'react-native';
+import { ChevronRight, Shield, Bell, Globe, Wallet, Moon, User, CircleHelp as HelpCircle, LogOut, Plus, MessageCircle, Users, Gift } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import colors from '@/constants/colors';
 import UserData from '@/data/user';
@@ -28,14 +28,126 @@ const SettingItem = ({ icon, title, subtitle, rightElement, onPress }: SettingIt
   </TouchableOpacity>
 );
 
+const AffiliateForm = ({ visible, onClose }: { visible: boolean; onClose: () => void }) => {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    website: '',
+    experience: '',
+    audience: '',
+  });
+
+  const handleSubmit = () => {
+    // Here you would handle the form submission
+    alert('Application submitted successfully! We will review and get back to you.');
+    onClose();
+  };
+
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      transparent={true}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <Text style={styles.modalTitle}>Affiliate Application</Text>
+          <Text style={styles.modalSubtitle}>Join our affiliate program and earn 50% commission on all referrals!</Text>
+
+          <ScrollView style={styles.formContainer}>
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Full Name</Text>
+              <TextInput
+                style={styles.input}
+                value={formData.name}
+                onChangeText={(text) => setFormData({ ...formData, name: text })}
+                placeholder="Enter your full name"
+                placeholderTextColor={colors.textSecondary}
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Email Address</Text>
+              <TextInput
+                style={styles.input}
+                value={formData.email}
+                onChangeText={(text) => setFormData({ ...formData, email: text })}
+                placeholder="Enter your email"
+                placeholderTextColor={colors.textSecondary}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Website/Social Media</Text>
+              <TextInput
+                style={styles.input}
+                value={formData.website}
+                onChangeText={(text) => setFormData({ ...formData, website: text })}
+                placeholder="Your website or social media URL"
+                placeholderTextColor={colors.textSecondary}
+                autoCapitalize="none"
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Crypto Experience</Text>
+              <TextInput
+                style={[styles.input, styles.textArea]}
+                value={formData.experience}
+                onChangeText={(text) => setFormData({ ...formData, experience: text })}
+                placeholder="Tell us about your crypto experience"
+                placeholderTextColor={colors.textSecondary}
+                multiline
+                numberOfLines={4}
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Target Audience</Text>
+              <TextInput
+                style={[styles.input, styles.textArea]}
+                value={formData.audience}
+                onChangeText={(text) => setFormData({ ...formData, audience: text })}
+                placeholder="Describe your audience/reach"
+                placeholderTextColor={colors.textSecondary}
+                multiline
+                numberOfLines={4}
+              />
+            </View>
+          </ScrollView>
+
+          <View style={styles.modalButtons}>
+            <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
+              <Text style={styles.submitButtonText}>Submit Application</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+};
+
 export default function SettingsScreen() {
   const router = useRouter();
   const [notifications, setNotifications] = React.useState(true);
   const [darkMode, setDarkMode] = React.useState(true);
   const [biometrics, setBiometrics] = React.useState(true);
+  const [showAffiliateForm, setShowAffiliateForm] = useState(false);
 
   const handleJoinTelegram = () => {
     Linking.openURL('https://t.me/your_telegram_group');
+  };
+
+  const handleReferral = () => {
+    // Generate a unique referral link
+    const referralLink = `https://yourapp.com/ref/${UserData.id}`;
+    // Copy to clipboard and show success message
+    alert(`Your referral link: ${referralLink}\n\nEarn 30% commission on all referral transactions!`);
   };
 
   return (
@@ -90,6 +202,20 @@ export default function SettingsScreen() {
             title="Create New Wallet"
             subtitle="Add a new crypto wallet"
             onPress={() => router.push('/wallet/manage')}
+          />
+
+          <SettingItem
+            icon={<Users size={20} color={colors.primary} />}
+            title="Become an Affiliate"
+            subtitle="Earn 50% commission on referrals"
+            onPress={() => setShowAffiliateForm(true)}
+          />
+
+          <SettingItem
+            icon={<Gift size={20} color={colors.success} />}
+            title="Refer Friends"
+            subtitle="Get 30% commission on transactions"
+            onPress={handleReferral}
           />
         </View>
 
@@ -177,6 +303,12 @@ export default function SettingsScreen() {
           <LogOut size={20} color={colors.error} />
           <Text style={styles.logoutText}>Log Out</Text>
         </TouchableOpacity>
+
+        {/* Affiliate Form Modal */}
+        <AffiliateForm 
+          visible={showAffiliateForm} 
+          onClose={() => setShowAffiliateForm(false)} 
+        />
       </ScrollView>
     </View>
   );
@@ -287,5 +419,82 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'Inter-SemiBold',
     color: colors.error,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: colors.backgroundDark,
+    borderRadius: 24,
+    padding: 24,
+    width: '90%',
+    maxHeight: '80%',
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontFamily: 'Inter-Bold',
+    color: colors.textPrimary,
+    marginBottom: 8,
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    color: colors.textSecondary,
+    marginBottom: 24,
+  },
+  formContainer: {
+    marginBottom: 24,
+  },
+  inputGroup: {
+    marginBottom: 16,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontFamily: 'Inter-Medium',
+    color: colors.textSecondary,
+    marginBottom: 8,
+  },
+  input: {
+    backgroundColor: colors.backgroundMedium,
+    borderRadius: 12,
+    padding: 16,
+    color: colors.textPrimary,
+    fontSize: 16,
+    fontFamily: 'Inter-Regular',
+  },
+  textArea: {
+    minHeight: 100,
+    textAlignVertical: 'top',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  cancelButton: {
+    flex: 1,
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: colors.backgroundMedium,
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    fontFamily: 'Inter-SemiBold',
+    color: colors.textSecondary,
+  },
+  submitButton: {
+    flex: 2,
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+  },
+  submitButtonText: {
+    fontSize: 16,
+    fontFamily: 'Inter-SemiBold',
+    color: colors.white,
   },
 });
