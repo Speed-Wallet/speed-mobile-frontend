@@ -8,6 +8,12 @@ import { formatCurrency } from '@/utils/formatters';
 import { getAllTokenInfo, getTokenByAddress } from '@/data/tokens';
 import TokenSelector from '@/components/TokenSelector';
 import { EnrichedTokenEntry } from '@/data/types';
+import { JupiterQuote, jupiterSwap } from '@/services/walletService';
+
+const WAIT_ON_AMOUNT_CHANGE = 2000;
+const QUOTE_CALL_INTERVAL = 10000;
+let lastQuoteTime = 0;
+let timeoutID: NodeJS.Timeout;
 
 export default function TradeScreen() {
   const { tokenAddress } = useLocalSearchParams();
@@ -19,23 +25,48 @@ export default function TradeScreen() {
   const [toAmount, setToAmount] = useState('');
   const [showFromSelector, setShowFromSelector] = useState(false);
   const [showToSelector, setShowToSelector] = useState(false);
-  const [exchangeRate, setExchangeRate] = useState(0);
+  let quote: any;
+
+  loopQuote();
+
+  async function loopQuote() {
+    timeoutID !== undefined && clearTimeout(timeoutID);
+
+    const amount = parseInt(fromAmount);
+    if (isNaN(amount)) return;
+
+    const diff = Date.now() - lastQuoteTime;
+
+    if (diff < WAIT_ON_AMOUNT_CHANGE) {
+      timeoutID = setTimeout(loopQuote, diff);
+      return;
+    }
+
+    lastQuoteTime = Date.now();
+    quote = await JupiterQuote(
+      fromToken!.address, 
+      toToken!.address, 
+      amount * 10 ** fromToken!.decimals
+    );
+
+    if (quote.errorCode) {
+      console.error(quote);
+      setToAmount('');
+      return;
+    }
+
+    const outAmount = parseInt(quote.outAmount);
+
+    if (!isNaN(outAmount)) {
+      setToAmount((outAmount * 10 ** -toToken!.decimals).toFixed(toToken!.decimals).toString());
+    }
+
+    timeoutID = setTimeout(loopQuote, QUOTE_CALL_INTERVAL);
+  }
 
   useEffect(() => {
     loadData();
   }, [tokenAddress]);
-
-  useEffect(() => {
-    if (fromToken && toToken) {
-      calculateExchangeRate();
-    }
-  }, [fromToken, toToken]);
-
-  useEffect(() => {
-    if (fromAmount && exchangeRate) {
-      calculateToAmount();
-    }
-  }, [fromAmount, exchangeRate]);
 
   if (Array.isArray(tokenAddress)) {
     throw new Error('tokenAddress should not be an array');
@@ -59,18 +90,6 @@ export default function TradeScreen() {
     }
   };
 
-  const calculateExchangeRate = () => {
-    if (!fromToken || !toToken) return;
-    const rate = fromToken.price / toToken.price;
-    setExchangeRate(rate);
-  };
-
-  const calculateToAmount = () => {
-    if (!fromAmount || !exchangeRate) return;
-    const amount = parseFloat(fromAmount) * exchangeRate;
-    setToAmount(amount.toFixed(6));
-  };
-
   const handlePercentageSelect = (percentage: string) => {
     if (!fromToken) return;
 
@@ -86,15 +105,28 @@ export default function TradeScreen() {
     const temp = fromToken;
     setFromToken(toToken);
     setToToken(temp);
-
-    if (fromAmount) {
-      setFromAmount(toAmount);
-      setToAmount('');
-    }
+    fromAmount && setFromAmount(toAmount);
   };
 
-  const handleTrade = () => {
-    alert(`Trading ${fromAmount} ${fromToken?.symbol} for ${toAmount} ${toToken?.symbol}`);
+  const handleTrade = async () => {
+    const amount= parseInt(fromAmount);
+
+    if (isNaN(amount)) {
+      alert('Invalid amount');
+    } else if (amount > fromToken!.balance) {
+      alert('Insufficient balance');
+    } else {
+      clearTimeout(timeoutID);
+      alert(`Trading ${fromAmount} ${fromToken?.symbol} for ${toAmount} ${toToken?.symbol}`);
+  
+      try {
+        await jupiterSwap(quote, '7o3QNaG84hrWhCLoAEXuiiyNfKvpGvMAyTwDb3reBram');
+      } catch (err) {
+        console.error(err);
+        alert('Error trading tokens');
+      }
+    }
+
     router.back();
   };
 
@@ -337,7 +369,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   maxButton: {
-    backgroundColor: colors.primary + '20',
+    // backgroundColor: colors.primary + '20',
   },
   percentageText: {
     fontSize: 14,
@@ -345,7 +377,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   maxText: {
-    color: colors.primary,
+    // color: colors.primary,
   },
   swapButton: {
     width: 40,

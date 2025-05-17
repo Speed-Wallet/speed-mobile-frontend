@@ -1,13 +1,20 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as bip39 from 'bip39';
-import { Keypair } from '@solana/web3.js';
+import { Keypair, VersionedTransaction, Connection } from '@solana/web3.js';
 import { Buffer } from 'buffer';
 import CryptoJS from 'crypto-js';
+
+const CONNECTION = new Connection('https://api.devnet.solana.com');
+const JUPITER_API_URL = 'https://lite-api.jup.ag/swap/v1/';
 
 const ENCRYPTED_MNEMONIC_KEY = 'solanaEncryptedMnemonic';
 const SALT_KEY = 'solanaSalt';
 const IV_KEY = 'solanaIV';
 const PUBLIC_KEY_KEY = 'solanaPublicKey'; // Keep this as is
+
+const PLATFORM_FEE_ACCOUNT = 'add fee account';
+const PLATFORM_FEE_BPS = 20; // 0.2%
+let WALLET: SolanaWallet;
 
 interface SolanaWallet {
   mnemonic: string;
@@ -76,7 +83,7 @@ const decryptMnemonic = (encryptedMnemonic: string, pin: string, salt: string, i
 export const generateSolanaWallet = async (): Promise<SolanaWallet> => {
   const mnemonic = bip39.generateMnemonic();
   const seed = await bip39.mnemonicToSeed(mnemonic);
-  const keypair = Keypair.fromSeed(Uint8Array.from(seed.slice(0, 32)));
+  const keypair = Keypair.fromSeed(Uint8Array.from(seed.subarray(0, 32)));
   
   return {
     mnemonic,
@@ -134,7 +141,8 @@ export const unlockWalletWithPin = async (pin: string): Promise<SolanaWallet | n
         console.warn("Decrypted mnemonic is invalid. PIN might be incorrect or data corrupted.");
         return null;
       }
-      return { mnemonic, publicKey };
+      WALLET = { mnemonic, publicKey };
+      return WALLET;
     }
     return null;
   } catch (error) {
@@ -152,4 +160,83 @@ export const clearWallet = async (): Promise<void> => {
   } catch (error) {
     console.error('Failed to clear wallet from AsyncStorage', error);
   }
+};
+
+export const signAndSendTx = async (tx: VersionedTransaction): Promise<string> => {
+  if (!WALLET) {
+    throw new Error('Wallet does not exist');
+  }
+
+  const seed = await bip39.mnemonicToSeed(WALLET.mnemonic);
+  const keypair = Keypair.fromSeed(Uint8Array.from(seed.subarray(0, 32)));
+
+  tx.sign([keypair]);
+
+  try {
+    const signature = await CONNECTION.sendRawTransaction(tx.serialize(), {
+      maxRetries: 2,
+      skipPreflight: true
+    });
+  
+    const confirmation = await CONNECTION.confirmTransaction(signature, "finalized");
+  
+    if (confirmation.value.err) {
+      throw new Error(`Transaction failed: ${JSON.stringify(confirmation.value.err)}\nhttps://solscan.io/tx/${signature}/`);
+    }
+  
+    return signature;
+  } catch (err) {
+    throw new Error(`Transaction failed: ${err}/`);
+  }
+};
+
+
+export const JupiterQuote = async (
+  fromMint: string,
+  toMint: string,
+  amount: number
+): Promise<any> => {
+  const quoteQueries = [
+    `inputMint=${fromMint}`,
+    `outputMint=${toMint}`,
+    `amount=${amount}`,
+    `platformFeeBps=${PLATFORM_FEE_BPS}`,
+    'restrictIntermediateTokens=true',
+    'dynamicSlippage=true'
+  ];
+
+  return (await fetch(`${JUPITER_API_URL}quote?${quoteQueries.join('&')}`)).json();
+};
+
+export const jupiterSwap = async (
+  quoteResponse: any,
+  walletPubKey: string
+) => {
+  const swapResponse = await (
+    await fetch(`${JUPITER_API_URL}swap?dynamicSlippage=true`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        quoteResponse,
+        userPublicKey: walletPubKey,
+        feeAccount: PLATFORM_FEE_ACCOUNT,
+        
+        dynamicComputeUnitLimit: true,
+        dynamicSlippage: true,
+        prioritizationFeeLamports: {
+          priorityLevelWithMaxLamports: {
+            maxLamports: 1000000,
+            global: false,
+            priorityLevel: "veryHigh"
+          }
+        }
+      })
+    })
+  ).json();
+
+  const transactionBase64 = swapResponse.swapTransaction
+  const transaction = VersionedTransaction.deserialize(Buffer.from(transactionBase64, 'base64'));
+  console.log(transaction);
+  const sig = await signAndSendTx(transaction);
+  console.log(sig);
 };
