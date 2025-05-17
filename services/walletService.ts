@@ -1,8 +1,17 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as bip39 from 'bip39';
-import { Keypair, VersionedTransaction, Connection } from '@solana/web3.js';
+import { Keypair, PublicKey, VersionedTransaction, Connection, Transaction, SystemProgram } from '@solana/web3.js';
+import { 
+  getAccount, 
+  getAssociatedTokenAddressSync, 
+  TOKEN_PROGRAM_ID, 
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+  createAssociatedTokenAccountInstruction,
+  createSyncNativeInstruction
+} from '@solana/spl-token';
 import { Buffer } from 'buffer';
 import CryptoJS from 'crypto-js';
+import { Wallet } from 'lucide-react-native';
 
 const CONNECTION = new Connection('https://api.devnet.solana.com');
 const JUPITER_API_URL = 'https://lite-api.jup.ag/swap/v1/';
@@ -12,9 +21,9 @@ const SALT_KEY = 'solanaSalt';
 const IV_KEY = 'solanaIV';
 const PUBLIC_KEY_KEY = 'solanaPublicKey'; // Keep this as is
 
-const PLATFORM_FEE_ACCOUNT = 'add fee account';
+const PLATFORM_FEE_ACCOUNT = '7o3QNaG84hrWhCLoAEXuiiyNfKvpGvMAyTwDb3reBram';
 const PLATFORM_FEE_BPS = 20; // 0.2%
-let WALLET: SolanaWallet;
+let WALLET: Keypair;
 
 interface SolanaWallet {
   mnemonic: string;
@@ -141,8 +150,10 @@ export const unlockWalletWithPin = async (pin: string): Promise<SolanaWallet | n
         console.warn("Decrypted mnemonic is invalid. PIN might be incorrect or data corrupted.");
         return null;
       }
-      WALLET = { mnemonic, publicKey };
-      return WALLET;
+
+      const seed = await bip39.mnemonicToSeed(mnemonic);
+      WALLET = Keypair.fromSeed(Uint8Array.from(seed.subarray(0, 32)));
+      return { mnemonic, publicKey };
     }
     return null;
   } catch (error) {
@@ -162,15 +173,18 @@ export const clearWallet = async (): Promise<void> => {
   }
 };
 
-export const signAndSendTx = async (tx: VersionedTransaction): Promise<string> => {
+export const signAndSendTx = async (tx: VersionedTransaction | Transaction): Promise<string> => {
   if (!WALLET) {
     throw new Error('Wallet does not exist');
   }
 
-  const seed = await bip39.mnemonicToSeed(WALLET.mnemonic);
-  const keypair = Keypair.fromSeed(Uint8Array.from(seed.subarray(0, 32)));
+  if (tx instanceof Transaction) {
+    const { blockhash } = await CONNECTION.getLatestBlockhash();
+    tx.feePayer = WALLET.publicKey;
+    tx.recentBlockhash = blockhash;
+  }
 
-  tx.sign([keypair]);
+  tx.sign([WALLET]);
 
   try {
     const signature = await CONNECTION.sendRawTransaction(tx.serialize(), {
@@ -208,17 +222,23 @@ export const JupiterQuote = async (
   return (await fetch(`${JUPITER_API_URL}quote?${quoteQueries.join('&')}`)).json();
 };
 
-export const jupiterSwap = async (
-  quoteResponse: any,
-  walletPubKey: string
-) => {
+export const jupiterSwap = async (quoteResponse: any) => {
+  console.log(quoteResponse)
+  const {outputMint} = quoteResponse;
+
+  wrapSOL(1, WALLET)
+  // tokenAccountExists(new PublicKey('So11111111111111111111111111111111111111112'), WALLET.publicKey);
+  // if (!await tokenAccountExists(new PublicKey(outputMint), WALLET.publicKey)) {
+  //   // await createTokenAccount(outputMint);
+  // }
+
   const swapResponse = await (
     await fetch(`${JUPITER_API_URL}swap?dynamicSlippage=true`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         quoteResponse,
-        userPublicKey: walletPubKey,
+        userPublicKey: WALLET.publicKey.toBase58(),
         feeAccount: PLATFORM_FEE_ACCOUNT,
         
         dynamicComputeUnitLimit: true,
@@ -240,3 +260,49 @@ export const jupiterSwap = async (
   const sig = await signAndSendTx(transaction);
   console.log(sig);
 };
+
+async function tokenAccountExists(mint: PublicKey, wallet: PublicKey): Promise<boolean> {
+  const ata = getAssociatedTokenAddressSync(mint, WALLET.publicKey);
+
+  try {
+    const acc = await getAccount(CONNECTION, ata, undefined, TOKEN_PROGRAM_ID);
+    console.log(acc);
+  } catch (err: any) {
+    console.log(err.message)
+    console.log(err.code)
+  }
+  return true;
+}
+
+async function wrapSOL(amountInSOL: number, wallet: Keypair) {
+  const WRAPPED_SOL_MINT = new PublicKey('So11111111111111111111111111111111111111112');
+  const ata = getAssociatedTokenAddressSync(
+    WRAPPED_SOL_MINT,
+    wallet.publicKey
+  );
+  const accInfo = await CONNECTION.getAccountInfo(ata);
+  const tx = new Transaction();
+  console.log(accInfo)
+
+  if (!accInfo) {
+    const ix1 = createAssociatedTokenAccountInstruction(
+      wallet.publicKey,
+      ata,
+      wallet.publicKey,
+      WRAPPED_SOL_MINT
+    );
+
+    tx.add(ix1);
+  }
+
+  const ix2 = SystemProgram.transfer({
+    fromPubkey: wallet.publicKey,
+    toPubkey: ata,
+    lamports: amountInSOL * 1e9
+  });
+
+  const ix3 = createSyncNativeInstruction(ata, TOKEN_PROGRAM_ID);
+
+  tx.add(ix2).add(ix3);
+  CONNECTION.se
+}

@@ -27,14 +27,14 @@ export default function TradeScreen() {
   const [showFromSelector, setShowFromSelector] = useState(false);
   const [showToSelector, setShowToSelector] = useState(false);
   const [selectedPercentage, setSelectedPercentage] = useState('25'); // Add selected percentage state
-  let quote: any;
+  const [quote, setQuote] = useState<any>(null);
 
   loopQuote();
 
   async function loopQuote() {
     timeoutID !== undefined && clearTimeout(timeoutID);
 
-    const amount = parseInt(fromAmount);
+    const amount = parseFloat(fromAmount);
     if (isNaN(amount)) return;
 
     const diff = Date.now() - lastQuoteTime;
@@ -45,22 +45,28 @@ export default function TradeScreen() {
     }
 
     lastQuoteTime = Date.now();
-    quote = await JupiterQuote(
-      fromToken!.address, 
-      toToken!.address, 
-      amount * 10 ** fromToken!.decimals
-    );
 
-    if (quote.errorCode) {
-      console.error(quote);
-      setToAmount('');
-      return;
-    }
+    try {
+      setQuote(await JupiterQuote(
+        fromToken!.address, 
+        toToken!.address, 
+        amount * 10 ** fromToken!.decimals
+      ));
 
-    const outAmount = parseInt(quote.outAmount);
+      if (quote!.errorCode) {
+        console.error(quote);
+        setToAmount('');
+        return;
+      }
 
-    if (!isNaN(outAmount)) {
-      setToAmount((outAmount * 10 ** -toToken!.decimals).toFixed(toToken!.decimals).toString());
+      const outAmount = parseFloat(quote.outAmount);
+  
+      if (!isNaN(outAmount)) {
+        setToAmount((outAmount * 10 ** -toToken!.decimals).toFixed(toToken!.decimals).toString());
+      }
+    } catch (err: any) {
+      console.error(err.message);
+      alert('Network error, unable to establish connection');
     }
 
     timeoutID = setTimeout(loopQuote, QUOTE_CALL_INTERVAL);
@@ -122,7 +128,7 @@ export default function TradeScreen() {
   };
 
   const handleTrade = async () => {
-    const amount= parseInt(fromAmount);
+    const amount= parseFloat(fromAmount);
 
     if (isNaN(amount)) {
       alert('Invalid amount');
@@ -133,7 +139,7 @@ export default function TradeScreen() {
       alert(`Trading ${fromAmount} ${fromToken?.symbol} for ${toAmount} ${toToken?.symbol}`);
   
       try {
-        await jupiterSwap(quote, '7o3QNaG84hrWhCLoAEXuiiyNfKvpGvMAyTwDb3reBram');
+        await jupiterSwap(quote);
       } catch (err) {
         console.error(err);
         alert('Error trading tokens');

@@ -12,6 +12,9 @@ import ActionButton from '@/components/ActionButton';
 import UserData from '@/data/user';
 import { getAllTokenInfo } from '@/data/tokens';
 import { EnrichedTokenEntry } from '@/data/types';
+import { Buffer } from 'buffer';
+
+globalThis.Buffer = Buffer;
 
 export default function HomeScreen() {
   const router = useRouter();
