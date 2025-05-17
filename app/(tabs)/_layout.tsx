@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router';
 import { View } from 'react-native';
-import { Chrome as Home, ChartPie as PieChart, ChartBar as BarChart3, Settings } from 'lucide-react-native';
+import { Chrome as Home, ChartPie as PieChart, ChartBar as BarChart3, Settings, Gift } from 'lucide-react-native';
 import colors from '@/constants/colors';
 
 export default function TabLayout() {
@@ -47,6 +47,15 @@ export default function TabLayout() {
           title: 'Portfolio',
           tabBarIcon: ({ color, size }) => (
             <PieChart size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="rewards"
+        options={{
+          title: 'Rewards',
+          tabBarIcon: ({ color, size }) => (
+            <Gift size={size} color={color} />
           ),
         }}
       />
