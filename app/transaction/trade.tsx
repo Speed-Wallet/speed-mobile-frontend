@@ -25,6 +25,7 @@ export default function TradeScreen() {
   const [toAmount, setToAmount] = useState('');
   const [showFromSelector, setShowFromSelector] = useState(false);
   const [showToSelector, setShowToSelector] = useState(false);
+  const [selectedPercentage, setSelectedPercentage] = useState('25'); // Add selected percentage state
   let quote: any;
 
   loopQuote();
@@ -67,6 +68,13 @@ export default function TradeScreen() {
   useEffect(() => {
     loadData();
   }, [tokenAddress]);
+  
+  // Add effect to automatically apply 25% amount when fromToken is set
+  useEffect(() => {
+    if (fromToken && !fromAmount) {
+      handlePercentageSelect('25');
+    }
+  }, [fromToken]);
 
   if (Array.isArray(tokenAddress)) {
     throw new Error('tokenAddress should not be an array');
@@ -92,7 +100,9 @@ export default function TradeScreen() {
 
   const handlePercentageSelect = (percentage: string) => {
     if (!fromToken) return;
-
+    
+    setSelectedPercentage(percentage); // Set selected percentage
+    
     if (percentage === 'MAX') {
       setFromAmount(fromToken.balance.toString());
     } else {
@@ -106,6 +116,8 @@ export default function TradeScreen() {
     setFromToken(toToken);
     setToToken(temp);
     fromAmount && setFromAmount(toAmount);
+    // Reset selected percentage when tokens are swapped
+    setSelectedPercentage('25');
   };
 
   const handleTrade = async () => {
@@ -172,28 +184,53 @@ export default function TradeScreen() {
 
                 <View style={styles.percentages}>
                   <TouchableOpacity
-                    style={styles.percentageButton}
+                    style={[
+                      styles.percentageButton,
+                      selectedPercentage === '25' && styles.selectedPercentageButton
+                    ]}
                     onPress={() => handlePercentageSelect('25')}
                   >
-                    <Text style={styles.percentageText}>25%</Text>
+                    <Text style={[
+                      styles.percentageText,
+                      selectedPercentage === '25' && styles.selectedPercentageText
+                    ]}>25%</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={styles.percentageButton}
+                    style={[
+                      styles.percentageButton,
+                      selectedPercentage === '50' && styles.selectedPercentageButton
+                    ]}
                     onPress={() => handlePercentageSelect('50')}
                   >
-                    <Text style={styles.percentageText}>50%</Text>
+                    <Text style={[
+                      styles.percentageText,
+                      selectedPercentage === '50' && styles.selectedPercentageText
+                    ]}>50%</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={styles.percentageButton}
+                    style={[
+                      styles.percentageButton,
+                      selectedPercentage === '75' && styles.selectedPercentageButton
+                    ]}
                     onPress={() => handlePercentageSelect('75')}
                   >
-                    <Text style={styles.percentageText}>75%</Text>
+                    <Text style={[
+                      styles.percentageText,
+                      selectedPercentage === '75' && styles.selectedPercentageText
+                    ]}>75%</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={[styles.percentageButton, styles.maxButton]}
+                    style={[
+                      styles.percentageButton,
+                      styles.maxButton,
+                      selectedPercentage === 'MAX' && styles.selectedPercentageButton
+                    ]}
                     onPress={() => handlePercentageSelect('MAX')}
                   >
-                    <Text style={[styles.percentageText, styles.maxText]}>MAX</Text>
+                    <Text style={[
+                      styles.percentageText,
+                      selectedPercentage === 'MAX' && styles.selectedPercentageText
+                    ]}>MAX</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -368,16 +405,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 16,
   },
-  maxButton: {
-    // backgroundColor: colors.primary + '20',
+  selectedPercentageButton: {
+    backgroundColor: colors.primary,
   },
   percentageText: {
     fontSize: 14,
     fontFamily: 'Inter-Medium',
     color: colors.textSecondary,
   },
-  maxText: {
-    // color: colors.primary,
+  selectedPercentageText: {
+    color: colors.white,
+  },
+  maxButton: {
+    // backgroundColor: colors.primary + '20',
   },
   swapButton: {
     width: 40,
