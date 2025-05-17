@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, Check } from 'lucide-react-native';
+import { Check } from 'lucide-react-native';
 import colors from '@/constants/colors';
 import UserData from '@/data/user';
+import BackButton from '@/components/BackButton';
 
 export default function PersonalInfoScreen() {
   const router = useRouter();
@@ -21,9 +22,7 @@ export default function PersonalInfoScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <ArrowLeft size={24} color={colors.textPrimary} />
-        </TouchableOpacity>
+        <BackButton />
         <Text style={styles.headerTitle}>Account Info</Text>
         <TouchableOpacity 
           style={styles.editButton}
@@ -112,14 +111,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontFamily: 'Inter-SemiBold',
     color: colors.textPrimary,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.backgroundMedium,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   editButton: {
     paddingHorizontal: 16,

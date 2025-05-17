@@ -8,6 +8,7 @@ import { formatCurrency } from '@/utils/formatters';
 import { getAllTokenInfo, getTokenByAddress } from '@/data/tokens';
 import TokenSelector from '@/components/TokenSelector';
 import { EnrichedTokenEntry } from '@/data/types';
+import BackButton from '@/components/BackButton';
 
 const paymentMethods = [
   {
@@ -89,10 +90,8 @@ export default function BuyScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
-          <X size={24} color={colors.textPrimary} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Buy {selectedToken?.symbol}</Text>
+        <BackButton style={styles.closeButton} />
+        <Text style={styles.headerTitle}>Withdraw</Text>
         <View style={styles.placeholder} />
       </View>
 

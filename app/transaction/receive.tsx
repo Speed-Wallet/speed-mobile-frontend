@@ -9,6 +9,7 @@ import UserData from '@/data/user';
 import TokenSelector from '@/components/TokenSelector';
 import QRCode from '@/components/QRCode';
 import { TokenEntry } from '@/data/types';
+import BackButton from '@/components/BackButton';
 
 const { width } = Dimensions.get('window');
 const QR_SIZE = width * 0.7;
@@ -57,10 +58,8 @@ export default function ReceiveScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
-          <X size={24} color={colors.textPrimary} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Receive {selectedToken?.symbol}</Text>
+        <BackButton style={styles.closeButton} />
+        <Text style={styles.headerTitle}>Receive Crypto</Text>
         <View style={styles.placeholder} />
       </View>
 

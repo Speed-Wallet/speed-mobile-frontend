@@ -9,6 +9,7 @@ import { getAllTokenInfo, getTokenByAddress } from '@/data/tokens';
 import TokenSelector from '@/components/TokenSelector';
 import { EnrichedTokenEntry } from '@/data/types';
 import { JupiterQuote, jupiterSwap } from '@/services/walletService';
+import BackButton from '@/components/BackButton';
 
 const WAIT_ON_AMOUNT_CHANGE = 2000;
 const QUOTE_CALL_INTERVAL = 10000;
@@ -145,9 +146,7 @@ export default function TradeScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
-          <X size={20} color={colors.textPrimary} />
-        </TouchableOpacity>
+        <BackButton style={styles.closeButton} />
         <Text style={styles.headerTitle}>Trade</Text>
         <View style={styles.placeholder} />
       </View>

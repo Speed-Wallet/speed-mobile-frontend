@@ -2,6 +2,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Bluetooth, Zap } from 'lucide-react-native';
 import colors from '@/constants/colors';
+import BackButton from '@/components/BackButton';
 
 export default function ConnectHardwareScreen() {
   const router = useRouter();
@@ -9,9 +10,7 @@ export default function ConnectHardwareScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <ArrowLeft size={24} color={colors.textPrimary} />
-        </TouchableOpacity>
+        <BackButton />
         <Text style={styles.headerTitle}>Connect Wallet</Text>
         <View style={styles.placeholder} />
       </View>
@@ -65,14 +64,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontFamily: 'Inter-SemiBold',
     color: colors.textPrimary,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.backgroundMedium,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   placeholder: {
     width: 40,

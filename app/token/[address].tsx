@@ -11,6 +11,7 @@ import { getTokenChartData } from '@/data/charts';
 import TransactionItem from '@/components/TransactionItem';
 import { getTransactionHistoryForToken } from '@/data/transactions';
 import { EnrichedTokenEntry } from '@/data/types';
+import BackButton from '@/components/BackButton';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -73,9 +74,7 @@ export default function CryptoDetailScreen() {
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <ArrowLeft size={24} color={colors.textPrimary} />
-          </TouchableOpacity>
+          <BackButton />
           
           <View style={styles.titleContainer}>
             <Text style={styles.cryptoSymbol}>{token.symbol}</Text>

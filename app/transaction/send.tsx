@@ -10,6 +10,7 @@ import TokenSelector from '@/components/TokenSelector';
 import AddressInput from '@/components/AddressInput';
 import RecentContacts from '@/data/contacts';
 import { EnrichedTokenEntry } from '@/data/types';
+import BackButton from '@/components/BackButton';
 
 export default function SendScreen() {
   const { tokenAddress } = useLocalSearchParams();
@@ -69,10 +70,8 @@ export default function SendScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
-          <X size={24} color={colors.textPrimary} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Send {selectedToken?.symbol}</Text>
+        <BackButton style={styles.closeButton} />
+        <Text style={styles.headerTitle}>Send Crypto</Text>
         <View style={styles.placeholder} />
       </View>
 
