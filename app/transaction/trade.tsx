@@ -35,7 +35,7 @@ export default function TradeScreen() {
     timeoutID !== undefined && clearTimeout(timeoutID);
 
     const amount = parseFloat(fromAmount);
-    if (isNaN(amount)) return;
+    if (isNaN(amount) || amount === 0) return;
 
     const diff = Date.now() - lastQuoteTime;
 
@@ -53,7 +53,10 @@ export default function TradeScreen() {
         amount * 10 ** fromToken!.decimals
       ));
 
-      if (quote!.errorCode) {
+      if (!quote) {
+        setToAmount('');
+        return;
+      } else if (quote.errorCode) {
         console.error(quote);
         setToAmount('');
         return;

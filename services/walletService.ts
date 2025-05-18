@@ -21,6 +21,7 @@ const SALT_KEY = 'solanaSalt';
 const IV_KEY = 'solanaIV';
 const PUBLIC_KEY_KEY = 'solanaPublicKey'; // Keep this as is
 
+const WSOL_MINT = 'So11111111111111111111111111111111111111112';
 const PLATFORM_FEE_ACCOUNT = '7o3QNaG84hrWhCLoAEXuiiyNfKvpGvMAyTwDb3reBram';
 const PLATFORM_FEE_BPS = 20; // 0.2%
 let WALLET: Keypair;
@@ -182,26 +183,23 @@ export const signAndSendTx = async (tx: VersionedTransaction | Transaction): Pro
     const { blockhash } = await CONNECTION.getLatestBlockhash();
     tx.feePayer = WALLET.publicKey;
     tx.recentBlockhash = blockhash;
+    tx.sign(WALLET);
+  } else {
+    tx.sign([WALLET]);
   }
 
-  tx.sign([WALLET]);
+  const signature = await CONNECTION.sendRawTransaction(tx.serialize(), {
+    maxRetries: 2,
+    skipPreflight: true
+  });
 
-  try {
-    const signature = await CONNECTION.sendRawTransaction(tx.serialize(), {
-      maxRetries: 2,
-      skipPreflight: true
-    });
-  
-    const confirmation = await CONNECTION.confirmTransaction(signature, "finalized");
-  
-    if (confirmation.value.err) {
-      throw new Error(`Transaction failed: ${JSON.stringify(confirmation.value.err)}\nhttps://solscan.io/tx/${signature}/`);
-    }
-  
-    return signature;
-  } catch (err) {
-    throw new Error(`Transaction failed: ${err}/`);
+  const confirmation = await CONNECTION.confirmTransaction(signature, "finalized");
+
+  if (confirmation.value.err) {
+    throw new Error(`Transaction failed: ${JSON.stringify(confirmation.value.err)}\nhttps://solscan.io/tx/${signature}/`);
   }
+
+  return signature;
 };
 
 
@@ -223,14 +221,14 @@ export const JupiterQuote = async (
 };
 
 export const jupiterSwap = async (quoteResponse: any) => {
-  console.log(quoteResponse)
   const {outputMint} = quoteResponse;
-
-  wrapSOL(1, WALLET)
-  // tokenAccountExists(new PublicKey('So11111111111111111111111111111111111111112'), WALLET.publicKey);
-  // if (!await tokenAccountExists(new PublicKey(outputMint), WALLET.publicKey)) {
-  //   // await createTokenAccount(outputMint);
-  // }
+  
+  if (!await tokenAccountExists(new PublicKey(outputMint), WALLET.publicKey)) {
+    console.log(`Creating token acc for mint<${outputMint}>`);
+    await createTokenAccount(new PublicKey(outputMint), WALLET.publicKey);
+  } else {
+    console.log(`Token acc for mint<${outputMint}> exists`);
+  }
 
   const swapResponse = await (
     await fetch(`${JUPITER_API_URL}swap?dynamicSlippage=true`, {
@@ -262,20 +260,22 @@ export const jupiterSwap = async (quoteResponse: any) => {
 };
 
 async function tokenAccountExists(mint: PublicKey, wallet: PublicKey): Promise<boolean> {
-  const ata = getAssociatedTokenAddressSync(mint, WALLET.publicKey);
+  const ata = getAssociatedTokenAddressSync(mint, wallet);
+  const accInfo = await CONNECTION.getAccountInfo(ata);
+  return accInfo !== null;
+}
 
-  try {
-    const acc = await getAccount(CONNECTION, ata, undefined, TOKEN_PROGRAM_ID);
-    console.log(acc);
-  } catch (err: any) {
-    console.log(err.message)
-    console.log(err.code)
-  }
-  return true;
+async function createTokenAccount(mint: PublicKey, wallet: PublicKey): Promise<string> {
+  const ata = getAssociatedTokenAddressSync(mint, wallet);
+  const tx = new Transaction().add(
+    createAssociatedTokenAccountInstruction(wallet, ata, wallet, mint)
+  );
+
+  return signAndSendTx(tx);
 }
 
 async function wrapSOL(amountInSOL: number, wallet: Keypair) {
-  const WRAPPED_SOL_MINT = new PublicKey('So11111111111111111111111111111111111111112');
+  const WRAPPED_SOL_MINT = new PublicKey(WSOL_MINT);
   const ata = getAssociatedTokenAddressSync(
     WRAPPED_SOL_MINT,
     wallet.publicKey
@@ -304,5 +304,6 @@ async function wrapSOL(amountInSOL: number, wallet: Keypair) {
   const ix3 = createSyncNativeInstruction(ata, TOKEN_PROGRAM_ID);
 
   tx.add(ix2).add(ix3);
-  CONNECTION.se
+  const signature = await signAndSendTx(tx);
+  console.log(signature);
 }
