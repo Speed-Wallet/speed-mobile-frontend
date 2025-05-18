@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Platform } from 'react-native';
+import { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { X, ArrowDown, ArrowRightLeft } from 'lucide-react-native';
+import { ArrowDown, ArrowRightLeft } from 'lucide-react-native';
 import Animated, { FadeIn, SlideInUp } from 'react-native-reanimated';
 import colors from '@/constants/colors';
 import { formatCurrency } from '@/utils/formatters';
@@ -24,37 +24,11 @@ export default function TradeScreen() {
   const [toToken, setToToken] = useState<EnrichedTokenEntry | null>(null);
   const [tokenList, setTokenList] = useState<EnrichedTokenEntry[]>([]);
   const [fromAmount, setFromAmount] = useState('');
+  const [toAmount, setToAmount] = useState('');
   const [showFromSelector, setShowFromSelector] = useState(false);
   const [showToSelector, setShowToSelector] = useState(false);
   const [selectedPercentage, setSelectedPercentage] = useState('25'); // Add selected percentage state
-  const toAmountRef = useRef<any>(null);
-  const toAmountFiatRef = useRef<any>(null);
-  let toAmount: number | null = null;
   let quote: any;
-
-  function setToAmount(amount: number | null) {
-    toAmount = amount;
-
-    if (!toAmountRef.current || !toAmountFiatRef.current) return;
-
-    let text: string, fiat: string;
-
-    if (amount === null) {
-      text = '...';
-      fiat = '$0.00';
-    } else {
-      text = amount.toFixed(toToken!.decimals);
-      fiat = formatCurrency(amount * toToken!.price);
-    }
-
-    if (Platform.OS === 'web') {
-      toAmountRef.current.textContent = text;
-      toAmountFiatRef.current.textContent = fiat;
-    } else {
-      toAmountRef.current.setNativeProps({ text });
-      toAmountFiatRef.current.setNativeProps({text: fiat});
-    }
-  }
 
   function updateAmounts() {
     if (timeoutID !== undefined) {
@@ -67,7 +41,7 @@ export default function TradeScreen() {
       intervalID = undefined;
     }
 
-    setToAmount(null);
+    setToAmount('');
     const amount = parseFloat(fromAmount);
     if (isNaN(amount) || amount === 0) return;
 
@@ -100,7 +74,11 @@ export default function TradeScreen() {
       }
 
       const outAmount = parseFloat(quote.outAmount);
-      !isNaN(outAmount) && setToAmount(outAmount * 10 ** -toToken!.decimals);
+
+      if (!isNaN(outAmount)) {
+        const val = outAmount * 10 ** -toToken!.decimals;
+        setToAmount(val.toFixed(toToken!.decimals));
+      }
 
       if (!intervalID) {
         intervalID = setInterval(fetchAndApplyQuote, LOOP_QUOTE_INTERVAL, amount);
@@ -160,6 +138,7 @@ export default function TradeScreen() {
     const temp = fromToken;
     setFromToken(toToken);
     setToToken(temp);
+    setFromAmount(toAmount);
 
     // Reset selected percentage when tokens are swapped
     setSelectedPercentage('25');
@@ -308,13 +287,15 @@ export default function TradeScreen() {
                   <Text style={styles.tokenSymbol}>{toToken.symbol}</Text>
                 </TouchableOpacity>
 
-                <Text ref={toAmountRef} style={styles.amountText}>...</Text>
+                <Text style={styles.amountText}>{toAmount || '...'}</Text>
 
                 <Text style={styles.balanceText}>
                   Balance: {toToken.balance} {toToken.symbol}
                 </Text>
 
-                <Text ref={toAmountFiatRef} style={styles.fiatValue}>$0.00</Text>
+                <Text style={styles.fiatValue}>
+                  {toAmount ? formatCurrency(parseFloat(toAmount) * toToken!.price) : '$0.00'}
+                </Text>
               </View>
             </Animated.View>
           </>
