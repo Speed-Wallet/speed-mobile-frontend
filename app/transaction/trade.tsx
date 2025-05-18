@@ -22,8 +22,7 @@ export default function TradeScreen() {
   const [fromToken, setFromToken] = useState<EnrichedTokenEntry | null>(null);
   const [toToken, setToToken] = useState<EnrichedTokenEntry | null>(null);
   const [tokenList, setTokenList] = useState<EnrichedTokenEntry[]>([]);
-  const [fromAmount, setFromAmount] = useState('');
-  const [toAmount, setToAmount] = useState('');
+  const [amounts, setAmounts] = useState({ from: '', to: ''});
   const [showFromSelector, setShowFromSelector] = useState(false);
   const [showToSelector, setShowToSelector] = useState(false);
   const [selectedPercentage, setSelectedPercentage] = useState('25'); // Add selected percentage state
@@ -34,7 +33,7 @@ export default function TradeScreen() {
   async function loopQuote() {
     timeoutID !== undefined && clearTimeout(timeoutID);
 
-    const amount = parseFloat(fromAmount);
+    const amount = parseFloat(amounts.from);
     if (isNaN(amount) || amount === 0) return;
 
     const diff = Date.now() - lastQuoteTime;
@@ -54,18 +53,21 @@ export default function TradeScreen() {
       ));
 
       if (!quote) {
-        setToAmount('');
+        setAmounts(prev => ({...prev, to: ''}));
         return;
       } else if (quote.errorCode) {
         console.error(quote);
-        setToAmount('');
+        setAmounts(prev => ({...prev, to: ''}));
         return;
       }
 
       const outAmount = parseFloat(quote.outAmount);
   
       if (!isNaN(outAmount)) {
-        setToAmount((outAmount * 10 ** -toToken!.decimals).toFixed(toToken!.decimals));
+        setAmounts(prev => ({
+          ...prev,
+          to: (outAmount * 10 ** -toToken!.decimals).toFixed(toToken!.decimals)
+        }));
       }
     } catch (err: any) {
       console.error(err.message);
@@ -75,19 +77,13 @@ export default function TradeScreen() {
     timeoutID = setTimeout(loopQuote, QUOTE_CALL_INTERVAL);
   }
 
-  async function onInputChange(val: string) {
-    setToAmount('');
-    setFromAmount(val);
-    loopQuote();
-  }
-
   useEffect(() => {
     loadData();
   }, [tokenAddress]);
   
   // Add effect to automatically apply 25% amount when fromToken is set
   useEffect(() => {
-    if (fromToken && !fromAmount) {
+    if (fromToken && !amounts.from) {
       handlePercentageSelect('25');
     }
   }, [fromToken]);
@@ -118,30 +114,30 @@ export default function TradeScreen() {
     if (!fromToken) return;
     
     setSelectedPercentage(percentage); // Set selected percentage
-    setToAmount('');
+    let from;
     
     if (percentage === 'MAX') {
-      setFromAmount(fromToken.balance.toString());
+      from = fromToken.balance.toString();
     } else {
-      const percent = parseInt(percentage) / 100;
-      setFromAmount((fromToken.balance * percent).toFixed(fromToken.decimals));
+      const percent = parseInt(percentage);
+      from = (fromToken.balance * percent / 100).toFixed(fromToken.decimals);
     }
 
-    loopQuote();
+    setAmounts({ from, to: '' });
   };
 
   const handleSwapTokens = () => {
     const temp = fromToken;
     setFromToken(toToken);
     setToToken(temp);
-    fromAmount && setFromAmount(toAmount);
+    !isNaN(parseFloat(amounts.to)) && setAmounts(prev => ({from: prev.to, to: ''}));
 
     // Reset selected percentage when tokens are swapped
     setSelectedPercentage('25');
   };
 
   const handleTrade = async () => {
-    const amount= parseFloat(fromAmount);
+    const amount= parseFloat(amounts.from);
 
     if (isNaN(amount)) {
       alert('Invalid amount');
@@ -149,7 +145,7 @@ export default function TradeScreen() {
       alert('Insufficient balance');
     } else {
       clearTimeout(timeoutID);
-      alert(`Trading ${fromAmount} ${fromToken?.symbol} for ${toAmount} ${toToken?.symbol}`);
+      alert(`Trading ${amounts.from} ${fromToken?.symbol} for ${amounts.to} ${toToken?.symbol}`);
   
       try {
         await jupiterSwap(quote);
@@ -188,9 +184,8 @@ export default function TradeScreen() {
                   placeholder="0.00"
                   placeholderTextColor={colors.textSecondary}
                   keyboardType="decimal-pad"
-                  value={fromAmount}
-                  onChangeText={onInputChange}
-                  // onChangeText={setFromAmount}
+                  value={amounts.from}
+                  onChangeText={val => setAmounts(prev => ({...prev, from: val}))}
                 />
 
                 <Text style={styles.balanceText}>
@@ -198,7 +193,7 @@ export default function TradeScreen() {
                 </Text>
 
                 <Text style={styles.fiatValue}>
-                  {fromAmount ? formatCurrency(parseFloat(fromAmount) * fromToken.price) : '$0.00'}
+                  {amounts.from ? formatCurrency(parseFloat(amounts.from) * fromToken.price) : '$0.00'}
                 </Text>
 
                 <View style={styles.percentages}>
@@ -274,7 +269,7 @@ export default function TradeScreen() {
                 </TouchableOpacity>
 
                 <Text style={styles.amountText}>
-                  {toAmount || '...'}
+                  {amounts.to || '...'}
                 </Text>
 
                 <Text style={styles.balanceText}>
@@ -282,7 +277,7 @@ export default function TradeScreen() {
                 </Text>
 
                 <Text style={styles.fiatValue}>
-                  {toAmount ? formatCurrency(parseFloat(toAmount) * toToken.price) : '$0.00'}
+                  {amounts.to ? formatCurrency(parseFloat(amounts.to) * toToken.price) : '$0.00'}
                 </Text>
               </View>
             </Animated.View>
@@ -298,9 +293,9 @@ export default function TradeScreen() {
         <TouchableOpacity
           style={[
             styles.tradeButton,
-            (!fromAmount || parseFloat(fromAmount) <= 0) && styles.tradeButtonDisabled
+            (!amounts.from || parseFloat(amounts.from) <= 0) && styles.tradeButtonDisabled
           ]}
-          disabled={!fromAmount || parseFloat(fromAmount) <= 0}
+          disabled={!amounts.from || parseFloat(amounts.from) <= 0}
           onPress={handleTrade}
         >
           <ArrowRightLeft size={20} color={colors.white} />
