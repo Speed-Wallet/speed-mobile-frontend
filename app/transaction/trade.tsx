@@ -14,7 +14,8 @@ import BackButton from '@/components/BackButton';
 const WAIT_ON_AMOUNT_CHANGE = 2000;
 const LOOP_QUOTE_INTERVAL = 10000;
 let lastQuoteTime = 0;
-let timeoutID: NodeJS.Timeout;
+let timeoutID: NodeJS.Timeout | undefined;
+let intervalID: NodeJS.Timeout | undefined;
 
 export default function TradeScreen() {
   const { tokenAddress } = useLocalSearchParams();
@@ -55,8 +56,16 @@ export default function TradeScreen() {
     }
   }
 
-  function fetchQuote() {
-    timeoutID !== undefined && clearTimeout(timeoutID);
+  function updateAmounts() {
+    if (timeoutID !== undefined) {
+      clearTimeout(timeoutID);
+      timeoutID = undefined;
+    }
+
+    if (intervalID !== undefined) {
+      clearInterval(intervalID);
+      intervalID = undefined;
+    }
 
     setToAmount(null);
     const amount = parseFloat(fromAmount);
@@ -65,40 +74,44 @@ export default function TradeScreen() {
     const diff = Date.now() - lastQuoteTime;
 
     if (diff < WAIT_ON_AMOUNT_CHANGE) {
-      timeoutID = setTimeout(fetchQuote, WAIT_ON_AMOUNT_CHANGE - diff);
+      timeoutID = setTimeout(updateAmounts, WAIT_ON_AMOUNT_CHANGE - diff);
       return;
     }
 
     lastQuoteTime = Date.now();
+    fetchAndApplyQuote(amount);
+  }
 
-    (async () => {
-      try {
-        quote = await JupiterQuote(
-          fromToken!.address, 
-          toToken!.address, 
-          amount * 10 ** fromToken!.decimals
-        );
-  
-        if (!quote) {
-          return;
-        } else if (quote.errorCode) {
-          console.error(quote);
-          return;
-        }
-  
-        const outAmount = parseFloat(quote.outAmount);
-    
-        if (!isNaN(outAmount)) {
-          setToAmount(outAmount * 10 ** -toToken!.decimals);
-        }
-      } catch (err: any) {
-        console.error(err.message);
-        alert('Network error, unable to establish connection');
+  async function fetchAndApplyQuote(amount: number) {
+    try {
+      quote = await JupiterQuote(
+        fromToken!.address, 
+        toToken!.address, 
+        amount * 10 ** fromToken!.decimals
+      );
+
+      if (!quote) {
+        quote = undefined;
+        return;
+      } else if (quote.errorCode) {
+        console.error(quote);
+        quote = undefined;
+        return;
       }
-    })();
+
+      const outAmount = parseFloat(quote.outAmount);
+      !isNaN(outAmount) && setToAmount(outAmount * 10 ** -toToken!.decimals);
+
+      if (!intervalID) {
+        intervalID = setInterval(fetchAndApplyQuote, LOOP_QUOTE_INTERVAL, amount);
+      }
+    } catch (err: any) {
+      console.error(err.message);
+      alert('Network error, unable to establish connection');
+    }
   }
   
-  useEffect(fetchQuote, [fromAmount]);
+  useEffect(updateAmounts, [fromAmount]);
   useEffect(() => loadData(), [tokenAddress]);
   
   // Add effect to automatically apply 25% amount when fromToken is set
@@ -159,9 +172,20 @@ export default function TradeScreen() {
       alert('Invalid amount');
     } else if (amount > fromToken!.balance) {
       alert('Insufficient balance');
+    } else if (!quote) {
+      alert('Quote is not available');
     } else {
-      clearTimeout(timeoutID);
       alert(`Trading ${fromAmount} ${fromToken?.symbol} for ${toAmount} ${toToken?.symbol}`);
+
+      if (timeoutID !== undefined) {
+        clearTimeout(timeoutID);
+        timeoutID = undefined;
+      }
+
+      if (intervalID !== undefined) {
+        clearInterval(intervalID);
+        intervalID = undefined;
+      }
   
       try {
         await jupiterSwap(quote);
