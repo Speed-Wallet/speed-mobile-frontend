@@ -65,7 +65,7 @@ export default function TradeScreen() {
       const outAmount = parseFloat(quote.outAmount);
   
       if (!isNaN(outAmount)) {
-        setToAmount((outAmount * 10 ** -toToken!.decimals).toFixed(toToken!.decimals).toString());
+        setToAmount((outAmount * 10 ** -toToken!.decimals).toFixed(toToken!.decimals));
       }
     } catch (err: any) {
       console.error(err.message);
@@ -73,6 +73,12 @@ export default function TradeScreen() {
     }
 
     timeoutID = setTimeout(loopQuote, QUOTE_CALL_INTERVAL);
+  }
+
+  async function onInputChange(val: string) {
+    setToAmount('');
+    setFromAmount(val);
+    loopQuote();
   }
 
   useEffect(() => {
@@ -112,13 +118,16 @@ export default function TradeScreen() {
     if (!fromToken) return;
     
     setSelectedPercentage(percentage); // Set selected percentage
+    setToAmount('');
     
     if (percentage === 'MAX') {
       setFromAmount(fromToken.balance.toString());
     } else {
       const percent = parseInt(percentage) / 100;
-      setFromAmount((fromToken.balance * percent).toFixed(6));
+      setFromAmount((fromToken.balance * percent).toFixed(fromToken.decimals));
     }
+
+    loopQuote();
   };
 
   const handleSwapTokens = () => {
@@ -126,6 +135,7 @@ export default function TradeScreen() {
     setFromToken(toToken);
     setToToken(temp);
     fromAmount && setFromAmount(toAmount);
+
     // Reset selected percentage when tokens are swapped
     setSelectedPercentage('25');
   };
@@ -179,7 +189,8 @@ export default function TradeScreen() {
                   placeholderTextColor={colors.textSecondary}
                   keyboardType="decimal-pad"
                   value={fromAmount}
-                  onChangeText={setFromAmount}
+                  onChangeText={onInputChange}
+                  // onChangeText={setFromAmount}
                 />
 
                 <Text style={styles.balanceText}>
@@ -263,7 +274,7 @@ export default function TradeScreen() {
                 </TouchableOpacity>
 
                 <Text style={styles.amountText}>
-                  {toAmount || '0.00'}
+                  {toAmount || '...'}
                 </Text>
 
                 <Text style={styles.balanceText}>
