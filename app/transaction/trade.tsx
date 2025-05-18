@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
+import { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { X, ArrowDown, ArrowRightLeft } from 'lucide-react-native';
 import Animated, { FadeIn, SlideInUp } from 'react-native-reanimated';
@@ -12,7 +12,7 @@ import { JupiterQuote, jupiterSwap } from '@/services/walletService';
 import BackButton from '@/components/BackButton';
 
 const WAIT_ON_AMOUNT_CHANGE = 2000;
-const QUOTE_CALL_INTERVAL = 10000;
+const LOOP_QUOTE_INTERVAL = 10000;
 let lastQuoteTime = 0;
 let timeoutID: NodeJS.Timeout;
 
@@ -22,68 +22,88 @@ export default function TradeScreen() {
   const [fromToken, setFromToken] = useState<EnrichedTokenEntry | null>(null);
   const [toToken, setToToken] = useState<EnrichedTokenEntry | null>(null);
   const [tokenList, setTokenList] = useState<EnrichedTokenEntry[]>([]);
-  const [amounts, setAmounts] = useState({ from: '', to: ''});
+  const [fromAmount, setFromAmount] = useState('');
   const [showFromSelector, setShowFromSelector] = useState(false);
   const [showToSelector, setShowToSelector] = useState(false);
   const [selectedPercentage, setSelectedPercentage] = useState('25'); // Add selected percentage state
-  const [quote, setQuote] = useState<any>(null);
+  const toAmountRef = useRef<any>(null);
+  const toAmountFiatRef = useRef<any>(null);
+  let toAmount: number | null = null;
+  let quote: any;
 
-  loopQuote();
+  function setToAmount(amount: number | null) {
+    toAmount = amount;
 
-  async function loopQuote() {
+    if (!toAmountRef.current || !toAmountFiatRef.current) return;
+
+    let text: string, fiat: string;
+
+    if (amount === null) {
+      text = '...';
+      fiat = '$0.00';
+    } else {
+      text = amount.toFixed(toToken!.decimals);
+      fiat = formatCurrency(amount * toToken!.price);
+    }
+
+    if (Platform.OS === 'web') {
+      toAmountRef.current.textContent = text;
+      toAmountFiatRef.current.textContent = fiat;
+    } else {
+      toAmountRef.current.setNativeProps({ text });
+      toAmountFiatRef.current.setNativeProps({text: fiat});
+    }
+  }
+
+  function fetchQuote() {
     timeoutID !== undefined && clearTimeout(timeoutID);
 
-    const amount = parseFloat(amounts.from);
+    setToAmount(null);
+    const amount = parseFloat(fromAmount);
     if (isNaN(amount) || amount === 0) return;
 
     const diff = Date.now() - lastQuoteTime;
 
     if (diff < WAIT_ON_AMOUNT_CHANGE) {
-      timeoutID = setTimeout(loopQuote, diff);
+      timeoutID = setTimeout(fetchQuote, WAIT_ON_AMOUNT_CHANGE - diff);
       return;
     }
 
     lastQuoteTime = Date.now();
 
-    try {
-      setQuote(await JupiterQuote(
-        fromToken!.address, 
-        toToken!.address, 
-        amount * 10 ** fromToken!.decimals
-      ));
-
-      if (!quote) {
-        setAmounts(prev => ({...prev, to: ''}));
-        return;
-      } else if (quote.errorCode) {
-        console.error(quote);
-        setAmounts(prev => ({...prev, to: ''}));
-        return;
-      }
-
-      const outAmount = parseFloat(quote.outAmount);
+    (async () => {
+      try {
+        quote = await JupiterQuote(
+          fromToken!.address, 
+          toToken!.address, 
+          amount * 10 ** fromToken!.decimals
+        );
   
-      if (!isNaN(outAmount)) {
-        setAmounts(prev => ({
-          ...prev,
-          to: (outAmount * 10 ** -toToken!.decimals).toFixed(toToken!.decimals)
-        }));
+        if (!quote) {
+          return;
+        } else if (quote.errorCode) {
+          console.error(quote);
+          return;
+        }
+  
+        const outAmount = parseFloat(quote.outAmount);
+    
+        if (!isNaN(outAmount)) {
+          setToAmount(outAmount * 10 ** -toToken!.decimals);
+        }
+      } catch (err: any) {
+        console.error(err.message);
+        alert('Network error, unable to establish connection');
       }
-    } catch (err: any) {
-      console.error(err.message);
-      alert('Network error, unable to establish connection');
-    }
-
-    timeoutID = setTimeout(loopQuote, QUOTE_CALL_INTERVAL);
+    })();
   }
-
-  useEffect(() => {
-    loadData();
-  }, [tokenAddress]);
+  
+  useEffect(fetchQuote, [fromAmount]);
+  useEffect(() => loadData(), [tokenAddress]);
   
   // Add effect to automatically apply 25% amount when fromToken is set
   useEffect(() => {
-    if (fromToken && !amounts.from) {
+    if (fromToken && !fromAmount) {
       handlePercentageSelect('25');
     }
   }, [fromToken]);
@@ -92,12 +112,12 @@ export default function TradeScreen() {
     throw new Error('tokenAddress should not be an array');
   }
 
-  const loadData = async () => {
-    const tokens = await getAllTokenInfo();
+  const loadData = () => {
+    const tokens = getAllTokenInfo();
     setTokenList(tokens);
 
     if (tokenAddress) {
-      const token = await getTokenByAddress(tokenAddress);
+      const token = getTokenByAddress(tokenAddress);
       setFromToken(token);
 
       const defaultTo = tokens.find(t => t.address !== token.address);
@@ -114,30 +134,26 @@ export default function TradeScreen() {
     if (!fromToken) return;
     
     setSelectedPercentage(percentage); // Set selected percentage
-    let from;
     
     if (percentage === 'MAX') {
-      from = fromToken.balance.toString();
+      setFromAmount(fromToken.balance.toString());
     } else {
       const percent = parseInt(percentage);
-      from = (fromToken.balance * percent / 100).toFixed(fromToken.decimals);
+      setFromAmount((fromToken.balance * percent / 100).toFixed(fromToken.decimals));
     }
-
-    setAmounts({ from, to: '' });
   };
 
   const handleSwapTokens = () => {
     const temp = fromToken;
     setFromToken(toToken);
     setToToken(temp);
-    !isNaN(parseFloat(amounts.to)) && setAmounts(prev => ({from: prev.to, to: ''}));
 
     // Reset selected percentage when tokens are swapped
     setSelectedPercentage('25');
   };
 
   const handleTrade = async () => {
-    const amount= parseFloat(amounts.from);
+    const amount= parseFloat(fromAmount);
 
     if (isNaN(amount)) {
       alert('Invalid amount');
@@ -145,7 +161,7 @@ export default function TradeScreen() {
       alert('Insufficient balance');
     } else {
       clearTimeout(timeoutID);
-      alert(`Trading ${amounts.from} ${fromToken?.symbol} for ${amounts.to} ${toToken?.symbol}`);
+      alert(`Trading ${fromAmount} ${fromToken?.symbol} for ${toAmount} ${toToken?.symbol}`);
   
       try {
         await jupiterSwap(quote);
@@ -184,8 +200,8 @@ export default function TradeScreen() {
                   placeholder="0.00"
                   placeholderTextColor={colors.textSecondary}
                   keyboardType="decimal-pad"
-                  value={amounts.from}
-                  onChangeText={val => setAmounts(prev => ({...prev, from: val}))}
+                  value={fromAmount}
+                  onChangeText={setFromAmount}
                 />
 
                 <Text style={styles.balanceText}>
@@ -193,7 +209,7 @@ export default function TradeScreen() {
                 </Text>
 
                 <Text style={styles.fiatValue}>
-                  {amounts.from ? formatCurrency(parseFloat(amounts.from) * fromToken.price) : '$0.00'}
+                  {fromAmount ? formatCurrency(parseFloat(fromAmount) * fromToken.price) : '$0.00'}
                 </Text>
 
                 <View style={styles.percentages}>
@@ -268,17 +284,13 @@ export default function TradeScreen() {
                   <Text style={styles.tokenSymbol}>{toToken.symbol}</Text>
                 </TouchableOpacity>
 
-                <Text style={styles.amountText}>
-                  {amounts.to || '...'}
-                </Text>
+                <Text ref={toAmountRef} style={styles.amountText}>...</Text>
 
                 <Text style={styles.balanceText}>
                   Balance: {toToken.balance} {toToken.symbol}
                 </Text>
 
-                <Text style={styles.fiatValue}>
-                  {amounts.to ? formatCurrency(parseFloat(amounts.to) * toToken.price) : '$0.00'}
-                </Text>
+                <Text ref={toAmountFiatRef} style={styles.fiatValue}>$0.00</Text>
               </View>
             </Animated.View>
           </>
@@ -293,9 +305,9 @@ export default function TradeScreen() {
         <TouchableOpacity
           style={[
             styles.tradeButton,
-            (!amounts.from || parseFloat(amounts.from) <= 0) && styles.tradeButtonDisabled
+            (!fromAmount || parseFloat(fromAmount) <= 0) && styles.tradeButtonDisabled
           ]}
-          disabled={!amounts.from || parseFloat(amounts.from) <= 0}
+          disabled={!fromAmount || parseFloat(fromAmount) <= 0}
           onPress={handleTrade}
         >
           <ArrowRightLeft size={20} color={colors.white} />
