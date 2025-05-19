@@ -16,8 +16,7 @@ export default function TabLayout() {
           backgroundColor: colors.backgroundDark,
           borderTopWidth: 0,
           elevation: 0,
-          height: 60,
-          paddingBottom: 8,
+          height: 70, // Increased height for more space
           paddingTop: 8, // Added for consistent vertical padding
         },
         tabBarActiveTintColor: colors.primary,
@@ -26,7 +25,7 @@ export default function TabLayout() {
         tabBarLabelStyle: {
           fontWeight: '500',
           fontSize: 12,
-          // Adjust margin for beside-icon layout if needed, e.g., marginLeft: isTablet ? 0 : 0
+          marginBottom: 4, // Added margin to lift text away from bottom edge
         },
         tabBarLabelPosition: isTablet ? 'beside-icon' : 'below-icon', // Conditional layout
       }}
