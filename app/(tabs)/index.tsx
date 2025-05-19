@@ -1,23 +1,21 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
-import Animated, { FadeInDown } from 'react-native-reanimated';
-import { ArrowDown, ArrowUp, Copy, ArrowRightLeft } from 'lucide-react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Copy } from 'lucide-react-native';
 import {setStringAsync} from 'expo-clipboard';
 import colors from '@/constants/colors';
 import { formatCurrency } from '@/utils/formatters';
 import Avatar from '@/components/Avatar';
 import TokenList from '@/components/TokenList';
-import ActionButton from '@/components/ActionButton';
-import UserData from '@/data/user'; // This will still be used for name, username, totalBalance for now
+import UserData from '@/data/user';
 import { getAllTokenInfo } from '@/data/tokens';
 import { EnrichedTokenEntry } from '@/data/types';
-import AsyncStorage from '@react-native-async-storage/async-storage'; // Import AsyncStorage
-import { PUBLIC_KEY_KEY } from '@/services/walletService'; // Import the key
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { PUBLIC_KEY_KEY } from '@/services/walletService';
+import BalanceCard from '@/components/BalanceCard';
 
-import { Buffer } from 'buffer'; // Import Buffer
-global.Buffer = Buffer; // Polyfill global Buffer
+import { Buffer } from 'buffer';
+global.Buffer = Buffer;
 
 
 export default function HomeScreen() {
@@ -30,7 +28,6 @@ export default function HomeScreen() {
   }, []);
 
   const loadData = async () => {
-    // In a real app, this would fetch data from an API
     const data = await getAllTokenInfo();
     setTokenData(data);
   };
@@ -50,8 +47,9 @@ export default function HomeScreen() {
     // }
   };
 
-  const navigateToTransaction = (type: string) => {
-    router.push(`/transaction/${type}`);
+  const handleBalanceCardAction = (actionType: string) => {
+    // actionType will be "send", "receive", "buy", "trade"
+    router.push(`/transaction/${actionType}`);
   };
 
   return (
@@ -75,40 +73,11 @@ export default function HomeScreen() {
         </View>
 
         {/* Balance card */}
-        <Animated.View entering={FadeInDown.delay(100).duration(600)}>
-          <LinearGradient
-            colors={[colors.cardGradientStart, colors.cardGradientEnd]}
-            style={styles.balanceCard}
-          >
-            <Text style={styles.balanceLabel}>TOTAL BALANCE</Text>
-            <View style={styles.balanceContainer}>
-              <Text style={styles.balanceAmount}>{formatCurrency(userData.totalBalance)}</Text>
-            </View>
-            
-            <View style={styles.actionsContainer}>
-              <ActionButton 
-                icon={<ArrowUp size={20} color={colors.white} />}
-                label="SEND"
-                onPress={() => navigateToTransaction('send')}
-              />
-              <ActionButton 
-                icon={<ArrowDown size={20} color={colors.white} />}
-                label="RECEIVE"
-                onPress={() => navigateToTransaction('receive')}
-              />
-              <ActionButton 
-                icon={<ArrowUp size={20} color={colors.white} style={{ transform: [{ rotate: '45deg' }] }} />}
-                label="WITHDRAW"
-                onPress={() => navigateToTransaction('withdraw')}
-              />
-              <ActionButton 
-                icon={<ArrowRightLeft size={20} color={colors.white} />}
-                label="TRADE"
-                onPress={() => navigateToTransaction('trade')}
-              />
-            </View>
-          </LinearGradient>
-        </Animated.View>
+        <BalanceCard 
+          balance={userData.totalBalance} 
+          onActionPress={handleBalanceCardAction} 
+          // currencySymbol="$" // Optional: if you want to override default
+        />
 
         {/* Crypto assets list */}
         <View style={styles.assetsSection}>
@@ -162,33 +131,8 @@ const styles = StyleSheet.create({
   copyButton: {
     padding: 8,
   },
-  balanceCard: {
-    borderRadius: 16,
-    padding: 24,
-    marginBottom: 24,
-  },
-  balanceLabel: {
-    color: colors.textSecondary,
-    fontSize: 14,
-    marginBottom: 8,
-    fontFamily: 'Inter-Medium',
-    textAlign: 'center',
-  },
-  balanceContainer: {
-    alignItems: 'center',
-    marginBottom: 32,
-  },
-  balanceAmount: {
-    color: colors.white,
-    fontSize: 32,
-    fontFamily: 'Inter-Bold',
-  },
-  actionsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
   assetsSection: {
-    marginBottom: 24,
+    // marginBottom: 24, // This might be handled by BalanceCard's marginBottom now
   },
   sectionHeader: {
     flexDirection: 'row',
