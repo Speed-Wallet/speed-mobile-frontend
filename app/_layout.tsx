@@ -83,7 +83,7 @@ export default function RootLayout() {
 
   return (
     <>
-      <Stack screenOptions={{ headerShown: false }}>
+      <Stack screenOptions={{ headerShown: false, contentStyle: { paddingTop: 20, backgroundColor: colors.backgroundDark } }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="+not-found" options={{ title: 'Oops!' }} />
         <Stack.Screen name="transaction/send" options={{ presentation: 'modal' }} />

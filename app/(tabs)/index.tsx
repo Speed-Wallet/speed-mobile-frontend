@@ -100,6 +100,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.backgroundDark,
+    // paddingTop: 10,
   },
   scrollContent: {
     padding: 16,
@@ -109,7 +110,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 24,
-    marginTop: 40,
+    // marginTop: 40,
   },
   userSection: {
     flexDirection: 'row',
