@@ -187,7 +187,7 @@ export default function SettingsScreen() {
             icon={<Shield size={20} color={colors.textPrimary} />}
             title="Security"
             subtitle="2FA, Password, Recovery"
-            onPress={() => {}}
+            onPress={() => router.push('/settings/security')}
           />
           
           <SettingItem

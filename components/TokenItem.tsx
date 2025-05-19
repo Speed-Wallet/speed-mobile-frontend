@@ -28,10 +28,10 @@ const TokenItem = ({ token, onPress, showBalance = true }: TokenItemProps) => {
                 source={{ uri: token.logoURI }} 
                 style={styles.logoMainImage} 
               />
-              <Image 
+              {/* <Image 
                 source={{ uri: token.logoURI }} 
                 style={styles.logoOverlayImage} 
-              />
+              /> */}
             </>
           )}
         </View>

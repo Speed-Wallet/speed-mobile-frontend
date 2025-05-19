@@ -2,16 +2,12 @@ import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Copy } from 'lucide-react-native';
-import {setStringAsync} from 'expo-clipboard';
 import colors from '@/constants/colors';
-import { formatCurrency } from '@/utils/formatters';
 import Avatar from '@/components/Avatar';
 import TokenList from '@/components/TokenList';
 import UserData from '@/data/user';
 import { getAllTokenInfo } from '@/data/tokens';
 import { EnrichedTokenEntry } from '@/data/types';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { PUBLIC_KEY_KEY } from '@/services/walletService';
 import BalanceCard from '@/components/BalanceCard';
 
 import { Buffer } from 'buffer';
