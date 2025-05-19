@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react'; // Added useEffect
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { unlockWalletWithPin } from '@/services/walletService';
 import colors from '@/constants/colors';
 import { useRouter } from 'expo-router'; // Optional: if you want to navigate after unlock
+import { APP_ENV } from '@env'; // Import environment variable
 
 interface EnterPinScreenProps {
   onWalletUnlocked: () => void; // Callback to notify parent that wallet is unlocked
@@ -14,6 +15,14 @@ const EnterPinScreen: React.FC<EnterPinScreenProps> = ({ onWalletUnlocked, publi
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter(); // Optional
+
+  useEffect(() => {
+    if (APP_ENV === 'development') {
+      onWalletUnlocked();
+      // Optionally navigate to a specific screen, e.g., home
+      // router.replace('/(tabs)'); 
+    }
+  }, [onWalletUnlocked, router]);
 
   const handleUnlockWallet = async () => {
     if (pin.length < 4) {
