@@ -46,7 +46,7 @@ const styles = StyleSheet.create({
     // backgroundColor: 'rgba(255, 255, 255, 0.15)', // Default background removed, will be set by prop
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8, // Increased margin for better spacing from label
+    marginBottom: 12, // Increased margin for better spacing from label
   },
   label: {
     color: colors.white,

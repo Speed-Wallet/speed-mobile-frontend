@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import ActionButton from '@/components/ActionButton'; // Assuming this is your shared ActionButton
-import { ArrowUp, ArrowDown, ShoppingCart, RotateCw } from 'lucide-react-native';
+import { ArrowUp, ArrowDown, ShoppingCart, ArrowRightLeft } from 'lucide-react-native';
 import colors from '@/constants/colors'; // Assuming you might want to use consistent colors
 
 interface BalanceCardProps {
@@ -25,7 +25,7 @@ const BalanceCard: React.FC<BalanceCardProps> = ({
     { label: "SEND", icon: ArrowUp, bgColor: "#5B68F6", actionId: "send" },
     { label: "RECEIVE", icon: ArrowDown, bgColor: "#28C165", actionId: "receive" },
     { label: "BUY", icon: ShoppingCart, bgColor: "#F5A623", actionId: "buy" },
-    { label: "TRADE", icon: RotateCw, bgColor: "#A259FF", actionId: "trade" },
+    { label: "TRADE", icon: ArrowRightLeft, bgColor: "#A259FF", actionId: "trade" },
   ];
 
   return (

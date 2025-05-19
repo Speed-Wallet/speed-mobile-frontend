@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowDown, ArrowRightLeft } from 'lucide-react-native';
+import { ArrowUpDown, ArrowRightLeft } from 'lucide-react-native';
 import Animated, { FadeIn, SlideInUp } from 'react-native-reanimated';
 import colors from '@/constants/colors';
 import { formatCurrency } from '@/utils/formatters';
@@ -274,7 +274,7 @@ export default function TradeScreen() {
               style={styles.swapButton}
               onPress={handleSwapTokens}
             >
-              <ArrowDown size={20} color={colors.primary} />
+              <ArrowUpDown size={20} color={colors.primary} />
             </TouchableOpacity>
 
             {/* To Token */}
