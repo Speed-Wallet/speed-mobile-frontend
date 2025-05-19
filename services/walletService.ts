@@ -5,15 +5,14 @@ import {
   getAccount, 
   getAssociatedTokenAddressSync, 
   TOKEN_PROGRAM_ID, 
-  ASSOCIATED_TOKEN_PROGRAM_ID,
   createAssociatedTokenAccountInstruction,
-  createSyncNativeInstruction
+  createSyncNativeInstruction,
+  getOrCreateAssociatedTokenAccount
 } from '@solana/spl-token';
 import { Buffer } from 'buffer';
 import CryptoJS from 'crypto-js';
-import { Wallet } from 'lucide-react-native';
 
-const CONNECTION = new Connection('https://api.devnet.solana.com');
+const CONNECTION = new Connection('https://solana-rpc.publicnode.com');
 const JUPITER_API_URL = 'https://lite-api.jup.ag/swap/v1/';
 
 const ENCRYPTED_MNEMONIC_KEY = 'solanaEncryptedMnemonic';
@@ -221,14 +220,32 @@ export const JupiterQuote = async (
 };
 
 export const jupiterSwap = async (quoteResponse: any) => {
-  const {outputMint} = quoteResponse;
-  
-  if (!await tokenAccountExists(new PublicKey(outputMint), WALLET.publicKey)) {
-    console.log(`Creating token acc for mint<${outputMint}>`);
-    await createTokenAccount(new PublicKey(outputMint), WALLET.publicKey);
-  } else {
-    console.log(`Token acc for mint<${outputMint}> exists`);
+  const {inputMint, outputMint} = quoteResponse;
+  const inAmount = parseInt(quoteResponse.inAmount);
+
+  if (isNaN(inAmount)) {
+    throw new Error(`Invalid inAmount`);
   }
+
+  const promises = [];
+
+  if (inputMint === WSOL_MINT) {
+    promises.push(
+      wrapSOL(inAmount, WALLET)
+      .then(sig => console.log(`Wrapped ${inAmount / 1e9} SOLs.\n${sig}`))
+    );
+  }
+
+  promises.push(
+    getOrCreateAssociatedTokenAccount(
+      CONNECTION,
+      WALLET,
+      new PublicKey(outputMint),
+      WALLET.publicKey
+    )
+  );
+
+  await Promise.all(promises);
 
   const swapResponse = await (
     await fetch(`${JUPITER_API_URL}swap?dynamicSlippage=true`, {
@@ -259,51 +276,28 @@ export const jupiterSwap = async (quoteResponse: any) => {
   console.log(sig);
 };
 
-async function tokenAccountExists(mint: PublicKey, wallet: PublicKey): Promise<boolean> {
-  const ata = getAssociatedTokenAddressSync(mint, wallet);
-  const accInfo = await CONNECTION.getAccountInfo(ata);
-  return accInfo !== null;
-}
-
-async function createTokenAccount(mint: PublicKey, wallet: PublicKey): Promise<string> {
-  const ata = getAssociatedTokenAddressSync(mint, wallet);
-  const tx = new Transaction().add(
-    createAssociatedTokenAccountInstruction(wallet, ata, wallet, mint)
-  );
-
-  return signAndSendTx(tx);
-}
-
-async function wrapSOL(amountInSOL: number, wallet: Keypair) {
+async function wrapSOL(amountInLamports: number, wallet: Keypair): Promise<string> {
   const WRAPPED_SOL_MINT = new PublicKey(WSOL_MINT);
-  const ata = getAssociatedTokenAddressSync(
-    WRAPPED_SOL_MINT,
-    wallet.publicKey
-  );
+  const ata = getAssociatedTokenAddressSync(WRAPPED_SOL_MINT, wallet.publicKey);
   const accInfo = await CONNECTION.getAccountInfo(ata);
   const tx = new Transaction();
-  console.log(accInfo)
 
+  // If WSOL token account doesn't exist, create it.
   if (!accInfo) {
-    const ix1 = createAssociatedTokenAccountInstruction(
+    tx.add(createAssociatedTokenAccountInstruction(
       wallet.publicKey,
       ata,
       wallet.publicKey,
       WRAPPED_SOL_MINT
-    );
-
-    tx.add(ix1);
+    ));
   }
 
-  const ix2 = SystemProgram.transfer({
+  tx.add(SystemProgram.transfer({
     fromPubkey: wallet.publicKey,
     toPubkey: ata,
-    lamports: amountInSOL * 1e9
-  });
+    lamports: amountInLamports
+  }));
 
-  const ix3 = createSyncNativeInstruction(ata, TOKEN_PROGRAM_ID);
-
-  tx.add(ix2).add(ix3);
-  const signature = await signAndSendTx(tx);
-  console.log(signature);
+  tx.add(createSyncNativeInstruction(ata, TOKEN_PROGRAM_ID));
+  return signAndSendTx(tx);
 }
