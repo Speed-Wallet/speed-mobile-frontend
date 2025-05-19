@@ -4,22 +4,26 @@ import { useRouter } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { ArrowDown, ArrowUp, Copy, ArrowRightLeft } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import {setStringAsync} from 'expo-clipboard';
 import colors from '@/constants/colors';
 import { formatCurrency } from '@/utils/formatters';
 import Avatar from '@/components/Avatar';
 import TokenList from '@/components/TokenList';
 import ActionButton from '@/components/ActionButton';
-import UserData from '@/data/user';
+import UserData from '@/data/user'; // This will still be used for name, username, totalBalance for now
 import { getAllTokenInfo } from '@/data/tokens';
 import { EnrichedTokenEntry } from '@/data/types';
-import { Buffer } from 'buffer';
+import AsyncStorage from '@react-native-async-storage/async-storage'; // Import AsyncStorage
+import { PUBLIC_KEY_KEY } from '@/services/walletService'; // Import the key
 
-globalThis.Buffer = Buffer;
+import { Buffer } from 'buffer'; // Import Buffer
+global.Buffer = Buffer; // Polyfill global Buffer
+
 
 export default function HomeScreen() {
   const router = useRouter();
   const [userData, setUserData] = useState(UserData);
-  const [cryptoData, setTokenData] = useState<EnrichedTokenEntry[]>([]);
+  const [tokenData, setTokenData] = useState<EnrichedTokenEntry[]>([]);
 
   useEffect(() => {
     loadData();
@@ -31,9 +35,19 @@ export default function HomeScreen() {
     setTokenData(data);
   };
 
-  const handleCopyBalance = () => {
-    // In a real app, this would copy the balance to clipboard
-    alert('Balance copied to clipboard!');
+  const handleCopyAddress = async () => {
+    // try {
+    //   const addressToCopy = await AsyncStorage.getItem(PUBLIC_KEY_KEY);
+    //   if (addressToCopy) {
+    //     await setStringAsync(addressToCopy);
+    //     alert('Address copied to clipboard!');
+    //   } else {
+    //     alert('Wallet address not found. Please set up or import a wallet.');
+    //   }
+    // } catch (error) {
+    //   console.error("Failed to get address for copying:", error);
+    //   alert('Could not retrieve address.');
+    // }
   };
 
   const navigateToTransaction = (type: string) => {
@@ -55,7 +69,7 @@ export default function HomeScreen() {
               <Text style={styles.usernameText}>@{userData.username}</Text>
             </View>
           </View>
-          <TouchableOpacity onPress={handleCopyBalance} style={styles.copyButton}>
+          <TouchableOpacity onPress={handleCopyAddress} style={styles.copyButton}>
             <Copy size={20} color={colors.textPrimary} />
           </TouchableOpacity>
         </View>
@@ -104,7 +118,7 @@ export default function HomeScreen() {
           </View>
           
           <TokenList 
-            data={cryptoData} 
+            data={tokenData} 
             onSelectToken={(token: EnrichedTokenEntry) => router.push(`/token/${token.address}`)}
           />
         </View>

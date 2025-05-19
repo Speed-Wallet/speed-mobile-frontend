@@ -19,7 +19,7 @@ const JUPITER_API_URL = 'https://lite-api.jup.ag/swap/v1/';
 const ENCRYPTED_MNEMONIC_KEY = 'solanaEncryptedMnemonic';
 const SALT_KEY = 'solanaSalt';
 const IV_KEY = 'solanaIV';
-const PUBLIC_KEY_KEY = 'solanaPublicKey'; // Keep this as is
+export const PUBLIC_KEY_KEY = 'solanaPublicKey'; // Keep this as is
 
 const WSOL_MINT = 'So11111111111111111111111111111111111111112';
 const PLATFORM_FEE_ACCOUNT = '7o3QNaG84hrWhCLoAEXuiiyNfKvpGvMAyTwDb3reBram';

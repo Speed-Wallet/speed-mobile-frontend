@@ -16,6 +16,7 @@ const LOOP_QUOTE_INTERVAL = 10000;
 let lastQuoteTime = 0;
 let timeoutID: NodeJS.Timeout | undefined;
 let intervalID: NodeJS.Timeout | undefined;
+let quote: any;
 
 export default function TradeScreen() {
   const { tokenAddress } = useLocalSearchParams();
@@ -28,7 +29,6 @@ export default function TradeScreen() {
   const [showFromSelector, setShowFromSelector] = useState(false);
   const [showToSelector, setShowToSelector] = useState(false);
   const [selectedPercentage, setSelectedPercentage] = useState('25'); // Add selected percentage state
-  let quote: any;
 
   function updateAmounts() {
     if (timeoutID !== undefined) {

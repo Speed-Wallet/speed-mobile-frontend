@@ -16,7 +16,7 @@ import BackButton from '@/components/BackButton';
 const screenWidth = Dimensions.get('window').width;
 
 
-export default function CryptoDetailScreen() {
+export default function TokenDetailScreen() {
   const { address } = useLocalSearchParams();
   const router = useRouter();
   const [token, setToken] = useState<EnrichedTokenEntry | null>(null);
