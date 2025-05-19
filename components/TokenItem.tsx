@@ -4,6 +4,10 @@ import { ArrowUpRight, ArrowDownRight } from 'lucide-react-native';
 import colors from '@/constants/colors';
 import { formatCurrency, formatPercentage } from '@/utils/formatters';
 
+// Define constants for image sizes
+const TOKEN_SYMBOL_CONTAINER_SIZE = 40; // Increased from 24
+const OVERLAY_LOGO_SIZE = 16; // Increased from 
+
 type TokenItemProps = {
   token: any;
   onPress: () => void;
@@ -16,28 +20,43 @@ const TokenItem = ({ token, onPress, showBalance = true }: TokenItemProps) => {
   return (
     <TouchableOpacity style={styles.container} onPress={onPress}>
       <View style={styles.leftSection}>
-        <Image source={{ uri: token.iconUrl }} style={styles.icon} />
-        <View style={styles.symbolContainer}>
-          <Text style={styles.symbol}>{token.symbol}</Text>
+        <View style={styles.logoContainer}>
+          {/* Replace Text with new Image components */}
+          {token.logoURI && (
+            <>
+              <Image 
+                source={{ uri: token.logoURI }} 
+                style={styles.logoMainImage} 
+              />
+              <Image 
+                source={{ uri: token.logoURI }} 
+                style={styles.logoOverlayImage} 
+              />
+            </>
+          )}
         </View>
       </View>
       
       <View style={styles.infoContainer}>
         <Text style={styles.name}>{token.name}</Text>
         <Text style={styles.network}>{token.network}</Text>
+        {showBalance && (
+          // Only the token quantity and symbol remain here
+          // Apply styles.price instead of styles.balance and add marginTop
+          <Text style={[styles.price, { marginTop: 4 }]}>
+            {token.balance.toFixed(4)} {token.symbol}
+          </Text>
+        )}
       </View>
       
       <View style={styles.priceContainer}>
         {showBalance ? (
-          <>
-            <Text style={styles.balance}>
-              {token.balance.toFixed(4)} {token.symbol}
-            </Text>
-            <Text style={styles.price}>
-              {formatCurrency(token.balance * token.price)}
-            </Text>
-          </>
+          // Display dollar value of the balance here
+          <Text style={styles.price}>
+            {formatCurrency(token.balance * token.price)}
+          </Text>
         ) : (
+          // Display token's general price and change percentage
           <>
             <Text style={styles.price}>
               {formatCurrency(token.price)}
@@ -85,20 +104,33 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     marginRight: 8,
   },
-  symbolContainer: {
-    backgroundColor: colors.backgroundLight,
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+  logoContainer: { // Modified style
+    width: TOKEN_SYMBOL_CONTAINER_SIZE,
+    height: TOKEN_SYMBOL_CONTAINER_SIZE,
+    position: 'relative',
+    // Removed backgroundColor, borderRadius, paddingHorizontal, paddingVertical from original
   },
-  symbol: {
-    fontSize: 10,
-    fontFamily: 'Inter-SemiBold',
-    color: colors.textPrimary,
-    textTransform: 'uppercase',
+  // styles.symbol (text style) is no longer used by the logoContainer's direct children
+  
+  // New styles for the images within logoContainer
+  logoMainImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: TOKEN_SYMBOL_CONTAINER_SIZE / 2,
+  },
+  logoOverlayImage: {
+    position: 'absolute',
+    width: OVERLAY_LOGO_SIZE,
+    height: OVERLAY_LOGO_SIZE,
+    borderRadius: OVERLAY_LOGO_SIZE / 2,
+    bottom: -1, // Slight offset for better visual
+    right: -1,  // Slight offset for better visual
+    borderWidth: 1,
+    borderColor: colors.backgroundMedium, // Border to help distinguish from main image
   },
   infoContainer: {
     flex: 1,
+    marginRight: 8, // Add some margin to prevent text from touching priceContainer when balance is not shown
   },
   name: {
     fontSize: 16,
@@ -112,7 +144,11 @@ const styles = StyleSheet.create({
   },
   priceContainer: {
     alignItems: 'flex-end',
+    justifyContent: 'center', // Align items vertically in case only price/change is shown
   },
+  // The balance style is no longer used for the token amount, 
+  // but might be used elsewhere or can be removed if not.
+  // For now, I will leave it in case it's used by other components or for future use.
   balance: {
     fontSize: 14,
     fontFamily: 'Inter-Medium',

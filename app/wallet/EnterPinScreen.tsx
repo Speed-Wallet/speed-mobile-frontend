@@ -48,7 +48,7 @@ const EnterPinScreen: React.FC<EnterPinScreenProps> = ({ onWalletUnlocked, publi
       <Text style={styles.description}>
         Enter your PIN to unlock your Solana wallet.
       </Text>
-      {publicKey && <Text style={styles.publicKeyTextHint}>Wallet: {publicKey}   ...{publicKey.substring(publicKey.length-4)}</Text>}
+      {publicKey && <Text style={styles.publicKeyTextHint}>Wallet: {publicKey.substring(0,6)}...{publicKey.substring(publicKey.length-4)}</Text>}
       
       <TextInput
         style={[styles.pinInput, error ? styles.inputError : null]}

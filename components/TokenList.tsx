@@ -29,7 +29,6 @@ const TokenList = ({ data, onSelectToken }: TokenListProps) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 16,
   },
 });
 
