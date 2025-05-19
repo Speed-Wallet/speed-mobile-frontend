@@ -91,7 +91,7 @@ export default function BuyScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <BackButton style={styles.closeButton} />
-        <Text style={styles.headerTitle}>Withdraw</Text>
+        <Text style={styles.headerTitle}>Buy</Text>
         <View style={styles.placeholder} />
       </View>
 

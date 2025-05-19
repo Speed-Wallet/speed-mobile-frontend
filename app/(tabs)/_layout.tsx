@@ -27,6 +27,9 @@ export default function TabLayout() {
           fontSize: 12,
           marginBottom: 4, // Added margin to lift text away from bottom edge
         },
+        tabBarIconStyle: {
+          ...(isTablet ? {} : { marginBottom: 4 }), // Increased from 2 to 4 for a larger gap
+        },
         tabBarLabelPosition: isTablet ? 'beside-icon' : 'below-icon', // Conditional layout
       }}
     >

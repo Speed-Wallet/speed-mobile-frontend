@@ -4,19 +4,19 @@ import { X } from 'lucide-react-native';
 import Animated, { FadeIn, SlideInUp } from 'react-native-reanimated';
 import colors from '@/constants/colors';
 
-type WithdrawalMethodSelectorProps = {
+type BuyMethodSelectorProps = {
   methods: any[];
   selectedMethod: any;
   onSelectMethod: (method: any) => void;
   onClose: () => void;
 };
 
-const WithdrawalMethodSelector = ({ 
+const BuyMethodSelector = ({ 
   methods, 
   selectedMethod, 
   onSelectMethod, 
   onClose 
-}: WithdrawalMethodSelectorProps) => {
+}: BuyMethodSelectorProps) => {
   return (
     <Modal
       transparent={true}
@@ -30,7 +30,7 @@ const WithdrawalMethodSelector = ({
           style={styles.modalContainer}
         >
           <View style={styles.header}>
-            <Text style={styles.title}>Select Withdrawal Method</Text>
+            <Text style={styles.title}>Select Buy Method</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <X size={24} color={colors.textPrimary} />
             </TouchableOpacity>
@@ -135,4 +135,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default WithdrawalMethodSelector;
+export default BuyMethodSelector;
