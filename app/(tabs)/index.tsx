@@ -78,7 +78,7 @@ export default function HomeScreen() {
         {/* Crypto assets list */}
         <View style={styles.assetsSection}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>CURRENCY</Text>
+            <Text style={styles.sectionTitle}>TOKEN</Text>
             <Text style={styles.sectionTitle}>YOUR BALANCE</Text>
           </View>
           

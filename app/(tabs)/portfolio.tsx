@@ -13,6 +13,7 @@ import { getAllTokenInfo } from '@/data/tokens';
 import { getTransactionHistory } from '@/data/transactions';
 import UserData from '@/data/user';
 import { EnrichedTokenEntry } from '@/data/types';
+import GreyCard from '@/components/GreyCard';
 
 export default function PortfolioScreen() {
   const router = useRouter();
@@ -59,7 +60,10 @@ export default function PortfolioScreen() {
         
         {/* Portfolio Summary */}
         <Animated.View entering={FadeIn.duration(800)} style={styles.summaryCard}>
-          <GradientCard>
+          <GradientCard
+            contentPaddingHorizontal={24} // Explicitly set for summary card
+            contentPaddingVertical={24}   // Explicitly set for summary card
+          >
             <View style={styles.balanceRow}>
               <Text style={styles.balanceLabel}>Total Balance</Text>
             </View>
@@ -111,7 +115,7 @@ export default function PortfolioScreen() {
             <PieChart 
               widthAndHeight={180} // Adjusted size to better fit typical card layouts
               series={pieChartSeries} // Pass only values to series prop
-              cover={0.45} // Retained from your existing code for donut chart style
+              cover={0.55} // Retained from your existing code for donut chart style
               // Note: react-native-pie-chart does not use the 'label' part of pieChartSeries directly.
               // This data is structured for potential use with other libraries or custom label rendering.
             />
@@ -129,24 +133,31 @@ export default function PortfolioScreen() {
                 ? (token.balance * token.price / totalValueForDistribution) * 100 
                 : 0;
               return (
-                <TouchableOpacity 
-                  key={token.address}
-                  style={styles.distributionItem}
-                  onPress={() => router.push(`/token/${token.address}`)}
+                <GreyCard
+                  key={token.address} 
+                  style={styles.assetCard}
+                  contentPaddingHorizontal={16} // Custom horizontal padding for asset items
+                  contentPaddingVertical={12}   // Custom vertical padding for asset items
+                  borderRadius={12} // Less rounded corners for these specific cards
                 >
-                  <View style={styles.distributionLeft}>
-                    <View 
-                      style={[
-                        styles.colorIndicator, 
-                        { backgroundColor: token.color }
-                      ]} 
-                    />
-                    <Text style={styles.tokenName}>{token.name}</Text>
-                  </View>
-                  <Text style={styles.distributionPercentage}>
-                    {percentage.toFixed(1)}%
-                  </Text>
-                </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={styles.distributionItem}
+                    onPress={() => router.push(`/token/${token.address}`)}
+                  >
+                    <View style={styles.distributionLeft}>
+                      <View 
+                        style={[
+                          styles.colorIndicator, 
+                          { backgroundColor: token.color }
+                        ]} 
+                      />
+                      <Text style={styles.tokenName}>{token.name}</Text>
+                    </View>
+                    <Text style={styles.distributionPercentage}>
+                      {percentage.toFixed(1)}%
+                    </Text>
+                  </TouchableOpacity>
+                </GreyCard>
               );
             })}
           </View>
@@ -268,15 +279,18 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   distributionList: {
-    marginBottom: 8,
+    // marginBottom: 8, // No longer needed if assetCard has marginBottom
+  },
+  assetCard: { // Style for the GradientCard wrapping each asset item
+    marginBottom: 8, // Space between asset cards
   },
   distributionItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.backgroundLight,
+    // paddingVertical: 12, // Padding now handled by GradientCard's contentPadding
+    // borderBottomWidth: 1, // Handled by card separation
+    // borderBottomColor: colors.backgroundLight, // Handled by card separation
   },
   distributionLeft: {
     flexDirection: 'row',

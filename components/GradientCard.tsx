@@ -8,6 +8,8 @@ interface GradientCardProps {
   gradientColors?: string[];
   gradientStart?: { x: number; y: number };
   gradientEnd?: { x: number; y: number };
+  contentPaddingHorizontal?: number; // New prop for horizontal content padding
+  contentPaddingVertical?: number; // New prop for vertical content padding
 }
 
 const GradientCard: React.FC<GradientCardProps> = ({
@@ -16,12 +18,20 @@ const GradientCard: React.FC<GradientCardProps> = ({
   gradientColors = ['#1A1A1A', '#121212'],
   gradientStart = { x: 0, y: 0 },
   gradientEnd = { x: 0, y: 1 },
+  contentPaddingHorizontal = 24, // Default horizontal content padding
+  contentPaddingVertical = 24, // Default vertical content padding
 }) => {
   return (
     <View style={[styles.cardContainer, style]}>
       <LinearGradient
         colors={gradientColors}
-        style={styles.gradientBackground}
+        style={[
+          styles.gradientBackground, 
+          { 
+            paddingHorizontal: contentPaddingHorizontal,
+            paddingVertical: contentPaddingVertical 
+          }
+        ]} // Apply contentPadding here
         start={gradientStart}
         end={gradientEnd}
       >
@@ -45,7 +55,6 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   gradientBackground: {
-    padding: 24, // Default padding, can be overridden by children's layout
     width: '100%',
   },
 });

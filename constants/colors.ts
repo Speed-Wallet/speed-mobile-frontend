@@ -1,7 +1,7 @@
 export default {
   // Background colors
   backgroundDark: '#121212',
-  backgroundMedium: '#1E1E1E',
+  backgroundMedium: '#2A2A2A99',
   backgroundLight: '#2C2C2C',
   
   // Text colors
