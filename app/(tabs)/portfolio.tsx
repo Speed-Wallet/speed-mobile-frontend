@@ -5,7 +5,9 @@ import { ChartPie as PieChartIcon, ArrowUpRight, ArrowDownRight } from 'lucide-r
 import Animated, { FadeIn } from 'react-native-reanimated';
 import colors from '@/constants/colors';
 import { formatCurrency, formatPercentage } from '@/utils/formatters';
-import PieChart from '@/components/PieChart';
+import PieChart from 'react-native-pie-chart'
+import GradientCard from '@/components/GradientCard'; // Import GradientCard
+
 import TransactionItem from '@/components/TransactionItem';
 import { getAllTokenInfo } from '@/data/tokens';
 import { getTransactionHistory } from '@/data/transactions';
@@ -37,6 +39,16 @@ export default function PortfolioScreen() {
 
   const timeframes = ['1D', '1W', '1M', '3M', '1Y', 'ALL'];
 
+  // Calculate total value for asset distribution percentages based on current tokenData
+  const totalValueForDistribution = tokenData.reduce((sum, token) => sum + token.balance * token.price, 0);
+
+  // Prepare data for the PieChart, now including labels
+  const pieChartSeries = tokenData.map(token => ({
+    value: token.balance * token.price,
+    color: token.color || colors.primary, // Fallback color if token.color is undefined
+    // label: { text: token.symbol || 'N/A' }, // Add label with token symbol
+  })).filter(item => item.value > 0); // Ensure no zero-value slices
+
   return (
     <View style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -47,25 +59,29 @@ export default function PortfolioScreen() {
         
         {/* Portfolio Summary */}
         <Animated.View entering={FadeIn.duration(800)} style={styles.summaryCard}>
-          <View style={styles.balanceRow}>
-            <Text style={styles.balanceLabel}>Total Balance</Text>
-            <Text style={styles.balanceValue}>{formatCurrency(UserData.totalBalance)}</Text>
-          </View>
-          
-          <View style={styles.changeRow}>
-            <Text 
-              style={[
-                styles.changeValue, 
-                { color: portfolioChange >= 0 ? colors.success : colors.error }
-              ]}
-            >
-              {portfolioChange >= 0 ? '+' : ''}{formatPercentage(portfolioChange)}
-              {portfolioChange >= 0 ? 
-                <ArrowUpRight size={16} color={colors.success} /> : 
-                <ArrowDownRight size={16} color={colors.error} />
-              }
-            </Text>
+          <GradientCard>
+            <View style={styles.balanceRow}>
+              <Text style={styles.balanceLabel}>Total Balance</Text>
+            </View>
             
+            {/* New row for balance amount and portfolio change */}
+            <View style={styles.balanceDetailRow}> 
+              <Text style={styles.balanceValue}>{formatCurrency(UserData.totalBalance)}</Text>
+              <Text 
+                style={[
+                  styles.changeValue, 
+                  { color: portfolioChange >= 0 ? colors.success : colors.error }
+                ]}
+              >
+                {portfolioChange >= 0 ? '+' : ''}{formatPercentage(portfolioChange)}
+                {portfolioChange >= 0 ? 
+                  <ArrowUpRight size={16} color={colors.success} /> : 
+                  <ArrowDownRight size={16} color={colors.error} />
+                }
+              </Text>
+            </View>
+            
+            {/* Timeframe selector on its own row */}
             <View style={styles.timeframeSelector}>
               {timeframes.map((tf) => (
                 <TouchableOpacity 
@@ -87,20 +103,31 @@ export default function PortfolioScreen() {
                 </TouchableOpacity>
               ))}
             </View>
-          </View>
-          
-          {/* Portfolio Distribution Chart */}
-          <View style={styles.chartContainer}>
-            <PieChart data={tokenData} />
-          </View>
+          </GradientCard>
         </Animated.View>
+
+        {pieChartSeries.length > 0 && (
+          <View style={styles.chartContainer}>
+            <PieChart 
+              widthAndHeight={180} // Adjusted size to better fit typical card layouts
+              series={pieChartSeries} // Pass only values to series prop
+              cover={0.45} // Retained from your existing code for donut chart style
+              // Note: react-native-pie-chart does not use the 'label' part of pieChartSeries directly.
+              // This data is structured for potential use with other libraries or custom label rendering.
+            />
+          </View>
+        )}
         
         {/* Asset Distribution */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Asset Distribution</Text>
           <View style={styles.distributionList}>
             {tokenData.map((token) => {
-              const percentage = (token.balance * token.price / UserData.totalBalance) * 100;
+              // Use totalValueForDistribution for percentage calculation
+              // Ensure totalValueForDistribution is not zero to avoid division by zero
+              const percentage = totalValueForDistribution > 0 
+                ? (token.balance * token.price / totalValueForDistribution) * 100 
+                : 0;
               return (
                 <TouchableOpacity 
                   key={token.address}
@@ -166,11 +193,12 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   summaryCard: {
-    backgroundColor: colors.backgroundMedium,
-    borderRadius: 16,
-    padding: 16,
+    // backgroundColor: colors.backgroundMedium, // Handled by GradientCard
+    // borderRadius: 16, // Handled by GradientCard
+    // padding: 16, // Handled by GradientCard's internal padding (default 24)
     margin: 16,
     marginTop: 8,
+    // GradientCard handles its own width, maxWidth, and alignSelf
   },
   balanceRow: {
     marginBottom: 8,
@@ -179,17 +207,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textSecondary,
     fontFamily: 'Inter-Medium',
+    textAlign: 'center', // Center the label
   },
   balanceValue: {
     fontSize: 32,
     color: colors.textPrimary,
     fontFamily: 'Inter-Bold',
+    marginRight: 8, // Add space between balance and change percentage
   },
-  changeRow: {
+  balanceDetailRow: { // Renamed/repurposed from changeRow
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center', // Center the balance and change
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 16, // Reduced from 24 to decrease gap
   },
   changeValue: {
     fontSize: 16,
@@ -199,11 +229,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: colors.backgroundLight,
     borderRadius: 16,
-    padding: 4,
+    padding: 6,
+    // paddingVertical: 4,
+    // paddingHorizontal: 4,
+    width: '100%', // Make the selector span the full width
+    justifyContent: 'space-between', // Distribute buttons within the selector
+    // marginTop: 16, // Add margin if not using marginBottom on balanceDetailRow
   },
   timeframeOption: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     borderRadius: 12,
   },
   activeTimeframe: {
@@ -218,9 +253,10 @@ const styles = StyleSheet.create({
     color: colors.white,
   },
   chartContainer: {
-    height: 200,
+    height: 200, // Keep height to ensure space
     alignItems: 'center',
     justifyContent: 'center',
+    marginVertical: 2, // Reduced from 16 to decrease gaps
   },
   section: {
     padding: 16,

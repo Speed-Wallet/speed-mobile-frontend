@@ -79,7 +79,7 @@ export default function HomeScreen() {
         <View style={styles.assetsSection}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>CURRENCY</Text>
-            <Text style={styles.sectionTitle}>YOUR TOTAL ASSETS</Text>
+            <Text style={styles.sectionTitle}>YOUR BALANCE</Text>
           </View>
           
           <TokenList 
