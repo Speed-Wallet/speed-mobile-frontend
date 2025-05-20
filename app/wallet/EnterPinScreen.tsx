@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ActivityInd
 import { unlockWalletWithPin } from '@/services/walletService';
 import colors from '@/constants/colors';
 import { useRouter } from 'expo-router'; // Optional: if you want to navigate after unlock
-import { APP_ENV } from '@env'; // Import environment variable
+
 
 interface EnterPinScreenProps {
   onWalletUnlocked: () => void; // Callback to notify parent that wallet is unlocked
@@ -17,7 +17,7 @@ const EnterPinScreen: React.FC<EnterPinScreenProps> = ({ onWalletUnlocked, publi
   const router = useRouter(); // Optional
 
   useEffect(() => {
-    if (APP_ENV === 'development') {
+    if (process.env.EXPO_PUBLIC_APP_ENV === 'development') {
       onWalletUnlocked();
       // Optionally navigate to a specific screen, e.g., home
       // router.replace('/(tabs)'); 
