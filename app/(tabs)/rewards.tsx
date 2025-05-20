@@ -24,7 +24,7 @@ const TIERS = {
   },
   GOLD: { 
     name: 'Gold', 
-    color: '#FFD700', 
+    color: '#A17917', // Adjusted for an even more opaque/subdued gold appearance
     points: 5000,
     gradient: ['#FFC107', '#FFA000'],
     perks: ['VIP Trading', 'Exclusive Events']

@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   activeSortOptionText: {
-    color: colors.primary,
+    color: colors.primaryLight,
   },
   listContent: {
     paddingHorizontal: 16,
