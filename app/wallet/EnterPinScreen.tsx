@@ -17,12 +17,38 @@ const EnterPinScreen: React.FC<EnterPinScreenProps> = ({ onWalletUnlocked, publi
   const router = useRouter(); // Optional
 
   useEffect(() => {
-    if (process.env.EXPO_PUBLIC_APP_ENV === 'development') {
-      onWalletUnlocked();
-      // Optionally navigate to a specific screen, e.g., home
-      // router.replace('/(tabs)'); 
-    }
-  }, [onWalletUnlocked, router]);
+    const autoUnlockDev = async () => {
+      if (process.env.EXPO_PUBLIC_APP_ENV === 'development') {
+        const devPin = process.env.EXPO_PUBLIC_DEV_PIN;
+        if (devPin) {
+          console.log(`Development mode: Attempting auto-unlock with EXPO_PUBLIC_DEV_PIN ${devPin}`);
+          setIsLoading(true); // Show loading indicator during auto-unlock attempt
+          try {
+            const wallet = await unlockWalletWithPin(devPin);
+            if (wallet) {
+              console.log('Development mode: Auto-unlock successful.');
+              onWalletUnlocked();
+              // Optionally navigate to a specific screen, e.g., home
+              // router.replace('/(tabs)'); 
+            } else {
+              console.warn('Development mode: Auto-unlock failed. EXPO_PUBLIC_DEV_PIN might be incorrect or wallet not set up for it.');
+              // You might want to set an error or allow manual PIN entry
+              setError("Dev auto-unlock failed. Please enter PIN manually.");
+            }
+          } catch (err) {
+            console.error("Development mode: Auto-unlock error:", err);
+            setError("Error during dev auto-unlock.");
+          } finally {
+            setIsLoading(false);
+          }
+        } else {
+          console.log('Development mode: EXPO_PUBLIC_DEV_PIN not set. Manual PIN entry required.');
+        }
+      }
+    };
+
+    autoUnlockDev();
+  }, [onWalletUnlocked, router]); // Keep dependencies, though router might not be strictly needed if not navigating from here
 
   const handleUnlockWallet = async () => {
     if (pin.length < 4) {
