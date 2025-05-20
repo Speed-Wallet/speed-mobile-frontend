@@ -2,10 +2,12 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import Animated, { FadeInRight } from 'react-native-reanimated';
 import TokenItem from './TokenItem';
+import { EnrichedTokenEntry } from '@/data/types';
+
 
 type TokenListProps = {
-  data: any[];
-  onSelectToken: (token: any) => void;
+  data: EnrichedTokenEntry[];
+  onSelectToken: (token: EnrichedTokenEntry) => void;
 };
 
 const TokenList = ({ data, onSelectToken }: TokenListProps) => {
@@ -13,7 +15,7 @@ const TokenList = ({ data, onSelectToken }: TokenListProps) => {
     <View style={styles.container}>
       {data.map((token, index) => (
         <Animated.View 
-          key={token.id}
+          key={token.address}
           entering={FadeInRight.delay(100 + (index * 100)).duration(400)}
         >
           <TokenItem
