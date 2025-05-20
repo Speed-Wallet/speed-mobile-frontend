@@ -1,9 +1,9 @@
 import React from 'react';
 import { StyleSheet, Text, View, Platform } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import ActionButton from '@/components/ActionButton'; // Assuming this is your shared ActionButton
+import ActionButton from '@/components/ActionButton'; 
 import { ArrowUp, ArrowDown, ShoppingCart, ArrowRightLeft } from 'lucide-react-native';
-import colors from '@/constants/colors'; // Assuming you might want to use consistent colors
+import colors from '@/constants/colors'; 
+import GradientCard from './GradientCard'; // Import the new GradientCard
 
 interface BalanceCardProps {
   balance: number;
@@ -29,63 +29,35 @@ const BalanceCard: React.FC<BalanceCardProps> = ({
   ];
 
   return (
-    <View style={styles.cardContainer}>
-      <LinearGradient
-        colors={['#1A1A1A', '#121212']} // Darker gradient as per new style
-        style={styles.gradientBackground}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0, y: 1 }}
-      >
-        <View style={styles.upperContent}>
-          <Text style={styles.balanceLabel}>TOTAL BALANCE</Text>
-          <Text style={styles.balanceAmount}>
-            {currencySymbol}{formattedBalance}
-          </Text>
-        </View>
+    <GradientCard style={styles.balanceCardSpecificContainer}>
+      <View style={styles.upperContent}>
+        <Text style={styles.balanceLabel}>TOTAL BALANCE</Text>
+        <Text style={styles.balanceAmount}>
+          {currencySymbol}{formattedBalance}
+        </Text>
+      </View>
 
-        <View style={styles.actionButtonsContainer}>
-          {actions.map(action => (
-            <ActionButton 
-              key={action.label}
-              icon={<action.icon color="#FFF" size={20} />}
-              label={action.label}
-              onPress={() => onActionPress(action.actionId)}
-              // Assuming your ActionButton can take a style prop for backgroundColor
-              // or has a specific prop like `backgroundColor`
-              // For this example, I'll assume it can take a style override or a direct prop.
-              // If your ActionButton is simple, you might need to wrap it or modify it
-              // to accept a background color. For now, let's pass it as a prop.
-              backgroundColor={action.bgColor} 
-              // Alternatively, if ActionButton accepts a style prop for its container:
-              // containerStyle={{ backgroundColor: action.bgColor }}
-            />
-          ))}
-        </View>
-      </LinearGradient>
-    </View>
+      <View style={styles.actionButtonsContainer}>
+        {actions.map(action => (
+          <ActionButton 
+            key={action.label}
+            icon={<action.icon color="#FFF" size={20} />}
+            label={action.label}
+            onPress={() => onActionPress(action.actionId)}
+            backgroundColor={action.bgColor} 
+          />
+        ))}
+      </View>
+    </GradientCard>
   );
 };
 
 const styles = StyleSheet.create({
-  cardContainer: {
-    borderRadius: 16,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: Platform.OS === 'ios' ? 0.3 : 0.5, // Adjusted for better visibility on Android
-    shadowRadius: 12,
-    elevation: 8,
-    width: '100%',
-    maxWidth: 400, // Ensure it doesn't get too wide on tablets
-    alignSelf: 'center',
-    marginBottom: 24, // Added margin for spacing from content below
-  },
-  gradientBackground: {
-    padding: 24,
-    width: '100%',
+  balanceCardSpecificContainer: { // Style for the GradientCard instance if needed
+    marginBottom: 24, 
   },
   upperContent: {
-    marginBottom: 24, // Reduced from 32 to decrease gap
+    marginBottom: 24, 
   },
   balanceLabel: {
     fontSize: 14,

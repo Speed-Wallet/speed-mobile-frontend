@@ -19,7 +19,7 @@ export default function TabLayout() {
           height: 70, // Increased height for more space
           paddingTop: 8, // Added for consistent vertical padding
         },
-        tabBarActiveTintColor: colors.primary,
+        tabBarActiveTintColor: '#4682B4', // Steel Blue
         tabBarInactiveTintColor: colors.textSecondary,
         headerShown: false,
         tabBarLabelStyle: {
