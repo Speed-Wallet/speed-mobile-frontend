@@ -30,6 +30,17 @@ interface SolanaWallet {
   publicKey: string;
 }
 
+export const isWalletUnlocked = (): boolean => {
+  return !!WALLET;
+};
+
+export const getWalletPublicKey = (): string | null => {
+  if (WALLET) {
+    return WALLET.publicKey.toBase58();
+  }
+  return null;
+};
+
 interface StoredWalletInfo {
   isEncrypted: boolean;
   publicKey: string | null;
