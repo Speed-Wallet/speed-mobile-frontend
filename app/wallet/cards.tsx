@@ -1,152 +1,241 @@
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { useRouter } from 'expo-router';
-import { X, Plus } from 'lucide-react-native';
+import { X, Plus, Zap, Shield, Globe } from 'lucide-react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import colors from '@/constants/colors';
-import BackButton from '@/components/BackButton';
+import UserData from '@/data/user';
 
 const virtualCards = [
-	{
-		id: 'metamask',
-		name: 'MetaMask',
-		color: '#E2FFF4',
-		logo: 'https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg',
-		connected: true,
-	},
-	{
-		id: 'phantom',
-		name: 'Phantom',
-		color: '#E5E0FF',
-		logo: 'https://phantom.app/img/phantom-logo.svg',
-		connected: true,
-	},
+  {
+    id: 'speed-pay',
+    name: 'SPEED PAY',
+    cardNumber: '**** **** **** 4242',
+    expiryDate: '12/25',
+    cardHolder: UserData.name.toUpperCase(),
+    backgroundColor: '#121212',
+  }
 ];
 
 export default function CardsScreen() {
-	const router = useRouter();
+  const router = useRouter();
 
-	return (
-		<View style={styles.container}>
-			<View style={styles.header}>
-				<BackButton style={styles.closeButton} />
-				<Text style={styles.headerTitle}>Pay With</Text>
-				<View style={styles.placeholder} />
-			</View>
+  return (
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
+          <X size={24} color={colors.textPrimary} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Virtual Cards</Text>
+        <View style={styles.placeholder} />
+      </View>
 
-			<View style={styles.content}>
-				{virtualCards.map((card, index) => (
-					<Animated.View
-						key={card.id}
-						entering={FadeIn.delay(index * 100)}
-						style={[styles.card, { backgroundColor: card.color }]}
-					>
-						<View style={styles.cardHeader}>
-							<Image
-								source={{ uri: card.logo }}
-								style={styles.cardLogo}
-							/>
-							<Image
-								source={{
-									uri: 'https://brand.mastercard.com/content/dam/mccom/brandcenter/thumbnails/mastercard_vrt_rev_92px_2x.png',
-								}}
-								style={styles.mastercardLogo}
-							/>
-						</View>
-					</Animated.View>
-				))}
+      <View style={styles.content}>
+        {virtualCards.map((card, index) => (
+          <Animated.View 
+            key={card.id}
+            entering={FadeIn.delay(index * 100)}
+          >
+            <View style={styles.card}>
+              <View style={styles.cardHeader}>
+                <View style={styles.brandContainer}>
+                  <Zap size={20} color={colors.white} />
+                  <Text style={styles.brandText}>SPEED</Text>
+                </View>
+                <Image 
+                  source={{ uri: 'https://brand.mastercard.com/content/dam/mccom/brandcenter/thumbnails/mastercard_vrt_rev_92px_2x.png' }}
+                  style={styles.mastercardLogo}
+                />
+              </View>
 
-				<Animated.View entering={FadeIn.delay(200)}>
-					<TouchableOpacity style={styles.addCard}>
-						<View style={styles.addCardHeader}>
-							<View style={styles.addCardLeft}>
-								<Plus size={24} color={colors.textPrimary} />
-								<Text style={styles.addCardText}>ADD WALLET</Text>
-							</View>
-							<Image
-								source={{
-									uri: 'https://brand.mastercard.com/content/dam/mccom/brandcenter/thumbnails/mastercard_vrt_rev_92px_2x.png',
-								}}
-								style={styles.mastercardLogo}
-							/>
-						</View>
-					</TouchableOpacity>
-				</Animated.View>
-			</View>
-		</View>
-	);
+              <Text style={styles.cardNumber}>{card.cardNumber}</Text>
+
+              <View style={styles.cardFooter}>
+                <View>
+                  <Text style={styles.cardLabel}>CARD HOLDER</Text>
+                  <Text style={styles.cardValue}>{card.cardHolder}</Text>
+                </View>
+                <View>
+                  <Text style={styles.cardLabel}>EXPIRES</Text>
+                  <Text style={styles.cardValue}>{card.expiryDate}</Text>
+                </View>
+              </View>
+            </View>
+          </Animated.View>
+        ))}
+
+        <Animated.View entering={FadeIn.delay(200)}>
+          <TouchableOpacity style={styles.addCard}>
+            <View style={styles.addCardHeader}>
+              <View style={styles.addCardLeft}>
+                <Plus size={24} color={colors.textPrimary} />
+                <Text style={styles.addCardText}>ADD NEW CARD</Text>
+              </View>
+              <Image 
+                source={{ uri: 'https://brand.mastercard.com/content/dam/mccom/brandcenter/thumbnails/mastercard_vrt_rev_92px_2x.png' }}
+                style={styles.mastercardLogo}
+              />
+            </View>
+          </TouchableOpacity>
+        </Animated.View>
+
+        <View style={styles.infoSection}>
+          <Text style={styles.infoTitle}>About SPEED PAY</Text>
+          <Text style={styles.infoText}>
+            SPEED PAY is our virtual payment solution that enables instant, secure transactions across the globe. Powered by advanced blockchain technology and protected by state-of-the-art security measures.
+          </Text>
+          
+          <View style={styles.features}>
+            <View style={styles.featureItem}>
+              <Zap size={20} color={colors.primary} />
+              <Text style={styles.featureText}>Instant Payments</Text>
+            </View>
+            <View style={styles.featureItem}>
+              <Shield size={20} color={colors.primary} />
+              <Text style={styles.featureText}>Secure Transactions</Text>
+            </View>
+            <View style={styles.featureItem}>
+              <Globe size={20} color={colors.primary} />
+              <Text style={styles.featureText}>Global Acceptance</Text>
+            </View>
+          </View>
+        </View>
+      </View>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
-	container: {
-		flex: 1,
-		backgroundColor: colors.backgroundDark,
-	},
-	header: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		justifyContent: 'space-between',
-		paddingHorizontal: 16,
-		paddingBottom: 16,
-	},
-	headerTitle: {
-		fontSize: 18,
-		fontFamily: 'Inter-SemiBold',
-		color: colors.textPrimary,
-	},
-	closeButton: {
-		width: 40,
-		height: 40,
-		borderRadius: 20,
-		backgroundColor: colors.backgroundMedium,
-		alignItems: 'center',
-		justifyContent: 'center',
-	},
-	placeholder: {
-		width: 40,
-	},
-	content: {
-		padding: 16,
-	},
-	card: {
-		borderRadius: 16,
-		marginBottom: 16,
-		height: 200,
-		padding: 20,
-	},
-	cardHeader: {
-		flexDirection: 'row',
-		justifyContent: 'space-between',
-		alignItems: 'center',
-	},
-	cardLogo: {
-		width: 32,
-		height: 32,
-		resizeMode: 'contain',
-	},
-	mastercardLogo: {
-		width: 48,
-		height: 32,
-		resizeMode: 'contain',
-	},
-	addCard: {
-		backgroundColor: colors.backgroundMedium,
-		borderRadius: 16,
-		height: 200,
-		padding: 20,
-	},
-	addCardHeader: {
-		flexDirection: 'row',
-		justifyContent: 'space-between',
-		alignItems: 'center',
-	},
-	addCardLeft: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		gap: 12,
-	},
-	addCardText: {
-		color: colors.textPrimary,
-		fontSize: 14,
-		fontFamily: 'Inter-SemiBold',
-	},
+  container: {
+    flex: 1,
+    backgroundColor: colors.backgroundDark,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 60,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontFamily: 'Inter-SemiBold',
+    color: colors.textPrimary,
+  },
+  closeButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.backgroundMedium,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  placeholder: {
+    width: 40,
+  },
+  content: {
+    padding: 16,
+  },
+  card: {
+    backgroundColor: '#121212',
+    borderRadius: 16,
+    padding: 24,
+    marginBottom: 16,
+    height: 200,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  brandContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  brandText: {
+    fontSize: 16,
+    fontFamily: 'Inter-Bold',
+    color: colors.white,
+  },
+  mastercardLogo: {
+    width: 48,
+    height: 32,
+    resizeMode: 'contain',
+  },
+  cardNumber: {
+    fontSize: 22,
+    fontFamily: 'Inter-Medium',
+    color: colors.white,
+    letterSpacing: 2,
+    marginBottom: 40,
+  },
+  cardFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  cardLabel: {
+    fontSize: 10,
+    fontFamily: 'Inter-Regular',
+    color: colors.textSecondary,
+    marginBottom: 4,
+  },
+  cardValue: {
+    fontSize: 14,
+    fontFamily: 'Inter-Medium',
+    color: colors.white,
+  },
+  addCard: {
+    backgroundColor: colors.backgroundMedium,
+    borderRadius: 16,
+    padding: 24,
+    height: 200,
+  },
+  addCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  addCardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  addCardText: {
+    fontSize: 16,
+    fontFamily: 'Inter-SemiBold',
+    color: colors.textPrimary,
+  },
+  infoSection: {
+    marginTop: 32,
+  },
+  infoTitle: {
+    fontSize: 20,
+    fontFamily: 'Inter-Bold',
+    color: colors.textPrimary,
+    marginBottom: 12,
+  },
+  infoText: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    color: colors.textSecondary,
+    lineHeight: 22,
+    marginBottom: 24,
+  },
+  features: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  featureItem: {
+    alignItems: 'center',
+    gap: 8,
+  },
+  featureText: {
+    fontSize: 12,
+    fontFamily: 'Inter-Medium',
+    color: colors.textSecondary,
+  },
 });
