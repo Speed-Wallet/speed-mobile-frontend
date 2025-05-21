@@ -232,19 +232,6 @@ export const signAndSendTx = async (tx: VersionedTransaction | Transaction, wall
   const res = await CONNECTION.confirmTransaction(sig);
   console.log(res);
 
-  // const latestBlockHash = await CONNECTION.getLatestBlockhash();
-  // const confirmation = await CONNECTION.confirmTransaction({
-  //   blockhash: latestBlockHash.blockhash,
-  //   lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
-  //   signature: sig
-  // });
-
-  // console.log(confirmation)
-
-  // if (confirmation.value.err) {
-  //   throw new Error(`Transaction failed: ${JSON.stringify(confirmation.value.err)}\nhttps://solscan.io/tx/${signature}/`);
-  // }
-
   return sig;
 };
 
@@ -258,7 +245,7 @@ export const JupiterQuote = async (
     `inputMint=${fromMint}`,
     `outputMint=${toMint}`,
     `amount=${amount}`,
-    `platformFeeBps=${PLATFORM_FEE_BPS}`,
+    // `platformFeeBps=${PLATFORM_FEE_BPS}`,
     'restrictIntermediateTokens=true',
     'dynamicSlippage=true'
   ];
@@ -267,37 +254,32 @@ export const JupiterQuote = async (
 };
 
 export const jupiterSwap = async (quoteResponse: any) => {
-  const {inputMint, outputMint} = quoteResponse;
+  const { outputMint } = quoteResponse;
   const inAmount = parseInt(quoteResponse.inAmount);
 
   if (isNaN(inAmount)) {
     throw new Error(`Invalid inAmount`);
   }
 
-  // if (inputMint === WSOL_MINT) {
-  //   console.log('Wrapping Sols');
-  //   const tx = new Transaction().add(...await wrapSOL(inAmount, WALLET));
-  //   const sig = await signAndSendTx(tx, WALLET);
-  //   console.log(`Wrapped Sols\n${sig}`);
-  // }
-
-  const outputMintPubKey = new PublicKey(outputMint);
-  const ata = getAssociatedTokenAddressSync(
-    outputMintPubKey,
-    WALLET.publicKey
-  );
-
-  if (!await CONNECTION.getAccountInfo(ata)) {
-    console.log(`Creating OutAmount ATA`);
-    const ix = createAssociatedTokenAccountInstruction(
-      WALLET.publicKey,
-      ata,
-      WALLET.publicKey,
-      outputMintPubKey
+  if (outputMint !== WSOL_MINT) {
+    const outputMintPubKey = new PublicKey(outputMint);
+    const ata = getAssociatedTokenAddressSync(
+      outputMintPubKey,
+      WALLET.publicKey
     );
-    const tx = new Transaction().add(ix);
-    const sig = await signAndSendTx(tx, WALLET);
-    console.log(`OutAmount ATA created\n${sig}`);
+  
+    if (!await CONNECTION.getAccountInfo(ata)) {
+      console.log(`Creating OutAmount ATA`);
+      const ix = createAssociatedTokenAccountInstruction(
+        WALLET.publicKey,
+        ata,
+        WALLET.publicKey,
+        outputMintPubKey
+      );
+      const tx = new Transaction().add(ix);
+      const sig = await signAndSendTx(tx, WALLET);
+      console.log(`OutAmount ATA created\n${sig}`);
+    }
   }
 
   console.log(`Swapping started`);
@@ -309,18 +291,12 @@ export const jupiterSwap = async (quoteResponse: any) => {
       body: JSON.stringify({
         quoteResponse,
         userPublicKey: WALLET.publicKey.toBase58(),
-        feeAccount: PLATFORM_FEE_ACCOUNT,
+        // feeAccount: PLATFORM_FEE_ACCOUNT,
         
         dynamicComputeUnitLimit: true,
         dynamicSlippage: true,
         wrapUnwrapSOL: true,
         prioritizationFeeLamports: 'auto'
-        // prioritizationFeeLamports: {
-        //   priorityLevelWithMaxLamports: {
-        //     maxLamports: 1000000,
-        //     priorityLevel: "veryHigh"
-        //   }
-        // }
       })
     })
   ).json();
@@ -440,4 +416,22 @@ async function calculatePriorityFee(tx: Transaction, signers: Keypair[])
   const median = Math.ceil(sum / basePriorityFees.length);
   const cu = simulationResult.value.unitsConsumed || 1;
   return { low: low * cu, medium: median * cu, high: high * cu };
+}
+
+async function getTokenAccountsForWallet(walletPubkey: PublicKey) {
+  const parsedTokenAccs = await CONNECTION.getParsedTokenAccountsByOwner(
+    walletPubkey, { programId: TOKEN_PROGRAM_ID }
+  );
+
+  for (const parsedTokenData of parsedTokenAccs.value) {
+    const { pubkey } = parsedTokenData;
+    const { mint, tokenAmount } = parsedTokenData.account.data.parsed.info;
+    const amount = BigInt(tokenAmount.amount);
+    const { decimals } = tokenAmount;
+  }  
+}
+
+async function getTokenBalance(tokenAcc: PublicKey): Promise<bigint> {
+  const acc = await getAccount(CONNECTION, tokenAcc);
+  return acc.amount;
 }
