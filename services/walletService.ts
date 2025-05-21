@@ -27,7 +27,7 @@ import {
 import { Buffer } from 'buffer';
 import CryptoJS from 'crypto-js';
 
-const CONNECTION = new Connection('https://solana-rpc.publicnode.com');
+export const CONNECTION = new Connection('https://solana-rpc.publicnode.com');
 // const CONNECTION = new Connection('https://api.mainnet-beta.solana.com');
 const JUPITER_API_URL = 'https://lite-api.jup.ag/swap/v1/';
 
