@@ -1,18 +1,34 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as bip39 from 'bip39';
-import { Keypair, PublicKey, VersionedTransaction, Connection, Transaction, SystemProgram } from '@solana/web3.js';
 import { 
-  getAccount, 
+  Keypair, 
+  PublicKey, 
+  VersionedTransaction, 
+  Connection, 
+  Transaction, 
+  TransactionMessage,
+  SystemProgram,
+  sendAndConfirmTransaction,
+  sendAndConfirmRawTransaction,
+  MessageAccountKeys,
+  ComputeBudgetProgram,
+  TransactionInstruction,
+} from '@solana/web3.js';
+import { 
+  getAccount,
   getAssociatedTokenAddressSync, 
   TOKEN_PROGRAM_ID, 
   createAssociatedTokenAccountInstruction,
+  createInitializeAccountInstruction,
   createSyncNativeInstruction,
+  createCloseAccountInstruction,
   getOrCreateAssociatedTokenAccount
 } from '@solana/spl-token';
 import { Buffer } from 'buffer';
 import CryptoJS from 'crypto-js';
 
 const CONNECTION = new Connection('https://solana-rpc.publicnode.com');
+// const CONNECTION = new Connection('https://api.mainnet-beta.solana.com');
 const JUPITER_API_URL = 'https://lite-api.jup.ag/swap/v1/';
 
 const ENCRYPTED_MNEMONIC_KEY = 'solanaEncryptedMnemonic';
@@ -28,6 +44,12 @@ let WALLET: Keypair;
 interface SolanaWallet {
   mnemonic: string;
   publicKey: string;
+}
+
+interface PrioritizationFeeData {
+  low: number;
+  medium: number;
+  high: number;
 }
 
 export const isWalletUnlocked = (): boolean => {
@@ -184,32 +206,46 @@ export const clearWallet = async (): Promise<void> => {
   }
 };
 
-export const signAndSendTx = async (tx: VersionedTransaction | Transaction): Promise<string> => {
-  if (!WALLET) {
-    throw new Error('Wallet does not exist');
-  }
-
+export const signAndSendTx = async (tx: VersionedTransaction | Transaction, wallet: Keypair): Promise<string> => {
   if (tx instanceof Transaction) {
-    const { blockhash } = await CONNECTION.getLatestBlockhash();
-    tx.feePayer = WALLET.publicKey;
-    tx.recentBlockhash = blockhash;
-    tx.sign(WALLET);
-  } else {
-    tx.sign([WALLET]);
+    const microLamports = (await calculatePriorityFee(tx, [wallet])).high;
+    const transactionWithFee = new Transaction();
+
+    console.log(`Setting priority fee: ${microLamports}`);
+    microLamports > 0 && tx.add(ComputeBudgetProgram.setComputeUnitPrice({ microLamports }));
+    transactionWithFee.add(...tx.instructions);
+
+    return sendAndConfirmTransaction(
+      CONNECTION,
+      transactionWithFee,
+      [wallet],
+      { maxRetries: 0, skipPreflight: true }
+    )
   }
 
-  const signature = await CONNECTION.sendRawTransaction(tx.serialize(), {
-    maxRetries: 2,
-    skipPreflight: true
+  tx.sign([wallet]);
+
+  const sig = await CONNECTION.sendRawTransaction(tx.serialize(), {
+    maxRetries: 2, skipPreflight: true
   });
 
-  const confirmation = await CONNECTION.confirmTransaction(signature, "finalized");
+  const res = await CONNECTION.confirmTransaction(sig);
+  console.log(res);
 
-  if (confirmation.value.err) {
-    throw new Error(`Transaction failed: ${JSON.stringify(confirmation.value.err)}\nhttps://solscan.io/tx/${signature}/`);
-  }
+  // const latestBlockHash = await CONNECTION.getLatestBlockhash();
+  // const confirmation = await CONNECTION.confirmTransaction({
+  //   blockhash: latestBlockHash.blockhash,
+  //   lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
+  //   signature: sig
+  // });
 
-  return signature;
+  // console.log(confirmation)
+
+  // if (confirmation.value.err) {
+  //   throw new Error(`Transaction failed: ${JSON.stringify(confirmation.value.err)}\nhttps://solscan.io/tx/${signature}/`);
+  // }
+
+  return sig;
 };
 
 
@@ -238,27 +274,35 @@ export const jupiterSwap = async (quoteResponse: any) => {
     throw new Error(`Invalid inAmount`);
   }
 
-  const promises = [];
+  // if (inputMint === WSOL_MINT) {
+  //   console.log('Wrapping Sols');
+  //   const tx = new Transaction().add(...await wrapSOL(inAmount, WALLET));
+  //   const sig = await signAndSendTx(tx, WALLET);
+  //   console.log(`Wrapped Sols\n${sig}`);
+  // }
 
-  if (inputMint === WSOL_MINT) {
-    promises.push(
-      wrapSOL(inAmount, WALLET)
-      .then(sig => console.log(`Wrapped ${inAmount / 1e9} SOLs.\n${sig}`))
-    );
-  }
-
-  promises.push(
-    getOrCreateAssociatedTokenAccount(
-      CONNECTION,
-      WALLET,
-      new PublicKey(outputMint),
-      WALLET.publicKey
-    )
+  const outputMintPubKey = new PublicKey(outputMint);
+  const ata = getAssociatedTokenAddressSync(
+    outputMintPubKey,
+    WALLET.publicKey
   );
 
-  await Promise.all(promises);
+  if (!await CONNECTION.getAccountInfo(ata)) {
+    console.log(`Creating OutAmount ATA`);
+    const ix = createAssociatedTokenAccountInstruction(
+      WALLET.publicKey,
+      ata,
+      WALLET.publicKey,
+      outputMintPubKey
+    );
+    const tx = new Transaction().add(ix);
+    const sig = await signAndSendTx(tx, WALLET);
+    console.log(`OutAmount ATA created\n${sig}`);
+  }
 
-  const swapResponse = await (
+  console.log(`Swapping started`);
+
+  const { swapTransaction } = await (
     await fetch(`${JUPITER_API_URL}swap?dynamicSlippage=true`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -269,33 +313,35 @@ export const jupiterSwap = async (quoteResponse: any) => {
         
         dynamicComputeUnitLimit: true,
         dynamicSlippage: true,
-        prioritizationFeeLamports: {
-          priorityLevelWithMaxLamports: {
-            maxLamports: 1000000,
-            global: false,
-            priorityLevel: "veryHigh"
-          }
-        }
+        wrapUnwrapSOL: true,
+        prioritizationFeeLamports: 'auto'
+        // prioritizationFeeLamports: {
+        //   priorityLevelWithMaxLamports: {
+        //     maxLamports: 1000000,
+        //     priorityLevel: "veryHigh"
+        //   }
+        // }
       })
     })
   ).json();
 
-  const transactionBase64 = swapResponse.swapTransaction
-  const transaction = VersionedTransaction.deserialize(Buffer.from(transactionBase64, 'base64'));
+  // deserialize the transaction
+  const swapTransactionBuf = Buffer.from(swapTransaction, 'base64');
+  const transaction = VersionedTransaction.deserialize(swapTransactionBuf);
   console.log(transaction);
-  const sig = await signAndSendTx(transaction);
+  const sig = await signAndSendTx(transaction, WALLET);
   console.log(sig);
 };
 
-async function wrapSOL(amountInLamports: number, wallet: Keypair): Promise<string> {
+async function wrapSOL(amountInLamports: number, wallet: Keypair): Promise<TransactionInstruction[]> {
   const WRAPPED_SOL_MINT = new PublicKey(WSOL_MINT);
   const ata = getAssociatedTokenAddressSync(WRAPPED_SOL_MINT, wallet.publicKey);
   const accInfo = await CONNECTION.getAccountInfo(ata);
-  const tx = new Transaction();
+  const instructions = [];
 
   // If WSOL token account doesn't exist, create it.
   if (!accInfo) {
-    tx.add(createAssociatedTokenAccountInstruction(
+    instructions.push(createAssociatedTokenAccountInstruction(
       wallet.publicKey,
       ata,
       wallet.publicKey,
@@ -303,12 +349,95 @@ async function wrapSOL(amountInLamports: number, wallet: Keypair): Promise<strin
     ));
   }
 
-  tx.add(SystemProgram.transfer({
+  instructions.push(SystemProgram.transfer({
     fromPubkey: wallet.publicKey,
     toPubkey: ata,
     lamports: amountInLamports
   }));
 
-  tx.add(createSyncNativeInstruction(ata, TOKEN_PROGRAM_ID));
-  return signAndSendTx(tx);
+  instructions.push(createSyncNativeInstruction(ata, TOKEN_PROGRAM_ID));
+  return instructions;
+}
+
+// Delete on production
+(window as any).unwrapWSOL = () => unwrapWSOL(WALLET);
+
+async function unwrapWSOL(wallet: Keypair) {
+  const WRAPPED_SOL_MINT = new PublicKey(WSOL_MINT);
+  const wsolAccount = getAssociatedTokenAddressSync(WRAPPED_SOL_MINT, wallet.publicKey);
+
+  const closeAccIx = createCloseAccountInstruction(
+    wsolAccount,
+    wallet.publicKey,
+    wallet.publicKey
+  );
+
+  const tx = new Transaction().add(closeAccIx);
+  const sig = await sendAndConfirmTransaction(CONNECTION, tx, [wallet]);
+
+  console.log('✅ Unwrapped WSOL → SOL');
+  console.log('Transaction signature:', sig);
+}
+
+// async function createTempWSOLAcc(mint: PublicKey, wallet: Keypair): Promise<PublicKey> {  
+//   const ACCOUNT_SIZE = 165; // in bytes (standard SPL token account size)
+//   const tokenAccount = Keypair.generate();
+//   const rentExemption = await CONNECTION.getMinimumBalanceForRentExemption(ACCOUNT_SIZE);
+  
+//   const createAccountIx = SystemProgram.createAccount({
+//     fromPubkey: wallet.publicKey,
+//     newAccountPubkey: tokenAccount.publicKey,
+//     lamports: rentExemption,
+//     space: ACCOUNT_SIZE,
+//     programId: TOKEN_PROGRAM_ID,
+//   });
+  
+//   const initAccountIx = createInitializeAccountInstruction(
+//     tokenAccount.publicKey,
+//     mint,
+//     wallet.publicKey,
+//     TOKEN_PROGRAM_ID
+//   );
+  
+//   const tx = new Transaction().add(createAccountIx, initAccountIx);
+//   const sig = await sendAndConfirmTransaction(CONNECTION, tx, [wallet, tokenAccount]);
+//   console.log()
+// }
+
+
+async function calculatePriorityFee(tx: Transaction, signers: Keypair[])
+: Promise<PrioritizationFeeData> {
+  const writableAccSet = new Set<string>();
+  const lockedWritableAccounts: PublicKey[] = [];
+  const simulationPromise = CONNECTION.simulateTransaction(tx, signers, true);
+
+  for (const ix of tx.instructions) {
+    for (const accMeta of ix.keys) {
+      accMeta.isWritable && writableAccSet.add(accMeta.pubkey.toBase58());
+    }
+  }
+
+  writableAccSet.forEach(id => lockedWritableAccounts.push(new PublicKey(id)));
+  const [basePriorityFees, simulationResult] = await Promise.all([
+    CONNECTION.getRecentPrioritizationFees({ lockedWritableAccounts }),
+    simulationPromise
+  ]);
+
+  console.log(lockedWritableAccounts);
+  console.log(basePriorityFees);
+  console.log(simulationResult);
+
+  let low = Number.POSITIVE_INFINITY;
+  let high = 0;
+  let sum = 0;
+
+  for (const { prioritizationFee } of basePriorityFees) {
+    if (prioritizationFee < low) low = prioritizationFee;
+    if (prioritizationFee > high) high = prioritizationFee;
+    sum += prioritizationFee;
+  }
+
+  const median = Math.ceil(sum / basePriorityFees.length);
+  const cu = simulationResult.value.unitsConsumed || 1;
+  return { low: low * cu, medium: median * cu, high: high * cu };
 }
