@@ -58,7 +58,6 @@ export default function RootLayout() {
     }
   }, [fontsLoaded, fontError, walletState]);
 
-  console.log('getting token balances');
   const subscribeToTokenBalances = useTokenBalanceStore((state) => state.subscribeToTokenBalances);
   const activeWalletPublicKey = useWalletPublicKey();
   

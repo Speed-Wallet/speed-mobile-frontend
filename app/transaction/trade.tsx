@@ -170,7 +170,7 @@ export default function TradeScreen() {
         await jupiterSwap(quote);
       } catch (err) {
         console.error(err);
-        alert('Error trading tokens');
+        alert(`Error trading tokens ${fromToken?.symbol} and ${toToken?.symbol} \n${err}`);
       }
     }
 
