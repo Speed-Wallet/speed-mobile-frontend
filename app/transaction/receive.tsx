@@ -10,6 +10,7 @@ import TokenSelector from '@/components/TokenSelector';
 import QRCode from '@/components/QRCode';
 import { TokenEntry } from '@/data/types';
 import BackButton from '@/components/BackButton';
+import { setStringAsync } from 'expo-clipboard';
 
 const { width } = Dimensions.get('window');
 const QR_SIZE = width * 0.7;
@@ -37,8 +38,8 @@ export default function ReceiveScreen() {
     setWalletAddress(UserData.walletAddress);
   }
 
-  const handleCopyAddress = () => {
-    alert('Address copied to clipboard!');
+  const handleCopyAddress = async () => {
+    await setStringAsync(walletAddress || '');
   };
 
   const handleShare = async () => {

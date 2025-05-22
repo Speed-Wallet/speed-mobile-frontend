@@ -42,12 +42,21 @@ export const PUBLIC_KEY_KEY = 'solanaPublicKey'; // Keep this as is
 const WSOL_MINT = 'So11111111111111111111111111111111111111112';
 const PLATFORM_FEE_ACCOUNT = '7o3QNaG84hrWhCLoAEXuiiyNfKvpGvMAyTwDb3reBram';
 const PLATFORM_FEE_BPS = 20; // 0.2%
-let WALLET: Keypair;
+let WALLET: Keypair; // Initialize WALLET to null
 
 interface SolanaWallet {
   mnemonic: string;
   publicKey: string;
 }
+
+// Listener pattern for wallet state changes
+type WalletStateListener = (publicKey: string | null) => void;
+const walletStateListeners: Set<WalletStateListener> = new Set();
+
+const notifyWalletStateChange = () => {
+  const currentPublicKey = WALLET ? WALLET.publicKey.toBase58() : null;
+  walletStateListeners.forEach(listener => listener(currentPublicKey));
+};
 
 interface PrioritizationFeeData {
   low: number;
@@ -56,25 +65,43 @@ interface PrioritizationFeeData {
 }
 
 export function useWalletPublicKey() {
-  const [publicKey, setPublicKey] = useState<string | null>(null);
+  // Initialize state with the current wallet public key from the module-level WALLET
+  const [publicKey, setPublicKey] = useState<string | null>(() => {
+    return WALLET ? WALLET.publicKey.toBase58() : null;
+  });
 
   useEffect(() => {
-    if (isWalletUnlocked()) {
-      const key = getWalletPublicKey();
-      setPublicKey(key);
+    // Define the listener function
+    const listener: WalletStateListener = (newPublicKey) => {
+      setPublicKey(newPublicKey);
+    };
+
+    // Add the listener
+    walletStateListeners.add(listener);
+
+    // Optional: Re-check and set state in case WALLET changed between initial useState and useEffect.
+    // This ensures the hook reflects the very latest state upon subscription.
+    const currentKeyOnEffect = WALLET ? WALLET.publicKey.toBase58() : null;
+    if (publicKey !== currentKeyOnEffect) {
+        setPublicKey(currentKeyOnEffect);
     }
-  }, []);
+
+    // Cleanup: remove the listener when the component unmounts
+    return () => {
+      walletStateListeners.delete(listener);
+    };
+  }, []); // Empty dependency array: subscribe on mount, unsubscribe on unmount
 
   return publicKey;
 }
 
 const isWalletUnlocked = (): boolean => {
-  return !!WALLET;
+  return !!WALLET; // Relies on the module-level WALLET
 };
 
 const getWalletPublicKey = (): string | null => {
   if (WALLET) {
-    return WALLET.publicKey.toBase58();
+    return WALLET.publicKey.toBase58(); // Relies on the module-level WALLET
   }
   return null;
 };
@@ -184,10 +211,14 @@ export const unlockWalletWithPin = async (pin: string): Promise<SolanaWallet | n
     const encryptedMnemonic = await AsyncStorage.getItem(ENCRYPTED_MNEMONIC_KEY);
     const salt = await AsyncStorage.getItem(SALT_KEY);
     const iv = await AsyncStorage.getItem(IV_KEY);
-    const publicKey = await AsyncStorage.getItem(PUBLIC_KEY_KEY);
+    const storedPublicKey = await AsyncStorage.getItem(PUBLIC_KEY_KEY);
 
-    if (!encryptedMnemonic || !salt || !iv || !publicKey) {
+    if (!encryptedMnemonic || !salt || !iv || !storedPublicKey) {
       console.log('Encrypted wallet components not found for unlocking.');
+      if (WALLET) { // If a wallet was loaded and now components are missing
+          WALLET = null;
+          notifyWalletStateChange();
+      }
       return null;
     }
 
@@ -197,16 +228,42 @@ export const unlockWalletWithPin = async (pin: string): Promise<SolanaWallet | n
       // Verify the mnemonic is valid (optional but good)
       if (!bip39.validateMnemonic(mnemonic)) {
         console.warn("Decrypted mnemonic is invalid. PIN might be incorrect or data corrupted.");
+        if (WALLET) {
+            WALLET = null;
+            notifyWalletStateChange();
+        }
         return null;
       }
 
       const seed = await bip39.mnemonicToSeed(mnemonic);
-      WALLET = Keypair.fromSeed(Uint8Array.from(seed.subarray(0, 32)));
-      return { mnemonic, publicKey };
+      const keypair = Keypair.fromSeed(Uint8Array.from(seed.subarray(0, 32)));
+      
+      if (keypair.publicKey.toBase58() !== storedPublicKey) {
+          console.warn("Decrypted wallet's public key does not match stored public key. PIN might be incorrect or data corrupted.");
+          if (WALLET) {
+              WALLET = null;
+              notifyWalletStateChange();
+          }
+          return null;
+      }
+
+      WALLET = keypair;
+      notifyWalletStateChange(); // Notify listeners about the new wallet state
+      return { mnemonic, publicKey: WALLET.publicKey.toBase58() };
+    } else {
+      // Decryption failed
+      if (WALLET) {
+          WALLET = null;
+          notifyWalletStateChange();
+      }
+      return null;
     }
-    return null;
   } catch (error) {
     console.error('Failed to unlock wallet with PIN', error);
+    if (WALLET) { // Clear in-memory wallet on any error
+        WALLET = null;
+        notifyWalletStateChange();
+    }
     return null;
   }
 };
@@ -217,8 +274,22 @@ export const clearWallet = async (): Promise<void> => {
     await AsyncStorage.removeItem(SALT_KEY);
     await AsyncStorage.removeItem(IV_KEY);
     await AsyncStorage.removeItem(PUBLIC_KEY_KEY);
+    if (WALLET) {
+      WALLET = null;
+      notifyWalletStateChange(); // Notify listeners
+    }
+    console.log('Wallet cleared from AsyncStorage and memory.');
   } catch (error) {
     console.error('Failed to clear wallet from AsyncStorage', error);
+  }
+};
+
+// Add a function to lock the wallet (clear from memory, but not from AsyncStorage)
+export const lockWallet = (): void => {
+  if (WALLET) {
+    WALLET = null;
+    notifyWalletStateChange(); // Notify listeners
+    console.log("Wallet locked: Keypair cleared from memory.");
   }
 };
 

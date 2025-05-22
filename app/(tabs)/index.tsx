@@ -19,6 +19,8 @@ export default function HomeScreen() {
   const [tokenData, setTokenData] = useState<EnrichedTokenEntry[]>([]);
   const walletAddress = useWalletPublicKey();
 
+  alert("active wallet public key in app/(tabs)/index: " + walletAddress);
+
   useEffect(() => {
     const data = getAllTokenInfo();
     setTokenData(data);
