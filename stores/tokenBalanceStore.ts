@@ -241,7 +241,7 @@ export const useTokenBalanceStore = create<TokenBalanceStoreState>((set, get) =>
 
     subscribeToTokenBalances: async (walletPublicKeyStr: string | null) => {
         const state = get();
-        alert("Subscribing to token balances for wallet: " + walletPublicKeyStr);
+
         if (state.isConnectingOrFetching && state.activeWalletPublicKey === walletPublicKeyStr) {
             console.log("Already connecting/fetching for this wallet.");
             return;

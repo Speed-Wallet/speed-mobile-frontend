@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, SafeAreaView, StatusBar, ScrollView, Image } from 'react-native'; // Removed Dimensions
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowUpDown, ArrowRightLeft } from 'lucide-react-native';
+import { ArrowDownUp, ArrowRightLeft } from 'lucide-react-native'; // Changed ArrowUpDown to ArrowDownUp
 import Animated, { FadeIn, SlideInUp } from 'react-native-reanimated';
 import colors from '@/constants/colors';
 import { formatCurrency } from '@/utils/formatters';
@@ -77,7 +77,7 @@ export default function TradeScreen() {
 
       if (!isNaN(outAmount)) {
         const val = outAmount * 10 ** -toToken!.decimals;
-        setToAmount(val.toFixed(toToken!.decimals));
+        setToAmount(val.toFixed(toToken!.decimalsShown)); // Use decimalsShown (now mandatory)
       }
 
       if (!intervalID) {
@@ -92,10 +92,9 @@ export default function TradeScreen() {
   useEffect(updateAmounts, [fromAmount]);
   useEffect(() => loadData(), [tokenAddress]);
   
-  // Add effect to automatically apply 25% amount when fromToken is set
   useEffect(() => {
     if (fromToken && !fromAmount) {
-      handlePercentageSelect('25');
+      // handlePercentageSelect('25');
     }
   }, [fromToken]);
 
@@ -124,7 +123,7 @@ export default function TradeScreen() {
   const handlePercentageSelect = (percentage: string) => {
     if (!fromToken) return;
     
-    setSelectedPercentage(percentage); // Set selected percentage
+    setSelectedPercentage(percentage);
     
     if (percentage === 'MAX') {
       setFromAmount(fromToken.balance.toString());
@@ -135,192 +134,213 @@ export default function TradeScreen() {
   };
 
   const handleSwapTokens = () => {
-    const temp = fromToken;
-    setFromToken(toToken);
-    setToToken(temp);
-    setFromAmount(toAmount);
+    const tempFromToken = fromToken;
+    const tempToToken = toToken;
+    const tempFromAmount = fromAmount;
+    const tempToAmount = toAmount;
 
-    // Reset selected percentage when tokens are swapped
-    setSelectedPercentage('25');
+    setFromToken(tempToToken);
+    setToToken(tempFromToken);
+    
+    // If amounts were tied to tokens, you might want to swap them or clear/recalculate
+    // For now, let's clear the 'toAmount' and keep 'fromAmount' if it was user-entered,
+    // or swap them if 'toAmount' was a calculated quote.
+    // If 'toAmount' was a quote, it's now invalid.
+    // Let's assume user might want to re-enter or recalculate.
+    // For simplicity, we can swap amounts or clear toAmount.
+    // Swapping amounts:
+    // setFromAmount(tempToAmount); 
+    // setToAmount(tempFromAmount);
+
+    // Or, more robustly, clear toAmount and let it recalculate if fromAmount is present
+    setFromAmount(toAmount); // Or keep original fromAmount: setFromAmount(tempFromAmount)
+    setToAmount(''); // Quote will be re-fetched by useEffect on fromAmount or by updateAmounts call
+
+    // setSelectedPercentage('25'); // Reset selected percentage
+    // Manually trigger quote update if fromAmount has a value
+    if (fromAmount && parseFloat(fromAmount) > 0) {
+        // updateAmounts(); // This might be called by useEffect on fromAmount already
+    }
   };
 
   const handleTrade = async () => {
     const amount= parseFloat(fromAmount);
 
-    if (isNaN(amount)) {
+    if (isNaN(amount) || amount <= 0) {
       alert('Invalid amount');
-    } else if (amount > fromToken!.balance) {
-      alert('Insufficient balance');
-    } else if (!quote) {
-      alert('Quote is not available');
-    } else {
-      alert(`Trading ${fromAmount} ${fromToken?.symbol} for ${toAmount} ${toToken?.symbol}`);
-
-      if (timeoutID !== undefined) {
-        clearTimeout(timeoutID);
-        timeoutID = undefined;
-      }
-
-      if (intervalID !== undefined) {
-        clearInterval(intervalID);
-        intervalID = undefined;
-      }
-  
-      try {
-        await jupiterSwap(quote);
-      } catch (err) {
-        console.error(err);
-        alert(`Error trading tokens ${fromToken?.symbol} and ${toToken?.symbol} \n${err}`);
-      }
+      return;
     }
+    if (!fromToken || !toToken) {
+      alert('Please select both tokens.');
+      return;
+    }
+    if (amount > fromToken.balance) {
+      alert('Insufficient balance');
+      return;
+    }
+    if (!quote || quote.errorCode) {
+      alert('Quote is not available or invalid. Please try again.');
+      return;
+    }
+    
+    // alert(`Trading ${fromAmount} ${fromToken?.symbol} for ${toAmount} ${toToken?.symbol}`);
 
-    router.back();
+    if (timeoutID !== undefined) {
+      clearTimeout(timeoutID);
+      timeoutID = undefined;
+    }
+    if (intervalID !== undefined) {
+      clearInterval(intervalID);
+      intervalID = undefined;
+    }
+  
+    try {
+      await jupiterSwap(quote);
+      alert('Trade Successful!'); // Provide feedback
+      router.back();
+    } catch (err: any) {
+      console.error(err);
+      alert(`Error trading tokens: ${err.message || 'Unknown error'}`);
+    }
   };
 
+  // Calculate exchange rate and receive amount for display
+  const exchangeRate = (quote && toToken && fromToken && parseFloat(fromAmount) > 0) 
+    ? (parseFloat(quote.outAmount) / (10**toToken.decimals)) / parseFloat(fromAmount) 
+    : null;
+  const receiveAmountDisplay = toAmount ? parseFloat(toAmount).toFixed(toToken?.decimalsShown || 2) : '0.00'; // Use decimalsShown (now mandatory), fallback to 2 if toToken is null for some reason during initial render.
+  const totalValueDisplay = (fromAmount && fromToken && parseFloat(fromAmount) > 0) 
+    ? formatCurrency(parseFloat(fromAmount) * fromToken.price) 
+    : '$0.00';
+
+
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="light-content" />
       <View style={styles.header}>
-        <BackButton style={styles.closeButton} />
-        <Text style={styles.headerTitle}>Trade</Text>
-        <View style={styles.placeholder} />
+        <BackButton style={styles.backButton} />
+        {/* The title "Trade" from the original header is removed to match the new design's "Swap Tokens" title below */}
       </View>
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollViewContent}>
+        <Text style={styles.title}>Swap Tokens</Text>
+        
+        {/* From Token */}
+        <Text style={styles.label}>From</Text>
+        <TouchableOpacity onPress={() => setShowFromSelector(true)} style={styles.tokenSelectorContainer}>
+          {fromToken ? (
+            <View style={styles.tokenDisplay}>
+              <Image source={{ uri: fromToken.logoURI }} style={styles.tokenIcon} />
+              <Text style={styles.tokenNameText}>{fromToken.name}</Text>
+            </View>
+          ) : (
+            <Text style={styles.tokenPlaceholderText}>Select Token</Text>
+          )}
+          <ArrowDownUp color={colors.textSecondary} size={16} />
+        </TouchableOpacity>
 
-      <View style={styles.content}>
+        {/* Swap Button */}
+        <View style={styles.swapButtonContainer}>
+          <TouchableOpacity style={styles.swapButton} onPress={handleSwapTokens}>
+            <ArrowDownUp color={colors.white} size={20} />
+          </TouchableOpacity>
+        </View>
+
+        {/* To Token */}
+        <Text style={styles.label}>To</Text>
+        <TouchableOpacity onPress={() => setShowToSelector(true)} style={styles.tokenSelectorContainer}>
+          {toToken ? (
+            <View style={styles.tokenDisplay}>
+              <Image source={{ uri: toToken.logoURI }} style={styles.tokenIcon} />
+              <Text style={styles.tokenNameText}>{toToken.name}</Text>
+            </View>
+          ) : (
+            <Text style={styles.tokenPlaceholderText}>Select Token</Text>
+          )}
+          <ArrowDownUp color={colors.textSecondary} size={16} />
+        </TouchableOpacity>
+        
+        {/* Amount Input */}
+        <Text style={styles.label}>Amount</Text>
+        <View style={styles.amountInputSection}>
+          <View style={styles.amountInputRow}>
+            {fromToken && <Image source={{ uri: fromToken.logoURI }} style={styles.amountTokenIcon} />}
+            <TextInput
+              style={styles.amountTextInput}
+              placeholder="0.00"
+              placeholderTextColor={colors.textSecondary}
+              keyboardType="decimal-pad"
+              value={fromAmount}
+              onChangeText={setFromAmount}
+            />
+          </View>
+          {fromToken && (
+            <Text style={styles.balanceText}>
+              Max: {fromToken.balance.toFixed(4)} {fromToken.symbol}
+            </Text>
+          )}
+          {/* <View style={styles.percentagesRow}>
+            {['25', '50', '75', 'MAX'].map((perc) => (
+              <TouchableOpacity
+                key={perc}
+                style={[
+                  styles.percentageChip,
+                  selectedPercentage === perc && styles.selectedPercentageChip,
+                ]}
+                onPress={() => handlePercentageSelect(perc)}
+              >
+                <Text style={[
+                  styles.percentageChipText,
+                  selectedPercentage === perc && styles.selectedPercentageChipText,
+                ]}>{perc}{perc !== 'MAX' ? '%' : ''}</Text>
+              </TouchableOpacity>
+            ))}
+          </View> */}
+        </View>
+
+        {/* Exchange Info */}
         {fromToken && toToken && (
-          <>
-            {/* From Token */}
-            <Animated.View entering={FadeIn.delay(100)}>
-              <View style={styles.tokenCard}>
-                <TouchableOpacity
-                  style={styles.tokenSelectorButton}
-                  onPress={() => setShowFromSelector(true)}
-                >
-                  <Text style={styles.tokenSymbol}>{fromToken.symbol}</Text>
-                </TouchableOpacity>
-
-                <TextInput
-                  style={styles.amountInput}
-                  placeholder="0.00"
-                  placeholderTextColor={colors.textSecondary}
-                  keyboardType="decimal-pad"
-                  value={fromAmount}
-                  onChangeText={setFromAmount}
-                />
-
-                <Text style={styles.balanceText}>
-                  Balance: {fromToken.balance} {fromToken.symbol}
-                </Text>
-
-                <Text style={styles.fiatValue}>
-                  {fromAmount ? formatCurrency(parseFloat(fromAmount) * fromToken.price) : '$0.00'}
-                </Text>
-
-                <View style={styles.percentages}>
-                  <TouchableOpacity
-                    style={[
-                      styles.percentageButton,
-                      selectedPercentage === '25' && styles.selectedPercentageButton
-                    ]}
-                    onPress={() => handlePercentageSelect('25')}
-                  >
-                    <Text style={[
-                      styles.percentageText,
-                      selectedPercentage === '25' && styles.selectedPercentageText
-                    ]}>25%</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.percentageButton,
-                      selectedPercentage === '50' && styles.selectedPercentageButton
-                    ]}
-                    onPress={() => handlePercentageSelect('50')}
-                  >
-                    <Text style={[
-                      styles.percentageText,
-                      selectedPercentage === '50' && styles.selectedPercentageText
-                    ]}>50%</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.percentageButton,
-                      selectedPercentage === '75' && styles.selectedPercentageButton
-                    ]}
-                    onPress={() => handlePercentageSelect('75')}
-                  >
-                    <Text style={[
-                      styles.percentageText,
-                      selectedPercentage === '75' && styles.selectedPercentageText
-                    ]}>75%</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.percentageButton,
-                      styles.maxButton,
-                      selectedPercentage === 'MAX' && styles.selectedPercentageButton
-                    ]}
-                    onPress={() => handlePercentageSelect('MAX')}
-                  >
-                    <Text style={[
-                      styles.percentageText,
-                      selectedPercentage === 'MAX' && styles.selectedPercentageText
-                    ]}>MAX</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </Animated.View>
-
-            {/* Swap Button */}
-            <TouchableOpacity
-              style={styles.swapButton}
-              onPress={handleSwapTokens}
-            >
-              <ArrowUpDown size={20} color={colors.primary} />
-            </TouchableOpacity>
-
-            {/* To Token */}
-            <Animated.View entering={FadeIn.delay(200)}>
-              <View style={styles.tokenCard}>
-                <TouchableOpacity
-                  style={styles.tokenSelectorButton}
-                  onPress={() => setShowToSelector(true)}
-                >
-                  <Text style={styles.tokenSymbol}>{toToken.symbol}</Text>
-                </TouchableOpacity>
-
-                <Text style={styles.amountText}>{toAmount || '...'}</Text>
-
-                <Text style={styles.balanceText}>
-                  Balance: {toToken.balance} {toToken.symbol}
-                </Text>
-
-                <Text style={styles.fiatValue}>
-                  {toAmount ? formatCurrency(parseFloat(toAmount) * toToken!.price) : '$0.00'}
+          <View style={styles.exchangeInfoCard}>
+            <View style={styles.exchangeInfoRow}>
+              <Text style={styles.exchangeInfoLabel}>Rate:</Text>
+              <Text style={styles.exchangeInfoValue}>
+                {exchangeRate ? `1 ${fromToken.symbol} ≈ ${exchangeRate.toFixed(toToken.decimalsShown)} ${toToken.symbol}` : 'N/A'} 
+              </Text>
+            </View>
+            <View style={styles.exchangeInfoRow}>
+              <Text style={styles.exchangeInfoLabel}>You Receive:</Text>
+              <Text style={styles.exchangeInfoValue}>{receiveAmountDisplay} {toToken.symbol}</Text>
+            </View>
+            <View style={styles.exchangeInfoRow}>
+              <Text style={styles.exchangeInfoLabel}>Total Value:</Text>
+              <Text style={styles.exchangeInfoValue}>{totalValueDisplay}</Text>
+            </View>
+             {quote && quote.marketInfos && (
+              <View style={styles.exchangeInfoRow}>
+                <Text style={styles.exchangeInfoLabel}>Route:</Text>
+                <Text style={styles.exchangeInfoValueMini}>
+                  {quote.marketInfos.map((mi: any) => mi.label).join(' → ')}
                 </Text>
               </View>
-            </Animated.View>
-          </>
+            )}
+          </View>
         )}
-      </View>
-
-      {/* Trade Button */}
-      <Animated.View
-        entering={SlideInUp.duration(300)}
-        style={styles.bottomContainer}
-      >
+        
+        {/* Trade Button */}
         <TouchableOpacity
           style={[
-            styles.tradeButton,
-            (!fromAmount || parseFloat(fromAmount) <= 0) && styles.tradeButtonDisabled
+            styles.tradeExecuteButton,
+            (!fromAmount || parseFloat(fromAmount) <= 0 || !quote || !!quote.errorCode) && styles.tradeExecuteButtonDisabled,
           ]}
-          disabled={!fromAmount || parseFloat(fromAmount) <= 0}
+          disabled={!fromAmount || parseFloat(fromAmount) <= 0 || !quote || !!quote.errorCode}
           onPress={handleTrade}
         >
           <ArrowRightLeft size={20} color={colors.white} />
-          <Text style={styles.tradeButtonText}>Trade</Text>
+          <Text style={styles.tradeExecuteButtonText}>Swap Tokens</Text>
         </TouchableOpacity>
-      </Animated.View>
 
-      {/* Token Selectors */}
+      </ScrollView>
+
+      {/* Token Selectors Modals (existing logic) */}
       {showFromSelector && (
         <TokenSelector
           tokenList={tokenList}
@@ -329,6 +349,9 @@ export default function TradeScreen() {
           onSelectToken={(token) => {
             setFromToken(token);
             setShowFromSelector(false);
+            // Reset fromAmount if token changes, or let user decide
+            // setFromAmount(''); 
+            // setToAmount('');
           }}
           onClose={() => setShowFromSelector(false)}
         />
@@ -342,150 +365,211 @@ export default function TradeScreen() {
           onSelectToken={(token) => {
             setToToken(token);
             setShowToSelector(false);
+            // setToAmount(''); // Quote will be re-fetched
           }}
           onClose={() => setShowToSelector(false)}
         />
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
-    backgroundColor: colors.backgroundDark,
+    backgroundColor: colors.backgroundDark, // Dark background from example
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: 20,
     paddingHorizontal: 16,
-    paddingBottom: 16,
-    backgroundColor: colors.backgroundDark,
+    paddingTop: 10, // Adjust as needed for status bar
+    // backgroundColor: '#141828', // Match SafeAreaView
+    position: 'absolute', // To overlay on ScrollView if needed, or keep it static
+    top: StatusBar.currentHeight, // Position below status bar
+    left: 0,
+    right: 0,
+    zIndex: 10,
   },
-  headerTitle: {
+  backButton: {
+    // Style for back button, e.g., position if it's part of an overlay header
+    // For now, assuming it's a simple button at the start of the header flow
+    padding: 8, // Make it easier to press
+    borderRadius: 16,
+    backgroundColor: colors.backgroundMedium, // Or a color that fits the new theme
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollViewContent: {
+    paddingTop: 60, // Space for the absolute positioned header
+    paddingHorizontal: 20,
+    paddingBottom: 30, // Space for the trade button
+  },
+  title: {
+    fontSize: 24,
+    fontFamily: 'Inter-SemiBold', // Using existing font family
+    color: colors.white,
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  label: {
     fontSize: 16,
-    fontFamily: 'Inter-SemiBold',
-    color: colors.textPrimary,
+    fontFamily: 'Inter-Medium',
+    color: colors.textSecondary, // Lighter text for labels
+    marginBottom: 8,
+    // opacity: 0.8, // From example
   },
-  closeButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.backgroundMedium,
+  tokenSelectorContainer: {
+    backgroundColor: colors.backgroundMedium, // Darker element background
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
   },
-  placeholder: {
-    width: 32,
+  tokenDisplay: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  content: {
-    padding: 16,
+  tokenIcon: { // Add if you have icons
+    width: 24,
+    height: 24,
+    marginRight: 8,
+    borderRadius: 12,
   },
-  tokenCard: {
-    backgroundColor: colors.backgroundMedium,
-    borderRadius: 16,
-    padding: 16,
-  },
-  tokenSelectorButton: {
-    backgroundColor: colors.backgroundLight,
-    alignSelf: 'flex-start',
-    borderRadius: 20,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    marginBottom: 12,
-  },
-  tokenSymbol: {
-    fontSize: 14,
+  tokenSymbolText: {
+    fontSize: 18,
     fontFamily: 'Inter-SemiBold',
-    color: colors.textPrimary,
+    color: colors.white,
+    marginRight: 8,
   },
-  amountInput: {
-    fontSize: 32,
-    fontFamily: 'Inter-Bold',
-    color: colors.textPrimary,
-    padding: 0,
-    marginBottom: 8,
+  tokenNameText: {
+    fontSize: 16,
+    fontFamily: 'Inter-SemiBold', // Changed from Inter-Regular
+    color: colors.white, // Changed from colors.textSecondary
   },
-  amountText: {
-    fontSize: 32,
+  tokenPlaceholderText: {
+    fontSize: 18,
+    fontFamily: 'Inter-Regular',
+    color: colors.textSecondary,
+  },
+  swapButtonContainer: {
+    alignItems: 'center',
+    // marginVertical: 1, // Reduced margin
+  },
+  swapButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.backgroundLight, // Slightly lighter than card, or primary color
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.backgroundMedium,
+  },
+  amountInputSection: {
+    backgroundColor: colors.backgroundMedium,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 24,
+  },
+  amountInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8, // Space for balance text below
+  },
+  amountTokenIcon: {
+    width: 24,
+    height: 24,
+    marginRight: 8,
+    borderRadius: 12,
+  },
+  amountTextInput: {
+    fontSize: 20, 
     fontFamily: 'Inter-Bold',
-    color: colors.textPrimary,
-    marginBottom: 8,
+    color: colors.white,
+    flex: 1, 
+    paddingVertical: 0,
+    outlineStyle: 'none', // Remove outline on focus
   },
   balanceText: {
     fontSize: 14,
     fontFamily: 'Inter-Regular',
     color: colors.textSecondary,
-    marginBottom: 4,
+    textAlign: 'left',
+    marginTop: 4,
   },
-  fiatValue: {
-    fontSize: 14,
-    fontFamily: 'Inter-Regular',
-    color: colors.textSecondary,
-    marginBottom: 16,
-  },
-  percentages: {
+  percentagesRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'space-around', // Or space-between
   },
-  percentageButton: {
+  percentageChip: {
     backgroundColor: colors.backgroundLight,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
   },
-  selectedPercentageButton: {
+  selectedPercentageChip: {
     backgroundColor: colors.primary,
   },
-  percentageText: {
+  percentageChipText: {
     fontSize: 14,
     fontFamily: 'Inter-Medium',
     color: colors.textSecondary,
   },
-  selectedPercentageText: {
+  selectedPercentageChipText: {
     color: colors.white,
   },
-  maxButton: {
-    // backgroundColor: colors.primary + '20',
-  },
-  swapButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.backgroundLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-    alignSelf: 'center',
-    marginVertical: 16,
-  },
-  bottomContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
+  exchangeInfoCard: {
     backgroundColor: colors.backgroundMedium,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderRadius: 12,
     padding: 16,
+    marginBottom: 24,
   },
-  tradeButton: {
+  exchangeInfoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  exchangeInfoLabel: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    color: colors.textSecondary,
+  },
+  exchangeInfoValue: {
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
+    color: colors.white,
+    textAlign: 'right',
+  },
+  exchangeInfoValueMini: {
+    fontSize: 12,
+    fontFamily: 'Inter-Regular',
+    color: colors.textSecondary,
+    textAlign: 'right',
+    flexShrink: 1,
+  },
+  tradeExecuteButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.primary,
     borderRadius: 16,
     height: 56,
+    paddingHorizontal: 16, // Added padding
   },
-  tradeButtonDisabled: {
-    backgroundColor: colors.backgroundLight,
-    opacity: 0.7,
+  tradeExecuteButtonDisabled: {
+    backgroundColor: colors.backgroundLight, // Use a disabled color from your theme
+    opacity: 0.6,
   },
-  tradeButtonText: {
-    fontSize: 16,
+  tradeExecuteButtonText: {
+    fontSize: 18,
     fontFamily: 'Inter-SemiBold',
     color: colors.white,
-    marginLeft: 8,
+    marginLeft: 10,
   },
 });
