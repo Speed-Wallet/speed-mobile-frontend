@@ -9,38 +9,23 @@ import UserData from '@/data/user';
 import { getAllTokenInfo } from '@/data/tokens';
 import { EnrichedTokenEntry } from '@/data/types';
 import BalanceCard from '@/components/BalanceCard';
-
-import { Buffer } from 'buffer';
-global.Buffer = Buffer;
+import { useWalletPublicKey } from '@/services/walletService';
+import { setStringAsync } from 'expo-clipboard';
 
 
 export default function HomeScreen() {
   const router = useRouter();
   const [userData, setUserData] = useState(UserData);
   const [tokenData, setTokenData] = useState<EnrichedTokenEntry[]>([]);
+  const walletAddress = useWalletPublicKey();
 
   useEffect(() => {
-    loadData();
+    const data = getAllTokenInfo();
+    setTokenData(data);
   }, []);
 
-  const loadData = async () => {
-    const data = await getAllTokenInfo();
-    setTokenData(data);
-  };
-
   const handleCopyAddress = async () => {
-    // try {
-    //   const addressToCopy = await AsyncStorage.getItem(PUBLIC_KEY_KEY);
-    //   if (addressToCopy) {
-    //     await setStringAsync(addressToCopy);
-    //     alert('Address copied to clipboard!');
-    //   } else {
-    //     alert('Wallet address not found. Please set up or import a wallet.');
-    //   }
-    // } catch (error) {
-    //   console.error("Failed to get address for copying:", error);
-    //   alert('Could not retrieve address.');
-    // }
+    await setStringAsync(walletAddress || '');
   };
 
   const handleBalanceCardAction = (actionType: string) => {
@@ -50,7 +35,7 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView 
+      <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
@@ -69,10 +54,10 @@ export default function HomeScreen() {
         </View>
 
         {/* Balance card */}
-        <BalanceCard 
-          balance={userData.totalBalance} 
-          onActionPress={handleBalanceCardAction} 
-          // currencySymbol="$" // Optional: if you want to override default
+        <BalanceCard
+          balance={userData.totalBalance}
+          onActionPress={handleBalanceCardAction}
+        // currencySymbol="$" // Optional: if you want to override default
         />
 
         {/* Crypto assets list */}
@@ -81,9 +66,9 @@ export default function HomeScreen() {
             <Text style={styles.sectionTitle}>TOKEN</Text>
             <Text style={styles.sectionTitle}>YOUR BALANCE</Text>
           </View>
-          
-          <TokenList 
-            data={tokenData} 
+
+          <TokenList
+            data={tokenData}
             onSelectToken={(token: EnrichedTokenEntry) => router.push(`/token/${token.address}`)}
           />
         </View>
