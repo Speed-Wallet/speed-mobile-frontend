@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'; // Added useRef
+import { useState, useEffect, useRef, useMemo } from 'react'; // Added useMemo
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, SafeAreaView, StatusBar, ScrollView, Image, Animated } from 'react-native'; // Removed Dimensions, Added Animated
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowDownUp, ArrowRightLeft, DollarSign, Lock } from 'lucide-react-native'; // Changed ArrowUpDown to ArrowDownUp, Added Lock
@@ -221,7 +221,27 @@ export default function TradeScreen() {
   const exchangeRate = (quote && toToken && fromToken && parseFloat(fromAmount) > 0)
     ? (parseFloat(quote.outAmount) / (10 ** toToken.decimals)) / parseFloat(fromAmount)
     : null;
-  const receiveAmountDisplay = toAmount ? parseFloat(toAmount).toFixed(toToken?.decimalsShown || 2) : '0.00'; // Use decimalsShown (now mandatory), fallback to 2 if toToken is null for some reason during initial render.
+
+  // Determine if the effective 'toAmount' is zero for styling purposes
+  const effectiveToAmountIsZero = !toAmount || parseFloat(toAmount) === 0;
+
+  // Format the 'toAmount' for display with thousand separators and correct decimal places
+  const receiveAmountDisplay = useMemo(() => {
+    const num = parseFloat(toAmount);
+    // Default to 0 formatted according to token's decimalsShown or 2 if token/amount is invalid
+    if (isNaN(num) || !toToken) {
+      return (0).toLocaleString(undefined, {
+        minimumFractionDigits: toToken?.decimalsShown || 2,
+        maximumFractionDigits: toToken?.decimalsShown || 2,
+      });
+    }
+    // Format the valid number
+    return num.toLocaleString(undefined, {
+      minimumFractionDigits: toToken.decimalsShown,
+      maximumFractionDigits: toToken.decimalsShown,
+    });
+  }, [toAmount, toToken]);
+
   const totalValueDisplay = (fromAmount && fromToken && parseFloat(fromAmount) > 0)
     ? formatCurrency(parseFloat(fromAmount) * fromToken.price)
     : '$0.00';
@@ -323,7 +343,10 @@ export default function TradeScreen() {
 
         {/* You Receive Text - MOVED HERE */}
         {toToken && (
-          <Text style={styles.receiveAmountText}>
+          <Text style={[
+            styles.receiveAmountText,
+            effectiveToAmountIsZero && { opacity: styles.label.opacity } // Apply label's opacity if zero
+          ]}>
             Receive: {receiveAmountDisplay} {toToken.symbol}
           </Text>
         )}
@@ -464,9 +487,9 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontFamily: 'Inter-Medium',
-    color: colors.textSecondary, // Lighter text for labels
+    color: colors.white, // Changed from colors.textSecondary
+    opacity: 0.7, // Added opacity to make it slightly less prominent than full white
     marginBottom: 8,
-    // opacity: 0.8, // From example
   },
   bottomLabel: {
     marginTop: -10,
@@ -557,7 +580,7 @@ const styles = StyleSheet.create({
   receiveAmountText: {
     fontSize: 16,
     fontFamily: 'Inter-Medium',
-    color: colors.white,
+    color: colors.white, // Base color is white
     textAlign: 'left', // Or 'center' if preferred
     marginTop: 4,
     marginBottom: 12, // Space before the trade button
