@@ -93,7 +93,7 @@ export default function RootLayout() {
         <Stack.Screen name="+not-found" options={{ title: 'Oops!' }} />
         <Stack.Screen name="transaction/send" options={{ presentation: 'modal' }} />
         <Stack.Screen name="transaction/receive" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="transaction/withdraw" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="transaction/buy" options={{ presentation: 'modal' }} />
         <Stack.Screen name="transaction/trade" options={{ presentation: 'modal' }} />
         <Stack.Screen name="wallet/cards" options={{ presentation: 'modal' }} />
         <Stack.Screen name="wallet/manage" options={{ presentation: 'modal' }} />
