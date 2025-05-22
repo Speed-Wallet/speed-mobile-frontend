@@ -70,12 +70,12 @@ export default function SendScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <BackButton style={styles.closeButton} />
+        <BackButton style={styles.closeButton} onPress={() => router.push('/')} />
         <Text style={styles.headerTitle}>Send Crypto</Text>
         <View style={styles.placeholder} />
       </View>
 
-      <ScrollView 
+      <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
       >
