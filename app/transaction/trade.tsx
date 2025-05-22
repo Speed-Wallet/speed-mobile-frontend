@@ -261,7 +261,7 @@ export default function TradeScreen() {
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="light-content" />
       <View style={styles.header}>
-        <BackButton style={styles.backButton} />
+        <BackButton style={styles.backButton} onPress={() => router.push('/')} />
         <Text style={styles.title}>Swap Tokens</Text>
         <View style={{ width: (styles.backButton.padding * 2) + 20 }} />
       </View>
@@ -567,7 +567,7 @@ const styles = StyleSheet.create({
     color: colors.white,
     flex: 1,
     paddingVertical: 0,
-    outlineStyle: 'none', // Remove outline on focus
+    outlineStyle: 'none'
   },
   balanceText: {
     fontSize: 14,
