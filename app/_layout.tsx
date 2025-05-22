@@ -60,6 +60,7 @@ export default function RootLayout() {
 
   const subscribeToTokenBalances = useTokenBalanceStore((state) => state.subscribeToTokenBalances);
   const activeWalletPublicKey = useWalletPublicKey();
+  alert("active wallet public key in app/_layout: " + activeWalletPublicKey);
   
   useEffect(() => {
     subscribeToTokenBalances(activeWalletPublicKey);
