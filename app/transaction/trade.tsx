@@ -297,35 +297,14 @@ export default function TradeScreen() {
           </View> */}
         </View>
 
-        {/* Exchange Info */}
-        {fromToken && toToken && (
-          <View style={styles.exchangeInfoCard}>
-            <View style={styles.exchangeInfoRow}>
-              <Text style={styles.exchangeInfoLabel}>Rate:</Text>
-              <Text style={styles.exchangeInfoValue}>
-                {exchangeRate ? `1 ${fromToken.symbol} ≈ ${exchangeRate.toFixed(toToken.decimalsShown)} ${toToken.symbol}` : 'N/A'} 
-              </Text>
-            </View>
-            <View style={styles.exchangeInfoRow}>
-              <Text style={styles.exchangeInfoLabel}>You Receive:</Text>
-              <Text style={styles.exchangeInfoValue}>{receiveAmountDisplay} {toToken.symbol}</Text>
-            </View>
-            <View style={styles.exchangeInfoRow}>
-              <Text style={styles.exchangeInfoLabel}>Total Value:</Text>
-              <Text style={styles.exchangeInfoValue}>{totalValueDisplay}</Text>
-            </View>
-             {quote && quote.marketInfos && (
-              <View style={styles.exchangeInfoRow}>
-                <Text style={styles.exchangeInfoLabel}>Route:</Text>
-                <Text style={styles.exchangeInfoValueMini}>
-                  {quote.marketInfos.map((mi: any) => mi.label).join(' → ')}
-                </Text>
-              </View>
-            )}
-          </View>
+        {/* You Receive Text - MOVED HERE */}
+        {toToken && (
+          <Text style={styles.receiveAmountText}>
+            Receive: {receiveAmountDisplay} {toToken.symbol}
+          </Text>
         )}
-        
-        {/* Trade Button */}
+
+        {/* Trade Button - Exchange Info Card will be MOVED AFTER this */}
         <TouchableOpacity
           style={[
             styles.tradeExecuteButton,
@@ -337,6 +316,35 @@ export default function TradeScreen() {
           <ArrowRightLeft size={20} color={colors.white} />
           <Text style={styles.tradeExecuteButtonText}>Swap Tokens</Text>
         </TouchableOpacity>
+
+        {/* Exchange Info - MOVED HERE and "You Receive" row removed */}
+        {fromToken && toToken && (
+          <View style={styles.exchangeInfoCard}>
+            <View style={styles.exchangeInfoRow}>
+              <Text style={styles.exchangeInfoLabel}>Rate:</Text>
+              <Text style={styles.exchangeInfoValue}>
+                {exchangeRate ? `1 ${fromToken.symbol} ≈ ${exchangeRate.toFixed(toToken.decimalsShown)} ${toToken.symbol}` : 'N/A'} 
+              </Text>
+            </View>
+            {/* "You Receive" row has been removed */}
+            <View style={styles.exchangeInfoRow}>
+              <Text style={styles.exchangeInfoLabel}>Total Value:</Text>
+              <Text style={styles.exchangeInfoValue}>{totalValueDisplay}</Text>
+            </View>
+            <View style={styles.exchangeInfoRow}>
+              <Text style={styles.exchangeInfoLabel}>Fee:</Text>
+              <Text style={styles.exchangeInfoValue}>0.2%</Text>
+            </View>
+             {quote && quote.marketInfos && (
+              <View style={styles.exchangeInfoRow}>
+                <Text style={styles.exchangeInfoLabel}>Route:</Text>
+                <Text style={styles.exchangeInfoValueMini}>
+                  {quote.marketInfos.map((mi: any) => mi.label).join(' → ')}
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
 
       </ScrollView>
 
@@ -474,7 +482,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.backgroundMedium,
     borderRadius: 12,
     padding: 16,
-    marginBottom: 24,
+    marginBottom: 12, // Adjusted marginBottom
   },
   amountInputRow: {
     flexDirection: 'row',
@@ -502,6 +510,16 @@ const styles = StyleSheet.create({
     textAlign: 'left',
     marginTop: 4,
   },
+  // New style for "You Receive" text
+  receiveAmountText: {
+    fontSize: 16,
+    fontFamily: 'Inter-Medium',
+    color: colors.white,
+    textAlign: 'left', // Or 'center' if preferred
+    marginTop: 4,
+    marginBottom: 12, // Space before the trade button
+    paddingHorizontal: 4, // Optional: if you want some horizontal padding
+  },
   percentagesRow: {
     flexDirection: 'row',
     justifyContent: 'space-around', // Or space-between
@@ -527,6 +545,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.backgroundMedium,
     borderRadius: 12,
     padding: 16,
+    marginTop: 16, // Adjusted marginTop to bring it closer to the trade button
     marginBottom: 24,
   },
   exchangeInfoRow: {
@@ -561,10 +580,11 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     height: 56,
     paddingHorizontal: 16, // Added padding
+    // marginBottom: 24, // Removed or adjust if exchangeInfoCard is below
   },
   tradeExecuteButtonDisabled: {
-    backgroundColor: colors.backgroundLight, // Use a disabled color from your theme
-    opacity: 0.6,
+    backgroundColor: colors.primary, // Use primary color, opacity will grey it out
+    opacity: 0.4, // Reduced opacity to make it more greyed out
   },
   tradeExecuteButtonText: {
     fontSize: 18,

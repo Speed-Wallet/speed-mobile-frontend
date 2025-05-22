@@ -6,11 +6,8 @@ import {
   VersionedTransaction,
   Connection,
   Transaction,
-  TransactionMessage,
   SystemProgram,
   sendAndConfirmTransaction,
-  sendAndConfirmRawTransaction,
-  MessageAccountKeys,
   ComputeBudgetProgram,
   TransactionInstruction,
 } from '@solana/web3.js';
@@ -19,10 +16,8 @@ import {
   getAssociatedTokenAddressSync,
   TOKEN_PROGRAM_ID,
   createAssociatedTokenAccountInstruction,
-  createInitializeAccountInstruction,
   createSyncNativeInstruction,
   createCloseAccountInstruction,
-  getOrCreateAssociatedTokenAccount
 } from '@solana/spl-token';
 import CryptoJS from 'crypto-js';
 import { useEffect, useState } from 'react';
