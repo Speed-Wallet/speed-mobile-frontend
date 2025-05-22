@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, SafeAreaView, StatusBar, ScrollView, Image } from 'react-native'; // Removed Dimensions
+import { useState, useEffect, useRef } from 'react'; // Added useRef
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, SafeAreaView, StatusBar, ScrollView, Image, Animated } from 'react-native'; // Removed Dimensions, Added Animated
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowDownUp, ArrowRightLeft, DollarSign } from 'lucide-react-native'; // Changed ArrowUpDown to ArrowDownUp
-import Animated, { FadeIn, SlideInUp } from 'react-native-reanimated';
+import { ArrowDownUp, ArrowRightLeft, DollarSign, Lock } from 'lucide-react-native'; // Changed ArrowUpDown to ArrowDownUp, Added Lock
+// import * as Reanimated from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient'; // Import LinearGradient
 import colors from '@/constants/colors';
 import { formatCurrency } from '@/utils/formatters';
@@ -30,6 +30,18 @@ export default function TradeScreen() {
   const [showFromSelector, setShowFromSelector] = useState(false);
   const [showToSelector, setShowToSelector] = useState(false);
   const [selectedPercentage, setSelectedPercentage] = useState('25'); // Add selected percentage state
+
+  const shakeAnimationValue = useRef(new Animated.Value(0)).current;
+
+  function triggerShake() {
+    shakeAnimationValue.setValue(0);
+    Animated.sequence([
+      Animated.timing(shakeAnimationValue, { toValue: 10, duration: 50, useNativeDriver: true }),
+      Animated.timing(shakeAnimationValue, { toValue: -10, duration: 50, useNativeDriver: true }),
+      Animated.timing(shakeAnimationValue, { toValue: 10, duration: 50, useNativeDriver: true }),
+      Animated.timing(shakeAnimationValue, { toValue: 0, duration: 50, useNativeDriver: true }),
+    ]).start();
+  }
 
   function updateAmounts() {
     if (timeoutID !== undefined) {
@@ -214,16 +226,27 @@ export default function TradeScreen() {
     ? formatCurrency(parseFloat(fromAmount) * fromToken.price)
     : '$0.00';
 
+  const isButtonDisabled = !fromAmount || parseFloat(fromAmount) <= 0 || !quote || !!quote.errorCode;
+
+  const handleTradeAttempt = () => {
+    if (isButtonDisabled) {
+      triggerShake();
+    } else {
+      handleTrade();
+    }
+  };
+
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="light-content" />
       <View style={styles.header}>
         <BackButton style={styles.backButton} />
-        {/* The title "Trade" from the original header is removed to match the new design's "Swap Tokens" title below */}
+        <Text style={styles.title}>Swap Tokens</Text>
+        <View style={{ width: (styles.backButton.padding * 2) + 20 }} />
       </View>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollViewContent}>
-        <Text style={styles.title}>Swap Tokens</Text>
+        {/* The title "Swap Tokens" is moved to the header */}
 
         {/* From Token */}
         <Text style={styles.label}>From</Text>
@@ -247,7 +270,7 @@ export default function TradeScreen() {
         </View>
 
         {/* To Token */}
-        <Text style={styles.label}>To</Text>
+        <Text style={[styles.label, styles.bottomLabel]}>To</Text>
         <TouchableOpacity onPress={() => setShowToSelector(true)} style={styles.tokenSelectorContainer}>
           {toToken ? (
             <View style={styles.tokenDisplay}>
@@ -308,21 +331,20 @@ export default function TradeScreen() {
         {/* Trade Button - Exchange Info Card will be MOVED AFTER this */}
         <TouchableOpacity
           style={[
-            // Apply opacity style for disabled state directly to TouchableOpacity
-            (!fromAmount || parseFloat(fromAmount) <= 0 || !quote || !!quote.errorCode) && styles.buttonOpacityDisabled,
+            styles.tradeExecuteButton, // Apply base styles here
+            isButtonDisabled && styles.buttonOpacityDisabled,
           ]}
-          disabled={!fromAmount || parseFloat(fromAmount) <= 0 || !quote || !!quote.errorCode}
-          onPress={handleTrade}
+          onPress={handleTradeAttempt} // Use the new handler
+          // disabled prop is removed to allow onPress to fire for shake animation
         >
-          <LinearGradient
-            colors={['#4f46e5', '#9333ea']}
-            start={{ x: 0, y: 0.5 }} // Gradient starts from the left
-            end={{ x: 1, y: 0.5 }}   // Gradient ends at the right
-            style={styles.tradeExecuteButton} // This style now dictates the gradient's layout
-          >
-            <ArrowRightLeft size={20} color={colors.white} />
+          <Animated.View style={{ transform: [{ translateX: shakeAnimationValue }], flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+            {isButtonDisabled ? (
+              <Lock size={20} color={colors.white} />
+            ) : (
+              <ArrowRightLeft size={20} color={colors.white} />
+            )}
             <Text style={styles.tradeExecuteButtonText}>Swap Tokens</Text>
-          </LinearGradient>
+          </Animated.View>
         </TouchableOpacity>
 
         {/* Exchange Info - MOVED HERE and "You Receive" row removed */}
@@ -403,14 +425,16 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between', // Distribute space
     paddingHorizontal: 16,
     paddingTop: 10, // Adjust as needed for status bar
-    // backgroundColor: '#141828', // Match SafeAreaView
     position: 'absolute', // To overlay on ScrollView if needed, or keep it static
     top: StatusBar.currentHeight, // Position below status bar
     left: 0,
     right: 0,
     zIndex: 10,
+    height: 50, // Give header a fixed height
+    backgroundColor: colors.backgroundDark, // Match the background color
   },
   backButton: {
     // Style for back button, e.g., position if it's part of an overlay header
@@ -418,21 +442,24 @@ const styles = StyleSheet.create({
     padding: 8, // Make it easier to press
     borderRadius: 16,
     backgroundColor: colors.backgroundMedium, // Or a color that fits the new theme
+    // Add a specific width if needed for the spacer, e.g., width: 30 + (padding * 2)
   },
   scrollView: {
     flex: 1,
   },
   scrollViewContent: {
-    paddingTop: 60, // Space for the absolute positioned header
+    paddingTop: 70, // Adjusted space for the fixed header (header height + some margin)
     paddingHorizontal: 20,
     paddingBottom: 30, // Space for the trade button
   },
   title: {
-    fontSize: 24,
+    fontSize: 20, // Slightly smaller to fit header
     fontFamily: 'Inter-SemiBold', // Using existing font family
     color: colors.white,
-    marginBottom: 24,
-    textAlign: 'center',
+    // marginBottom: 24, // Removed, no longer needed here
+    // textAlign: 'center', // Centering is handled by header's justifyContent or flex properties
+    flex: 1, // Allow title to take available space and center itself
+    textAlign: 'center', // Ensure text is centered within its flex container
   },
   label: {
     fontSize: 16,
@@ -440,6 +467,9 @@ const styles = StyleSheet.create({
     color: colors.textSecondary, // Lighter text for labels
     marginBottom: 8,
     // opacity: 0.8, // From example
+  },
+  bottomLabel: {
+    marginTop: -10,
   },
   tokenSelectorContainer: {
     backgroundColor: colors.backgroundMedium, // Darker element background
@@ -592,26 +622,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    // backgroundColor: colors.primary, // Removed: Gradient handles background
+    backgroundColor: '#3B82F6',
     borderRadius: 16,
     height: 56,
     paddingHorizontal: 16, 
     // marginBottom: 24, // Removed or adjust if exchangeInfoCard is below
 
-    // iOS Shadow
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    // Android Shadow
-    elevation: 5,
-  },
-  tradeExecuteButtonDisabled: { // This style might be for other non-gradient buttons or can be refactored
-    backgroundColor: colors.primary, 
-    opacity: 0.4, 
+    // iOS Shadow (kept commented as per last file state)
+    // shadowColor: '#000',
+    // shadowOffset: { width: 0, height: 2 },
+    // shadowOpacity: 0.25,
+    // shadowRadius: 3.84,
+    // Android Shadow (kept commented as per last file state)
+    // elevation: 5,
   },
   buttonOpacityDisabled: { // New style for TouchableOpacity's disabled state when wrapping a gradient
-    opacity: 0.4,
+    opacity: 0.6, // Made less opaque
   },
   tradeExecuteButtonText: {
     fontSize: 18,
