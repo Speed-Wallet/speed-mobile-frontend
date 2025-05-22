@@ -1,3 +1,6 @@
+import { Buffer } from 'buffer';
+global.Buffer = Buffer;
+
 import { Tabs } from 'expo-router';
 import { View, useWindowDimensions } from 'react-native'; // Import useWindowDimensions instead of Dimensions
 import { House, ChartPie as PieChart, ChartBar as BarChart3, Settings, Gift } from 'lucide-react-native';

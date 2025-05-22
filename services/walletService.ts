@@ -1,11 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as bip39 from 'bip39';
-import { 
-  Keypair, 
-  PublicKey, 
-  VersionedTransaction, 
-  Connection, 
-  Transaction, 
+import {
+  Keypair,
+  PublicKey,
+  VersionedTransaction,
+  Connection,
+  Transaction,
   TransactionMessage,
   SystemProgram,
   sendAndConfirmTransaction,
@@ -14,18 +14,21 @@ import {
   ComputeBudgetProgram,
   TransactionInstruction,
 } from '@solana/web3.js';
-import { 
+import {
   getAccount,
-  getAssociatedTokenAddressSync, 
-  TOKEN_PROGRAM_ID, 
+  getAssociatedTokenAddressSync,
+  TOKEN_PROGRAM_ID,
   createAssociatedTokenAccountInstruction,
   createInitializeAccountInstruction,
   createSyncNativeInstruction,
   createCloseAccountInstruction,
   getOrCreateAssociatedTokenAccount
 } from '@solana/spl-token';
-import { Buffer } from 'buffer';
 import CryptoJS from 'crypto-js';
+import { useEffect, useState } from 'react';
+
+import { Buffer } from 'buffer';
+global.Buffer = Buffer; // Polyfill global Buffer
 
 export const CONNECTION = new Connection('https://solana-rpc.publicnode.com');
 // const CONNECTION = new Connection('https://api.mainnet-beta.solana.com');
@@ -52,11 +55,24 @@ interface PrioritizationFeeData {
   high: number;
 }
 
-export const isWalletUnlocked = (): boolean => {
+export function useWalletPublicKey() {
+  const [publicKey, setPublicKey] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isWalletUnlocked()) {
+      const key = getWalletPublicKey();
+      setPublicKey(key);
+    }
+  }, []);
+
+  return publicKey;
+}
+
+const isWalletUnlocked = (): boolean => {
   return !!WALLET;
 };
 
-export const getWalletPublicKey = (): string | null => {
+const getWalletPublicKey = (): string | null => {
   if (WALLET) {
     return WALLET.publicKey.toBase58();
   }
@@ -87,13 +103,13 @@ const encryptMnemonic = (mnemonic: string, pin: string): { encryptedMnemonic: st
   const salt = generateSalt();
   const iv = generateIV();
   const key = deriveKey(pin, salt);
-  
-  const encrypted = CryptoJS.AES.encrypt(mnemonic, key, { 
+
+  const encrypted = CryptoJS.AES.encrypt(mnemonic, key, {
     iv: CryptoJS.enc.Hex.parse(iv),
     mode: CryptoJS.mode.CBC, // CBC is common, GCM is more modern but more complex with crypto-js
     padding: CryptoJS.pad.Pkcs7
   });
-  
+
   return {
     encryptedMnemonic: encrypted.toString(),
     salt,
@@ -111,8 +127,8 @@ const decryptMnemonic = (encryptedMnemonic: string, pin: string, salt: string, i
     });
     const decryptedText = decrypted.toString(CryptoJS.enc.Utf8);
     if (!decryptedText) { // Decryption might "succeed" but produce empty string if key is wrong
-        console.warn('Decryption resulted in empty string, likely incorrect PIN.');
-        return null;
+      console.warn('Decryption resulted in empty string, likely incorrect PIN.');
+      return null;
     }
     return decryptedText;
   } catch (error) {
@@ -126,7 +142,7 @@ export const generateSolanaWallet = async (): Promise<SolanaWallet> => {
   const mnemonic = bip39.generateMnemonic();
   const seed = await bip39.mnemonicToSeed(mnemonic);
   const keypair = Keypair.fromSeed(Uint8Array.from(seed.subarray(0, 32)));
-  
+
   return {
     mnemonic,
     publicKey: keypair.publicKey.toBase58(),
@@ -267,7 +283,7 @@ export const jupiterSwap = async (quoteResponse: any) => {
       outputMintPubKey,
       WALLET.publicKey
     );
-  
+
     if (!await CONNECTION.getAccountInfo(ata)) {
       console.log(`Creating OutAmount ATA`);
       const ix = createAssociatedTokenAccountInstruction(
@@ -292,7 +308,7 @@ export const jupiterSwap = async (quoteResponse: any) => {
         quoteResponse,
         userPublicKey: WALLET.publicKey.toBase58(),
         // feeAccount: PLATFORM_FEE_ACCOUNT,
-        
+
         dynamicComputeUnitLimit: true,
         dynamicSlippage: true,
         wrapUnwrapSOL: true,
@@ -359,7 +375,7 @@ async function unwrapWSOL(wallet: Keypair) {
 //   const ACCOUNT_SIZE = 165; // in bytes (standard SPL token account size)
 //   const tokenAccount = Keypair.generate();
 //   const rentExemption = await CONNECTION.getMinimumBalanceForRentExemption(ACCOUNT_SIZE);
-  
+
 //   const createAccountIx = SystemProgram.createAccount({
 //     fromPubkey: wallet.publicKey,
 //     newAccountPubkey: tokenAccount.publicKey,
@@ -367,14 +383,14 @@ async function unwrapWSOL(wallet: Keypair) {
 //     space: ACCOUNT_SIZE,
 //     programId: TOKEN_PROGRAM_ID,
 //   });
-  
+
 //   const initAccountIx = createInitializeAccountInstruction(
 //     tokenAccount.publicKey,
 //     mint,
 //     wallet.publicKey,
 //     TOKEN_PROGRAM_ID
 //   );
-  
+
 //   const tx = new Transaction().add(createAccountIx, initAccountIx);
 //   const sig = await sendAndConfirmTransaction(CONNECTION, tx, [wallet, tokenAccount]);
 //   console.log()
@@ -382,7 +398,7 @@ async function unwrapWSOL(wallet: Keypair) {
 
 
 async function calculatePriorityFee(tx: Transaction, signers: Keypair[])
-: Promise<PrioritizationFeeData> {
+  : Promise<PrioritizationFeeData> {
   const writableAccSet = new Set<string>();
   const lockedWritableAccounts: PublicKey[] = [];
   const simulationPromise = CONNECTION.simulateTransaction(tx, signers, true);
@@ -428,7 +444,7 @@ async function getTokenAccountsForWallet(walletPubkey: PublicKey) {
     const { mint, tokenAmount } = parsedTokenData.account.data.parsed.info;
     const amount = BigInt(tokenAmount.amount);
     const { decimals } = tokenAmount;
-  }  
+  }
 }
 
 async function getTokenBalance(tokenAcc: PublicKey): Promise<bigint> {

@@ -1,6 +1,7 @@
-import 'react-native-get-random-values'; // Ensure this is at the very top
-import { Buffer } from 'buffer'; // Import Buffer
+import { Buffer } from 'buffer';
 global.Buffer = Buffer; // Polyfill global Buffer
+import 'react-native-get-random-values'; // Ensure this is at the very top
+
 
 import { useEffect, useState } from 'react';
 import { Stack, SplashScreen } from 'expo-router';
@@ -9,17 +10,18 @@ import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import { useFonts } from 'expo-font';
 import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
 import { View, ActivityIndicator, StyleSheet, Text } from 'react-native';
-import { checkStoredWallet } from '@/services/walletService';
+import { checkStoredWallet, useWalletPublicKey } from '@/services/walletService';
 import SetupWalletScreen from '@/app/wallet/SetupWalletScreen';
 import EnterPinScreen from '@/app/wallet/EnterPinScreen';
 import colors from '@/constants/colors';
+import { useTokenBalanceStore } from '@/stores/tokenBalanceStore';
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   useFrameworkReady();
-  
+
   const [fontsLoaded, fontError] = useFonts({
     'Inter-Regular': Inter_400Regular,
     'Inter-Medium': Inter_500Medium,
@@ -56,9 +58,13 @@ export default function RootLayout() {
     }
   }, [fontsLoaded, fontError, walletState]);
 
-  const handleWalletUnlockedOrSetup = () => {
-    setWalletState('unlocked');
-  };
+  console.log('getting token balances');
+  const subscribeToTokenBalances = useTokenBalanceStore((state) => state.subscribeToTokenBalances);
+  const activeWalletPublicKey = useWalletPublicKey();
+  
+  useEffect(() => {
+    subscribeToTokenBalances(activeWalletPublicKey);
+  }, [activeWalletPublicKey, subscribeToTokenBalances]);
 
   if (!fontsLoaded && !fontError) {
     return null;
@@ -74,11 +80,11 @@ export default function RootLayout() {
   }
 
   if (walletState === 'no_wallet') {
-    return <SetupWalletScreen onWalletSetupComplete={handleWalletUnlockedOrSetup} />;
+    return <SetupWalletScreen onWalletSetupComplete={() => setWalletState('unlocked')} />;
   }
 
   if (walletState === 'locked') {
-    return <EnterPinScreen onWalletUnlocked={handleWalletUnlockedOrSetup} publicKey={storedPublicKey} />;
+    return <EnterPinScreen onWalletUnlocked={() => setWalletState('unlocked')} publicKey={storedPublicKey} />;
   }
 
   return (

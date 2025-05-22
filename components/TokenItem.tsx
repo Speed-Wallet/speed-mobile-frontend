@@ -4,6 +4,10 @@ import { ArrowUpRight, ArrowDownRight } from 'lucide-react-native';
 import colors from '@/constants/colors';
 import { formatCurrency, formatPercentage } from '@/utils/formatters';
 import GreyCard from './GreyCard'; // Import GreyCard
+import { useTokenBalanceStore } from '@/stores/tokenBalanceStore'; // Import the store directly
+import { useWalletPublicKey } from '@/services/walletService';
+import { useShallow } from 'zustand/react/shallow'
+
 
 // Define constants for image sizes
 const TOKEN_SYMBOL_CONTAINER_SIZE = 40; // Increased from 24
@@ -18,8 +22,46 @@ type TokenItemProps = {
 const TokenItem = ({ token, onPress, showBalance = true }: TokenItemProps) => {
   const isPositiveChange = token.priceChangePercentage >= 0;
 
+  const activeWalletPublicKey = useWalletPublicKey();
+
+  // Get balance data, loading, and error states from useTokenBalanceStore with a single selector
+  const { balances: liveBalances, loading: balancesLoading, error: balancesError } = useTokenBalanceStore(useShallow(
+    (state) => ({
+      balances: state.balances,
+      loading: state.loading,
+      error: state.error,
+    })
+  ));
+
+  // Note: The subscribeToTokenBalances action is called in app/_layout.tsx
+  // when activeWalletPublicKey changes, so we don't need to call it here.
+
+  // Optional: Handle loading state for balances
+  // if (balancesLoading && showBalance) {
+  //   // Potentially return a loading indicator for the balance part or the whole item
+  // }
+  // Optional: Handle error state for balances
+  // if (balancesError && showBalance) {
+  //   // Potentially display an error message for the balance part
+  // }
+
+  let displayQuantity = token.balance; // Fallback to initial/stale balance from prop
+  let displayDollarValue = token.balance * token.price; // Fallback for dollar value
+
+  if (showBalance && activeWalletPublicKey) { // Only try to use live balances if a wallet is active
+    const liveTokenData = token.address && liveBalances && liveBalances[token.address]
+      ? liveBalances[token.address]
+      : null;
+
+    if (liveTokenData) {
+      displayQuantity = liveTokenData.balance;
+      // Assuming token.price from the prop is the price to use for live balance dollar value
+      displayDollarValue = liveTokenData.balance * token.price;
+    }
+  }
+
   return (
-    <GreyCard 
+    <GreyCard
       style={styles.cardStyle}
       contentPaddingVertical={16}
       contentPaddingHorizontal={16}
@@ -30,9 +72,9 @@ const TokenItem = ({ token, onPress, showBalance = true }: TokenItemProps) => {
             {/* Replace Text with new Image components */}
             {token.logoURI && (
               <>
-                <Image 
-                  source={{ uri: token.logoURI }} 
-                  style={styles.logoMainImage} 
+                <Image
+                  source={{ uri: token.logoURI }}
+                  style={styles.logoMainImage}
                 />
                 {/* <Image 
                   source={{ uri: token.logoURI }} 
@@ -42,7 +84,7 @@ const TokenItem = ({ token, onPress, showBalance = true }: TokenItemProps) => {
             )}
           </View>
         </View>
-        
+
         <View style={styles.infoContainer}>
           <Text style={styles.name}>{token.name}</Text>
           <Text style={styles.network}>{token.network}</Text>
@@ -50,16 +92,18 @@ const TokenItem = ({ token, onPress, showBalance = true }: TokenItemProps) => {
             // Only the token quantity and symbol remain here
             // Apply styles.price instead of styles.balance and add marginTop
             <Text style={[styles.price, { marginTop: 4 }]}>
-              {token.balance.toFixed(4)} {token.symbol}
+              {/* Ensure displayQuantity is a number before calling toFixed */}
+              {typeof displayQuantity === 'number' ? displayQuantity.toFixed(4) : '0.0000'} {token.symbol}
             </Text>
           )}
         </View>
-        
+
         <View style={styles.priceContainer}>
           {showBalance ? (
             // Display dollar value of the balance here
             <Text style={styles.price}>
-              {formatCurrency(token.balance * token.price)}
+              {/* Ensure displayDollarValue is valid before formatting */}
+              {formatCurrency(typeof displayDollarValue === 'number' ? displayDollarValue : 0)}
             </Text>
           ) : (
             // Display token's general price and change percentage
@@ -73,7 +117,7 @@ const TokenItem = ({ token, onPress, showBalance = true }: TokenItemProps) => {
                 ) : (
                   <ArrowDownRight size={12} color={colors.error} style={styles.changeIcon} />
                 )}
-                <Text 
+                <Text
                   style={[
                     styles.change,
                     { color: isPositiveChange ? colors.success : colors.error }
@@ -116,7 +160,7 @@ const styles = StyleSheet.create({
     // Removed backgroundColor, borderRadius, paddingHorizontal, paddingVertical from original
   },
   // styles.symbol (text style) is no longer used by the logoContainer's direct children
-  
+
   // New styles for the images within logoContainer
   logoMainImage: {
     width: '100%',
