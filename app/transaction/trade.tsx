@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, SafeAreaView, StatusBar, ScrollView, Image } from 'react-native'; // Removed Dimensions
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowDownUp, ArrowRightLeft } from 'lucide-react-native'; // Changed ArrowUpDown to ArrowDownUp
+import { ArrowDownUp, ArrowRightLeft, DollarSign } from 'lucide-react-native'; // Changed ArrowUpDown to ArrowDownUp
 import Animated, { FadeIn, SlideInUp } from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient'; // Import LinearGradient
 import colors from '@/constants/colors';
 import { formatCurrency } from '@/utils/formatters';
 import { getAllTokenInfo, getTokenByAddress } from '@/data/tokens';
@@ -59,8 +60,8 @@ export default function TradeScreen() {
   async function fetchAndApplyQuote(amount: number) {
     try {
       quote = await JupiterQuote(
-        fromToken!.address, 
-        toToken!.address, 
+        fromToken!.address,
+        toToken!.address,
         amount * 10 ** fromToken!.decimals
       );
 
@@ -88,10 +89,10 @@ export default function TradeScreen() {
       alert('Network error, unable to establish connection');
     }
   }
-  
+
   useEffect(updateAmounts, [fromAmount]);
   useEffect(() => loadData(), [tokenAddress]);
-  
+
   useEffect(() => {
     if (fromToken && !fromAmount) {
       // handlePercentageSelect('25');
@@ -122,9 +123,9 @@ export default function TradeScreen() {
 
   const handlePercentageSelect = (percentage: string) => {
     if (!fromToken) return;
-    
+
     setSelectedPercentage(percentage);
-    
+
     if (percentage === 'MAX') {
       setFromAmount(fromToken.balance.toString());
     } else {
@@ -141,7 +142,7 @@ export default function TradeScreen() {
 
     setFromToken(tempToToken);
     setToToken(tempFromToken);
-    
+
     // If amounts were tied to tokens, you might want to swap them or clear/recalculate
     // For now, let's clear the 'toAmount' and keep 'fromAmount' if it was user-entered,
     // or swap them if 'toAmount' was a calculated quote.
@@ -159,12 +160,12 @@ export default function TradeScreen() {
     // setSelectedPercentage('25'); // Reset selected percentage
     // Manually trigger quote update if fromAmount has a value
     if (fromAmount && parseFloat(fromAmount) > 0) {
-        // updateAmounts(); // This might be called by useEffect on fromAmount already
+      // updateAmounts(); // This might be called by useEffect on fromAmount already
     }
   };
 
   const handleTrade = async () => {
-    const amount= parseFloat(fromAmount);
+    const amount = parseFloat(fromAmount);
 
     if (isNaN(amount) || amount <= 0) {
       alert('Invalid amount');
@@ -182,7 +183,7 @@ export default function TradeScreen() {
       alert('Quote is not available or invalid. Please try again.');
       return;
     }
-    
+
     // alert(`Trading ${fromAmount} ${fromToken?.symbol} for ${toAmount} ${toToken?.symbol}`);
 
     if (timeoutID !== undefined) {
@@ -193,7 +194,7 @@ export default function TradeScreen() {
       clearInterval(intervalID);
       intervalID = undefined;
     }
-  
+
     try {
       await jupiterSwap(quote);
       alert('Trade Successful!'); // Provide feedback
@@ -205,12 +206,12 @@ export default function TradeScreen() {
   };
 
   // Calculate exchange rate and receive amount for display
-  const exchangeRate = (quote && toToken && fromToken && parseFloat(fromAmount) > 0) 
-    ? (parseFloat(quote.outAmount) / (10**toToken.decimals)) / parseFloat(fromAmount) 
+  const exchangeRate = (quote && toToken && fromToken && parseFloat(fromAmount) > 0)
+    ? (parseFloat(quote.outAmount) / (10 ** toToken.decimals)) / parseFloat(fromAmount)
     : null;
   const receiveAmountDisplay = toAmount ? parseFloat(toAmount).toFixed(toToken?.decimalsShown || 2) : '0.00'; // Use decimalsShown (now mandatory), fallback to 2 if toToken is null for some reason during initial render.
-  const totalValueDisplay = (fromAmount && fromToken && parseFloat(fromAmount) > 0) 
-    ? formatCurrency(parseFloat(fromAmount) * fromToken.price) 
+  const totalValueDisplay = (fromAmount && fromToken && parseFloat(fromAmount) > 0)
+    ? formatCurrency(parseFloat(fromAmount) * fromToken.price)
     : '$0.00';
 
 
@@ -223,7 +224,7 @@ export default function TradeScreen() {
       </View>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollViewContent}>
         <Text style={styles.title}>Swap Tokens</Text>
-        
+
         {/* From Token */}
         <Text style={styles.label}>From</Text>
         <TouchableOpacity onPress={() => setShowFromSelector(true)} style={styles.tokenSelectorContainer}>
@@ -258,7 +259,7 @@ export default function TradeScreen() {
           )}
           <ArrowDownUp color={colors.textSecondary} size={16} />
         </TouchableOpacity>
-        
+
         {/* Amount Input */}
         <Text style={styles.label}>Amount</Text>
         <View style={styles.amountInputSection}>
@@ -307,14 +308,21 @@ export default function TradeScreen() {
         {/* Trade Button - Exchange Info Card will be MOVED AFTER this */}
         <TouchableOpacity
           style={[
-            styles.tradeExecuteButton,
-            (!fromAmount || parseFloat(fromAmount) <= 0 || !quote || !!quote.errorCode) && styles.tradeExecuteButtonDisabled,
+            // Apply opacity style for disabled state directly to TouchableOpacity
+            (!fromAmount || parseFloat(fromAmount) <= 0 || !quote || !!quote.errorCode) && styles.buttonOpacityDisabled,
           ]}
           disabled={!fromAmount || parseFloat(fromAmount) <= 0 || !quote || !!quote.errorCode}
           onPress={handleTrade}
         >
-          <ArrowRightLeft size={20} color={colors.white} />
-          <Text style={styles.tradeExecuteButtonText}>Swap Tokens</Text>
+          <LinearGradient
+            colors={['#4f46e5', '#9333ea']}
+            start={{ x: 0, y: 0.5 }} // Gradient starts from the left
+            end={{ x: 1, y: 0.5 }}   // Gradient ends at the right
+            style={styles.tradeExecuteButton} // This style now dictates the gradient's layout
+          >
+            <ArrowRightLeft size={20} color={colors.white} />
+            <Text style={styles.tradeExecuteButtonText}>Swap Tokens</Text>
+          </LinearGradient>
         </TouchableOpacity>
 
         {/* Exchange Info - MOVED HERE and "You Receive" row removed */}
@@ -323,19 +331,24 @@ export default function TradeScreen() {
             <View style={styles.exchangeInfoRow}>
               <Text style={styles.exchangeInfoLabel}>Rate:</Text>
               <Text style={styles.exchangeInfoValue}>
-                {exchangeRate ? `1 ${fromToken.symbol} ≈ ${exchangeRate.toFixed(toToken.decimalsShown)} ${toToken.symbol}` : 'N/A'} 
+                {exchangeRate ? `1 ${fromToken.symbol} = ${exchangeRate.toFixed(toToken.decimalsShown)} ${toToken.symbol}` : 'N/A'}
               </Text>
             </View>
             {/* "You Receive" row has been removed */}
             <View style={styles.exchangeInfoRow}>
               <Text style={styles.exchangeInfoLabel}>Total Value:</Text>
-              <Text style={styles.exchangeInfoValue}>{totalValueDisplay}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <DollarSign size={14} color={'#4ade80'} style={{ marginRight: 2, opacity: 1 }} />
+                <Text style={[styles.exchangeInfoValue, { color: '#4ade80', opacity: 1 }]}>
+                  {totalValueDisplay.startsWith('$') ? totalValueDisplay.substring(1) : totalValueDisplay}
+                </Text>
+              </View>
             </View>
             <View style={styles.exchangeInfoRow}>
-              <Text style={styles.exchangeInfoLabel}>Fee:</Text>
+              <Text style={styles.exchangeInfoLabel}>Fee %:</Text>
               <Text style={styles.exchangeInfoValue}>0.2%</Text>
             </View>
-             {quote && quote.marketInfos && (
+            {quote && quote.marketInfos && (
               <View style={styles.exchangeInfoRow}>
                 <Text style={styles.exchangeInfoLabel}>Route:</Text>
                 <Text style={styles.exchangeInfoValueMini}>
@@ -468,7 +481,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     // marginVertical: 1, // Reduced margin
   },
-  swapButton: {
+  swapButton: { // Style for LinearGradient
     width: 48,
     height: 48,
     borderRadius: 24,
@@ -496,10 +509,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   amountTextInput: {
-    fontSize: 20, 
+    fontSize: 20,
     fontFamily: 'Inter-Bold',
     color: colors.white,
-    flex: 1, 
+    flex: 1,
     paddingVertical: 0,
     outlineStyle: 'none', // Remove outline on focus
   },
@@ -552,39 +565,53 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 12, // Increased vertical spacing
   },
   exchangeInfoLabel: {
     fontSize: 14,
-    fontFamily: 'Inter-Regular',
+    fontFamily: 'Inter-Regular', // Changed from Inter-Medium to make it less bold
     color: colors.textSecondary,
+    // marginRight: 4, // Add some spacing if needed next to an icon
   },
   exchangeInfoValue: {
     fontSize: 14,
-    fontFamily: 'Inter-SemiBold',
+    fontFamily: 'Inter-Medium', // Changed from Inter-SemiBold to make it less bold
     color: colors.white,
     textAlign: 'right',
+    opacity: 0.9, // Added opacity to slightly grey out
   },
   exchangeInfoValueMini: {
     fontSize: 12,
-    fontFamily: 'Inter-Regular',
-    color: colors.textSecondary,
+    fontFamily: 'Inter-Regular', // Kept as Inter-Regular
+    color: colors.textSecondary, // This is likely already a greyish color
     textAlign: 'right',
     flexShrink: 1,
+    opacity: 0.9, // Added or adjust opacity if needed for further greying out
   },
   tradeExecuteButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primary,
+    // backgroundColor: colors.primary, // Removed: Gradient handles background
     borderRadius: 16,
     height: 56,
-    paddingHorizontal: 16, // Added padding
+    paddingHorizontal: 16, 
     // marginBottom: 24, // Removed or adjust if exchangeInfoCard is below
+
+    // iOS Shadow
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    // Android Shadow
+    elevation: 5,
   },
-  tradeExecuteButtonDisabled: {
-    backgroundColor: colors.primary, // Use primary color, opacity will grey it out
-    opacity: 0.4, // Reduced opacity to make it more greyed out
+  tradeExecuteButtonDisabled: { // This style might be for other non-gradient buttons or can be refactored
+    backgroundColor: colors.primary, 
+    opacity: 0.4, 
+  },
+  buttonOpacityDisabled: { // New style for TouchableOpacity's disabled state when wrapping a gradient
+    opacity: 0.4,
   },
   tradeExecuteButtonText: {
     fontSize: 18,
