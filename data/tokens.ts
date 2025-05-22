@@ -21,7 +21,7 @@ const tokens: TokenEntry[] = tokenData.map((token: TokenJsonEntry): TokenEntry =
   }
 
   return {
-    ...token, // Spread all properties from the original token
+    ...token, // Spread all properties from the original token, including decimalsShown
     color: color, // Add the new color property
   };
 });

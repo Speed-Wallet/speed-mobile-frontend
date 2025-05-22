@@ -4,9 +4,10 @@ export interface TokenJsonEntry {
   name: string;
   symbol: string;
   decimals: number;
+  decimalsShown: number; // Changed to be non-optional
   logoURI: string;
-  tags: string[];
-  daily_volume: number;
+  tags?: string[];
+  daily_volume?: number;
   created_at: string;
   freeze_authority: string | null;
   mint_authority: string | null;
@@ -18,17 +19,19 @@ export interface TokenJsonEntry {
 }
 
 export interface TokenEntry extends TokenJsonEntry {
-    color: string;
+  color: string;
+  // decimalsShown is inherited from TokenJsonEntry
 }
 
-export type EnrichedTokenEntry = TokenEntry & {
+export interface EnrichedTokenEntry extends TokenEntry {
   priceChangePercentage: number;
   balance: number;
   price: number;
-  description?: string;
+  description: string;
   marketCap: number;
   volume24h: number;
   circulatingSupply: number;
   maxSupply?: number;
-};
-  
+  // decimalsShown is inherited from TokenEntry -> TokenJsonEntry
+}
+

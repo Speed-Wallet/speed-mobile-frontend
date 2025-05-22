@@ -15,7 +15,7 @@ const TokenList = ({ data, onSelectToken }: TokenListProps) => {
     <View style={styles.container}>
       {data.map((token, index) => (
         <Animated.View 
-          key={token.address}
+          key={token.address + index}
           entering={FadeInRight.delay(100 + (index * 100)).duration(400)}
         >
           <TokenItem
