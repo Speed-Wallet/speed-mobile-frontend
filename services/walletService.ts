@@ -10,17 +10,20 @@ import {
   sendAndConfirmTransaction,
   ComputeBudgetProgram,
   TransactionInstruction,
+  AddressLookupTableAccount,
+  TransactionMessage
 } from '@solana/web3.js';
 import {
   getAccount,
-  getAssociatedTokenAddressSync,
+  getAssociatedTokenAddress,
   TOKEN_PROGRAM_ID,
   createAssociatedTokenAccountInstruction,
+  createTransferInstruction,
   createSyncNativeInstruction,
   createCloseAccountInstruction,
 } from '@solana/spl-token';
 import CryptoJS from 'crypto-js';
-import { useEffect, useState } from 'react';
+import { Key, useEffect, useState } from 'react';
 
 import { Buffer } from 'buffer';
 global.Buffer = Buffer; // Polyfill global Buffer
@@ -34,10 +37,11 @@ const SALT_KEY = 'solanaSalt';
 const IV_KEY = 'solanaIV';
 export const PUBLIC_KEY_KEY = 'solanaPublicKey'; // Keep this as is
 
+export const PLATFORM_FEE_RATE = 0.001;
+const PLATFORM_FEE_ACCOUNT = new PublicKey('7o3QNaG84hrWhCLoAEXuiiyNfKvpGvMAyTwDb3reBram');
 const WSOL_MINT = 'So11111111111111111111111111111111111111112';
-const PLATFORM_FEE_ACCOUNT = '7o3QNaG84hrWhCLoAEXuiiyNfKvpGvMAyTwDb3reBram';
 const PLATFORM_FEE_BPS = 20; // 0.2%
-let WALLET: Keypair; // Initialize WALLET to null
+let WALLET: Keypair | null = null; // Initialize WALLET to null
 
 interface SolanaWallet {
   mnemonic: string;
@@ -288,36 +292,6 @@ export const lockWallet = (): void => {
   }
 };
 
-export const signAndSendTx = async (tx: VersionedTransaction | Transaction, wallet: Keypair): Promise<string> => {
-  if (tx instanceof Transaction) {
-    const microLamports = (await calculatePriorityFee(tx, [wallet])).high;
-    const transactionWithFee = new Transaction();
-
-    console.log(`Setting priority fee: ${microLamports}`);
-    microLamports > 0 && tx.add(ComputeBudgetProgram.setComputeUnitPrice({ microLamports }));
-    transactionWithFee.add(...tx.instructions);
-
-    return sendAndConfirmTransaction(
-      CONNECTION,
-      transactionWithFee,
-      [wallet],
-      { maxRetries: 0, skipPreflight: true }
-    )
-  }
-
-  tx.sign([wallet]);
-
-  const sig = await CONNECTION.sendRawTransaction(tx.serialize(), {
-    maxRetries: 2, skipPreflight: true
-  });
-
-  const res = await CONNECTION.confirmTransaction(sig);
-  console.log(res);
-
-  return sig;
-};
-
-
 export const JupiterQuote = async (
   fromMint: string,
   toMint: string,
@@ -335,46 +309,64 @@ export const JupiterQuote = async (
   return (await fetch(`${JUPITER_API_URL}quote?${quoteQueries.join('&')}`)).json();
 };
 
-export const jupiterSwap = async (quoteResponse: any) => {
-  const { outputMint } = quoteResponse;
+export const jupiterSwap = async (quoteResponse: any, platformFee: number): Promise<string> => {
+  if (!WALLET) throw 'No wallet found';
+
   const inAmount = parseInt(quoteResponse.inAmount);
 
   if (isNaN(inAmount)) {
     throw new Error(`Invalid inAmount`);
   }
 
+  const { inputMint, outputMint } = quoteResponse;
+  const instructions: TransactionInstruction[] = [];
+
+  // Wallet fee instruction
+  if (inputMint === WSOL_MINT) {
+    instructions.push(SystemProgram.transfer({
+      fromPubkey: WALLET.publicKey,
+      toPubkey: PLATFORM_FEE_ACCOUNT,
+      lamports: platformFee
+    }));
+  } else {
+    const inputMintPubKey = new PublicKey(inputMint);
+    const [walletATA, platformFeeATA] = await Promise.all([
+      getAssociatedTokenAddress(inputMintPubKey, WALLET.publicKey),
+      getAssociatedTokenAddress(inputMintPubKey, PLATFORM_FEE_ACCOUNT)
+    ]);
+
+    instructions.push(createTransferInstruction(
+      walletATA,
+      platformFeeATA,
+      WALLET.publicKey,
+      platformFee
+    ));
+  }
+
+  // Create output mint ata for the user if it's not available
   if (outputMint !== WSOL_MINT) {
     const outputMintPubKey = new PublicKey(outputMint);
-    const ata = getAssociatedTokenAddressSync(
-      outputMintPubKey,
-      WALLET.publicKey
-    );
+    const ata = await getAssociatedTokenAddress(outputMintPubKey, WALLET.publicKey);
 
     if (!await CONNECTION.getAccountInfo(ata)) {
-      console.log(`Creating OutAmount ATA`);
-      const ix = createAssociatedTokenAccountInstruction(
+      console.log(`Creating output mint ATA`);
+
+      instructions.push(createAssociatedTokenAccountInstruction(
         WALLET.publicKey,
         ata,
         WALLET.publicKey,
         outputMintPubKey
-      );
-      const tx = new Transaction().add(ix);
-      const sig = await signAndSendTx(tx, WALLET);
-      console.log(`OutAmount ATA created\n${sig}`);
+      ));
     }
   }
 
-  console.log(`Swapping started`);
-
-  const { swapTransaction } = await (
-    await fetch(`${JUPITER_API_URL}swap?dynamicSlippage=true`, {
+  const jupiterInstructionsResponse = await (
+    await fetch(`${JUPITER_API_URL}swap-instructions?dynamicSlippage=true`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         quoteResponse,
         userPublicKey: WALLET.publicKey.toBase58(),
-        // feeAccount: PLATFORM_FEE_ACCOUNT,
-
         dynamicComputeUnitLimit: true,
         dynamicSlippage: true,
         wrapUnwrapSOL: true,
@@ -383,137 +375,148 @@ export const jupiterSwap = async (quoteResponse: any) => {
     })
   ).json();
 
-  // deserialize the transaction
-  const swapTransactionBuf = Buffer.from(swapTransaction, 'base64');
-  const transaction = VersionedTransaction.deserialize(swapTransactionBuf);
-  console.log(transaction);
-  const sig = await signAndSendTx(transaction, WALLET);
-  console.log(sig);
-};
+  const {
+      setupInstructions,
+      swapInstruction,
+      cleanupInstruction,
+      tokenLedgerInstruction,
+      addressLookupTableAddresses,
+      prioritizationFeeLamports,
+      computeUnitLimit
+  } = jupiterInstructionsResponse;
 
-async function wrapSOL(amountInLamports: number, wallet: Keypair): Promise<TransactionInstruction[]> {
-  const WRAPPED_SOL_MINT = new PublicKey(WSOL_MINT);
-  const ata = getAssociatedTokenAddressSync(WRAPPED_SOL_MINT, wallet.publicKey);
-  const accInfo = await CONNECTION.getAccountInfo(ata);
-  const instructions = [];
 
-  // If WSOL token account doesn't exist, create it.
-  if (!accInfo) {
-    instructions.push(createAssociatedTokenAccountInstruction(
-      wallet.publicKey,
-      ata,
-      wallet.publicKey,
-      WRAPPED_SOL_MINT
-    ));
+  // Add token ledger instruction if present
+  if (tokenLedgerInstruction) {
+      instructions.push(deserializeInstruction(tokenLedgerInstruction));
   }
 
-  instructions.push(SystemProgram.transfer({
-    fromPubkey: wallet.publicKey,
-    toPubkey: ata,
-    lamports: amountInLamports
-  }));
+  // Add setup instructions (e.g., create ATAs)
+  if (setupInstructions) {
+      instructions.push(...setupInstructions.map(deserializeInstruction));
+  }
 
-  instructions.push(createSyncNativeInstruction(ata, TOKEN_PROGRAM_ID));
-  return instructions;
-}
+  // Add the main swap instruction
+  instructions.push(deserializeInstruction(swapInstruction));
 
-// Delete on production
-(window as any).unwrapWSOL = () => unwrapWSOL(WALLET);
+  // Add cleanup instructions (e.g., close ATAs)
+  if (cleanupInstruction) {
+      instructions.push(deserializeInstruction(cleanupInstruction));
+  }
 
-async function unwrapWSOL(wallet: Keypair) {
-  const WRAPPED_SOL_MINT = new PublicKey(WSOL_MINT);
-  const wsolAccount = getAssociatedTokenAddressSync(WRAPPED_SOL_MINT, wallet.publicKey);
-
-  const closeAccIx = createCloseAccountInstruction(
-    wsolAccount,
-    wallet.publicKey,
-    wallet.publicKey
+  // Deserialize Address Lookup Table Accounts
+  const deserializedAddressLookupTableAccounts: AddressLookupTableAccount[] = await Promise.all(
+    addressLookupTableAddresses.map(
+      (address: string) => CONNECTION
+        .getAddressLookupTable(new PublicKey(address))
+        .then(res => res.value)
+    )
   );
 
-  const tx = new Transaction().add(closeAccIx);
-  const sig = await sendAndConfirmTransaction(CONNECTION, tx, [wallet]);
+  // const txForSimulation = (await composeAndSignTransaction(
+  //   instructions,
+  //   deserializedAddressLookupTableAccounts,
+  //   WALLET
+  // ))[0];
 
-  console.log('✅ Unwrapped WSOL → SOL');
-  console.log('Transaction signature:', sig);
+  // try {
+  //   console.log('Simulating tranaction');
+  //   const simResult = await CONNECTION.simulateTransaction(txForSimulation);
+  //   const cus = simResult.value.unitsConsumed;
+  //   console.log(simResult);
+
+  //   if (!cus) throw new Error('Simulated compute units is "undefined"');
+
+  //   instructions.unshift(ComputeBudgetProgram.setComputeUnitLimit({ units: cus }));
+  // } catch (err) {
+  //   throw new Error(`Transaction simulation error: ${err}`)
+  // }
+
+  const computeUnitPrice = Math.round(prioritizationFeeLamports * 1e6 / computeUnitLimit);
+  instructions.unshift(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: computeUnitPrice }));
+
+  console.log('Simulating successful, sending actual transaction...');
+  const [realTransaction, lastValidBlockHeight] = await composeAndSignTransaction(
+    instructions,
+    deserializedAddressLookupTableAccounts,
+    WALLET
+  );
+
+  const sig = await CONNECTION.sendRawTransaction(realTransaction.serialize(), {
+    maxRetries: 2, skipPreflight: true
+  });
+
+  const res = await CONNECTION.confirmTransaction({
+    signature: sig,
+    blockhash: realTransaction.message.recentBlockhash,
+    lastValidBlockHeight
+  }, 'finalized');
+
+  if (res.value.err) {
+    console.error(res.value.err);
+    throw new Error('Swap failed');
+  }
+  
+  return sig;
 }
 
-// async function createTempWSOLAcc(mint: PublicKey, wallet: Keypair): Promise<PublicKey> {  
-//   const ACCOUNT_SIZE = 165; // in bytes (standard SPL token account size)
-//   const tokenAccount = Keypair.generate();
-//   const rentExemption = await CONNECTION.getMinimumBalanceForRentExemption(ACCOUNT_SIZE);
+async function composeAndSignTransaction(
+  instructions: TransactionInstruction[],
+  ltas: AddressLookupTableAccount[],
+  wallet: Keypair
+): Promise<[VersionedTransaction, number]> {
+  const { blockhash, lastValidBlockHeight } = await CONNECTION.getLatestBlockhash('finalized');
+  const messageV0 = new TransactionMessage({
+    payerKey: wallet.publicKey,
+    recentBlockhash: blockhash,
+    instructions: instructions
+  }).compileToV0Message(ltas);
 
-//   const createAccountIx = SystemProgram.createAccount({
-//     fromPubkey: wallet.publicKey,
-//     newAccountPubkey: tokenAccount.publicKey,
-//     lamports: rentExemption,
-//     space: ACCOUNT_SIZE,
-//     programId: TOKEN_PROGRAM_ID,
-//   });
+  const transaction = new VersionedTransaction(messageV0);
+  transaction.sign([wallet]);
+  return [transaction, lastValidBlockHeight];
+}
 
-//   const initAccountIx = createInitializeAccountInstruction(
-//     tokenAccount.publicKey,
-//     mint,
-//     wallet.publicKey,
-//     TOKEN_PROGRAM_ID
-//   );
+function deserializeInstruction(instructionPayload: any): TransactionInstruction {
+  return new TransactionInstruction({
+    programId: new PublicKey(instructionPayload.programId),
+    keys: instructionPayload.accounts.map((acc: any) => ({
+        pubkey: new PublicKey(acc.pubkey),
+        isSigner: acc.isSigner,
+        isWritable: acc.isWritable,
+    })),
+    data: Buffer.from(instructionPayload.data, 'base64'),
+  });
+}
 
-//   const tx = new Transaction().add(createAccountIx, initAccountIx);
-//   const sig = await sendAndConfirmTransaction(CONNECTION, tx, [wallet, tokenAccount]);
-//   console.log()
-// }
-
-
-async function calculatePriorityFee(tx: Transaction, signers: Keypair[])
+async function calculateBasePriorityFees(instructions: TransactionInstruction[])
   : Promise<PrioritizationFeeData> {
   const writableAccSet = new Set<string>();
   const lockedWritableAccounts: PublicKey[] = [];
-  const simulationPromise = CONNECTION.simulateTransaction(tx, signers, true);
 
-  for (const ix of tx.instructions) {
+  for (const ix of instructions) {
     for (const accMeta of ix.keys) {
       accMeta.isWritable && writableAccSet.add(accMeta.pubkey.toBase58());
     }
   }
 
   writableAccSet.forEach(id => lockedWritableAccounts.push(new PublicKey(id)));
-  const [basePriorityFees, simulationResult] = await Promise.all([
-    CONNECTION.getRecentPrioritizationFees({ lockedWritableAccounts }),
-    simulationPromise
-  ]);
-
-  console.log(lockedWritableAccounts);
-  console.log(basePriorityFees);
-  console.log(simulationResult);
+  const basePriorityFees = await CONNECTION.getRecentPrioritizationFees({ lockedWritableAccounts });
 
   let low = Number.POSITIVE_INFINITY;
   let high = 0;
   let sum = 0;
 
   for (const { prioritizationFee } of basePriorityFees) {
+    if (prioritizationFee === 0) continue;
     if (prioritizationFee < low) low = prioritizationFee;
     if (prioritizationFee > high) high = prioritizationFee;
     sum += prioritizationFee;
   }
 
-  const median = Math.ceil(sum / basePriorityFees.length);
-  const cu = simulationResult.value.unitsConsumed || 1;
-  return { low: low * cu, medium: median * cu, high: high * cu };
-}
-
-async function getTokenAccountsForWallet(walletPubkey: PublicKey) {
-  const parsedTokenAccs = await CONNECTION.getParsedTokenAccountsByOwner(
-    walletPubkey, { programId: TOKEN_PROGRAM_ID }
-  );
-
-  for (const parsedTokenData of parsedTokenAccs.value) {
-    const { pubkey } = parsedTokenData;
-    const { mint, tokenAmount } = parsedTokenData.account.data.parsed.info;
-    const amount = BigInt(tokenAmount.amount);
-    const { decimals } = tokenAmount;
-  }
-}
-
-async function getTokenBalance(tokenAcc: PublicKey): Promise<bigint> {
-  const acc = await getAccount(CONNECTION, tokenAcc);
-  return acc.amount;
+  return { 
+    low: low === Number.POSITIVE_INFINITY ? 0 : low, 
+    medium: Math.ceil(sum / basePriorityFees.length), 
+    high 
+  };
 }

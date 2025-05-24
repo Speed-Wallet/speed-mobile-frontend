@@ -2,14 +2,12 @@ import { useState, useEffect, useRef, useMemo } from 'react'; // Added useMemo
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, SafeAreaView, StatusBar, ScrollView, Image, Animated } from 'react-native'; // Removed Dimensions, Added Animated
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowDownUp, ArrowRightLeft, DollarSign, Lock } from 'lucide-react-native'; // Changed ArrowUpDown to ArrowDownUp, Added Lock
-// import * as Reanimated from 'react-native-reanimated';
-import { LinearGradient } from 'expo-linear-gradient'; // Import LinearGradient
 import colors from '@/constants/colors';
 import { formatCurrency } from '@/utils/formatters';
 import { getAllTokenInfo, getTokenByAddress } from '@/data/tokens';
 import TokenSelector from '@/components/TokenSelector';
 import { EnrichedTokenEntry } from '@/data/types';
-import { JupiterQuote, jupiterSwap } from '@/services/walletService';
+import { PLATFORM_FEE_RATE, JupiterQuote, jupiterSwap } from '@/services/walletService';
 import BackButton from '@/components/BackButton';
 
 const WAIT_ON_AMOUNT_CHANGE = 2000;
@@ -17,6 +15,8 @@ const LOOP_QUOTE_INTERVAL = 10000;
 let lastQuoteTime = 0;
 let timeoutID: NodeJS.Timeout | undefined;
 let intervalID: NodeJS.Timeout | undefined;
+
+let platformFee: number;
 let quote: any;
 
 export default function TradeScreen() {
@@ -55,9 +55,12 @@ export default function TradeScreen() {
     }
 
     setToAmount('');
-    const amount = parseFloat(fromAmount);
-    if (isNaN(amount) || amount === 0) return;
+    const amountEntered = parseFloat(fromAmount);
+    if (isNaN(amountEntered) || amountEntered === 0) return;
 
+    const amount = amountEntered * 10 ** fromToken!.decimals;
+    platformFee = Math.round(amount * PLATFORM_FEE_RATE);
+    const inAmount = amount - platformFee;
     const diff = Date.now() - lastQuoteTime;
 
     if (diff < WAIT_ON_AMOUNT_CHANGE) {
@@ -66,16 +69,12 @@ export default function TradeScreen() {
     }
 
     lastQuoteTime = Date.now();
-    fetchAndApplyQuote(amount);
+    fetchAndApplyQuote(inAmount);
   }
 
-  async function fetchAndApplyQuote(amount: number) {
+  async function fetchAndApplyQuote(inAmount: number) {
     try {
-      quote = await JupiterQuote(
-        fromToken!.address,
-        toToken!.address,
-        amount * 10 ** fromToken!.decimals
-      );
+      quote = await JupiterQuote(fromToken!.address, toToken!.address, inAmount);
 
       if (!quote) {
         quote = undefined;
@@ -94,7 +93,7 @@ export default function TradeScreen() {
       }
 
       if (!intervalID) {
-        intervalID = setInterval(fetchAndApplyQuote, LOOP_QUOTE_INTERVAL, amount);
+        intervalID = setInterval(fetchAndApplyQuote, LOOP_QUOTE_INTERVAL, inAmount);
       }
     } catch (err: any) {
       console.error(err.message);
@@ -208,7 +207,8 @@ export default function TradeScreen() {
     }
 
     try {
-      await jupiterSwap(quote);
+      const sig = await jupiterSwap(quote, platformFee);
+      console.log(`Trade Successful: ${sig}`);
       alert('Trade Successful!'); // Provide feedback
       router.back();
     } catch (err: any) {
