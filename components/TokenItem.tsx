@@ -7,6 +7,7 @@ import GreyCard from './GreyCard'; // Import GreyCard
 import { useTokenBalanceStore } from '@/stores/tokenBalanceStore'; // Import the store directly
 import { useWalletPublicKey } from '@/services/walletService';
 import { useShallow } from 'zustand/react/shallow'
+import { useTokenBalance } from '@/hooks/useTokenBalance';
 
 
 // Define constants for image sizes
@@ -22,43 +23,10 @@ type TokenItemProps = {
 const TokenItem = ({ token, onPress, showBalance = true }: TokenItemProps) => {
   const isPositiveChange = token.priceChangePercentage >= 0;
 
-  const activeWalletPublicKey = useWalletPublicKey();
-
-  // Get balance data, loading, and error states from useTokenBalanceStore with a single selector
-  const { balances: liveBalances, loading: balancesLoading, error: balancesError } = useTokenBalanceStore(useShallow(
-    (state) => ({
-      balances: state.balances,
-      loading: state.loading,
-      error: state.error,
-    })
-  ));
-
-  // Note: The subscribeToTokenBalances action is called in app/_layout.tsx
-  // when activeWalletPublicKey changes, so we don't need to call it here.
-
-  // Optional: Handle loading state for balances
-  // if (balancesLoading && showBalance) {
-  //   // Potentially return a loading indicator for the balance part or the whole item
-  // }
-  // Optional: Handle error state for balances
-  // if (balancesError && showBalance) {
-  //   // Potentially display an error message for the balance part
-  // }
-
-  let displayQuantity = token.balance; // Fallback to initial/stale balance from prop
-  let displayDollarValue = token.balance * token.price; // Fallback for dollar value
-
-  if (showBalance && activeWalletPublicKey) { // Only try to use live balances if a wallet is active
-    const liveTokenData = token.address && liveBalances && liveBalances[token.address]
-      ? liveBalances[token.address]
-      : null;
-
-    if (liveTokenData) {
-      displayQuantity = liveTokenData.balance;
-      // Assuming token.price from the prop is the price to use for live balance dollar value
-      displayDollarValue = liveTokenData.balance * token.price;
-    }
-  }
+  // const activeWalletPublicKey = useWalletPublicKey();
+  const { balance: displayQuantity, loading: isLoading, error: _error, globalError, isConnectingOrFetchingOverall } = useTokenBalance(token.address)
+  const displayDollarValue = displayQuantity ? displayQuantity * token.price : undefined;
+  const error = _error || globalError; // Combine WebSocket and store errors
 
   return (
     <GreyCard
@@ -93,7 +61,7 @@ const TokenItem = ({ token, onPress, showBalance = true }: TokenItemProps) => {
             // Apply styles.price instead of styles.balance and add marginTop
             <Text style={[styles.price, { marginTop: 4 }]}>
               {/* Ensure displayQuantity is a number before calling toFixed */}
-              {typeof displayQuantity === 'number' ? displayQuantity.toFixed(4) : '0.0000'} {token.symbol}
+              {isLoading ? "0.0000" : (typeof displayQuantity === 'number' ? displayQuantity.toFixed(4) : '0.0000')} {token.symbol}
             </Text>
           )}
         </View>
@@ -103,7 +71,7 @@ const TokenItem = ({ token, onPress, showBalance = true }: TokenItemProps) => {
             // Display dollar value of the balance here
             <Text style={styles.price}>
               {/* Ensure displayDollarValue is valid before formatting */}
-              {formatCurrency(typeof displayDollarValue === 'number' ? displayDollarValue : 0)}
+              {isLoading ? formatCurrency(0) : formatCurrency(typeof displayDollarValue === 'number' ? displayDollarValue : 0)}
             </Text>
           ) : (
             // Display token's general price and change percentage
