@@ -9,6 +9,7 @@ import TokenSelector from '@/components/TokenSelector';
 import { EnrichedTokenEntry } from '@/data/types';
 import { PLATFORM_FEE_RATE, JupiterQuote, jupiterSwap } from '@/services/walletService';
 import BackButton from '@/components/BackButton';
+import { useTokenBalance } from '@/hooks/useTokenBalance';
 
 const WAIT_ON_AMOUNT_CHANGE = 2000;
 const LOOP_QUOTE_INTERVAL = 10000;
@@ -30,6 +31,7 @@ export default function TradeScreen() {
   const [showFromSelector, setShowFromSelector] = useState(false);
   const [showToSelector, setShowToSelector] = useState(false);
   const [selectedPercentage, setSelectedPercentage] = useState('25'); // Add selected percentage state
+  const {balance: fromTokenBalance} = useTokenBalance(fromToken?.address || '');
 
   const shakeAnimationValue = useRef(new Animated.Value(0)).current;
 
@@ -319,7 +321,7 @@ export default function TradeScreen() {
           </View>
           {fromToken && (
             <Text style={styles.balanceText}>
-              Max: {fromToken.balance.toFixed(4)} {fromToken.symbol}
+              Max: {fromTokenBalance} {fromToken.symbol}
             </Text>
           )}
           {/* <View style={styles.percentagesRow}>
