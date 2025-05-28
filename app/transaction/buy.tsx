@@ -198,7 +198,6 @@ export default function BuyScreen() {
       {/* Token Selector Modal */}
       {showTokenSelector && (
         <TokenSelector
-          tokenList={tokenList}
           selectedToken={selectedToken}
           onSelectToken={(token) => {
             setSelectedToken(token);

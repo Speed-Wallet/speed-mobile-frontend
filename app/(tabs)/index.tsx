@@ -68,7 +68,7 @@ export default function HomeScreen() {
           </View>
 
           <TokenList
-            data={tokenData}
+            tokens={tokenData}
             onSelectToken={(token: EnrichedTokenEntry) => router.push(`/token/${token.address}`)}
           />
         </View>

@@ -6,15 +6,15 @@ import { EnrichedTokenEntry } from '@/data/types';
 
 
 type TokenListProps = {
-  data: EnrichedTokenEntry[];
+  tokens: EnrichedTokenEntry[];
   onSelectToken: (token: EnrichedTokenEntry) => void;
 };
 
-const TokenList = ({ data, onSelectToken }: TokenListProps) => {
+const TokenList = ({ tokens, onSelectToken }: TokenListProps) => {
   return (
     <View style={styles.container}>
-      {data.map((token, index) => (
-        <Animated.View 
+      {tokens.map((token, index) => (
+        <Animated.View
           key={token.address + index}
           entering={FadeInRight.delay(100 + (index * 100)).duration(400)}
         >

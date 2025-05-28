@@ -19,23 +19,16 @@ export default function ReceiveScreen() {
   const { tokenAddress } = useLocalSearchParams();
   const router = useRouter();
   const [selectedToken, setSelectedToken] = useState<TokenEntry | null>(null);
-  const [tokenList, setTokenList] = useState<TokenEntry[]>([]);
   const [walletAddress, setWalletAddress] = useState('');
   const [showTokenSelector, setShowTokenSelector] = useState(false);
   const addressInputRef = useRef(null);
 
   useEffect(() => {
-    loadData();
+    setWalletAddress(UserData.walletAddress); // TODO get actual wallet address
   }, [tokenAddress]);
 
   if (Array.isArray(tokenAddress)) {
     throw new Error('tokenAddress should not be an array');
-  }
-
-  const loadData = async () => {
-    const allTokens = await getAllTokenInfo();
-    setTokenList(allTokens);
-    setWalletAddress(UserData.walletAddress);
   }
 
   const handleCopyAddress = async () => {
@@ -156,7 +149,6 @@ export default function ReceiveScreen() {
 
       {showTokenSelector && (
         <TokenSelector
-          tokenList={tokenList}
           selectedToken={selectedToken}
           onSelectToken={(token) => {
             setSelectedToken(token);

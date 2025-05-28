@@ -20,7 +20,6 @@ export default function SendScreen() {
   const { tokenAddress } = useLocalSearchParams();
   const router = useRouter();
   const [selectedToken, setSelectedToken] = useState<EnrichedTokenEntry | null>(null);
-  const [tokenList, setTokenList] = useState<EnrichedTokenEntry[]>([]);
   const [amount, setAmount] = useState('');
   const [address, setAddress] = useState('');
   const [note, setNote] = useState('');
@@ -28,9 +27,19 @@ export default function SendScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedContact, setSelectedContact] = useState<any>(null);
   const [filteredContacts, setFilteredContacts] = useState(RecentContacts);
-  const { balance: selectedTokenBalance } = useTokenBalance(tokenAddress as string || selectedToken?.address);
 
   useEffect(() => {
+    const loadData = async () => {
+      const tokens = await getAllTokenInfo();
+
+      if (tokenAddress) {
+        console.log('Loading token by address:', tokenAddress);
+        const token = await getTokenByAddress(tokenAddress as string);
+        setSelectedToken(token);
+      } else if (tokens.length > 0) {
+        setSelectedToken(tokens[0]);
+      }
+    };
     loadData();
   }, [tokenAddress]);
 
@@ -50,18 +59,7 @@ export default function SendScreen() {
     throw new Error('tokenAddress should not be an array');
   }
 
-  const loadData = async () => {
-    const tokens = await getAllTokenInfo();
-    setTokenList(tokens);
 
-    if (tokenAddress) {
-      console.log('Loading token by address:', tokenAddress);
-      const token = await getTokenByAddress(tokenAddress);
-      setSelectedToken(token);
-    } else if (tokens.length > 0) {
-      setSelectedToken(tokens[0]);
-    }
-  };
 
   const handleSend = () => {
     alert(`Sending ${amount} ${selectedToken?.symbol} to ${address || selectedContact?.username}`);
@@ -87,7 +85,7 @@ export default function SendScreen() {
       >
         {selectedToken && (
           <>
-          <Text style={styles.inputLabel}>Token</Text>
+            <Text style={styles.inputLabel}>Token</Text>
             <TokenItem token={selectedToken} onPress={() => setShowTokenSelector(true)} />
             <Text style={styles.inputLabel}>Amount</Text>
             <AmountInputWithValue
@@ -222,7 +220,6 @@ export default function SendScreen() {
       {/* Token Selector Modal */}
       {showTokenSelector && (
         <TokenSelector
-          tokenList={tokenList}
           selectedToken={selectedToken}
           onSelectToken={(token) => {
             setSelectedToken(token);

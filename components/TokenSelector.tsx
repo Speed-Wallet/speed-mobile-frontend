@@ -1,30 +1,33 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, Image, TextInput, Modal } from 'react-native';
 import { X, Search } from 'lucide-react-native';
-import Animated, { FadeIn, SlideInUp } from 'react-native-reanimated';
+import Animated, { SlideInUp } from 'react-native-reanimated';
 import colors from '@/constants/colors';
 import { formatCurrency } from '@/utils/formatters';
+import { getAllTokenInfo } from '@/data/tokens';
+import { EnrichedTokenEntry, TokenEntry } from '@/data/types';
+import TokenItemAlt from '@/components/TokenItemAlt'; // Import the new component
 
 type TokenSelectorProps = {
-  tokenList: any[];
-  selectedToken: any;
-  excludeTokenId?: string;
-  onSelectToken: (token: any) => void;
+  selectedToken: TokenEntry | null;
+  excludeTokenAddress?: string;
+  onSelectToken: (token: EnrichedTokenEntry) => void;
   onClose: () => void;
 };
 
 const TokenSelector = ({
-  tokenList,
   selectedToken,
-  excludeTokenId,
+  excludeTokenAddress,
   onSelectToken,
   onClose 
 }: TokenSelectorProps) => {
   const [searchQuery, setSearchQuery] = useState('');
+
+  const tokenList = getAllTokenInfo()
   
   const filteredTokens = tokenList
     .filter(token =>
-      excludeTokenId ? token.id !== excludeTokenId : true
+      excludeTokenAddress ? token.address !== excludeTokenAddress : true
     )
     .filter(token =>
       token.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -63,27 +66,13 @@ const TokenSelector = ({
           
           <FlatList
             data={filteredTokens}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(token) => token.address}
             renderItem={({ item }) => (
-              <TouchableOpacity 
-                style={[
-                  styles.tokenItem,
-                  selectedToken?.id === item.id && styles.selectedTokenItem
-                ]}
-                onPress={() => onSelectToken(item)}
-              >
-                <Image source={{ uri: item.iconUrl }} style={styles.tokenIcon} />
-                <View style={styles.tokenInfo}>
-                  <Text style={styles.tokenName}>{item.name}</Text>
-                  <Text style={styles.tokenSymbol}>{item.symbol}</Text>
-                </View>
-                <View style={styles.tokenBalance}>
-                  <Text style={styles.balanceText}>{item.balance.toFixed(4)}</Text>
-                  <Text style={styles.balanceValue}>
-                    {formatCurrency(item.balance * item.price)}
-                  </Text>
-                </View>
-              </TouchableOpacity>
+              <TokenItemAlt 
+                token={item} 
+                selectedToken={selectedToken} 
+                onSelectToken={onSelectToken} 
+              />
             )}
             contentContainerStyle={styles.listContent}
           />
@@ -112,8 +101,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.backgroundMedium,
   },
   title: {
     fontSize: 18,
@@ -133,8 +120,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.backgroundMedium,
+    borderColor: colors.backgroundMedium,
+    borderWidth: 1,
+    borderRadius: 12,
+    marginHorizontal: 16,
   },
   searchIcon: {
     marginRight: 8,
@@ -144,53 +133,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'Inter-Regular',
     color: colors.textPrimary,
+    outlineStyle: 'none', // Not standard in React Native, but included for consistency
   },
   listContent: {
-    paddingHorizontal: 16,
-    paddingBottom: 24,
-  },
-  tokenItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    marginBottom: 8,
-  },
-  selectedTokenItem: {
-    backgroundColor: colors.backgroundMedium,
-  },
-  tokenIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 12,
-  },
-  tokenInfo: {
-    flex: 1,
-  },
-  tokenName: {
-    fontSize: 16,
-    fontFamily: 'Inter-SemiBold',
-    color: colors.textPrimary,
-  },
-  tokenSymbol: {
-    fontSize: 14,
-    fontFamily: 'Inter-Regular',
-    color: colors.textSecondary,
-  },
-  tokenBalance: {
-    alignItems: 'flex-end',
-  },
-  balanceText: {
-    fontSize: 16,
-    fontFamily: 'Inter-SemiBold',
-    color: colors.textPrimary,
-  },
-  balanceValue: {
-    fontSize: 14,
-    fontFamily: 'Inter-Regular',
-    color: colors.textSecondary,
+    padding: 16,
+    // paddingHorizontal: 16,
+    // paddingBottom: 24,
   },
 });
 

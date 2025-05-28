@@ -26,7 +26,6 @@ export default function TradeScreen() {
   const router = useRouter();
   const [fromToken, setFromToken] = useState<EnrichedTokenEntry | null>(null);
   const [toToken, setToToken] = useState<EnrichedTokenEntry | null>(null);
-  const [tokenList, setTokenList] = useState<EnrichedTokenEntry[]>([]);
   const [fromAmount, setFromAmount] = useState('');
   const [toAmount, setToAmount] = useState('');
   const [showFromSelector, setShowFromSelector] = useState(false);
@@ -104,7 +103,25 @@ export default function TradeScreen() {
   }
 
   useEffect(updateAmounts, [fromAmount]);
-  useEffect(() => loadData(), [tokenAddress]);
+  useEffect(() => {
+    const loadData = () => {
+      const tokens = getAllTokenInfo();
+
+      if (tokenAddress) {
+        const token = getTokenByAddress(tokenAddress as string);
+        setFromToken(token);
+
+        const defaultTo = tokens.find(t => t.address !== token.address);
+        if (defaultTo) {
+          setToToken(defaultTo);
+        }
+      } else if (tokens.length > 1) {
+        setFromToken(tokens[0]);
+        setToToken(tokens[1]);
+      }
+    };
+    loadData()
+  }, [tokenAddress]);
 
   useEffect(() => {
     if (fromToken && !fromAmount) {
@@ -116,23 +133,7 @@ export default function TradeScreen() {
     throw new Error('tokenAddress should not be an array');
   }
 
-  const loadData = () => {
-    const tokens = getAllTokenInfo();
-    setTokenList(tokens);
 
-    if (tokenAddress) {
-      const token = getTokenByAddress(tokenAddress);
-      setFromToken(token);
-
-      const defaultTo = tokens.find(t => t.address !== token.address);
-      if (defaultTo) {
-        setToToken(defaultTo);
-      }
-    } else if (tokens.length > 1) {
-      setFromToken(tokens[0]);
-      setToToken(tokens[1]);
-    }
-  };
 
   const handlePercentageSelect = (percentage: string) => {
     if (!fromToken) return;
@@ -301,8 +302,8 @@ export default function TradeScreen() {
           address={fromToken?.address}
           amount={fromAmount}
           setAmount={setFromAmount}
-          // selectedPercentage={selectedPercentage} // Pass if using percentage selection
-          // handlePercentageSelect={handlePercentageSelect} // Pass if using percentage selection
+        // selectedPercentage={selectedPercentage} // Pass if using percentage selection
+        // handlePercentageSelect={handlePercentageSelect} // Pass if using percentage selection
         />
 
         {/* You Receive Text - MOVED HERE */}
@@ -322,7 +323,7 @@ export default function TradeScreen() {
             isButtonDisabled && styles.buttonOpacityDisabled,
           ]}
           onPress={handleTradeAttempt} // Use the new handler
-          // disabled prop is removed to allow onPress to fire for shake animation
+        // disabled prop is removed to allow onPress to fire for shake animation
         >
           <Animated.View style={{ transform: [{ translateX: shakeAnimationValue }], flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
             {isButtonDisabled ? (
@@ -373,9 +374,8 @@ export default function TradeScreen() {
       {/* Token Selectors Modals (existing logic) */}
       {showFromSelector && (
         <TokenSelector
-          tokenList={tokenList}
           selectedToken={fromToken}
-          excludeTokenId={toToken?.address}
+          excludeTokenAddress={toToken?.address}
           onSelectToken={(token) => {
             setFromToken(token);
             setShowFromSelector(false);
@@ -389,9 +389,8 @@ export default function TradeScreen() {
 
       {showToSelector && (
         <TokenSelector
-          tokenList={tokenList}
           selectedToken={toToken}
-          excludeTokenId={fromToken?.address}
+          excludeTokenAddress={fromToken?.address}
           onSelectToken={(token) => {
             setToToken(token);
             setShowToSelector(false);
@@ -587,7 +586,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#3B82F6',
     borderRadius: 16,
     height: 56,
-    paddingHorizontal: 16, 
+    paddingHorizontal: 16,
     // marginBottom: 24, // Removed or adjust if exchangeInfoCard is below
 
     // iOS Shadow (kept commented as per last file state)
