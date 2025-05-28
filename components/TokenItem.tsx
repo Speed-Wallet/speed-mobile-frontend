@@ -8,6 +8,7 @@ import { useTokenBalanceStore } from '@/stores/tokenBalanceStore'; // Import the
 import { useWalletPublicKey } from '@/services/walletService';
 import { useShallow } from 'zustand/react/shallow'
 import { useTokenBalance } from '@/hooks/useTokenBalance';
+import { EnrichedTokenEntry } from '@/data/types';
 
 
 // Define constants for image sizes
@@ -15,7 +16,7 @@ const TOKEN_SYMBOL_CONTAINER_SIZE = 40; // Increased from 24
 const OVERLAY_LOGO_SIZE = 16; // Increased from 
 
 type TokenItemProps = {
-  token: any;
+  token: EnrichedTokenEntry;
   onPress: () => void;
   showBalance?: boolean;
   priceFontSize?: number; // Optional prop for dollar value size
