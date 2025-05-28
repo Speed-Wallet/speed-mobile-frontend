@@ -6,6 +6,7 @@ import colors from '@/constants/colors';
 import { formatCurrency } from '@/utils/formatters';
 import { getAllTokenInfo, getTokenByAddress } from '@/data/tokens';
 import TokenSelector from '@/components/TokenSelector';
+import AmountInput from '@/components/AmountInput'; // Added import
 import { EnrichedTokenEntry } from '@/data/types';
 import { PLATFORM_FEE_RATE, JupiterQuote, jupiterSwap } from '@/services/walletService';
 import BackButton from '@/components/BackButton';
@@ -21,7 +22,7 @@ let platformFee: number;
 let quote: any;
 
 export default function TradeScreen() {
-  const { tokenAddress } = useLocalSearchParams();
+  const { tokenAddress } = useLocalSearchParams(); // TODO change array
   const router = useRouter();
   const [fromToken, setFromToken] = useState<EnrichedTokenEntry | null>(null);
   const [toToken, setToToken] = useState<EnrichedTokenEntry | null>(null);
@@ -30,8 +31,7 @@ export default function TradeScreen() {
   const [toAmount, setToAmount] = useState('');
   const [showFromSelector, setShowFromSelector] = useState(false);
   const [showToSelector, setShowToSelector] = useState(false);
-  const [selectedPercentage, setSelectedPercentage] = useState('25'); // Add selected percentage state
-  const {balance: fromTokenBalance} = useTokenBalance(fromToken?.address || '');
+  // const [selectedPercentage, setSelectedPercentage] = useState('25'); // Add selected percentage state
 
   const shakeAnimationValue = useRef(new Animated.Value(0)).current;
 
@@ -137,7 +137,7 @@ export default function TradeScreen() {
   const handlePercentageSelect = (percentage: string) => {
     if (!fromToken) return;
 
-    setSelectedPercentage(percentage);
+    // setSelectedPercentage(percentage);
 
     if (percentage === 'MAX') {
       setFromAmount(fromToken.balance.toString());
@@ -148,13 +148,8 @@ export default function TradeScreen() {
   };
 
   const handleSwapTokens = () => {
-    const tempFromToken = fromToken;
-    const tempToToken = toToken;
-    const tempFromAmount = fromAmount;
-    const tempToAmount = toAmount;
-
-    setFromToken(tempToToken);
-    setToToken(tempFromToken);
+    setFromToken(toToken);
+    setToToken(fromToken);
 
     // If amounts were tied to tokens, you might want to swap them or clear/recalculate
     // For now, let's clear the 'toAmount' and keep 'fromAmount' if it was user-entered,
@@ -171,10 +166,6 @@ export default function TradeScreen() {
     setToAmount(''); // Quote will be re-fetched by useEffect on fromAmount or by updateAmounts call
 
     // setSelectedPercentage('25'); // Reset selected percentage
-    // Manually trigger quote update if fromAmount has a value
-    if (fromAmount && parseFloat(fromAmount) > 0) {
-      // updateAmounts(); // This might be called by useEffect on fromAmount already
-    }
   };
 
   const handleTrade = async () => {
@@ -197,7 +188,7 @@ export default function TradeScreen() {
       return;
     }
 
-    // alert(`Trading ${fromAmount} ${fromToken?.symbol} for ${toAmount} ${toToken?.symbol}`);
+    alert(`Trading ${fromAmount} ${fromToken?.symbol} for ${toAmount} ${toToken?.symbol}`);
 
     if (timeoutID !== undefined) {
       clearTimeout(timeoutID);
@@ -306,42 +297,13 @@ export default function TradeScreen() {
         </TouchableOpacity>
 
         {/* Amount Input */}
-        <Text style={styles.label}>Amount</Text>
-        <View style={styles.amountInputSection}>
-          <View style={styles.amountInputRow}>
-            {fromToken && <Image source={{ uri: fromToken.logoURI }} style={styles.amountTokenIcon} />}
-            <TextInput
-              style={styles.amountTextInput}
-              placeholder="0.00"
-              placeholderTextColor={colors.textSecondary}
-              keyboardType="decimal-pad"
-              value={fromAmount}
-              onChangeText={setFromAmount}
-            />
-          </View>
-          {fromToken && (
-            <Text style={styles.balanceText}>
-              Max: {fromTokenBalance} {fromToken.symbol}
-            </Text>
-          )}
-          {/* <View style={styles.percentagesRow}>
-            {['25', '50', '75', 'MAX'].map((perc) => (
-              <TouchableOpacity
-                key={perc}
-                style={[
-                  styles.percentageChip,
-                  selectedPercentage === perc && styles.selectedPercentageChip,
-                ]}
-                onPress={() => handlePercentageSelect(perc)}
-              >
-                <Text style={[
-                  styles.percentageChipText,
-                  selectedPercentage === perc && styles.selectedPercentageChipText,
-                ]}>{perc}{perc !== 'MAX' ? '%' : ''}</Text>
-              </TouchableOpacity>
-            ))}
-          </View> */}
-        </View>
+        <AmountInput
+          address={fromToken?.address}
+          amount={fromAmount}
+          setAmount={setFromAmount}
+          // selectedPercentage={selectedPercentage} // Pass if using percentage selection
+          // handlePercentageSelect={handlePercentageSelect} // Pass if using percentage selection
+        />
 
         {/* You Receive Text - MOVED HERE */}
         {toToken && (
@@ -545,31 +507,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: colors.backgroundMedium,
-  },
-  amountInputSection: {
-    backgroundColor: colors.backgroundMedium,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12, // Adjusted marginBottom
-  },
-  amountInputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8, // Space for balance text below
-  },
-  amountTokenIcon: {
-    width: 24,
-    height: 24,
-    marginRight: 8,
-    borderRadius: 12,
-  },
-  amountTextInput: {
-    fontSize: 20,
-    fontFamily: 'Inter-Bold',
-    color: colors.white,
-    flex: 1,
-    paddingVertical: 0,
-    outlineStyle: 'none'
   },
   balanceText: {
     fontSize: 14,
