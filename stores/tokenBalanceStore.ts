@@ -18,6 +18,11 @@ export interface TokenBalanceDetails  {
     balance: number; // Human-readable balance
     rawBalance: bigint; // Raw balance in the smallest unit (e.g., lamports for SOL)
     decimals: number; // Number of decimals for the token
+    decimalsShown: number; // Number of decimals shown in UI
+    address: string; // Mint address of the token
+    symbol: string; // Symbol of the token
+    name: string; // Name of the token
+    logoURI: string; // Optional logo URI for the token
     loading: boolean;
     error: Error | null;
 }

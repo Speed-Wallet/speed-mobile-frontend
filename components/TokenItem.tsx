@@ -18,9 +18,10 @@ type TokenItemProps = {
   token: any;
   onPress: () => void;
   showBalance?: boolean;
+  priceFontSize?: number; // Optional prop for dollar value size
 };
 
-const TokenItem = ({ token, onPress, showBalance = true }: TokenItemProps) => {
+const TokenItem = ({ token, onPress, showBalance = true, priceFontSize }: TokenItemProps) => {
   const isPositiveChange = token.priceChangePercentage >= 0;
 
   // const activeWalletPublicKey = useWalletPublicKey();
@@ -69,14 +70,14 @@ const TokenItem = ({ token, onPress, showBalance = true }: TokenItemProps) => {
         <View style={styles.priceContainer}>
           {showBalance ? (
             // Display dollar value of the balance here
-            <Text style={styles.price}>
+            <Text style={[styles.price, { fontSize: priceFontSize ? priceFontSize : 14 }]}>
               {/* Ensure displayDollarValue is valid before formatting */}
               {isLoading ? formatCurrency(0) : formatCurrency(typeof displayDollarValue === 'number' ? displayDollarValue : 0)}
             </Text>
           ) : (
             // Display token's general price and change percentage
             <>
-              <Text style={styles.price}>
+              <Text style={[styles.price, { fontSize: priceFontSize ? priceFontSize : 14 }]}>
                 {formatCurrency(token.price)}
               </Text>
               <View style={styles.changeContainer}>

@@ -11,6 +11,10 @@ import AddressInput from '@/components/AddressInput';
 import RecentContacts from '@/data/contacts';
 import { EnrichedTokenEntry } from '@/data/types';
 import BackButton from '@/components/BackButton';
+import { useTokenBalance } from '@/hooks/useTokenBalance';
+import AmountInput from '@/components/AmountInput';
+import AmountInputWithValue from '@/components/AmountInputWithValue';
+import TokenItem from '@/components/TokenItem';
 
 export default function SendScreen() {
   const { tokenAddress } = useLocalSearchParams();
@@ -24,6 +28,7 @@ export default function SendScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedContact, setSelectedContact] = useState<any>(null);
   const [filteredContacts, setFilteredContacts] = useState(RecentContacts);
+  const { balance: selectedTokenBalance } = useTokenBalance(tokenAddress as string || selectedToken?.address);
 
   useEffect(() => {
     loadData();
@@ -31,7 +36,7 @@ export default function SendScreen() {
 
   useEffect(() => {
     if (searchQuery) {
-      const filtered = RecentContacts.filter(contact => 
+      const filtered = RecentContacts.filter(contact =>
         contact.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         contact.username.toLowerCase().includes(searchQuery.toLowerCase())
       );
@@ -48,8 +53,9 @@ export default function SendScreen() {
   const loadData = async () => {
     const tokens = await getAllTokenInfo();
     setTokenList(tokens);
-    
+
     if (tokenAddress) {
+      console.log('Loading token by address:', tokenAddress);
       const token = await getTokenByAddress(tokenAddress);
       setSelectedToken(token);
     } else if (tokens.length > 0) {
@@ -81,86 +87,30 @@ export default function SendScreen() {
       >
         {selectedToken && (
           <>
-            {/* Token Selection */}
-            <TouchableOpacity 
-              style={styles.tokenSelector}
-              onPress={() => setShowTokenSelector(true)}
-            >
-              <Image 
-                source={{ uri: selectedToken.logoURI }} 
-                style={styles.tokenIcon} 
-              />
-              <View style={styles.tokenInfo}>
-                <Text style={styles.tokenName}>{selectedToken.name}</Text>
-                <Text style={styles.tokenBalance}>
-                  Balance: {selectedToken.balance.toFixed(4)} {selectedToken.symbol}
-                </Text>
-              </View>
-              <Text style={styles.tokenValue}>
-                {formatCurrency(selectedToken.balance * selectedToken.price)}
-              </Text>
-            </TouchableOpacity>
-
-            {/* Amount Input */}
-            <Animated.View entering={FadeIn.delay(100)} style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Amount</Text>
-              <View style={styles.amountInputContainer}>
-                <TextInput
-                  style={styles.amountInput}
-                  placeholder="0.00"
-                  placeholderTextColor={colors.textSecondary}
-                  keyboardType="decimal-pad"
-                  value={amount}
-                  onChangeText={setAmount}
-                />
-                <Text style={styles.amountCurrency}>{selectedToken.symbol}</Text>
-              </View>
-              <Text style={styles.amountInFiat}>
-                {amount ? formatCurrency(parseFloat(amount) * selectedToken.price) : formatCurrency(0)}
-              </Text>
-              <View style={styles.amountOptions}>
-                <TouchableOpacity 
-                  style={styles.amountOption}
-                  onPress={() => setAmount((selectedToken.balance * 0.25).toFixed(4))}
-                >
-                  <Text style={styles.amountOptionText}>25%</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  style={styles.amountOption}
-                  onPress={() => setAmount((selectedToken.balance * 0.5).toFixed(4))}
-                >
-                  <Text style={styles.amountOptionText}>50%</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  style={styles.amountOption}
-                  onPress={() => setAmount((selectedToken.balance * 0.75).toFixed(4))}
-                >
-                  <Text style={styles.amountOptionText}>75%</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  style={styles.amountOption}
-                  onPress={() => setAmount(selectedToken.balance.toFixed(4))}
-                >
-                  <Text style={styles.amountOptionText}>MAX</Text>
-                </TouchableOpacity>
-              </View>
-            </Animated.View>
+          <Text style={styles.inputLabel}>Token</Text>
+            <TokenItem token={selectedToken} onPress={() => setShowTokenSelector(true)} />
+            <Text style={styles.inputLabel}>Amount</Text>
+            <AmountInputWithValue
+              address={selectedToken.address}
+              amount={amount}
+              setAmount={setAmount}
+            />
 
             {/* Recipient Section */}
             <Animated.View entering={FadeIn.delay(200)} style={styles.recipientSection}>
               <Text style={styles.inputLabel}>Send To</Text>
-              
+
               {selectedContact ? (
                 <View style={styles.selectedContactContainer}>
-                  <Image 
-                    source={{ uri: selectedContact.avatar }} 
-                    style={styles.contactAvatar} 
+                  <Image
+                    source={{ uri: selectedContact.avatar }}
+                    style={styles.contactAvatar}
                   />
                   <View style={styles.contactInfo}>
                     <Text style={styles.contactName}>{selectedContact.name}</Text>
                     <Text style={styles.contactUsername}>@{selectedContact.username}</Text>
                   </View>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.changeButton}
                     onPress={() => setSelectedContact(null)}
                   >
@@ -179,7 +129,7 @@ export default function SendScreen() {
                       onChangeText={setSearchQuery}
                     />
                   </View>
-                  
+
                   <View style={styles.optionsRow}>
                     <TouchableOpacity style={styles.optionButton}>
                       <View style={styles.optionIconContainer}>
@@ -194,22 +144,22 @@ export default function SendScreen() {
                       <Text style={styles.optionText}>Recent</Text>
                     </TouchableOpacity>
                   </View>
-                  
+
                   {filteredContacts.length > 0 ? (
-                    <ScrollView 
-                      horizontal 
+                    <ScrollView
+                      horizontal
                       showsHorizontalScrollIndicator={false}
                       contentContainerStyle={styles.contactsContainer}
                     >
                       {filteredContacts.map((contact) => (
-                        <TouchableOpacity 
-                          key={contact.id} 
+                        <TouchableOpacity
+                          key={contact.id}
                           style={styles.contactItem}
                           onPress={() => handleSelectContact(contact)}
                         >
-                          <Image 
-                            source={{ uri: contact.avatar }} 
-                            style={styles.contactImage} 
+                          <Image
+                            source={{ uri: contact.avatar }}
+                            style={styles.contactImage}
                           />
                           <Text style={styles.contactItemName}>{contact.name}</Text>
                         </TouchableOpacity>
@@ -220,12 +170,12 @@ export default function SendScreen() {
                       <Text style={styles.noResults}>No contacts found</Text>
                     ) : null
                   )}
-                  
-                  <AddressInput 
-                    address={address} 
-                    onChangeAddress={setAddress} 
+
+                  {/* <AddressInput
+                    address={address}
+                    onChangeAddress={setAddress}
                     selectedToken={selectedToken}
-                  />
+                  /> */}
                 </>
               )}
             </Animated.View>
@@ -244,19 +194,19 @@ export default function SendScreen() {
             </Animated.View>
 
             {/* Network Fee info */}
-            <Animated.View entering={FadeIn.delay(400)} style={styles.feeContainer}>
+            {/* <Animated.View entering={FadeIn.delay(400)} style={styles.feeContainer}>
               <Text style={styles.feeLabel}>Network Fee</Text>
               <Text style={styles.feeValue}>
                 0.00005 {selectedToken.symbol} (~{formatCurrency(0.00005 * selectedToken.price)})
               </Text>
-            </Animated.View>
+            </Animated.View> */}
           </>
         )}
       </ScrollView>
 
       {/* Send Button */}
       <Animated.View entering={FadeInDown.duration(300)} style={styles.bottomContainer}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[
             styles.sendButton,
             (!amount || !address && !selectedContact) && styles.sendButtonDisabled
@@ -316,14 +266,6 @@ const styles = StyleSheet.create({
   content: {
     padding: 16,
   },
-  tokenSelector: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.backgroundMedium,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 24,
-  },
   tokenIcon: {
     width: 40,
     height: 40,
@@ -371,6 +313,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontFamily: 'Inter-SemiBold',
     color: colors.textPrimary,
+    outlineStyle: 'none',
   },
   amountCurrency: {
     fontSize: 16,
@@ -418,6 +361,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'Inter-Regular',
     color: colors.textPrimary,
+    outlineStyle: 'none',
   },
   optionsRow: {
     flexDirection: 'row',
