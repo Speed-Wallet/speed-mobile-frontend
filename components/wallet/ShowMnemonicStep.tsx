@@ -112,7 +112,7 @@ const ShowMnemonicStep: React.FC<ShowMnemonicStepProps> = ({
                 <View key={index} style={styles.wordContainer}>
                   <Text style={styles.wordNumber}>{index + 1}</Text>
                   <Text style={styles.word}>
-                    {isVisible ? word : '••••••'}
+                    {isVisible ? word : '•••'}
                   </Text>
                 </View>
               ))}
