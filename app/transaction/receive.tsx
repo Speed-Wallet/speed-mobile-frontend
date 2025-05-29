@@ -24,7 +24,25 @@ export default function ReceiveScreen() {
   const addressInputRef = useRef(null);
 
   useEffect(() => {
-    setWalletAddress(UserData.walletAddress); // TODO get actual wallet address
+    setWalletAddress(UserData.walletAddress); // Uses wallet address from user data
+
+    let initialToken: TokenEntry | null = null;
+    if (typeof tokenAddress === 'string' && tokenAddress) {
+      initialToken = getTokenByAddress(tokenAddress);
+    }
+    
+    if (!initialToken) {
+      // If no tokenAddress is provided or token not found, use a default token
+      const allTokens = getAllTokenInfo();
+      if (allTokens.length > 0) {
+        initialToken = allTokens[0]; // Use the first token as a default
+      }
+    }
+
+    if (initialToken) {
+      setSelectedToken(initialToken);
+    }
+
   }, [tokenAddress]);
 
   if (Array.isArray(tokenAddress)) {

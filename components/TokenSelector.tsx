@@ -95,6 +95,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.backgroundDark,
     borderRadius: 16,
     overflow: 'hidden',
+    borderWidth: 1, // Add border width
+    borderColor: colors.backgroundLight, // Add border color, choose a suitable color from your theme
   },
   header: {
     flexDirection: 'row',
