@@ -63,6 +63,11 @@ interface PrioritizationFeeData {
   high: number;
 }
 
+type ErrorType = {
+  code: number,
+  text: string
+};
+
 export function useWalletPublicKey() {
   // Initialize state with the current wallet public key from the module-level WALLET
   const [publicKey, setPublicKey] = useState<string | null>(() => {
@@ -344,24 +349,23 @@ export const jupiterSwap = async (quoteResponse: any, platformFee: number): Prom
   }
 
   // Create output mint ata for the user if it's not available
-  if (outputMint !== WSOL_MINT) {
-    const outputMintPubKey = new PublicKey(outputMint);
-    const ata = await getAssociatedTokenAddress(outputMintPubKey, WALLET.publicKey);
+  const outputMintPubKey = new PublicKey(outputMint);
+  const ata = await getAssociatedTokenAddress(outputMintPubKey, WALLET.publicKey);
 
-    if (!await CONNECTION.getAccountInfo(ata)) {
-      console.log(`Creating output mint ATA`);
+  if (!await CONNECTION.getAccountInfo(ata)) {
+    console.log(`Creating output mint ATA`);
 
-      instructions.push(createAssociatedTokenAccountInstruction(
-        WALLET.publicKey,
-        ata,
-        WALLET.publicKey,
-        outputMintPubKey
-      ));
-    }
+    instructions.push(createAssociatedTokenAccountInstruction(
+      WALLET.publicKey,
+      ata,
+      WALLET.publicKey,
+      outputMintPubKey
+    ));
   }
 
-  const jupiterInstructionsResponse = await (
-    await fetch(`${JUPITER_API_URL}swap-instructions?dynamicSlippage=true`, {
+  const [CUsForPrimaryProcessing, jupiterInstructionsResponse] = await Promise.all([
+    getCUsForTransaction(instructions, WALLET),
+    fetch(`${JUPITER_API_URL}swap-instructions?dynamicSlippage=true`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -372,8 +376,8 @@ export const jupiterSwap = async (quoteResponse: any, platformFee: number): Prom
         wrapUnwrapSOL: true,
         prioritizationFeeLamports: 'auto'
       })
-    })
-  ).json();
+    }).then(res => res.json())
+  ]);
 
   const {
       setupInstructions,
@@ -388,12 +392,12 @@ export const jupiterSwap = async (quoteResponse: any, platformFee: number): Prom
 
   // Add token ledger instruction if present
   if (tokenLedgerInstruction) {
-      instructions.push(deserializeInstruction(tokenLedgerInstruction));
+    instructions.push(deserializeInstruction(tokenLedgerInstruction));
   }
 
   // Add setup instructions (e.g., create ATAs)
   if (setupInstructions) {
-      instructions.push(...setupInstructions.map(deserializeInstruction));
+    instructions.push(...setupInstructions.map(deserializeInstruction));
   }
 
   // Add the main swap instruction
@@ -401,7 +405,7 @@ export const jupiterSwap = async (quoteResponse: any, platformFee: number): Prom
 
   // Add cleanup instructions (e.g., close ATAs)
   if (cleanupInstruction) {
-      instructions.push(deserializeInstruction(cleanupInstruction));
+    instructions.push(deserializeInstruction(cleanupInstruction));
   }
 
   // Deserialize Address Lookup Table Accounts
@@ -413,38 +417,26 @@ export const jupiterSwap = async (quoteResponse: any, platformFee: number): Prom
     )
   );
 
-  // const txForSimulation = (await composeAndSignTransaction(
-  //   instructions,
-  //   deserializedAddressLookupTableAccounts,
-  //   WALLET
-  // ))[0];
-
-  // try {
-  //   console.log('Simulating tranaction');
-  //   const simResult = await CONNECTION.simulateTransaction(txForSimulation);
-  //   const cus = simResult.value.unitsConsumed;
-  //   console.log(simResult);
-
-  //   if (!cus) throw new Error('Simulated compute units is "undefined"');
-
-  //   instructions.unshift(ComputeBudgetProgram.setComputeUnitLimit({ units: cus }));
-  // } catch (err) {
-  //   throw new Error(`Transaction simulation error: ${err}`)
-  // }
-
   const computeUnitPrice = Math.round(prioritizationFeeLamports * 1e6 / computeUnitLimit);
-  instructions.unshift(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: computeUnitPrice }));
+  const totalComputeUnits = CUsForPrimaryProcessing + computeUnitLimit;
 
-  console.log('Simulating successful, sending actual transaction...');
+  instructions.unshift(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: computeUnitPrice }));
+  instructions.unshift(ComputeBudgetProgram.setComputeUnitLimit({ units: totalComputeUnits }));
+
   const [realTransaction, lastValidBlockHeight] = await composeAndSignTransaction(
     instructions,
-    deserializedAddressLookupTableAccounts,
-    WALLET
+    WALLET,
+    deserializedAddressLookupTableAccounts
   );
 
-  const sig = await CONNECTION.sendRawTransaction(realTransaction.serialize(), {
-    maxRetries: 2, skipPreflight: true
-  });
+  let sig;
+
+  try {
+    sig = await CONNECTION.sendRawTransaction(realTransaction.serialize(),
+    { maxRetries: 2, skipPreflight: false });
+  } catch (err) {
+    throw parseError(err);
+  }
 
   const res = await CONNECTION.confirmTransaction({
     signature: sig,
@@ -460,17 +452,41 @@ export const jupiterSwap = async (quoteResponse: any, platformFee: number): Prom
   return sig;
 }
 
+async function getCUsForTransaction(instructions: TransactionInstruction[], wallet: Keypair)
+: Promise<number> {
+  const tx = (await composeAndSignTransaction(instructions, wallet))[0];
+
+  try {
+    console.log('Simulating tranaction');
+    const simResult = await CONNECTION.simulateTransaction(tx);
+
+    if (simResult.value.err) {
+      throw parseSimulationError(simResult);
+    }
+
+    if (simResult.value.unitsConsumed === undefined) {
+      throw new Error('Simulated compute units is "undefined"');
+    }
+
+    // Return with extra 10% for error tolerance.
+    return Math.ceil(simResult.value.unitsConsumed * 1.1);
+  } catch (err) {
+    // This catch block would handle network errors or malformed transaction errors
+    throw new Error(`Transaction simulation error: ${err}`)
+  }
+}
+
 async function composeAndSignTransaction(
   instructions: TransactionInstruction[],
-  ltas: AddressLookupTableAccount[],
-  wallet: Keypair
+  wallet: Keypair,
+  lutAccounts?: AddressLookupTableAccount[]
 ): Promise<[VersionedTransaction, number]> {
   const { blockhash, lastValidBlockHeight } = await CONNECTION.getLatestBlockhash('finalized');
   const messageV0 = new TransactionMessage({
     payerKey: wallet.publicKey,
     recentBlockhash: blockhash,
     instructions: instructions
-  }).compileToV0Message(ltas);
+  }).compileToV0Message(lutAccounts);
 
   const transaction = new VersionedTransaction(messageV0);
   transaction.sign([wallet]);
@@ -519,4 +535,106 @@ async function calculateBasePriorityFees(instructions: TransactionInstruction[])
     medium: Math.ceil(sum / basePriorityFees.length), 
     high 
   };
+}
+
+function parseError(error: any): ErrorType {
+  if (error.message.includes('Transaction simulation failed:')) {
+    const rentError = { code: 1, text: 'INSUFFICIENT_SOL_FOR_RENT' };
+    const feeError = { code: 2, text: 'INSUFFICIENT_SOL_FOR_FEES' };
+    const tokenBalanceError = { code: 3, text: 'INSUFFICIENT_TOKEN_BALANCE' };
+
+    if (error.message.includes('InsufficientFundsForFee')) {
+      console.error('ERROR: Your wallet has insufficient SOL balance to pay for transaction fees.');
+      console.error('Action: Please deposit more SOL into your wallet.');
+      return feeError
+    }
+    
+    if (error.message.includes('insufficient funds for rent')) {
+      // This usually means creating a new ATA would make SOL balance go below rent exemption
+      console.error('ERROR: Insufficient SOL balance for rent exemption for a new token account.');
+      console.error('Action: Ensure you have enough SOL to cover transaction fees AND rent for new token accounts.');
+      return rentError;
+    }
+    
+    if (error.message.includes('custom program error: 0x1') || error.message.includes('InsufficientFunds')) {
+      // This is the tricky part - if preflight *does* run instructions
+      // or if the error is from the *on-chain* execution (if skipPreflight was true)
+      console.error('ERROR: Insufficient balance of the TOKEN you are trying to swap FROM.');
+      console.error('Action: Ensure you have enough of the input token (e.g., USDC if swapping USDC for SOL).');
+      return tokenBalanceError;
+    }
+    
+    // Other simulation failures (e.g., invalid arguments, compute budget exceeded)
+    console.error('Transaction simulation failed for another reason:', error.message);
+    return { code: 4, text: 'TRANSACTION_SIMULATION_FAILED' };
+  }
+  
+  // Errors not from simulation (e.g., network issues, RPC node errors)
+  console.error('An unexpected error occurred during transaction sending:', error.message);
+  return { code: 4, text: 'NETWORK_OR_RPC_ERROR' };
+}
+
+function parseSimulationError(simulationResult: any): ErrorType {
+  const rentError = { code: 1, text: 'INSUFFICIENT_SOL_FOR_RENT' };
+  const feeError = { code: 2, text: 'INSUFFICIENT_SOL_FOR_FEES' };
+  const tokenBalanceError = { code: 3, text: 'INSUFFICIENT_TOKEN_BALANCE' };
+
+  console.error('Transaction simulation failed:');
+  console.error(JSON.stringify(simulationResult.value.err, null, 2));
+
+  const error = simulationResult.value.err;
+  const logs = simulationResult.value.logs || [];
+
+  // Check for general 'insufficient funds' in logs
+  if (logs.some((log: any) => log.includes('insufficient funds') || log.includes('insufficient lamports'))) {
+    console.error('Identified: General insufficient funds/lamports error in logs.');
+    return feeError;
+  }
+
+  // Specific program errors
+  if (typeof error === 'object' && 'InstructionError' in error) {
+    const instructionError = error.InstructionError;
+    const instructionIndex = instructionError[0];
+    const programError = instructionError[1];
+
+    console.error(`Error occurred in instruction at index ${instructionIndex}.`);
+
+    if (typeof programError === 'object' && 'Custom' in programError) {
+      // Custom program error (e.g., from SystemProgram for insufficient SOL)
+      // The System Program's insufficient funds error is typically 0x1
+      if (programError.Custom === 1) {
+        console.error('Identified: Custom program error 0x1 (often insufficient SOL).');
+        return tokenBalanceError;
+      }
+      
+      return { code: 4, text: `Identified: Custom program error code: ${programError.Custom}` };
+    }
+    
+    if (typeof programError === 'string' && programError.includes('insufficient funds for rent')) {
+      // Rent exemption error
+      console.error('Identified: Insufficient funds for rent exemption.');
+      return rentError;
+    }
+    
+    if (typeof programError === 'string' && programError.includes('insufficient lamports')) {
+      // Direct lamports error
+      console.error('Identified: Insufficient lamports for transfer.');
+      return feeError
+    }
+    
+    return { code: 4, text: 'GENERIC ERROR' };
+  }
+  
+  if (typeof error === 'string' && error.includes('insufficient funds for fee')) {
+    console.error('Identified: Insufficient SOL for transaction fees.');
+    return feeError;
+  }
+
+  // Add more generic checks if the error structure is different
+  if (JSON.stringify(error).includes('insufficient funds') || JSON.stringify(error).includes('lack of balance')) {
+    console.error('Identified: Generic insufficient funds/lack of balance in error object.');
+    return feeError;
+  }
+
+  return { code: 4, text: 'GENERIC ERROR' };
 }
