@@ -1,20 +1,31 @@
-import React, { useState, useEffect } from 'react'; // Added useEffect
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, SafeAreaView, Animated } from 'react-native';
 import { unlockWalletWithPin } from '@/services/walletService';
-import colors from '@/constants/colors';
-import { useRouter } from 'expo-router'; // Optional: if you want to navigate after unlock
+import PinInputCard from '@/components/wallet/PinInputCard';
+import { Lock } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 
 
 interface EnterPinScreenProps {
-  onWalletUnlocked: () => void; // Callback to notify parent that wallet is unlocked
-  publicKey?: string | null; // Optional: to display or use
+  onWalletUnlocked: () => void;
+  publicKey?: string | null;
 }
 
 const EnterPinScreen: React.FC<EnterPinScreenProps> = ({ onWalletUnlocked, publicKey }) => {
   const [pin, setPin] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const router = useRouter(); // Optional
+  const shakeAnimationValue = useRef(new Animated.Value(0)).current;
+
+  function triggerShake() {
+    shakeAnimationValue.setValue(0);
+    Animated.sequence([
+      Animated.timing(shakeAnimationValue, { toValue: 10, duration: 50, useNativeDriver: true }),
+      Animated.timing(shakeAnimationValue, { toValue: -10, duration: 50, useNativeDriver: true }),
+      Animated.timing(shakeAnimationValue, { toValue: 10, duration: 50, useNativeDriver: true }),
+      Animated.timing(shakeAnimationValue, { toValue: 0, duration: 50, useNativeDriver: true }),
+    ]).start();
+  }
 
   useEffect(() => {
     const autoUnlockDev = async () => {
@@ -22,17 +33,14 @@ const EnterPinScreen: React.FC<EnterPinScreenProps> = ({ onWalletUnlocked, publi
         const devPin = process.env.EXPO_PUBLIC_DEV_PIN;
         if (devPin) {
           console.log(`Development mode: Attempting auto-unlock with EXPO_PUBLIC_DEV_PIN ${devPin}`);
-          setIsLoading(true); // Show loading indicator during auto-unlock attempt
+          setIsLoading(true);
           try {
             const wallet = await unlockWalletWithPin(devPin);
             if (wallet) {
               console.log('Development mode: Auto-unlock successful.');
               onWalletUnlocked();
-              // Optionally navigate to a specific screen, e.g., home
-              // router.replace('/(tabs)'); 
             } else {
-              console.warn('Development mode: Auto-unlock failed. EXPO_PUBLIC_DEV_PIN might be incorrect or wallet not set up for it.');
-              // You might want to set an error or allow manual PIN entry
+              console.warn('Development mode: Auto-unlock failed.');
               setError("Dev auto-unlock failed. Please enter PIN manually.");
             }
           } catch (err) {
@@ -41,18 +49,17 @@ const EnterPinScreen: React.FC<EnterPinScreenProps> = ({ onWalletUnlocked, publi
           } finally {
             setIsLoading(false);
           }
-        } else {
-          console.log('Development mode: EXPO_PUBLIC_DEV_PIN not set. Manual PIN entry required.');
         }
       }
     };
 
     autoUnlockDev();
-  }, [onWalletUnlocked, router]); // Keep dependencies, though router might not be strictly needed if not navigating from here
+  }, [onWalletUnlocked]);
 
   const handleUnlockWallet = async () => {
     if (pin.length < 4) {
       setError("PIN must be at least 4 digits.");
+      triggerShake();
       return;
     }
     setIsLoading(true);
@@ -60,147 +67,147 @@ const EnterPinScreen: React.FC<EnterPinScreenProps> = ({ onWalletUnlocked, publi
     try {
       const wallet = await unlockWalletWithPin(pin);
       if (wallet) {
-        // Alert.alert("Success", "Wallet unlocked!"); // Optional success message
         onWalletUnlocked();
-        // Optionally navigate to a specific screen, e.g., home
-        // router.replace('/(tabs)'); 
       } else {
         setError("Invalid PIN. Please try again.");
-        setPin(''); // Clear PIN input on failure
+        setPin('');
+        triggerShake();
       }
     } catch (err) {
       console.error("Unlock error:", err);
       setError("Failed to unlock wallet. Please try again.");
       setPin('');
+      triggerShake();
     }
     setIsLoading(false);
   };
 
   return (
-    <View style={styles.container}>
-      {isLoading && <ActivityIndicator size="large" color={colors.primary} style={styles.loadingIndicator} />}
-      <Text style={styles.title}>Enter Your PIN</Text>
-      <Text style={styles.description}>
-        Enter your PIN to unlock your Solana wallet.
-      </Text>
-      {publicKey && <Text style={styles.publicKeyTextHint}>Wallet: {publicKey.substring(0,6)}...{publicKey.substring(publicKey.length-4)}</Text>}
-      
-      <TextInput
-        style={[styles.pinInput, error ? styles.inputError : null]}
-        placeholder="Enter PIN"
-        placeholderTextColor={colors.textSecondary}
-        keyboardType="number-pad"
-        maxLength={4} // Adjust as per your PIN length
-        secureTextEntry
-        value={pin}
-        onChangeText={(text) => {
-          setPin(text);
-          if (error) setError(null); // Clear error on new input
-        }}
-        autoFocus
-      />
-      {error && <Text style={styles.errorText}>{error}</Text>}
-      <TouchableOpacity 
-        style={[styles.button, (isLoading || pin.length < 4) ? styles.buttonDisabled : null]} 
-        onPress={handleUnlockWallet} 
-        disabled={isLoading || pin.length < 4}
-      >
-        <Text style={styles.buttonText}>Unlock Wallet</Text>
-      </TouchableOpacity>
-      {/* Optional: Add a "Forgot PIN?" or "Reset Wallet" option here, which would involve clearing the wallet */}
-      {/* <TouchableOpacity style={styles.linkButton} onPress={() => Alert.alert("Reset Wallet", "This will clear your current wallet. You'll need your seed phrase to restore it. Are you sure?", [{text: "Cancel"}, {text: "Reset", onPress: async () => { await clearWallet(); router.replace('/'); /* or some other logic to re-trigger setup * /}}])}>
-        <Text style={styles.linkButtonText}>Forgot PIN / Reset Wallet</Text>
-      </TouchableOpacity> */}
-    </View>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.content}>
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.logoContainer}>
+            <LinearGradient
+              colors={['rgba(124, 92, 255, 0.15)', 'rgba(124, 92, 255, 0.05)']}
+              style={styles.logoBadge}>
+              <Lock size={32} color="#7c5cff" />
+            </LinearGradient>
+          </View>
+          <Text style={styles.title}>Enter Your PIN</Text>
+        </View>
+
+        {/* PIN Input */}
+        <View style={styles.pinContainer}>
+          <PinInputCard
+            pin={pin}
+            onPinChange={(newPin) => {
+              setPin(newPin);
+              if (error) setError(null);
+            }}
+            headerIcon={<Lock size={20} color="#7c5cff" />}
+            headerText="Enter PIN"
+            instruction={{
+              empty: 'Tap above and use your keypad to enter PIN',
+              incomplete: '{count} more digits',
+              complete: 'PIN complete'
+            }}
+            autoFocus
+          />
+        </View>
+
+        {/* Unlock Button */}
+        <Animated.View style={{ transform: [{ translateX: shakeAnimationValue }] }}>
+          <TouchableOpacity
+            style={[styles.unlockButton, (isLoading || pin.length < 4) && styles.unlockButtonDisabled]}
+            onPress={handleUnlockWallet}
+            disabled={isLoading || pin.length < 4}>
+            {isLoading ? (
+              <ActivityIndicator size={20} color="#ffffff" />
+            ) : (
+              <Text style={styles.buttonText}>Unlock Wallet</Text>
+            )}
+          </TouchableOpacity>
+        </Animated.View>
+
+        {/* Error Message - Fixed height container to prevent layout shift */}
+        <View style={styles.errorContainer}>
+          {error ? (
+            <Text style={styles.errorText}>{error}</Text>
+          ) : (
+            <Text style={styles.errorTextPlaceholder}> </Text>
+          )}
+        </View>
+      </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-    backgroundColor: colors.backgroundDark,
+    backgroundColor: '#121212',
   },
-  loadingIndicator: {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    transform: [{ translateX: -25 }, { translateY: -25 }],
+  content: {
+    flex: 1,
+    padding: 24,
+    justifyContent: 'center',
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  logoContainer: {
+    marginBottom: 24,
+  },
+  logoBadge: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   title: {
     fontSize: 24,
-    fontFamily: 'Inter-Bold',
-    color: colors.textPrimary,
-    marginBottom: 16,
+    fontWeight: '700',
+    color: '#ffffff',
     textAlign: 'center',
   },
-  description: {
-    fontSize: 16,
-    fontFamily: 'Inter-Regular',
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginBottom: 20,
+  pinContainer: {
+    marginBottom: 32,
   },
-  publicKeyTextHint: {
-    fontSize: 12,
-    fontFamily: 'Inter-Regular',
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  pinInput: {
-    backgroundColor: colors.backgroundMedium,
-    color: colors.textPrimary,
-    fontFamily: 'Inter-Regular',
-    fontSize: 20,
-    textAlign: 'center',
-    borderRadius: 8,
-    paddingVertical: 15,
-    paddingHorizontal: 20,
-    width: '80%',
-    marginBottom: 10, // Reduced margin to make space for error text
-    borderWidth: 1,
-    borderColor: colors.backgroundLight,
-  },
-  inputError: {
-    borderColor: colors.error,
+  errorContainer: {
+    marginTop: 16,
+    paddingHorizontal: 16,
+    minHeight: 40, // Reserve space to prevent layout shift
+    justifyContent: 'center',
   },
   errorText: {
-    color: colors.error,
+    color: '#ef4444',
     fontSize: 14,
-    fontFamily: 'Inter-Regular',
-    marginBottom: 10,
     textAlign: 'center',
   },
-  button: {
-    backgroundColor: colors.primary,
-    paddingVertical: 15,
-    paddingHorizontal: 30,
-    borderRadius: 8,
-    alignItems: 'center',
-    width: '80%',
-    marginTop: 10,
+  errorTextPlaceholder: {
+    color: 'transparent',
+    fontSize: 14,
+    textAlign: 'center',
   },
-  buttonDisabled: {
-    backgroundColor: colors.backgroundLight, // Or a disabled color from your theme
-    opacity: 0.7,
+  unlockButton: {
+    backgroundColor: '#7c5cff',
+    height: 50,
+    borderRadius: 25,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  unlockButtonDisabled: {
+    backgroundColor: '#4a4a4a',
+    opacity: 0.6,
   },
   buttonText: {
-    color: colors.white,
+    color: '#ffffff',
     fontSize: 16,
-    fontFamily: 'Inter-SemiBold',
+    fontWeight: '600',
   },
-  linkButton: {
-    marginTop: 25,
-    paddingVertical: 10,
-  },
-  linkButtonText: {
-    color: colors.primary,
-    fontSize: 14,
-    fontFamily: 'Inter-Medium',
-  }
 });
 
 export default EnterPinScreen;
