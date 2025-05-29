@@ -86,7 +86,7 @@ export default function SendScreen() {
         {selectedToken && (
           <>
             <Text style={styles.inputLabel}>Token</Text>
-            <TokenItem token={selectedToken} onPress={() => setShowTokenSelector(true)} />
+            <TokenItem token={selectedToken} onPress={() => setShowTokenSelector(true)} showSelectorIcon={true}/>
             <Text style={styles.inputLabel}>Amount</Text>
             <AmountInputWithValue
               address={selectedToken.address}

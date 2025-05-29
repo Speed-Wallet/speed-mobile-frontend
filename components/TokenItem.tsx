@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
-import { ArrowUpRight, ArrowDownRight } from 'lucide-react-native';
+import { ArrowUpRight, ArrowDownRight, ChevronDown } from 'lucide-react-native'; // Added ChevronDown
 import colors from '@/constants/colors';
 import { formatCurrency, formatPercentage } from '@/utils/formatters';
 import GreyCard from './GreyCard'; // Import GreyCard
@@ -20,13 +20,14 @@ type TokenItemProps = {
   onPress: () => void;
   showBalance?: boolean;
   priceFontSize?: number; // Optional prop for dollar value size
+  showSelectorIcon?: boolean; // Optional prop for showing selector icon
 };
 
-const TokenItem = ({ token, onPress, showBalance = true, priceFontSize }: TokenItemProps) => {
+const TokenItem = ({ token, onPress, showBalance = true, priceFontSize = 14, showSelectorIcon }: TokenItemProps) => {
   const isPositiveChange = token.priceChangePercentage >= 0;
 
   // const activeWalletPublicKey = useWalletPublicKey();
-  const { balance: displayQuantity, loading: isLoading, error: _error, globalError, isConnectingOrFetchingOverall } = useTokenBalance(token.address)
+  const { balance: displayQuantity, loading: isLoading, error: _error, globalError, isConnectingOrFetchingOverall, decimalsShown } = useTokenBalance(token.address)
   const displayDollarValue = displayQuantity ? displayQuantity * token.price : undefined;
   const error = _error || globalError; // Combine WebSocket and store errors
 
@@ -57,13 +58,12 @@ const TokenItem = ({ token, onPress, showBalance = true, priceFontSize }: TokenI
 
         <View style={styles.infoContainer}>
           <Text style={styles.name}>{token.name}</Text>
-          <Text style={styles.network}>{token.network}</Text>
           {showBalance && (
             // Only the token quantity and symbol remain here
             // Apply styles.price instead of styles.balance and add marginTop
             <Text style={[styles.price, { marginTop: 4 }]}>
               {/* Ensure displayQuantity is a number before calling toFixed */}
-              {isLoading ? "0.0000" : (typeof displayQuantity === 'number' ? displayQuantity.toFixed(4) : '0.0000')} {token.symbol}
+              {isLoading ? "0.0000" : (typeof displayQuantity === 'number' ? displayQuantity.toFixed(decimalsShown) : '0.0000')} {token.symbol}
             </Text>
           )}
         </View>
@@ -71,14 +71,14 @@ const TokenItem = ({ token, onPress, showBalance = true, priceFontSize }: TokenI
         <View style={styles.priceContainer}>
           {showBalance ? (
             // Display dollar value of the balance here
-            <Text style={[styles.price, { fontSize: priceFontSize ? priceFontSize : 14 }]}>
+            <Text style={[styles.price, { fontSize: priceFontSize}]}>
               {/* Ensure displayDollarValue is valid before formatting */}
               {isLoading ? formatCurrency(0) : formatCurrency(typeof displayDollarValue === 'number' ? displayDollarValue : 0)}
             </Text>
           ) : (
             // Display token's general price and change percentage
             <>
-              <Text style={[styles.price, { fontSize: priceFontSize ? priceFontSize : 14 }]}>
+              <Text style={[styles.price, { fontSize: priceFontSize}]}>
                 {formatCurrency(token.price)}
               </Text>
               <View style={styles.changeContainer}>
@@ -99,6 +99,9 @@ const TokenItem = ({ token, onPress, showBalance = true, priceFontSize }: TokenI
             </>
           )}
         </View>
+        {showSelectorIcon && (
+          <ChevronDown color={colors.textSecondary} size={20} style={styles.selectorIcon} />
+        )}
       </TouchableOpacity>
     </GreyCard>
   );
@@ -189,6 +192,9 @@ const styles = StyleSheet.create({
   change: {
     fontSize: 14,
     fontFamily: 'Inter-Medium',
+  },
+  selectorIcon: {
+    marginLeft: 8, // Add some space between the price container and the icon
   },
 });
 

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react'; // Added useMemo
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, SafeAreaView, StatusBar, ScrollView, Image, Animated } from 'react-native'; // Removed Dimensions, Added Animated
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowDownUp, ArrowRightLeft, DollarSign, Lock } from 'lucide-react-native'; // Changed ArrowUpDown to ArrowDownUp, Added Lock
+import { ArrowDownUp, ArrowRightLeft, DollarSign, Lock, ChevronDown } from 'lucide-react-native'; // Changed ArrowUpDown to ArrowDownUp, Added Lock, Added ChevronDown
 import colors from '@/constants/colors';
 import { formatCurrency } from '@/utils/formatters';
 import { getAllTokenInfo, getTokenByAddress } from '@/data/tokens';
@@ -20,6 +20,33 @@ let intervalID: NodeJS.Timeout | undefined;
 
 let platformFee: number;
 let quote: any;
+
+// New TokenSelectorDisplay component
+interface TokenSelectorDisplayProps {
+  token: EnrichedTokenEntry | null;
+  onPress: () => void;
+  labelText: string; // To differentiate "From" / "To" or pass specific label style if needed
+}
+
+const TokenSelectorDisplay: React.FC<TokenSelectorDisplayProps> = ({ token, onPress, labelText }) => {
+  return (
+    <>
+      <Text style={styles.label}>{labelText}</Text>
+      <TouchableOpacity onPress={onPress} style={styles.tokenSelectorContainer}>
+        {token ? (
+          <View style={styles.tokenDisplay}>
+            <Image source={{ uri: token.logoURI }} style={styles.tokenIcon} />
+            <Text style={styles.tokenNameText}>{token.name}</Text>
+          </View>
+        ) : (
+          <Text style={styles.tokenPlaceholderText}>Select Token</Text>
+        )}
+        <ChevronDown color={colors.textSecondary} size={20} />
+      </TouchableOpacity>
+    </>
+  );
+};
+
 
 export default function TradeScreen() {
   const { tokenAddress } = useLocalSearchParams(); // TODO change array
@@ -260,21 +287,12 @@ export default function TradeScreen() {
         <View style={{ width: (styles.backButton.padding * 2) + 20 }} />
       </View>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollViewContent}>
-        {/* The title "Swap Tokens" is moved to the header */}
-
         {/* From Token */}
-        <Text style={styles.label}>From</Text>
-        <TouchableOpacity onPress={() => setShowFromSelector(true)} style={styles.tokenSelectorContainer}>
-          {fromToken ? (
-            <View style={styles.tokenDisplay}>
-              <Image source={{ uri: fromToken.logoURI }} style={styles.tokenIcon} />
-              <Text style={styles.tokenNameText}>{fromToken.name}</Text>
-            </View>
-          ) : (
-            <Text style={styles.tokenPlaceholderText}>Select Token</Text>
-          )}
-          <ArrowDownUp color={colors.textSecondary} size={16} />
-        </TouchableOpacity>
+        <TokenSelectorDisplay
+          labelText="From"
+          token={fromToken}
+          onPress={() => setShowFromSelector(true)}
+        />
 
         {/* Swap Button */}
         <View style={styles.swapButtonContainer}>
@@ -284,18 +302,11 @@ export default function TradeScreen() {
         </View>
 
         {/* To Token */}
-        <Text style={[styles.label, styles.bottomLabel]}>To</Text>
-        <TouchableOpacity onPress={() => setShowToSelector(true)} style={styles.tokenSelectorContainer}>
-          {toToken ? (
-            <View style={styles.tokenDisplay}>
-              <Image source={{ uri: toToken.logoURI }} style={styles.tokenIcon} />
-              <Text style={styles.tokenNameText}>{toToken.name}</Text>
-            </View>
-          ) : (
-            <Text style={styles.tokenPlaceholderText}>Select Token</Text>
-          )}
-          <ArrowDownUp color={colors.textSecondary} size={16} />
-        </TouchableOpacity>
+        <TokenSelectorDisplay
+          labelText="To"
+          token={toToken}
+          onPress={() => setShowToSelector(true)}
+        />
 
         {/* Amount Input */}
         <AmountInput
@@ -454,8 +465,8 @@ const styles = StyleSheet.create({
     opacity: 0.7, // Added opacity to make it slightly less prominent than full white
     marginBottom: 8,
   },
-  bottomLabel: {
-    marginTop: -10,
+  bottomLabel: { // This style might no longer be needed if TokenSelectorDisplay handles its own label
+    // marginTop: -10, // Or adjust if still used elsewhere
   },
   tokenSelectorContainer: {
     backgroundColor: colors.backgroundMedium, // Darker element background
