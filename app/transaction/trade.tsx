@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react'; // Added useMemo
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, SafeAreaView, StatusBar, ScrollView, Image, Animated } from 'react-native'; // Removed Dimensions, Added Animated
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowDownUp, ArrowRightLeft, DollarSign, Lock, ChevronDown } from 'lucide-react-native'; // Changed ArrowUpDown to ArrowDownUp, Added Lock, Added ChevronDown
+import { LinearGradient } from 'expo-linear-gradient';
 import colors from '@/constants/colors';
 import { formatCurrency } from '@/utils/formatters';
 import { getAllTokenInfo, getTokenByAddress } from '@/data/tokens';
@@ -336,14 +337,18 @@ export default function TradeScreen() {
           onPress={handleTradeAttempt} // Use the new handler
         // disabled prop is removed to allow onPress to fire for shake animation
         >
-          <Animated.View style={{ transform: [{ translateX: shakeAnimationValue }], flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-            {isButtonDisabled ? (
-              <Lock size={20} color={colors.white} />
-            ) : (
-              <ArrowRightLeft size={20} color={colors.white} />
-            )}
-            <Text style={styles.tradeExecuteButtonText}>Swap Tokens</Text>
-          </Animated.View>
+          <LinearGradient
+            colors={isButtonDisabled ? ['#4a4a4a', '#3a3a3a'] : ['#3B82F6', '#2563EB']}
+            style={styles.buttonGradient}>
+            <Animated.View style={{ transform: [{ translateX: shakeAnimationValue }], flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+              {isButtonDisabled ? (
+                <Lock size={20} color={colors.white} />
+              ) : (
+                <ArrowRightLeft size={20} color={colors.white} />
+              )}
+              <Text style={styles.tradeExecuteButtonText}>Swap Tokens</Text>
+            </Animated.View>
+          </LinearGradient>
         </TouchableOpacity>
 
         {/* Exchange Info - MOVED HERE and "You Receive" row removed */}
@@ -591,13 +596,9 @@ const styles = StyleSheet.create({
     opacity: 0.9, // Added or adjust opacity if needed for further greying out
   },
   tradeExecuteButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#3B82F6',
-    borderRadius: 16,
     height: 56,
-    paddingHorizontal: 16,
+    borderRadius: 16,
+    overflow: 'hidden',
     // marginBottom: 24, // Removed or adjust if exchangeInfoCard is below
 
     // iOS Shadow (kept commented as per last file state)
@@ -610,6 +611,13 @@ const styles = StyleSheet.create({
   },
   buttonOpacityDisabled: { // New style for TouchableOpacity's disabled state when wrapping a gradient
     opacity: 0.6, // Made less opaque
+  },
+  buttonGradient: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
   },
   tradeExecuteButtonText: {
     fontSize: 18,

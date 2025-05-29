@@ -18,6 +18,7 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComp
   const [isLoading, setIsLoading] = useState(false);
   const [pin, setPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
+  const [pinError, setPinError] = useState<string>('');
 
   const handleCreateWallet = async () => {
     setIsLoading(true);
@@ -45,17 +46,22 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComp
     setStep(4); // Move to PIN confirmation
   };
 
+  const handleConfirmPinChange = (newPin: string) => {
+    setConfirmPin(newPin);
+    // Clear error when user starts typing
+    if (pinError) {
+      setPinError('');
+    }
+  };
+
   const handleConfirmSave = async () => {
     if (!mnemonic || !publicKey) return;
     if (pin !== confirmPin) {
-      Alert.alert("PIN Mismatch", "The PINs do not match. Please try again.");
-      setConfirmPin(''); // Clear confirm PIN
-      setStep(3); // Go back to create PIN step
+      setPinError("Incorrect PIN entered. The PINs do not match. Please try again.");
       return;
     }
     if (pin.length < 4) {
-      Alert.alert("Invalid PIN", "PIN must be at least 4 digits.");
-      setStep(3);
+      setPinError("Invalid PIN. PIN must be at least 4 digits.");
       return;
     }
 
@@ -73,6 +79,7 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComp
   const handleBackToCreatePin = () => {
     setPin('');
     setConfirmPin('');
+    setPinError('');
     setStep(3);
   };
 
@@ -114,10 +121,11 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComp
       {step === 4 && (
         <ConfirmPinStep 
           confirmPin={confirmPin}
-          onConfirmPinChange={setConfirmPin}
+          onConfirmPinChange={handleConfirmPinChange}
           onConfirm={handleConfirmSave}
           onBack={handleBackToCreatePin}
           isLoading={isLoading}
+          pinError={pinError}
         />
       )}
     </View>
