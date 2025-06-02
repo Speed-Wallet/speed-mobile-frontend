@@ -351,8 +351,9 @@ export const jupiterSwap = async (quoteResponse: any, platformFee: number): Prom
   // Create output mint ata for the user if it's not available
   const outputMintPubKey = new PublicKey(outputMint);
   const ata = await getAssociatedTokenAddress(outputMintPubKey, WALLET.publicKey);
+  const ataInfo = await CONNECTION.getAccountInfo(ata, 'finalized');
 
-  if (!await CONNECTION.getAccountInfo(ata)) {
+  if (!ataInfo) {
     console.log(`Creating output mint ATA`);
 
     instructions.push(createAssociatedTokenAccountInstruction(
@@ -433,7 +434,7 @@ export const jupiterSwap = async (quoteResponse: any, platformFee: number): Prom
 
   try {
     sig = await CONNECTION.sendRawTransaction(realTransaction.serialize(),
-    { maxRetries: 2, skipPreflight: false });
+    { maxRetries: 2, skipPreflight: false, preflightCommitment: 'finalized' });
   } catch (err) {
     throw parseError(err);
   }
