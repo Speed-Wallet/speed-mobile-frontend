@@ -6,7 +6,8 @@ import { getAccount, getAssociatedTokenAddressSync } from '@solana/spl-token';
 import { CONNECTION, WSOL_MINT } from '@/services/walletService';
 import { getAllTokenInfo } from '@/data/tokens'; // Assuming EnrichedTokenEntry is exported from tokens
 import { EnrichedTokenEntry } from '@/data/types';
-import { useShallow } from 'zustand/react/shallow';
+
+const PING_INTERVAL = 20000; // 20 seconds for heartbeat pings
 
 // Define the shape of the balance information
 export interface LiveBalanceInfo {
@@ -66,14 +67,14 @@ async function fetchNativeSolBalance(walletPublicKey: PublicKey): Promise<{ addr
     try {
         const lamports = await CONNECTION.getBalance(walletPublicKey);
         return {
-            address: 'So11111111111111111111111111111111111111112',
+            address: WSOL_MINT,
             balance: lamports / LAMPORTS_PER_SOL,
             rawBalance: BigInt(lamports),
         };
     } catch (error) {
         console.error("Error fetching SOL balance:", error);
         return {
-            address: 'So11111111111111111111111111111111111111112',
+            address: WSOL_MINT,
             balance: 0,
             rawBalance: BigInt(0),
         };
@@ -223,7 +224,7 @@ export const useTokenBalanceStore = create<TokenBalanceStoreState>((set, get) =>
             get()._setupHeartbeat();
             
             allTokens.forEach((token, idx) => {
-                const isSol = token.address === 'So11111111111111111111111111111111111111112';
+                const isSol = token.address === WSOL_MINT;;
                 const requestId = Date.now() + idx; // More unique request ID
 
                 const addressToSubscribe = isSol
@@ -251,6 +252,8 @@ export const useTokenBalanceStore = create<TokenBalanceStoreState>((set, get) =>
             const message = JSON.parse(event.data.toString());
             const state = get();
 
+            console.log("WebSocket message received (Zustand):", message);
+
             // Handle different types of messages
             if (message.result && message.id && state.requestIdToMintAddress[message.id]) {
                 // Subscription confirmation
@@ -276,7 +279,7 @@ export const useTokenBalanceStore = create<TokenBalanceStoreState>((set, get) =>
                     }
                     // Handle SOL balance if it's represented by lamports directly on the account
                     // This part might need adjustment based on how SOL is treated (is it in `allTokens` with a special address?)
-                    else if (message.params.result.value.lamports !== undefined && tokenInfo.extensions?.coingeckoId === 'solana') {
+                    else if (message.params.result.value.lamports !== undefined && tokenInfo.address === WSOL_MINT) {
                         // Assuming SOL is a token in your list and its balance comes from lamports
                         humanBalance = message.params.result.value.lamports / (10 ** tokenInfo.decimals);
                         rawAmount = BigInt(message.params.result.value.lamports);
@@ -355,6 +358,8 @@ export const useTokenBalanceStore = create<TokenBalanceStoreState>((set, get) =>
 
             const existingBalanceEntry = state.tokenBalanceDetails[mintAddress]; // Renamed property
 
+            console.log("updating balance for", mintAddress, "to", balance);
+
             return {
                 tokenBalanceDetails: { // Renamed property
                     ...state.tokenBalanceDetails, // Renamed property
@@ -389,7 +394,7 @@ export const useTokenBalanceStore = create<TokenBalanceStoreState>((set, get) =>
                     console.error('Failed to send heartbeat:', error);
                 }
             }
-        }, 30000); // Send ping every 30 seconds
+        }, PING_INTERVAL); // Send ping every 20 seconds
 
         set({ pingInterval });
     },
