@@ -28,6 +28,8 @@ const EnterPinScreen: React.FC<EnterPinScreenProps> = ({ onWalletUnlocked, publi
   }
 
   useEffect(() => {
+    console.log(process.env.EXPO_PUBLIC_APP_ENV)
+    console.log(process.env.EXPO_PUBLIC_DEV_PIN)
     const autoUnlockDev = async () => {
       if (process.env.EXPO_PUBLIC_APP_ENV === 'development') {
         const devPin = process.env.EXPO_PUBLIC_DEV_PIN;

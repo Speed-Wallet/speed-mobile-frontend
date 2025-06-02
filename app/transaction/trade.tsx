@@ -232,7 +232,6 @@ export default function TradeScreen() {
       const sig = await jupiterSwap(quote, platformFee);
       console.log(`Trade Successful: ${sig}`);
       alert('Trade Successful!'); // Provide feedback
-      router.back();
     } catch (err: any) {
       console.error(err);
       alert(`Error trading tokens: ${err.message || 'Unknown error'}`);
