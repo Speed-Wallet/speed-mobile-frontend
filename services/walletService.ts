@@ -28,7 +28,7 @@ import { Key, useEffect, useState } from 'react';
 import { Buffer } from 'buffer';
 global.Buffer = Buffer; // Polyfill global Buffer
 
-export const CONNECTION = new Connection('https://solana-rpc.publicnode.com');
+export const CONNECTION = new Connection(`https://mainnet.helius-rpc.com/?api-key=${process.env.EXPO_PUBLIC_HELIUS_API_KEY}`);
 // const CONNECTION = new Connection('https://api.mainnet-beta.solana.com');
 const JUPITER_API_URL = 'https://lite-api.jup.ag/swap/v1/';
 
