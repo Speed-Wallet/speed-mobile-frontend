@@ -201,6 +201,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Regular',
     fontSize: 18,
     paddingVertical: 12,
+    outlineStyle: 'none',
   },
   eyeIcon: {
     padding: 8,
