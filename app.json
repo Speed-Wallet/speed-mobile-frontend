@@ -32,6 +32,12 @@
     },
     "android": {
       "package": "com.alexthelion123.boltexponativewind"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/939feec9-4d34-423e-a883-96b0de3874e3"
     }
   }
 }
