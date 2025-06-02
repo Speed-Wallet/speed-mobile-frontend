@@ -15,13 +15,17 @@ import { useTokenBalance } from '@/hooks/useTokenBalance';
 import AmountInput from '@/components/AmountInput';
 import AmountInputWithValue from '@/components/AmountInputWithValue';
 import TokenItem from '@/components/TokenItem';
+import { createTransferInstruction, getAccount, getAssociatedTokenAddress, getOrCreateAssociatedTokenAccount } from '@solana/spl-token';
+import { PublicKey, sendAndConfirmTransaction, Transaction, SystemProgram } from '@solana/web3.js';
+import { CONNECTION, getWalletPublicKey, isWalletUnlocked, WALLET, WSOL_MINT } from '@/services/walletService';
+
 
 export default function SendScreen() {
   const { tokenAddress } = useLocalSearchParams();
   const router = useRouter();
   const [selectedToken, setSelectedToken] = useState<EnrichedTokenEntry | null>(null);
-  const [amount, setAmount] = useState('');
-  const [address, setAddress] = useState('');
+  const [amount, setAmount] = useState<string | null>(null);
+  const [recipient, setRecipient] = useState<string | null>(null);
   const [note, setNote] = useState('');
   const [showTokenSelector, setShowTokenSelector] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -61,14 +65,101 @@ export default function SendScreen() {
 
 
 
-  const handleSend = () => {
-    alert(`Sending ${amount} ${selectedToken?.symbol} to ${address || selectedContact?.username}`);
-    router.back();
+  const handleSend = async () => {
+    if (!amount) {
+      alert("Please enter an amount to send.");
+      return;
+    }
+
+    if (!recipient) {
+      alert("Please enter a recipient address or select a contact.");
+      return;
+    }
+
+    if (!selectedToken?.address) {
+      alert("Please select a token to send.");
+      return;
+    }
+
+    if (!WALLET) {
+      alert("Wallet is not unlocked. Cannot perform action")
+      console.error("Wallet is not unlocked. Cannot perform action.");
+      // Potentially prompt user to unlock again or handle error
+      return;
+    }
+
+    alert(`Sending ${amount} ${selectedToken?.symbol} to ${recipient || selectedContact?.username}`);
+
+    const recipientPublicKey = new PublicKey(recipient);
+    const amountInBaseUnits = Math.floor(parseFloat(amount) * Math.pow(10, selectedToken.decimals));
+
+    console.log("amount base units", amountInBaseUnits);
+
+    let transferIx;
+
+    if (selectedToken.address === WSOL_MINT) {
+      // Native SOL transfer
+      transferIx = SystemProgram.transfer({
+        fromPubkey: WALLET.publicKey,
+        toPubkey: recipientPublicKey,
+        lamports: amountInBaseUnits,
+      });
+    } else {
+      // SPL Token transfer
+      const senderPublicKeyStr = WALLET.publicKey.toBase58();
+      const senderPublicKey = new PublicKey(senderPublicKeyStr);
+
+      // 1. Get sender's ATA (must exist)
+      const senderATA = await getAssociatedTokenAddress(
+        new PublicKey(selectedToken.address),
+        senderPublicKey
+      );
+      console.log("senderATA", senderATA.toBase58());
+      try {
+        await getAccount(CONNECTION, senderATA); // throws if doesn't exist
+      } catch (e) {
+        alert("You do not have balance of this token in your wallet.");
+        console.error("Error fetching sender's ATA:", e);
+        return
+      }
+
+      const tokenPublicKey = new PublicKey(selectedToken.address);
+
+      // 2. Get or create recipient's ATA (creates if missing)
+      const recipientATA = await getOrCreateAssociatedTokenAccount(
+        CONNECTION,
+        WALLET,
+        tokenPublicKey,
+        recipientPublicKey
+      );
+
+      // 3. Create transfer instruction for SPL token
+      transferIx = createTransferInstruction(
+        senderATA,
+        recipientATA.address,
+        WALLET.publicKey,
+        amountInBaseUnits
+      );
+    }
+
+    // 4. Send transaction
+    const tx = new Transaction().add(transferIx);
+
+    try {
+      const sig = await sendAndConfirmTransaction(CONNECTION, tx, [WALLET]);
+      console.log("Transaction successful. Signature:", sig);
+      alert(`✅ Transfer complete. Signature: ${sig}`);
+    } catch (error) {
+      console.error("Transaction failed:", error);
+      alert("Transaction failed. Please try again.");
+      return;
+    }
+
   };
 
   const handleSelectContact = (contact: any) => {
     setSelectedContact(contact);
-    setAddress(contact.address);
+    setRecipient(contact.recipient);
   };
 
   return (
@@ -86,11 +177,11 @@ export default function SendScreen() {
         {selectedToken && (
           <>
             <Text style={styles.inputLabel}>Token</Text>
-            <TokenItem token={selectedToken} onPress={() => setShowTokenSelector(true)} showSelectorIcon={true}/>
+            <TokenItem token={selectedToken} onPress={() => setShowTokenSelector(true)} showSelectorIcon={true} />
             <Text style={styles.inputLabel}>Amount</Text>
             <AmountInputWithValue
               address={selectedToken.address}
-              amount={amount}
+              amount={amount || ''}
               setAmount={setAmount}
             />
 
@@ -121,14 +212,17 @@ export default function SendScreen() {
                     <Search size={20} color={colors.textSecondary} />
                     <TextInput
                       style={styles.searchInput}
-                      placeholder="Search contacts or paste address"
+                      placeholder="Search contacts or paste recipient"
                       placeholderTextColor={colors.textSecondary}
                       value={searchQuery}
-                      onChangeText={setSearchQuery}
+                      onChangeText={(value) => {
+                        setSearchQuery(value);
+                        setRecipient(value)
+                      }}
                     />
                   </View>
 
-                  <View style={styles.optionsRow}>
+                  {/* <View style={styles.optionsRow}>
                     <TouchableOpacity style={styles.optionButton}>
                       <View style={styles.optionIconContainer}>
                         <User size={20} color={colors.textPrimary} />
@@ -167,11 +261,11 @@ export default function SendScreen() {
                     searchQuery ? (
                       <Text style={styles.noResults}>No contacts found</Text>
                     ) : null
-                  )}
+                  )} */}
 
                   {/* <AddressInput
-                    address={address}
-                    onChangeAddress={setAddress}
+                    recipient={recipient}
+                    onChangeAddress={setRecipient}
                     selectedToken={selectedToken}
                   /> */}
                 </>
@@ -207,9 +301,9 @@ export default function SendScreen() {
         <TouchableOpacity
           style={[
             styles.sendButton,
-            (!amount || !address && !selectedContact) && styles.sendButtonDisabled
+            (!amount || !recipient && !selectedContact) && styles.sendButtonDisabled
           ]}
-          disabled={!amount || (!address && !selectedContact)}
+          disabled={!amount || (!recipient && !selectedContact)}
           onPress={handleSend}
         >
           <Text style={styles.sendButtonText}>Preview Transaction</Text>

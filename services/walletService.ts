@@ -38,10 +38,10 @@ const IV_KEY = 'solanaIV';
 export const PUBLIC_KEY_KEY = 'solanaPublicKey'; // Keep this as is
 
 export const PLATFORM_FEE_RATE = 0.001;
+export const WSOL_MINT = 'So11111111111111111111111111111111111111112';
 const PLATFORM_FEE_ACCOUNT = new PublicKey('7o3QNaG84hrWhCLoAEXuiiyNfKvpGvMAyTwDb3reBram');
-const WSOL_MINT = 'So11111111111111111111111111111111111111112';
 const PLATFORM_FEE_BPS = 20; // 0.2%
-let WALLET: Keypair | null = null; // Initialize WALLET to null
+export let WALLET: Keypair | null = null; // Initialize WALLET to null
 
 interface SolanaWallet {
   mnemonic: string;
@@ -99,11 +99,11 @@ export function useWalletPublicKey() {
   return publicKey;
 }
 
-const isWalletUnlocked = (): boolean => {
+export const isWalletUnlocked = (): boolean => {
   return !!WALLET; // Relies on the module-level WALLET
 };
 
-const getWalletPublicKey = (): string | null => {
+export const getWalletPublicKey = (): string | null => {
   if (WALLET) {
     return WALLET.publicKey.toBase58(); // Relies on the module-level WALLET
   }

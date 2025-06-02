@@ -3,7 +3,7 @@ global.Buffer = Buffer;
 import { create } from 'zustand';
 import { LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
 import { getAccount, getAssociatedTokenAddressSync } from '@solana/spl-token';
-import { CONNECTION } from '@/services/walletService';
+import { CONNECTION, WSOL_MINT } from '@/services/walletService';
 import { getAllTokenInfo } from '@/data/tokens'; // Assuming EnrichedTokenEntry is exported from tokens
 import { EnrichedTokenEntry } from '@/data/types';
 import { useShallow } from 'zustand/react/shallow';
@@ -44,6 +44,10 @@ interface TokenBalanceStoreState {
     requestIdToMintAddress: Record<number, string>;
     rpcSubIdToMintAddress: Record<number, string>;
     isConnectingOrFetching: boolean; // Indicates overall process of fetching/connecting
+    pingInterval: NodeJS.Timeout | null; // For keep-alive pings
+    reconnectTimeout: NodeJS.Timeout | null; // For reconnection attempts
+    reconnectAttempts: number; // Track reconnection attempts
+    connectionStartTime: number | null; // Track when connection started for debugging
 
     // Actions
     subscribeToTokenBalances: (walletPublicKeyStr: string | null) => Promise<void>;
@@ -52,6 +56,10 @@ interface TokenBalanceStoreState {
     _connectWebSocket: (walletPublicKey: PublicKey) => void;
     _disconnectWebSocket: () => void;
     _updateBalance: (mintAddress: string, balance: number, rawBalance: bigint) => void;
+    _setupHeartbeat: () => void;
+    _clearHeartbeat: () => void;
+    _scheduleReconnect: (walletPublicKey: PublicKey) => void;
+    _clearReconnect: () => void;
 }
 
 async function fetchNativeSolBalance(walletPublicKey: PublicKey): Promise<{ address: string; balance: number; rawBalance: bigint }> {
@@ -110,6 +118,10 @@ export const useTokenBalanceStore = create<TokenBalanceStoreState>((set, get) =>
     requestIdToMintAddress: {},
     rpcSubIdToMintAddress: {},
     isConnectingOrFetching: false,
+    pingInterval: null,
+    reconnectTimeout: null,
+    reconnectAttempts: 0,
+    connectionStartTime: null,
 
     _initializeBalances: () => {
         const initialTokenBalanceDetails: TokenBalancesMap = {}; // Renamed variable
@@ -152,7 +164,7 @@ export const useTokenBalanceStore = create<TokenBalanceStoreState>((set, get) =>
 
         const balancePromises = allTokens.map(async (token) => {
             try {
-                const result = token.address === 'So11111111111111111111111111111111111111112'
+                const result = token.address === WSOL_MINT
                     ? await fetchNativeSolBalance(walletPublicKey)
                     : await fetchSplTokenBalance(token, walletPublicKey);
 
@@ -195,13 +207,21 @@ export const useTokenBalanceStore = create<TokenBalanceStoreState>((set, get) =>
             return;
         }
 
+        const state = get();
+        state._clearReconnect(); // Clear any pending reconnect attempts
+
         const rpcEndpoint = CONNECTION.rpcEndpoint.replace(/^http/, 'ws');
         const newWs = new WebSocket(rpcEndpoint);
         let currentRequestIdToMintAddress: Record<number, string> = {};
 
         newWs.onopen = () => {
+            const connectionTime = Date.now();
             console.log('WebSocket connection opened for token balance subscriptions (Zustand).');
-            set({ ws: newWs }); // Store the active WebSocket instance
+            set({ ws: newWs, wsError: null, reconnectAttempts: 0, connectionStartTime: connectionTime }); // Clear errors and reset attempts on successful connection
+            
+            // Setup heartbeat to keep connection alive
+            get()._setupHeartbeat();
+            
             allTokens.forEach((token, idx) => {
                 const isSol = token.address === 'So11111111111111111111111111111111111111112';
                 const requestId = Date.now() + idx; // More unique request ID
@@ -231,13 +251,16 @@ export const useTokenBalanceStore = create<TokenBalanceStoreState>((set, get) =>
             const message = JSON.parse(event.data.toString());
             const state = get();
 
+            // Handle different types of messages
             if (message.result && message.id && state.requestIdToMintAddress[message.id]) {
+                // Subscription confirmation
                 const mintAddress = state.requestIdToMintAddress[message.id];
                 set(s => ({
                     rpcSubIdToMintAddress: { ...s.rpcSubIdToMintAddress, [message.result]: mintAddress },
                     requestIdToMintAddress: (({ [message.id]: _, ...rest }) => rest)(s.requestIdToMintAddress) // Remove handled ID
                 }));
             } else if (message.method === "accountNotification") {
+                // Account update notification
                 const rpcSubscriptionId = message.params.subscription;
                 const mintAddress = state.rpcSubIdToMintAddress[rpcSubscriptionId];
                 const tokenInfo = allTokens.find(t => t.address === mintAddress);
@@ -259,42 +282,69 @@ export const useTokenBalanceStore = create<TokenBalanceStoreState>((set, get) =>
                         rawAmount = BigInt(message.params.result.value.lamports);
                     }
 
-
                     state._updateBalance(mintAddress, humanBalance, rawAmount);
                 } else if (tokenInfo && message.params.result && message.params.result.value === null) { // Account closed
                     state._updateBalance(mintAddress, 0, BigInt(0));
                 }
+            } else if (message.result !== undefined && typeof message.id === 'string' && message.id.startsWith('heartbeat_')) {
+                // Heartbeat response - just log for debugging if needed
+                // console.log('WebSocket heartbeat response received');
+            } else if (message.error) {
+                // Handle RPC errors
+                if (message.error.code === -32601) {
+                    // Method not found - this is expected for heartbeat on some RPC providers
+                    // Don't log this as it's not a real error
+                    return;
+                }
+                // Log other RPC errors as they might be important
+                console.error('WebSocket RPC error:', message.error);
             }
         };
 
         newWs.onerror = (error) => {
             console.error("WebSocket error (Zustand):", error);
-            // set({ error: new Error("WebSocket connection error."), ws: null, isConnectingOrFetching: false, loading: false }); // OLD
-            set({ wsError: new Error("WebSocket connection error."), ws: null, isConnectingOrFetching: false }); // NEW
+            set({ wsError: new Error("WebSocket connection error."), ws: null, isConnectingOrFetching: false });
+            get()._clearHeartbeat(); // Clear heartbeat on error
         };
 
-        newWs.onclose = () => {
-            console.log('WebSocket connection closed (Zustand).');
-            // Avoid resetting ws to null here if a reconnect strategy is desired or if disconnect was intentional
-            // For now, just mark as not connected.
+        newWs.onclose = (event) => {
+            const startTime = get().connectionStartTime;
+            const connectionDuration = startTime ? Date.now() - startTime : 0;
+            console.log(`WebSocket connection closed after ${connectionDuration}ms. Code: ${event.code}, Reason: ${event.reason || 'No reason provided'}`);
+            get()._clearHeartbeat(); // Clear heartbeat on close
+            
             if (get().ws === newWs) { // Only update if this is the active WebSocket instance
-                // set({ ws: null, isConnectingOrFetching: false }); // No loading if WS just closes // OLD
-                set(state => ({ // Preserve wsError if it was set by onerror
+                set(state => ({
                     ws: null,
                     isConnectingOrFetching: false,
-                    // wsError: state.wsError // Keep existing wsError if any
+                    connectionStartTime: null,
                 }));
+
+                // Schedule reconnection if the close wasn't intentional (code 1000 is normal closure)
+                // Also check if connection was short-lived (< 30 seconds) which might indicate server issues
+                if (event.code !== 1000 && get().activeWalletPublicKey) {
+                    if (connectionDuration < 30000) {
+                        console.log('Connection was short-lived, indicating possible server issues');
+                    }
+                    console.log('Scheduling WebSocket reconnection...');
+                    get()._scheduleReconnect(walletPublicKey);
+                }
             }
         };
     },
 
     _disconnectWebSocket: () => {
         const currentWs = get().ws;
+        const state = get();
+        
+        // Clear timers
+        state._clearHeartbeat();
+        state._clearReconnect();
+        
         if (currentWs) {
             console.log("Closing WebSocket connection (Zustand).");
-            currentWs.close();
-            // set({ ws: null, rpcSubIdToMintAddress: {}, requestIdToMintAddress: {} }); // OLD
-            set({ ws: null, rpcSubIdToMintAddress: {}, requestIdToMintAddress: {}, wsError: null }); // NEW, clear wsError on explicit disconnect
+            currentWs.close(1000, 'Intentional disconnect'); // Normal closure
+            set({ ws: null, rpcSubIdToMintAddress: {}, requestIdToMintAddress: {}, wsError: null, reconnectAttempts: 0, connectionStartTime: null });
         }
     },
 
@@ -321,6 +371,72 @@ export const useTokenBalanceStore = create<TokenBalanceStoreState>((set, get) =>
         });
     },
 
+    _setupHeartbeat: () => {
+        get()._clearHeartbeat(); // Clear any existing heartbeat
+        
+        const pingInterval = setInterval(() => {
+            const ws = get().ws;
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                // Send a simple RPC call to keep the connection alive
+                // Using getSlot which is lightweight and widely supported
+                try {
+                    ws.send(JSON.stringify({
+                        jsonrpc: "2.0",
+                        id: `heartbeat_${Date.now()}`,
+                        method: "getSlot"
+                    }));
+                } catch (error) {
+                    console.error('Failed to send heartbeat:', error);
+                }
+            }
+        }, 30000); // Send ping every 30 seconds
+
+        set({ pingInterval });
+    },
+
+    _clearHeartbeat: () => {
+        const { pingInterval } = get();
+        if (pingInterval) {
+            clearInterval(pingInterval);
+            set({ pingInterval: null });
+        }
+    },
+
+    _scheduleReconnect: (walletPublicKey: PublicKey) => {
+        const state = get();
+        state._clearReconnect(); // Clear any existing reconnect timeout
+        
+        const maxAttempts = 5;
+        const baseDelay = 1000; // 1 second base delay
+        
+        if (state.reconnectAttempts >= maxAttempts) {
+            console.error('Max reconnection attempts reached. Stopping reconnection.');
+            set({ wsError: new Error('Failed to reconnect after multiple attempts') });
+            return;
+        }
+
+        const delay = baseDelay * Math.pow(2, state.reconnectAttempts); // Exponential backoff
+        console.log(`Scheduling reconnection attempt ${state.reconnectAttempts + 1} in ${delay}ms`);
+
+        const reconnectTimeout = setTimeout(() => {
+            const currentState = get();
+            if (currentState.activeWalletPublicKey && !currentState.ws) {
+                set(state => ({ reconnectAttempts: state.reconnectAttempts + 1 }));
+                currentState._connectWebSocket(walletPublicKey);
+            }
+        }, delay);
+
+        set({ reconnectTimeout });
+    },
+
+    _clearReconnect: () => {
+        const { reconnectTimeout } = get();
+        if (reconnectTimeout) {
+            clearTimeout(reconnectTimeout);
+            set({ reconnectTimeout: null });
+        }
+    },
+
     subscribeToTokenBalances: async (walletPublicKeyStr: string | null) => {
         const state = get();
 
@@ -334,15 +450,13 @@ export const useTokenBalanceStore = create<TokenBalanceStoreState>((set, get) =>
         if (!walletPublicKeyStr) {
             state._disconnectWebSocket();
             state._initializeBalances(); // Reset to 0 balances, loading false, error null
-            // set({ activeWalletPublicKey: null, error: null, loading: false, isConnectingOrFetching: false }); // OLD
-            set({ activeWalletPublicKey: null, isConnectingOrFetching: false, storeError: null, wsError: null }); // NEW
+            set({ activeWalletPublicKey: null, isConnectingOrFetching: false, storeError: null, wsError: null, reconnectAttempts: 0, connectionStartTime: null });
             return;
         }
 
         if (state.activeWalletPublicKey !== walletPublicKeyStr) {
             state._disconnectWebSocket(); // Disconnect if wallet changed
-            // set({ activeWalletPublicKey: walletPublicKeyStr, balances: {}, error: null }); // OLD
-            set({ activeWalletPublicKey: walletPublicKeyStr, tokenBalanceDetails: {}, storeError: null, wsError: null }); // Renamed property // NEW
+            set({ activeWalletPublicKey: walletPublicKeyStr, tokenBalanceDetails: {}, storeError: null, wsError: null, reconnectAttempts: 0, connectionStartTime: null });
             state._initializeBalances(); // Initialize with 0s for the new wallet
         }
 
