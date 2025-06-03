@@ -15,6 +15,8 @@ import SetupWalletScreen from '@/app/wallet/SetupWalletScreen';
 import EnterPinScreen from '@/app/wallet/EnterPinScreen';
 import colors from '@/constants/colors';
 import { useTokenBalanceStore } from '@/stores/tokenBalanceStore';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -60,10 +62,12 @@ export default function RootLayout() {
 
   const subscribeToTokenBalances = useTokenBalanceStore((state) => state.subscribeToTokenBalances);
   const activeWalletPublicKey = useWalletPublicKey();
-  
+
   useEffect(() => {
     subscribeToTokenBalances(activeWalletPublicKey);
   }, [activeWalletPublicKey, subscribeToTokenBalances]);
+
+  const [queryClient] = useState(() => new QueryClient())
 
   if (!fontsLoaded && !fontError) {
     return null;
@@ -88,22 +92,24 @@ export default function RootLayout() {
 
   return (
     <>
-      <Stack screenOptions={{ headerShown: false, contentStyle: { paddingTop: 10, backgroundColor: colors.backgroundDark } }}>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" options={{ title: 'Oops!' }} />
-        <Stack.Screen name="transaction/send" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="transaction/receive" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="transaction/buy" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="transaction/trade" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="wallet/cards" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="wallet/manage" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="wallet/SetupWalletScreen" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="wallet/connect" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="wallet/import" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="settings/personal-info" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="token/[address]" options={{ animation: 'slide_from_right' }} />
-      </Stack>
-      <StatusBar style="light" />
+      <QueryClientProvider client={queryClient}>
+        <Stack screenOptions={{ headerShown: false, contentStyle: { paddingTop: 10, backgroundColor: colors.backgroundDark } }}>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="+not-found" options={{ title: 'Oops!' }} />
+          <Stack.Screen name="transaction/send" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="transaction/receive" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="transaction/buy" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="transaction/trade" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="wallet/cards" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="wallet/manage" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="wallet/SetupWalletScreen" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="wallet/connect" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="wallet/import" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="settings/personal-info" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="token/[address]" options={{ animation: 'slide_from_right' }} />
+        </Stack>
+        <StatusBar style="light" />
+      </QueryClientProvider>
     </>
   );
 }

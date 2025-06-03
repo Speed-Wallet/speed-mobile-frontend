@@ -1,13 +1,14 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
-import { ArrowUpRight, ArrowDownRight, ChevronDown } from 'lucide-react-native'; // Added ChevronDown
+import { ArrowUpRight, ArrowDownRight, ChevronDown } from 'lucide-react-native';
 import colors from '@/constants/colors';
 import { formatCurrency, formatPercentage } from '@/utils/formatters';
-import GreyCard from './GreyCard'; // Import GreyCard
-import { useTokenBalanceStore } from '@/stores/tokenBalanceStore'; // Import the store directly
+import GreyCard from './GreyCard';
+import { useTokenBalanceStore } from '@/stores/tokenBalanceStore';
 import { useWalletPublicKey } from '@/services/walletService';
 import { useShallow } from 'zustand/react/shallow'
 import { useTokenBalance } from '@/hooks/useTokenBalance';
+import { useTokenPrice } from '@/hooks/useTokenPrice';
 import { EnrichedTokenEntry } from '@/data/types';
 
 
@@ -26,9 +27,17 @@ type TokenItemProps = {
 const TokenItem = ({ token, onPress, showBalance = true, priceFontSize = 14, showSelectorIcon }: TokenItemProps) => {
   const isPositiveChange = token.priceChangePercentage >= 0;
 
+  const coingeckoId = token.extensions.coingeckoId;
+  
+  // Add the price query
+  const { data: fetchedPrice, isLoading: isPriceLoading, error: priceError } = useTokenPrice(coingeckoId);
+  
+  // Use fetched price or fallback to token.price
+  const currentPrice = fetchedPrice ?? 0;
+
   // const activeWalletPublicKey = useWalletPublicKey();
   const { balance: displayQuantity, loading: isLoading, error: _error, globalError, isConnectingOrFetchingOverall, decimalsShown } = useTokenBalance(token.address)
-  const displayDollarValue = displayQuantity ? displayQuantity * token.price : undefined;
+  const displayDollarValue = displayQuantity ? displayQuantity * currentPrice : undefined;
   const error = _error || globalError; // Combine WebSocket and store errors
 
   return (
@@ -79,7 +88,7 @@ const TokenItem = ({ token, onPress, showBalance = true, priceFontSize = 14, sho
             // Display token's general price and change percentage
             <>
               <Text style={[styles.price, { fontSize: priceFontSize}]}>
-                {formatCurrency(token.price)}
+                {isPriceLoading ? formatCurrency(token.price) : formatCurrency(currentPrice)}
               </Text>
               <View style={styles.changeContainer}>
                 {isPositiveChange ? (

@@ -11,8 +11,6 @@ import AddressInput from '@/components/AddressInput';
 import RecentContacts from '@/data/contacts';
 import { EnrichedTokenEntry } from '@/data/types';
 import BackButton from '@/components/BackButton';
-import { useTokenBalance } from '@/hooks/useTokenBalance';
-import AmountInput from '@/components/AmountInput';
 import AmountInputWithValue from '@/components/AmountInputWithValue';
 import TokenItem from '@/components/TokenItem';
 import { createTransferInstruction, getAccount, getAssociatedTokenAddress, getOrCreateAssociatedTokenAccount } from '@solana/spl-token';

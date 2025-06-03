@@ -11,7 +11,8 @@ import AmountInput from '@/components/AmountInput'; // Added import
 import { EnrichedTokenEntry } from '@/data/types';
 import { PLATFORM_FEE_RATE, JupiterQuote, jupiterSwap } from '@/services/walletService';
 import BackButton from '@/components/BackButton';
-import { useTokenBalance } from '@/hooks/useTokenBalance';
+import { useTokenValue } from '@/hooks/useTokenValue';
+import { useTokenPrice } from '@/hooks/useTokenPrice';
 
 const WAIT_ON_AMOUNT_CHANGE = 2000;
 const LOOP_QUOTE_INTERVAL = 10000;
@@ -61,6 +62,7 @@ export default function TradeScreen() {
   // const [selectedPercentage, setSelectedPercentage] = useState('25'); // Add selected percentage state
 
   const shakeAnimationValue = useRef(new Animated.Value(0)).current;
+  const { data: fromTokenPrice } = useTokenPrice(fromToken?.extensions.coingeckoId);
 
   function triggerShake() {
     shakeAnimationValue.setValue(0);
@@ -263,8 +265,9 @@ export default function TradeScreen() {
     });
   }, [toAmount, toToken]);
 
+
   const totalValueDisplay = (fromAmount && fromToken && parseFloat(fromAmount) > 0)
-    ? formatCurrency(parseFloat(fromAmount) * fromToken.price)
+    ? formatCurrency(parseFloat(fromAmount) * fromTokenPrice)
     : '$0.00';
 
   const isButtonDisabled = !fromAmount || parseFloat(fromAmount) <= 0 || !quote || !!quote.errorCode;

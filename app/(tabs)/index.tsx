@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Copy } from 'lucide-react-native';
@@ -6,7 +6,6 @@ import colors from '@/constants/colors';
 import Avatar from '@/components/Avatar';
 import TokenList from '@/components/TokenList';
 import UserData from '@/data/user';
-import { getAllTokenInfo } from '@/data/tokens';
 import { EnrichedTokenEntry } from '@/data/types';
 import BalanceCard from '@/components/BalanceCard';
 import { useWalletPublicKey } from '@/services/walletService';
@@ -16,13 +15,7 @@ import { setStringAsync } from 'expo-clipboard';
 export default function HomeScreen() {
   const router = useRouter();
   const [userData, setUserData] = useState(UserData);
-  const [tokenData, setTokenData] = useState<EnrichedTokenEntry[]>([]);
   const walletAddress = useWalletPublicKey();
-
-  useEffect(() => {
-    const data = getAllTokenInfo();
-    setTokenData(data);
-  }, []);
 
   const handleCopyAddress = async () => {
     await setStringAsync(walletAddress || '');
@@ -55,7 +48,6 @@ export default function HomeScreen() {
 
         {/* Balance card */}
         <BalanceCard
-          balance={userData.totalBalance}
           onActionPress={handleBalanceCardAction}
         // currencySymbol="$" // Optional: if you want to override default
         />
@@ -68,7 +60,6 @@ export default function HomeScreen() {
           </View>
 
           <TokenList
-            tokens={tokenData}
             onSelectToken={(token: EnrichedTokenEntry) => router.push(`/token/${token.address}`)}
           />
         </View>
