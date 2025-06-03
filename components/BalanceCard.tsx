@@ -1,22 +1,23 @@
 import React from 'react';
-import { StyleSheet, Text, View, Platform } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import ActionButton from '@/components/ActionButton'; 
 import { ArrowUp, ArrowDown, ShoppingCart, ArrowRightLeft } from 'lucide-react-native';
 import colors from '@/constants/colors'; 
-import GradientCard from './GradientCard'; // Import the new GradientCard
+import GradientCard from './GradientCard';
+import { usePortfolioValue } from '@/hooks/usePortfolioValue';
 
 interface BalanceCardProps {
-  balance: number;
   currencySymbol?: string;
   onActionPress: (action: string) => void;
 }
 
 const BalanceCard: React.FC<BalanceCardProps> = ({ 
-  balance, 
   currencySymbol = '$',
   onActionPress
 }) => {
-  const formattedBalance = balance.toLocaleString('en-US', {
+  const { portfolioValue } = usePortfolioValue();
+
+  const formattedBalance = portfolioValue.toLocaleString('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   });

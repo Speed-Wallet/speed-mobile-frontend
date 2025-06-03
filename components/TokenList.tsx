@@ -1,16 +1,26 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
-import Animated, { FadeInRight } from 'react-native-reanimated';
 import TokenItem from './TokenItem';
 import { EnrichedTokenEntry } from '@/data/types';
+import { getAllTokenInfo } from '@/data/tokens';
+import Animated, { FadeInRight } from 'react-native-reanimated';
 
 
 type TokenListProps = {
-  tokens: EnrichedTokenEntry[];
   onSelectToken: (token: EnrichedTokenEntry) => void;
+  showBalance?: boolean;
+  priceFontSize?: number;
+  showSelectorIcon?: boolean;
 };
 
-const TokenList = ({ tokens, onSelectToken }: TokenListProps) => {
+const TokenList = ({ onSelectToken, showBalance = true, priceFontSize, showSelectorIcon }: TokenListProps) => {
+  const [tokens, setTokens] = useState<EnrichedTokenEntry[]>([]);
+
+  useEffect(() => {
+    const data = getAllTokenInfo();
+    setTokens(data);
+  }, []);
+
   return (
     <View style={styles.container}>
       {tokens.map((token, index) => (
@@ -19,8 +29,12 @@ const TokenList = ({ tokens, onSelectToken }: TokenListProps) => {
           entering={FadeInRight.delay(100 + (index * 100)).duration(400)}
         >
           <TokenItem
+            key={token.address}
             token={token}
             onPress={() => onSelectToken(token)}
+            showBalance={showBalance}
+            priceFontSize={priceFontSize}
+            showSelectorIcon={showSelectorIcon}
           />
         </Animated.View>
       ))}
