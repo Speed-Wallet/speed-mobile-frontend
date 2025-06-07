@@ -13,7 +13,7 @@ type TokenListProps = {
   showSelectorIcon?: boolean;
 };
 
-const TokenList = ({ onSelectToken, showBalance = true, priceFontSize, showSelectorIcon }: TokenListProps) => {
+const TokenList = ({ onSelectToken, showBalance, priceFontSize, showSelectorIcon }: TokenListProps) => {
   const [tokens, setTokens] = useState<EnrichedTokenEntry[]>([]);
 
   useEffect(() => {

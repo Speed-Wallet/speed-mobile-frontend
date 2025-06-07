@@ -30,7 +30,7 @@ const TokenItem = ({ token, onPress, showBalance = true, priceFontSize = 14, sho
   const coingeckoId = token.extensions.coingeckoId;
   
   // Add the price query
-  const { data: fetchedPrice, isLoading: isPriceLoading, error: priceError } = useTokenPrice(coingeckoId);
+  const { price: fetchedPrice, isLoading: isPriceLoading, error: priceError } = useTokenPrice(coingeckoId);
   
   // Use fetched price or fallback to token.price
   const currentPrice = fetchedPrice ?? 0;

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, Image, TextInput, Modal } from 'react-native';
 import { X, Search } from 'lucide-react-native';
-import Animated, { SlideInUp } from 'react-native-reanimated';
+import Animated, { SlideInDown } from 'react-native-reanimated';
 import colors from '@/constants/colors';
 import { formatCurrency } from '@/utils/formatters';
 import { getAllTokenInfo } from '@/data/tokens';
@@ -43,7 +43,7 @@ const TokenSelector = ({
     >
       <View style={styles.overlay}>
         <Animated.View 
-          entering={SlideInUp.duration(300)} 
+          entering={SlideInDown.duration(300)} 
           style={styles.modalContainer}
         >
           <View style={styles.header}>
@@ -86,17 +86,17 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: colors.overlay,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: 'flex-end',
   },
   modalContainer: {
-    width: '90%',
-    maxHeight: '80%',
+    width: '100%',
+    height: '80%',
     backgroundColor: colors.backgroundDark,
-    borderRadius: 16,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
     overflow: 'hidden',
-    borderWidth: 1, // Add border width
-    borderColor: colors.backgroundLight, // Add border color, choose a suitable color from your theme
+    borderWidth: 1,
+    borderColor: colors.backgroundLight,
   },
   header: {
     flexDirection: 'row',

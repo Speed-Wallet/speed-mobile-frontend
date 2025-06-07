@@ -1,7 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 
-export const useTokenPrice = (coingeckoId: string | undefined) => {
-  return useQuery({
+export const useTokenPrice = (coingeckoId: string | undefined): {
+  price: number | undefined;
+  isLoading: boolean;
+  error: Error | null;
+} => {
+  const { data, isLoading, error } = useQuery({
     queryKey: ['tokenPrice', coingeckoId],
     queryFn: async () => {
       if (!coingeckoId) throw new Error('No CoinGecko ID provided');
@@ -25,4 +29,10 @@ export const useTokenPrice = (coingeckoId: string | undefined) => {
     staleTime: 2 * 60 * 1000, // 2 minutes - longer than refetch interval
     refetchInterval: 60 * 1000, // 1 minute
   });
+
+  return {
+    price: data,
+    isLoading,
+    error
+  };
 };

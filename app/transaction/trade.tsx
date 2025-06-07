@@ -62,7 +62,7 @@ export default function TradeScreen() {
   // const [selectedPercentage, setSelectedPercentage] = useState('25'); // Add selected percentage state
 
   const shakeAnimationValue = useRef(new Animated.Value(0)).current;
-  const { data: fromTokenPrice } = useTokenPrice(fromToken?.extensions.coingeckoId);
+  const { price: fromTokenPrice } = useTokenPrice(fromToken?.extensions.coingeckoId);
 
   function triggerShake() {
     shakeAnimationValue.setValue(0);
@@ -267,7 +267,7 @@ export default function TradeScreen() {
 
 
   const totalValueDisplay = (fromAmount && fromToken && parseFloat(fromAmount) > 0)
-    ? formatCurrency(parseFloat(fromAmount) * fromTokenPrice)
+    ? formatCurrency(parseFloat(fromAmount) * (fromTokenPrice || 0))
     : '$0.00';
 
   const isButtonDisabled = !fromAmount || parseFloat(fromAmount) <= 0 || !quote || !!quote.errorCode;
