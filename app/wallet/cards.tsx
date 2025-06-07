@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,16 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, Plus, CreditCard, DollarSign, User, Eye, EyeOff } from 'lucide-react-native';
 import { router } from 'expo-router';
-
-interface PaymentCard {
-  id: string;
-  type: 'virtual' | 'physical';
-  brand: 'mastercard' | 'visa';
-  last4: string;
-  holder: string;
-  expires: string;
-  balance: number;
-}
+import { StorageService, PaymentCard } from '@/utils/storage';
 
 const initialCards: PaymentCard[] = [
   {
@@ -37,12 +28,27 @@ const initialCards: PaymentCard[] = [
 ];
 
 export default function CardsScreen() {
-  const [cards, setCards] = useState<PaymentCard[]>(initialCards);
+  const [cards, setCards] = useState<PaymentCard[]>([]);
   const [showAddCard, setShowAddCard] = useState(false);
   const [selectedBrand, setSelectedBrand] = useState<'mastercard' | 'visa'>('mastercard');
   const [cardBalance, setCardBalance] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [visibleCards, setVisibleCards] = useState<{ [key: string]: boolean }>({});
+
+  useEffect(() => {
+    loadCards();
+  }, []);
+
+  const loadCards = async () => {
+    const savedCards = await StorageService.loadCards();
+    if (savedCards.length > 0) {
+      setCards(savedCards);
+    } else {
+      // Use initial cards if no saved cards exist
+      setCards(initialCards);
+      await StorageService.saveCards(initialCards);
+    }
+  };
 
   const generateCardNumber = () => {
     return Math.floor(1000 + Math.random() * 9000).toString();
@@ -55,6 +61,44 @@ export default function CardsScreen() {
     return `${month.toString().padStart(2, '0')}/${futureYear.toString().slice(-2)}`;
   };
 
+  const generateRequestId = () => {
+    return Math.floor(100000000000 + Math.random() * 900000000000).toString();
+  };
+
+  const fetchWalletAddress = async () => {
+    try {
+      const requestBody = {
+        appId: "C4B20250607000033",
+        requestId: generateRequestId(),
+        businessCode: "C4B20250607000033",
+        currency: "USD",
+        assetNetwork: "SOLANA"
+      };
+
+      const response = await fetch(`https://businessapi.cashwyre.com/api/v1.0/Wallet/getFundwalletAccountInfo`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'bearer C4B20250607000033',
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      console.log("response", response)
+      const data = await response.json();
+      console.log("data", data)
+      if (data.success && data.data && data.data.businessWalletAccounts) {
+        console.log(data.data.businessWalletAccounts.Number);
+        return data.data.businessWalletAccounts.Number;
+      } else {
+        throw new Error(data.message || 'Failed to fetch wallet address');
+      }
+    } catch (error) {
+      console.error('Error fetching wallet address:', error);
+      throw error;
+    }
+  };
+
   const handleAddCard = async () => {
     if (!cardBalance || parseFloat(cardBalance) <= 0) {
       Alert.alert('Error', 'Please enter a valid balance amount');
@@ -63,23 +107,36 @@ export default function CardsScreen() {
 
     setIsLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      const newCard: PaymentCard = {
-        id: Date.now().toString(),
-        type: 'virtual',
-        brand: selectedBrand,
-        last4: generateCardNumber(),
-        holder: 'TRISTAN',
-        expires: generateExpiryDate(),
-        balance: parseFloat(cardBalance),
-      };
+    try {
+      // Fetch wallet address first
+      const walletAddress = await fetchWalletAddress();
+      console.log('Wallet address:', walletAddress);
 
-      setCards(prev => [...prev, newCard]);
-      setShowAddCard(false);
-      setCardBalance('');
+      // Simulate API call
+      setTimeout(async () => {
+        const newCard: PaymentCard = {
+          id: Date.now().toString(),
+          type: 'virtual',
+          brand: selectedBrand,
+          last4: generateCardNumber(),
+          holder: 'TRISTAN',
+          expires: generateExpiryDate(),
+          balance: parseFloat(cardBalance),
+        };
+
+        const updatedCards = [...cards, newCard];
+        setCards(updatedCards);
+        await StorageService.saveCards(updatedCards);
+        
+        setShowAddCard(false);
+        setCardBalance('');
+        setIsLoading(false);
+      }, 2000);
+    } catch (error) {
       setIsLoading(false);
-    }, 2000);
+      Alert.alert('Error', 'Failed to create card. Please try again.');
+      console.error('Card creation error:', error);
+    }
   };
 
   const toggleCardVisibility = (cardId: string) => {

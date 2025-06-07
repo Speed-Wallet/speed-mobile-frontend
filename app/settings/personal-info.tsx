@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -23,6 +23,7 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
+import { StorageService, PersonalInfo } from '@/utils/storage';
 
 const { width: screenWidth } = Dimensions.get('window');
 const CARD_WIDTH = screenWidth - 40;
@@ -183,6 +184,9 @@ export default function AccountScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date(1990, 0, 15));
   const [phoneNumber, setPhoneNumber] = useState('60 123 4567');
+  const [name, setName] = useState('Tristan');
+  const [email, setEmail] = useState('tristan@example.com');
+  const [address, setAddress] = useState('Cape Town');
   
   // Date picker state
   const [tempDay, setTempDay] = useState(15);
@@ -270,18 +274,63 @@ export default function AccountScreen() {
     return days;
   };
 
-  const handleDateConfirm = () => {
+  const handleDateConfirm = async () => {
     setSelectedDate(new Date(tempYear, tempMonth, tempDay));
     setShowDatePicker(false);
+    await savePersonalInfo();
+  };
+
+  const savePersonalInfo = async () => {
+    const personalInfo: PersonalInfo = {
+      name,
+      email,
+      phoneNumber,
+      dateOfBirth: selectedDate.toISOString(),
+      address,
+      selectedCountry,
+    };
+    await StorageService.savePersonalInfo(personalInfo);
+  };
+
+  const loadPersonalInfo = async () => {
+    const savedInfo = await StorageService.loadPersonalInfo();
+    if (savedInfo) {
+      setName(savedInfo.name);
+      setEmail(savedInfo.email);
+      setPhoneNumber(savedInfo.phoneNumber);
+      setSelectedDate(new Date(savedInfo.dateOfBirth));
+      setAddress(savedInfo.address);
+      
+      // Find and set the selected country
+      const country = countries.find(c => c.code === savedInfo.selectedCountry.code);
+      if (country) {
+        setSelectedCountry(country);
+      }
+    } else {
+      // Save default values if no saved info exists
+      await savePersonalInfo();
+    }
+  };
+
+  useEffect(() => {
+    loadPersonalInfo();
+  }, []);
+
+  const handleCountrySelect = async (country: Country) => {
+    setSelectedCountry(country);
+    setShowCountryPicker(false);
+    await savePersonalInfo();
+  };
+
+  const handlePhoneChange = async (phone: string) => {
+    setPhoneNumber(phone);
+    await savePersonalInfo();
   };
 
   const renderCountryItem = ({ item }: { item: Country }) => (
     <TouchableOpacity
       style={styles.countryItem}
-      onPress={() => {
-        setSelectedCountry(item);
-        setShowCountryPicker(false);
-      }}
+      onPress={() => handleCountrySelect(item)}
     >
       <Text style={styles.countryFlag}>{item.flag}</Text>
       <Text style={styles.countryName}>{item.name}</Text>
@@ -336,10 +385,22 @@ export default function AccountScreen() {
                 placeholder={input.placeholder}
                 placeholderTextColor="#6b7280"
                 value={phoneNumber}
-                onChangeText={setPhoneNumber}
+                onChangeText={handlePhoneChange}
                 keyboardType="phone-pad"
               />
             </View>
+          ) : input.type === 'email' ? (
+            <TextInput
+              style={styles.textInput}
+              placeholder={input.placeholder}
+              placeholderTextColor="#6b7280"
+              value={email}
+              onChangeText={(text) => {
+                setEmail(text);
+                savePersonalInfo();
+              }}
+              keyboardType="email-address"
+            />
           ) : input.type === 'date' ? (
             <TouchableOpacity
               style={styles.dateSelector}
@@ -365,7 +426,6 @@ export default function AccountScreen() {
               placeholder={input.placeholder}
               placeholderTextColor="#6b7280"
               value={input.value || ''}
-              keyboardType={input.type === 'email' ? 'email-address' : 'default'}
             />
           )}
         </View>
@@ -389,7 +449,7 @@ export default function AccountScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Name & Surname</Text>
           <View style={styles.infoCard}>
-            <Text style={styles.infoText}>Tristan</Text>
+            <Text style={styles.infoText}>{name}</Text>
           </View>
         </View>
 
@@ -510,7 +570,7 @@ export default function AccountScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Address</Text>
           <View style={styles.infoCard}>
-            <Text style={styles.infoText}>Cape Town</Text>
+            <Text style={styles.infoText}>{address}</Text>
           </View>
         </View>
       </ScrollView>
@@ -853,7 +913,6 @@ const styles = StyleSheet.create({
   },
   pickerItem: {
     paddingVertical: 12,
-    paddingHorizontal: 16,
     borderRadius: 8,
     marginVertical: 2,
   },
