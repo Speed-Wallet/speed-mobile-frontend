@@ -105,7 +105,7 @@ export default function RootLayout() {
           <Stack.Screen name="wallet/SetupWalletScreen" options={{ presentation: 'modal' }} />
           <Stack.Screen name="wallet/connect" options={{ presentation: 'modal' }} />
           <Stack.Screen name="wallet/import" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="settings/personal-info" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="settings/kyc" options={{ presentation: 'modal' }} />
           <Stack.Screen name="token/[address]" options={{ animation: 'slide_from_right' }} />
         </Stack>
         <StatusBar style="light" />

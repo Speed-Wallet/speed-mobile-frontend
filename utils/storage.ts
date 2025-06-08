@@ -11,11 +11,12 @@ export interface PaymentCard {
 }
 
 export interface PersonalInfo {
-  name: string;
+  name: string; // This will store the combined first + last name
   email: string;
   phoneNumber: string;
   dateOfBirth: string;
   address: string;
+  streetNumber: string;
   selectedCountry: {
     code: string;
     name: string;

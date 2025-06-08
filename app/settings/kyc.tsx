@@ -184,9 +184,11 @@ export default function AccountScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date(1990, 0, 15));
   const [phoneNumber, setPhoneNumber] = useState('60 123 4567');
-  const [name, setName] = useState('Tristan');
+  const [firstName, setFirstName] = useState('Tristan');
+  const [lastName, setLastName] = useState('Smith');
   const [email, setEmail] = useState('tristan@example.com');
   const [address, setAddress] = useState('Cape Town');
+  const [streetNumber, setStreetNumber] = useState('123 Main Street');
   
   // Date picker state
   const [tempDay, setTempDay] = useState(15);
@@ -282,11 +284,12 @@ export default function AccountScreen() {
 
   const savePersonalInfo = async () => {
     const personalInfo: PersonalInfo = {
-      name,
+      name: `${firstName} ${lastName}`,
       email,
       phoneNumber,
       dateOfBirth: selectedDate.toISOString(),
       address,
+      streetNumber,
       selectedCountry,
     };
     await StorageService.savePersonalInfo(personalInfo);
@@ -295,11 +298,16 @@ export default function AccountScreen() {
   const loadPersonalInfo = async () => {
     const savedInfo = await StorageService.loadPersonalInfo();
     if (savedInfo) {
-      setName(savedInfo.name);
+      // Split the name into first and last name
+      const nameParts = savedInfo.name.split(' ');
+      setFirstName(nameParts[0] || 'Tristan');
+      setLastName(nameParts.slice(1).join(' ') || 'Smith');
+      
       setEmail(savedInfo.email);
       setPhoneNumber(savedInfo.phoneNumber);
       setSelectedDate(new Date(savedInfo.dateOfBirth));
       setAddress(savedInfo.address);
+      setStreetNumber(savedInfo.streetNumber || '123 Main Street');
       
       // Find and set the selected country
       const country = countries.find(c => c.code === savedInfo.selectedCountry.code);
@@ -446,11 +454,8 @@ export default function AccountScreen() {
         </View>
 
         {/* User Info */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Name & Surname</Text>
-          <View style={styles.infoCard}>
-            <Text style={styles.infoText}>{name}</Text>
-          </View>
+        <View style={styles.nameSection}>
+          <Text style={styles.nameDisplay}>{firstName} {lastName}</Text>
         </View>
 
         {/* Verification Level Section */}
@@ -458,7 +463,7 @@ export default function AccountScreen() {
           <Text style={styles.sectionLabel}>Verification Level</Text>
           
           <GestureDetector gesture={panGesture}>
-            <View style={styles.verificationContainer}>
+            <View>
               <Animated.ScrollView
                 ref={scrollViewRef}
                 horizontal
@@ -562,15 +567,75 @@ export default function AccountScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Required Information</Text>
           <View style={styles.inputsContainer}>
-            {verificationLevels[currentLevel]?.inputs.map(renderInputField)}
-          </View>
-        </View>
+            {/* First Name Field */}
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>First Name</Text>
+              <View style={styles.inputWrapper}>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="Enter your first name"
+                  placeholderTextColor="#6b7280"
+                  value={firstName}
+                  onChangeText={(text) => {
+                    setFirstName(text);
+                    savePersonalInfo();
+                  }}
+                />
+              </View>
+            </View>
 
-        {/* Other Info */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Address</Text>
-          <View style={styles.infoCard}>
-            <Text style={styles.infoText}>{address}</Text>
+            {/* Last Name Field */}
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Last Name</Text>
+              <View style={styles.inputWrapper}>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="Enter your last name"
+                  placeholderTextColor="#6b7280"
+                  value={lastName}
+                  onChangeText={(text) => {
+                    setLastName(text);
+                    savePersonalInfo();
+                  }}
+                />
+              </View>
+            </View>
+
+            {/* Home Street Number Field */}
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Home Street Number</Text>
+              <View style={styles.inputWrapper}>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="Enter your street number"
+                  placeholderTextColor="#6b7280"
+                  value={streetNumber}
+                  onChangeText={(text) => {
+                    setStreetNumber(text);
+                    savePersonalInfo();
+                  }}
+                />
+              </View>
+            </View>
+
+            {/* Home Address Field */}
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Home Address</Text>
+              <View style={styles.inputWrapper}>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="Enter your home address"
+                  placeholderTextColor="#6b7280"
+                  value={address}
+                  onChangeText={(text) => {
+                    setAddress(text);
+                    savePersonalInfo();
+                  }}
+                />
+              </View>
+            </View>
+
+            {verificationLevels[currentLevel]?.inputs.map(renderInputField)}
           </View>
         </View>
       </ScrollView>
@@ -704,9 +769,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#ffffff',
     fontWeight: '500',
-  },
-  verificationContainer: {
-    height: 140,
   },
   scrollContent: {
     paddingHorizontal: (screenWidth - CARD_WIDTH) / 2,
@@ -925,5 +987,23 @@ const styles = StyleSheet.create({
   pickerItemSelected: {
     color: '#3b82f6',
     fontWeight: '700',
+  },
+  userName: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#ffffff',
+    textAlign: 'center',
+  },
+  nameSection: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#404040',
+  },
+  nameDisplay: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#e5e7eb',
+    textAlign: 'center',
   },
 });

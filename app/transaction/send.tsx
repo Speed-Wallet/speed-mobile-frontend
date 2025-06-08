@@ -1,21 +1,17 @@
 import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { X, Search, Send, User, ArrowRight } from 'lucide-react-native';
+import { X, Search, ArrowRight } from 'lucide-react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import colors from '@/constants/colors';
-import { formatCurrency } from '@/utils/formatters';
 import { getAllTokenInfo, getTokenByAddress } from '@/data/tokens';
 import TokenSelector from '@/components/TokenSelector';
-import AddressInput from '@/components/AddressInput';
 import RecentContacts from '@/data/contacts';
 import { EnrichedTokenEntry } from '@/data/types';
 import BackButton from '@/components/BackButton';
 import AmountInputWithValue from '@/components/AmountInputWithValue';
 import TokenItem from '@/components/TokenItem';
-import { createTransferInstruction, getAccount, getAssociatedTokenAddress, getOrCreateAssociatedTokenAccount } from '@solana/spl-token';
-import { PublicKey, sendAndConfirmTransaction, Transaction, SystemProgram } from '@solana/web3.js';
-import { CONNECTION, getWalletPublicKey, isWalletUnlocked, WALLET, WSOL_MINT } from '@/services/walletService';
+import { sendCryptoTransaction } from '@/utils/sendTransaction';
 
 
 export default function SendScreen() {
@@ -64,95 +60,25 @@ export default function SendScreen() {
 
 
   const handleSend = async () => {
-    if (!amount) {
-      alert("Please enter an amount to send.");
-      return;
-    }
-
-    if (!recipient) {
-      alert("Please enter a recipient address or select a contact.");
-      return;
-    }
-
-    if (!selectedToken?.address) {
+    if (!selectedToken) {
       alert("Please select a token to send.");
       return;
     }
 
-    if (!WALLET) {
-      alert("Wallet is not unlocked. Cannot perform action")
-      console.error("Wallet is not unlocked. Cannot perform action.");
-      // Potentially prompt user to unlock again or handle error
-      return;
-    }
+    const result = await sendCryptoTransaction({
+      amount: amount || '',
+      recipient: recipient || '',
+      tokenAddress: selectedToken.address,
+      tokenSymbol: selectedToken.symbol,
+      tokenDecimals: selectedToken.decimals,
+      showAlert: true
+    });
 
-    alert(`Sending ${amount} ${selectedToken?.symbol} to ${recipient || selectedContact?.username}`);
-
-    const recipientPublicKey = new PublicKey(recipient);
-    const amountInBaseUnits = Math.floor(parseFloat(amount) * Math.pow(10, selectedToken.decimals));
-
-    console.log("amount base units", amountInBaseUnits);
-
-    let transferIx;
-
-    if (selectedToken.address === WSOL_MINT) {
-      // Native SOL transfer
-      transferIx = SystemProgram.transfer({
-        fromPubkey: WALLET.publicKey,
-        toPubkey: recipientPublicKey,
-        lamports: amountInBaseUnits,
-      });
+    if (result.success) {
+      console.log("Transaction successful. Signature:", result.signature);
     } else {
-      // SPL Token transfer
-      const senderPublicKeyStr = WALLET.publicKey.toBase58();
-      const senderPublicKey = new PublicKey(senderPublicKeyStr);
-
-      // 1. Get sender's ATA (must exist)
-      const senderATA = await getAssociatedTokenAddress(
-        new PublicKey(selectedToken.address),
-        senderPublicKey
-      );
-      console.log("senderATA", senderATA.toBase58());
-      try {
-        await getAccount(CONNECTION, senderATA); // throws if doesn't exist
-      } catch (e) {
-        alert("You do not have balance of this token in your wallet.");
-        console.error("Error fetching sender's ATA:", e);
-        return
-      }
-
-      const tokenPublicKey = new PublicKey(selectedToken.address);
-
-      // 2. Get or create recipient's ATA (creates if missing)
-      const recipientATA = await getOrCreateAssociatedTokenAccount(
-        CONNECTION,
-        WALLET,
-        tokenPublicKey,
-        recipientPublicKey
-      );
-
-      // 3. Create transfer instruction for SPL token
-      transferIx = createTransferInstruction(
-        senderATA,
-        recipientATA.address,
-        WALLET.publicKey,
-        amountInBaseUnits
-      );
+      console.error("Transaction failed:", result.error);
     }
-
-    // 4. Send transaction
-    const tx = new Transaction().add(transferIx);
-
-    try {
-      const sig = await sendAndConfirmTransaction(CONNECTION, tx, [WALLET]);
-      console.log("Transaction successful. Signature:", sig);
-      alert(`✅ Transfer complete. Signature: ${sig}`);
-    } catch (error) {
-      console.error("Transaction failed:", error);
-      alert("Transaction failed. Please try again.");
-      return;
-    }
-
   };
 
   const handleSelectContact = (contact: any) => {
