@@ -29,7 +29,7 @@ const accountOptions = [
     icon: User,
     color: '#3b82f6',
     showKyc: true,
-    route: '/settings/personal-info',
+    route: '/settings/kyc',
   },
   {
     id: 2,

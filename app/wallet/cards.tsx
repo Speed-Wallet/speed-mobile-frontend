@@ -14,6 +14,61 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, Plus, CreditCard, DollarSign, User, Eye, EyeOff } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { StorageService, PaymentCard } from '@/utils/storage';
+import { sendUSDT } from '@/utils/sendTransaction';
+
+// Constants
+const BUSINESS_CODE = "C4B20250607000033";
+const CASHWYRE_BASE_URL = "https://businessapi.cashwyre.com/api/v1.0";
+
+// API Response Types
+interface CreateCardResponse {
+  CustomerId: string;
+  FirstName: string;
+  LastName: string;
+  Email: string;
+  PhoneCode: string;
+  PhoneNumber: string;
+  Country: string;
+  DateOfBirth: string;
+  CreatedOn: string;
+  Status: string;
+  HomeAddressNumber: string;
+  HomeAddress: string;
+  // Possible card code fields (API might return any of these)
+  cardCode?: string;
+  code?: string;
+  CardCode?: string;
+}
+
+interface CardDetailsResponse {
+  code: string;
+  customerName: string;
+  customerFirstName: string;
+  customerLastName: string;
+  customerEmail: string;
+  cardBrand: 'visa' | 'mastercard';
+  cardType: 'virtual' | 'physical';
+  reference: string;
+  last4: string;
+  cardName: string;
+  expiryOn: string;
+  expiryOnInfo: string;
+  expiryOnMaxked: string;
+  validMonthYear: string;
+  status: string;
+  cardBalance: number;
+  cardBalanceInfo: string;
+  cardNumber: string;
+  cardNumberMaxked: string | null;
+  cvV2: string;
+  cvV2Maxed: string;
+  billingAddressCity: string;
+  billingAddressStreet: string;
+  billingAddressCountry: string;
+  billingAddressZipCode: string;
+  billingAddressCountryCode: string;
+  createdOn: string;
+}
 
 const initialCards: PaymentCard[] = [
   {
@@ -26,6 +81,147 @@ const initialCards: PaymentCard[] = [
     balance: 2500.00,
   },
 ];
+
+const generateRequestId = () => {
+  return Math.floor(100000000000 + Math.random() * 900000000000).toString();
+};
+
+const fetchWalletAddress = async () => {
+  try {
+    const requestBody = {
+      appId: BUSINESS_CODE,
+      requestId: generateRequestId(),
+      businessCode: BUSINESS_CODE,
+      currency: "USD",
+      assetNetwork: "SOLANA"
+    };
+
+    const response = await fetch(`${CASHWYRE_BASE_URL}/Wallet/getFundwalletAccountInfo`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `bearer ${BUSINESS_CODE}`,
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    console.log("response", response)
+    const data = await response.json();
+    console.log("data", data)
+    if (data.success && data.data && data.data.businessWalletAccount) {
+      return data.data.businessWalletAccount.number;
+    } else {
+      throw new Error(data.message || 'Failed to fetch wallet address');
+    }
+  } catch (error) {
+    console.error('Error fetching wallet address:', error);
+    throw error;
+  }
+};
+
+const createCard = async (cardBrand: 'mastercard' | 'visa', amountInUSD: number): Promise<CreateCardResponse> => {
+  try {
+    // Load personal info from KYC persistent storage
+    const personalInfo = await StorageService.loadPersonalInfo();
+    if (!personalInfo) {
+      throw new Error('Personal information not found. Please complete KYC verification first.');
+    }
+
+    // Split the name into first and last name
+    const nameParts = personalInfo.name.split(' ');
+    const firstName = nameParts[0] || '';
+    const lastName = nameParts.slice(1).join(' ') || '';
+
+    const requestBody = {
+      appId: BUSINESS_CODE,
+      requestId: generateRequestId(),
+      businessCode: BUSINESS_CODE,
+      firstName: firstName,
+      lastName: lastName,
+      email: personalInfo.email,
+      phoneCode: personalInfo.selectedCountry.dialCode,
+      phoneNumber: personalInfo.phoneNumber,
+      dateOfBirth: personalInfo.dateOfBirth,
+      homeAddressNumber: personalInfo.streetNumber,
+      homeAddress: personalInfo.address,
+      cardName: personalInfo.name,
+      cardType: "Virtual",
+      cardBrand: cardBrand.charAt(0).toUpperCase() + cardBrand.slice(1).toLowerCase(), // Capitalize first letter
+      amountInUSD: amountInUSD
+    };
+
+    // TODO use tanstack with retries
+    const response = await fetch(`${CASHWYRE_BASE_URL}/Card/createCard`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `bearer ${BUSINESS_CODE}`,
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    console.log("createCard response", response);
+    const data = await response.json();
+    console.log("createCard data", data);
+    
+    if (data.success && data.data) {
+      return data.data as CreateCardResponse;
+    } else {
+      throw new Error(data.message || 'Failed to create card');
+    }
+  } catch (error) {
+    console.error('Error creating card:', error);
+    throw error;
+  }
+};
+
+const fetchCardDetails = async (cardCode: string): Promise<CardDetailsResponse> => {
+  try {
+    const requestBody = {
+      appId: BUSINESS_CODE,
+      requestId: generateRequestId(),
+      cardCode: cardCode,
+      businessCode: BUSINESS_CODE
+    };
+
+    const response = await fetch(`${CASHWYRE_BASE_URL}/Card/getCardDetails`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `bearer ${BUSINESS_CODE}`,
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    console.log("fetchCardDetails response", response);
+    const data = await response.json();
+    console.log("fetchCardDetails data", data);
+    
+    if (data.success && data.data) {
+      return data.data as CardDetailsResponse;
+    } else {
+      throw new Error(data.message || 'Failed to fetch card details');
+    }
+  } catch (error) {
+    console.error('Error fetching card details:', error);
+    throw error;
+  }
+};
+
+// Helper function to update card details from API response
+const updateCardFromApiDetails = (apiCardDetails: CardDetailsResponse): PaymentCard => {
+  return {
+    id: apiCardDetails.code,
+    type: 'virtual',
+    brand: apiCardDetails.cardBrand as 'mastercard' | 'visa',
+    last4: apiCardDetails.last4,
+    holder: apiCardDetails.cardName,
+    expires: apiCardDetails.expiryOnInfo, // Format: "2027/12"
+    balance: apiCardDetails.cardBalance,
+  };
+};
+
+
 
 export default function CardsScreen() {
   const [cards, setCards] = useState<PaymentCard[]>([]);
@@ -61,80 +257,87 @@ export default function CardsScreen() {
     return `${month.toString().padStart(2, '0')}/${futureYear.toString().slice(-2)}`;
   };
 
-  const generateRequestId = () => {
-    return Math.floor(100000000000 + Math.random() * 900000000000).toString();
-  };
-
-  const fetchWalletAddress = async () => {
-    try {
-      const requestBody = {
-        appId: "C4B20250607000033",
-        requestId: generateRequestId(),
-        businessCode: "C4B20250607000033",
-        currency: "USD",
-        assetNetwork: "SOLANA"
-      };
-
-      const response = await fetch(`https://businessapi.cashwyre.com/api/v1.0/Wallet/getFundwalletAccountInfo`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'bearer C4B20250607000033',
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      console.log("response", response)
-      const data = await response.json();
-      console.log("data", data)
-      if (data.success && data.data && data.data.businessWalletAccounts) {
-        console.log(data.data.businessWalletAccounts.Number);
-        return data.data.businessWalletAccounts.Number;
-      } else {
-        throw new Error(data.message || 'Failed to fetch wallet address');
-      }
-    } catch (error) {
-      console.error('Error fetching wallet address:', error);
-      throw error;
-    }
-  };
-
   const handleAddCard = async () => {
     if (!cardBalance || parseFloat(cardBalance) <= 0) {
       Alert.alert('Error', 'Please enter a valid balance amount');
       return;
     }
-
     setIsLoading(true);
 
     try {
-      // Fetch wallet address first
       const walletAddress = await fetchWalletAddress();
-      console.log('Wallet address:', walletAddress);
+      console.log('Wallet address fetched:', walletAddress);
 
-      // Simulate API call
-      setTimeout(async () => {
-        const newCard: PaymentCard = {
-          id: Date.now().toString(),
-          type: 'virtual',
-          brand: selectedBrand,
-          last4: generateCardNumber(),
-          holder: 'TRISTAN',
-          expires: generateExpiryDate(),
-          balance: parseFloat(cardBalance),
-        };
+      // First send usdt to the wallet address
+      const sendResult = await sendUSDT(cardBalance, walletAddress);
+      
+      if (!sendResult.success) {
+        throw new Error(`Failed to send USDT: ${sendResult.error}`);
+      }
+      
+      console.log('USDT sent successfully:', sendResult.signature);
+
+      // Create the card using the API
+      const cardResponse = await createCard(selectedBrand, parseFloat(cardBalance));
+      console.log('Card created:', cardResponse);
+
+      // If creation is successful, fetch detailed card information
+      if (cardResponse.CustomerId) {
+        // Check if the response includes a card code to fetch details
+        // The card code might be in a field like 'cardCode', 'code', or similar
+        let newCard: PaymentCard;
+        
+        // Try to find card code in the response (adjust field name based on actual API response)
+        const cardCode = cardResponse.cardCode || cardResponse.code || cardResponse.CardCode;
+        
+        if (cardCode) {
+          try {
+            // Fetch detailed card information using the card code
+            const cardDetails = await fetchCardDetails(cardCode);
+            console.log('Card details fetched:', cardDetails);
+            
+            // Use the helper function to convert API response to PaymentCard
+            newCard = updateCardFromApiDetails(cardDetails);
+          } catch (detailsError) {
+            console.warn('Failed to fetch card details, using basic info:', detailsError);
+            // Fallback to basic card info if fetchCardDetails fails
+            newCard = {
+              id: cardResponse.CustomerId || Date.now().toString(),
+              type: 'virtual',
+              brand: selectedBrand,
+              last4: generateCardNumber(),
+              holder: `${cardResponse.FirstName} ${cardResponse.LastName}` || 'TRISTAN',
+              expires: generateExpiryDate(),
+              balance: parseFloat(cardBalance),
+            };
+          }
+        } else {
+          // No card code available, create card with basic info
+          console.warn('No card code in response, using basic card info');
+          newCard = {
+            id: cardResponse.CustomerId || Date.now().toString(),
+            type: 'virtual',
+            brand: selectedBrand,
+            last4: generateCardNumber(),
+            holder: `${cardResponse.FirstName} ${cardResponse.LastName}` || 'TRISTAN',
+            expires: generateExpiryDate(),
+            balance: parseFloat(cardBalance),
+          };
+        }
 
         const updatedCards = [...cards, newCard];
         setCards(updatedCards);
         await StorageService.saveCards(updatedCards);
-        
+
         setShowAddCard(false);
         setCardBalance('');
         setIsLoading(false);
-      }, 2000);
+        
+        Alert.alert('Success', 'Virtual card created successfully!');
+      }
     } catch (error) {
       setIsLoading(false);
-      Alert.alert('Error', 'Failed to create card. Please try again.');
+      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to create card. Please try again.');
       console.error('Card creation error:', error);
     }
   };
@@ -154,14 +357,14 @@ export default function CardsScreen() {
   };
 
   const getBrandLogo = (brand: 'mastercard' | 'visa') => {
-    return brand === 'mastercard' 
+    return brand === 'mastercard'
       ? require('@/assets/images/mastercard.svg.png')
       : require('@/assets/images/visa.png');
   };
 
   const renderPaymentCard = (card: PaymentCard) => {
     const isVisible = visibleCards[card.id];
-    
+
     return (
       <View key={card.id} style={styles.paymentCard}>
         <View style={styles.cardHeader}>
@@ -171,18 +374,18 @@ export default function CardsScreen() {
             </View>
             <Text style={styles.cardHolderName}>{card.holder}</Text>
           </View>
-          <Image 
+          <Image
             source={getBrandLogo(card.brand)}
             style={styles.brandLogo}
             resizeMode="contain"
           />
         </View>
-        
+
         <View style={styles.cardNumberSection}>
           <Text style={styles.cardNumberText}>
             {isVisible ? `•••• •••• •••• ${card.last4}` : '•••• •••• •••• ••••'}
           </Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.visibilityButton}
             onPress={() => toggleCardVisibility(card.id)}
           >
@@ -193,7 +396,7 @@ export default function CardsScreen() {
             )}
           </TouchableOpacity>
         </View>
-        
+
         <View style={styles.cardFooter}>
           <View style={styles.balanceSection}>
             <Text style={styles.cardLabel}>BALANCE</Text>
@@ -201,7 +404,7 @@ export default function CardsScreen() {
               <Text style={styles.balanceValue}>
                 {isVisible ? formatBalance(card.balance) : '••••••'}
               </Text>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.balanceVisibilityButton}
                 onPress={() => toggleCardVisibility(card.id)}
               >
@@ -225,9 +428,9 @@ export default function CardsScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton} 
-          onPress={() => router.back()}
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.push('/settings')}
         >
           <ArrowLeft size={24} color="#ffffff" />
         </TouchableOpacity>
@@ -242,7 +445,7 @@ export default function CardsScreen() {
         </View>
 
         {/* Add New Card Button */}
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.addCardButton}
           onPress={() => setShowAddCard(true)}
         >
@@ -262,8 +465,8 @@ export default function CardsScreen() {
       >
         <SafeAreaView style={styles.container}>
           <View style={styles.header}>
-            <TouchableOpacity 
-              style={styles.backButton} 
+            <TouchableOpacity
+              style={styles.backButton}
               onPress={() => setShowAddCard(false)}
             >
               <ArrowLeft size={24} color="#ffffff" />
@@ -284,7 +487,7 @@ export default function CardsScreen() {
                   ]}
                   onPress={() => setSelectedBrand('mastercard')}
                 >
-                  <Image 
+                  <Image
                     source={getBrandLogo('mastercard')}
                     style={styles.brandOptionLogo}
                     resizeMode="contain"
@@ -299,7 +502,7 @@ export default function CardsScreen() {
                   ]}
                   onPress={() => setSelectedBrand('visa')}
                 >
-                  <Image 
+                  <Image
                     source={getBrandLogo('visa')}
                     style={styles.brandOptionLogo}
                     resizeMode="contain"
@@ -339,20 +542,20 @@ export default function CardsScreen() {
                     </View>
                     <Text style={styles.previewCardHolderName}>TRISTAN</Text>
                   </View>
-                  <Image 
+                  <Image
                     source={getBrandLogo(selectedBrand)}
                     style={styles.previewBrandLogo}
                     resizeMode="contain"
                   />
                 </View>
-                
+
                 <View style={styles.previewCardNumberSection}>
                   <Text style={styles.previewCardNumberText}>•••• •••• •••• ••••</Text>
                   <View style={styles.previewVisibilityButton}>
                     <Eye size={20} color="#9ca3af" />
                   </View>
                 </View>
-                
+
                 <View style={styles.previewCardFooter}>
                   <View style={styles.previewBalanceSection}>
                     <Text style={styles.previewCardLabel}>BALANCE</Text>
