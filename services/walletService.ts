@@ -1,35 +1,30 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as bip39 from 'bip39';
+import bs58 from 'bs58';
 import {
   Keypair,
   PublicKey,
   VersionedTransaction,
   Connection,
-  Transaction,
   SystemProgram,
-  sendAndConfirmTransaction,
   ComputeBudgetProgram,
   TransactionInstruction,
   AddressLookupTableAccount,
   TransactionMessage
 } from '@solana/web3.js';
 import {
-  getAccount,
   getAssociatedTokenAddress,
-  TOKEN_PROGRAM_ID,
   createAssociatedTokenAccountInstruction,
   createTransferInstruction,
-  createSyncNativeInstruction,
-  createCloseAccountInstruction,
 } from '@solana/spl-token';
 import CryptoJS from 'crypto-js';
-import { Key, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { registerSwapAttempt } from './apis';
 
 import { Buffer } from 'buffer';
 global.Buffer = Buffer; // Polyfill global Buffer
 
 export const CONNECTION = new Connection(`https://mainnet.helius-rpc.com/?api-key=${process.env.EXPO_PUBLIC_HELIUS_API_KEY}`);
-// const CONNECTION = new Connection('https://api.mainnet-beta.solana.com');
 const JUPITER_API_URL = 'https://lite-api.jup.ag/swap/v1/';
 
 const ENCRYPTED_MNEMONIC_KEY = 'solanaEncryptedMnemonic';
@@ -40,7 +35,6 @@ export const PUBLIC_KEY_KEY = 'solanaPublicKey'; // Keep this as is
 export const PLATFORM_FEE_RATE = 0.001;
 export const WSOL_MINT = 'So11111111111111111111111111111111111111112';
 const PLATFORM_FEE_ACCOUNT = new PublicKey('7o3QNaG84hrWhCLoAEXuiiyNfKvpGvMAyTwDb3reBram');
-const PLATFORM_FEE_BPS = 20; // 0.2%
 export let WALLET: Keypair | null = null; // Initialize WALLET to null
 
 interface SolanaWallet {
@@ -56,12 +50,6 @@ const notifyWalletStateChange = () => {
   const currentPublicKey = WALLET ? WALLET.publicKey.toBase58() : null;
   walletStateListeners.forEach(listener => listener(currentPublicKey));
 };
-
-interface PrioritizationFeeData {
-  low: number;
-  medium: number;
-  high: number;
-}
 
 type ErrorType = {
   code: number,
@@ -306,7 +294,6 @@ export const JupiterQuote = async (
     `inputMint=${fromMint}`,
     `outputMint=${toMint}`,
     `amount=${amount}`,
-    // `platformFeeBps=${PLATFORM_FEE_BPS}`,
     'restrictIntermediateTokens=true',
     'dynamicSlippage=true'
   ];
@@ -325,6 +312,8 @@ export const jupiterSwap = async (quoteResponse: any, platformFee: number): Prom
 
   const { inputMint, outputMint } = quoteResponse;
   const instructions: TransactionInstruction[] = [];
+  const AddIxPromises: Promise<any>[] = [];
+  const walletPubkey = WALLET.publicKey;
 
   // Wallet fee instruction
   if (inputMint === WSOL_MINT) {
@@ -335,34 +324,46 @@ export const jupiterSwap = async (quoteResponse: any, platformFee: number): Prom
     }));
   } else {
     const inputMintPubKey = new PublicKey(inputMint);
-    const [walletATA, platformFeeATA] = await Promise.all([
+    const walletFeeIxPromise = Promise.all([
       getAssociatedTokenAddress(inputMintPubKey, WALLET.publicKey),
       getAssociatedTokenAddress(inputMintPubKey, PLATFORM_FEE_ACCOUNT)
-    ]);
-
-    instructions.push(createTransferInstruction(
-      walletATA,
-      platformFeeATA,
-      WALLET.publicKey,
-      platformFee
+    ])
+    .then(([walletATA, platformFeeATA]) => instructions.push(
+      createTransferInstruction(
+        walletATA,
+        platformFeeATA,
+        walletPubkey,
+        platformFee
+      )
     ));
+
+    AddIxPromises.push(walletFeeIxPromise);
   }
 
-  // Create output mint ata for the user if it's not available
-  const outputMintPubKey = new PublicKey(outputMint);
-  const ata = await getAssociatedTokenAddress(outputMintPubKey, WALLET.publicKey);
-  const ataInfo = await CONNECTION.getAccountInfo(ata, 'finalized');
-
-  if (!ataInfo) {
-    console.log(`Creating output mint ATA`);
-
-    instructions.push(createAssociatedTokenAccountInstruction(
-      WALLET.publicKey,
-      ata,
-      WALLET.publicKey,
-      outputMintPubKey
-    ));
+  // Create output mint ata for the user if it's not available.
+  // The only exception is when the ouput mint is WSOL. This is
+  // because we assume WSOL means native SOL.
+  if (outputMint !== WSOL_MINT) {
+    const outputMintPubKey = new PublicKey(outputMint);
+    const outputATAPromise = getAssociatedTokenAddress(outputMintPubKey, WALLET.publicKey)
+    .then(async ata => {
+      const ataInfo = await CONNECTION.getAccountInfo(ata, 'finalized');
+      if (!ataInfo) {
+        console.log(`Creating output mint ATA`);
+    
+        instructions.push(createAssociatedTokenAccountInstruction(
+          walletPubkey,
+          ata,
+          walletPubkey,
+          outputMintPubKey
+        ));
+      }
+    });
+  
+    AddIxPromises.push(outputATAPromise);
   }
+
+  await Promise.all(AddIxPromises);
 
   const [CUsForPrimaryProcessing, jupiterInstructionsResponse] = await Promise.all([
     getCUsForTransaction(instructions, WALLET),
@@ -389,7 +390,6 @@ export const jupiterSwap = async (quoteResponse: any, platformFee: number): Prom
       prioritizationFeeLamports,
       computeUnitLimit
   } = jupiterInstructionsResponse;
-
 
   // Add token ledger instruction if present
   if (tokenLedgerInstruction) {
@@ -424,24 +424,30 @@ export const jupiterSwap = async (quoteResponse: any, platformFee: number): Prom
   instructions.unshift(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: computeUnitPrice }));
   instructions.unshift(ComputeBudgetProgram.setComputeUnitLimit({ units: totalComputeUnits }));
 
-  const [realTransaction, lastValidBlockHeight] = await composeAndSignTransaction(
+  const [swapTx, lastValidBlockHeight] = await composeAndSignTransaction(
     instructions,
     WALLET,
     deserializedAddressLookupTableAccounts
   );
 
-  let sig;
+  // Transaction signature is the first signature in the "signatures" list.
+  const sig = bs58.encode(swapTx.signatures[0]);
+  const txSendPromise = CONNECTION.sendRawTransaction(swapTx.serialize(), { 
+    maxRetries: 2, 
+    skipPreflight: false, 
+    preflightCommitment: 'finalized' 
+  });
+  const registerSwapAttemptPromise = registerSwapAttempt(sig);
 
   try {
-    sig = await CONNECTION.sendRawTransaction(realTransaction.serialize(),
-    { maxRetries: 2, skipPreflight: false, preflightCommitment: 'finalized' });
+    await Promise.all([txSendPromise, registerSwapAttemptPromise]);
   } catch (err) {
     throw parseError(err);
   }
 
   const res = await CONNECTION.confirmTransaction({
     signature: sig,
-    blockhash: realTransaction.message.recentBlockhash,
+    blockhash: swapTx.message.recentBlockhash,
     lastValidBlockHeight
   }, 'finalized');
 
@@ -504,38 +510,6 @@ function deserializeInstruction(instructionPayload: any): TransactionInstruction
     })),
     data: Buffer.from(instructionPayload.data, 'base64'),
   });
-}
-
-async function calculateBasePriorityFees(instructions: TransactionInstruction[])
-  : Promise<PrioritizationFeeData> {
-  const writableAccSet = new Set<string>();
-  const lockedWritableAccounts: PublicKey[] = [];
-
-  for (const ix of instructions) {
-    for (const accMeta of ix.keys) {
-      accMeta.isWritable && writableAccSet.add(accMeta.pubkey.toBase58());
-    }
-  }
-
-  writableAccSet.forEach(id => lockedWritableAccounts.push(new PublicKey(id)));
-  const basePriorityFees = await CONNECTION.getRecentPrioritizationFees({ lockedWritableAccounts });
-
-  let low = Number.POSITIVE_INFINITY;
-  let high = 0;
-  let sum = 0;
-
-  for (const { prioritizationFee } of basePriorityFees) {
-    if (prioritizationFee === 0) continue;
-    if (prioritizationFee < low) low = prioritizationFee;
-    if (prioritizationFee > high) high = prioritizationFee;
-    sum += prioritizationFee;
-  }
-
-  return { 
-    low: low === Number.POSITIVE_INFINITY ? 0 : low, 
-    medium: Math.ceil(sum / basePriorityFees.length), 
-    high 
-  };
 }
 
 function parseError(error: any): ErrorType {
