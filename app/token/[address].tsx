@@ -1,276 +1,173 @@
-import { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, ArrowUp, ArrowDown, ArrowRightLeft, Star } from 'lucide-react-native';
-import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { ArrowLeft, Star, ArrowUpRight, ArrowRightLeft, ArrowDownLeft } from 'lucide-react-native';
 import { LineChart } from 'react-native-chart-kit';
-import colors from '@/constants/colors';
-import { formatCurrency, formatPercentage } from '@/utils/formatters';
-import { getTokenByAddress } from '@/data/tokens';
-import { getTokenChartData } from '@/data/charts';
-import TransactionItem from '@/components/TransactionItem';
-import { getTransactionHistoryForToken } from '@/data/transactions';
-import { EnrichedTokenEntry } from '@/data/types';
+import { useState } from 'react';
 import BackButton from '@/components/BackButton';
 
 const screenWidth = Dimensions.get('window').width;
 
+const chartData = {
+  labels: ['0:00', '1:00', '2:00'],
+  datasets: [
+    {
+      data: [19.43, 24.77, 30.11, 35.46, 40.80],
+      color: (opacity = 1) => `rgba(99, 102, 241, ${opacity})`,
+      strokeWidth: 2,
+    },
+  ],
+};
 
-export default function TokenDetailScreen() {
-  const { address } = useLocalSearchParams();
-  const router = useRouter();
-  const [token, setToken] = useState<EnrichedTokenEntry | null>(null);
-  const [chartData, setChartData] = useState<any>(null); //
-  const [timeframe, setTimeframe] = useState('1D');
-  const [transactions, setTransactions] = useState<any>([]); // TODO: Define a proper type for transactions
-  const [isFavorite, setIsFavorite] = useState(false);
+const chartConfig = {
+  backgroundColor: '#2a2a2a',
+  backgroundGradientFrom: '#2a2a2a',
+  backgroundGradientTo: '#1a1a1a',
+  decimalPlaces: 2,
+  color: (opacity = 1) => `rgba(99, 102, 241, ${opacity})`,
+  labelColor: (opacity = 1) => `rgba(156, 163, 175, ${opacity})`,
+  style: {
+    borderRadius: 16,
+  },
+  propsForDots: {
+    r: '6',
+    strokeWidth: '2',
+    stroke: '#6366f1',
+  },
+};
 
-  useEffect(() => {
-    loadData();
-  }, [address]);
+const timeframes = ['1D', '1W', '1M', '3M', '1Y', 'ALL'];
 
-  useEffect(() => {
-    if (token) {
-      loadChartData();
-    }
-  }, [token, timeframe]);
+const timeframeChanges: { [key: string]: string } = {
+  '1D': '-3.1%',
+  '1W': '+1.2%',
+  '1M': '-0.8%',
+  '3M': '+4.5%',
+  '1Y': '+12.3%',
+  'ALL': '+156.7%',
+};
 
-  if (Array.isArray(address)) {
-    throw new Error('address should not be an array');
-  }
+const statsData = [
+  {
+    label: 'Market Cap',
+    value: '$164,164.76',
+  },
+  {
+    label: 'Volume (24h)',
+    value: '$23,049.91',
+  },
+  {
+    label: 'Circulating Supply',
+    value: '641,264.285 USDC',
+  },
+  {
+    label: 'Max Supply',
+    value: '401,051.089 USDC',
+  },
+];
 
-  const loadData = async () => {
-    let tokenData = await getTokenByAddress(address) as unknown as EnrichedTokenEntry;
-    setToken(tokenData);
-    
-    const txHistory = await getTransactionHistoryForToken(address);
-    setTransactions(txHistory);
-  };
+export default function HomeScreen() {
+  const [selectedTimeframe, setSelectedTimeframe] = useState('1D');
 
-  const loadChartData = async () => {
-    const data = await getTokenChartData(address, timeframe);
-    setChartData(data);
-  };
-
-  const timeframes = ['1D', '1W', '1M', '3M', '1Y', 'ALL'];
-
-  if (!token || !chartData) {
-    return (
-      <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Loading...</Text>
-      </View>
-    );
-  }
-
-  const navigateToTransaction = (type: any) => {
-    router.push({
-      pathname: `/transaction/${type}`,
-      params: { address: token.address }
-    });
-  };
+  const currentChange = timeframeChanges[selectedTimeframe];
+  const isNegative = currentChange.startsWith('-');
 
   return (
     <View style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollView}>
         {/* Header */}
         <View style={styles.header}>
           <BackButton />
-          
-          <View style={styles.titleContainer}>
-            <Text style={styles.cryptoSymbol}>{token.symbol}</Text>
-            <Text style={styles.cryptoName}>{token.name}</Text>
+          <View style={styles.headerCenter}>
+            <Text style={styles.headerTitle}>USDC</Text>
+            <Text style={styles.headerSubtitle}>USDC</Text>
           </View>
-          
-          <TouchableOpacity 
-            style={styles.favoriteButton} 
-            onPress={() => setIsFavorite(!isFavorite)}
-          >
-            <Star 
-              size={24} 
-              color={isFavorite ? colors.warning : colors.textSecondary} 
-              fill={isFavorite ? colors.warning : 'transparent'} 
-            />
+          <TouchableOpacity style={styles.headerButton}>
+            <Star size={24} color="#fff" />
           </TouchableOpacity>
         </View>
-        
-        {/* Price Info */}
-        <Animated.View entering={FadeIn.duration(500)} style={styles.priceSection}>
-          <Text style={styles.priceValue}>{formatCurrency(token.price)}</Text>
-          <View style={styles.changeContainer}>
-            <Text 
-              style={[
-                styles.changeValue, 
-                { color: token.priceChangePercentage >= 0 ? colors.success : colors.error }
-              ]}
-            >
-              {token.priceChangePercentage >= 0 ? '+ ' : ''}
-              {formatPercentage(token.priceChangePercentage)}
-            </Text>
-            <Text style={styles.changePeriod}>in the last 24h</Text>
-          </View>
-        </Animated.View>
-        
+
+        {/* Price Section */}
+        <View style={styles.priceSection}>
+          <Text style={styles.price}>$440.73</Text>
+          <Text style={[styles.priceChange, { color: isNegative ? '#ef4444' : '#10b981' }]}>
+            {currentChange}
+          </Text>
+        </View>
+
         {/* Chart */}
-        <View style={styles.chartSection}>
-          <View style={styles.timeframeSelector}>
-            {timeframes.map((tf) => (
-              <TouchableOpacity 
-                key={tf}
-                style={[
-                  styles.timeframeOption,
-                  timeframe === tf && styles.activeTimeframe
-                ]}
-                onPress={() => setTimeframe(tf)}
-              >
-                <Text 
-                  style={[
-                    styles.timeframeText,
-                    timeframe === tf && styles.activeTimeframeText
-                  ]}
-                >
-                  {tf}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-          
+        <View style={styles.chartContainer}>
           <LineChart
-            data={{
-              labels: chartData.labels,
-              datasets: [
-                {
-                  data: chartData.values,
-                  color: () => token.priceChangePercentage >= 0 ? colors.success : colors.error,
-                  strokeWidth: 2,
-                },
-              ],
-            }}
+            data={chartData}
             width={screenWidth - 32}
-            height={220}
-            chartConfig={{
-              backgroundColor: 'transparent',
-              backgroundGradientFrom: colors.backgroundMedium,
-              backgroundGradientTo: colors.backgroundMedium,
-              decimalPlaces: 2,
-              color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-              labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-              style: {
-                borderRadius: 16,
-              },
-              propsForDots: {
-                r: '0',
-              },
-            }}
+            height={200}
+            chartConfig={chartConfig}
             bezier
             style={styles.chart}
-            withHorizontalLines={false}
-            withVerticalLines={false}
-            withDots={false}
             withInnerLines={false}
             withOuterLines={false}
-            withShadow={false}
-            yAxisLabel="$"
-            yAxisInterval={1}
+            withVerticalLabels={false}
+            withHorizontalLabels={true}
           />
         </View>
-        
-        {/* Your Assets */}
-        <View style={styles.assetsSection}>
-          <Text style={styles.sectionTitle}>Your {token.name} Assets</Text>
-          <View style={styles.assetCard}>
-            <View style={styles.assetRow}>
-              <Text style={styles.assetLabel}>Amount</Text>
-              <Text style={styles.assetValue}>
-                {token.balance.toFixed(4)} {token.symbol}
+
+        {/* Timeframe Selector */}
+        <View style={styles.timeframeContainer}>
+          {timeframes.map((timeframe) => (
+            <TouchableOpacity
+              key={timeframe}
+              style={[
+                styles.timeframeButton,
+                selectedTimeframe === timeframe && styles.timeframeButtonActive,
+              ]}
+              onPress={() => setSelectedTimeframe(timeframe)}>
+              <Text
+                style={[
+                  styles.timeframeText,
+                  selectedTimeframe === timeframe && styles.timeframeTextActive,
+                ]}>
+                {timeframe}
               </Text>
-            </View>
-            <View style={styles.assetRow}>
-              <Text style={styles.assetLabel}>Value</Text>
-              <Text style={styles.assetValue}>
-                {formatCurrency(token.balance * token.price)}
-              </Text>
-            </View>
-          </View>
+            </TouchableOpacity>
+          ))}
         </View>
-        
-        {/* Recent Transactions */}
-        <View style={styles.transactionsSection}>
-          <Text style={styles.sectionTitle}>Recent Transactions</Text>
-          {transactions.length > 0 ? (
-            transactions.map((transaction: any) => (
-              <TransactionItem 
-                key={transaction.id} 
-                transaction={transaction}
-                tokenData={[token]}
-                showDate
-              />
-            ))
-          ) : (
-            <Text style={styles.noTransactions}>No transactions yet</Text>
-          )}
-        </View>
-        
-        {/* About Section */}
-        <View style={styles.aboutSection}>
-          <Text style={styles.sectionTitle}>About {token.name}</Text>
-          <Text style={styles.aboutText}>
-            {token.description || `${token.name} is a cryptocurrency that uses blockchain technology to enable secure, decentralized transactions. It was created to provide a more efficient and transparent financial system.`}
-          </Text>
-          
+
+        {/* Market Info */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Market Info</Text>
           <View style={styles.statsContainer}>
-            <View style={styles.statItem}>
-              <Text style={styles.statLabel}>Market Cap</Text>
-              <Text style={styles.statValue}>{formatCurrency(token.marketCap)}</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statLabel}>Volume (24h)</Text>
-              <Text style={styles.statValue}>{formatCurrency(token.volume24h)}</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statLabel}>Circulating Supply</Text>
-              <Text style={styles.statValue}>{token.circulatingSupply.toLocaleString()} {token.symbol}</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statLabel}>Max Supply</Text>
-              <Text style={styles.statValue}>
-                {token.maxSupply ? token.maxSupply.toLocaleString() : '∞'} {token.symbol}
-              </Text>
-            </View>
+            {statsData.map((stat, index) => (
+              <View key={index} style={[styles.statRow, index === statsData.length - 1 && styles.lastStatRow]}>
+                <Text style={styles.statLabel}>{stat.label}</Text>
+                <Text style={styles.statValue}>{stat.value}</Text>
+              </View>
+            ))}
           </View>
+        </View>
+
+        {/* About USDC */}
+        <View style={styles.aboutSection}>
+          <Text style={styles.sectionTitle}>About USDC</Text>
+          <Text style={styles.description}>
+            USD Coin (USDC) is a fully-backed dollar stablecoin. USDC is issued by regulated and licensed financial institutions that maintain full reserves of the equivalent fiat currency.
+          </Text>
         </View>
       </ScrollView>
-      
-      {/* Action Buttons */}
-      <Animated.View 
-        entering={SlideInDown.duration(500)} 
-        style={styles.actionButtonsContainer}
-      >
-        <TouchableOpacity 
-          style={[styles.actionButton, styles.buyButton]} 
-          onPress={() => navigateToTransaction('trade')}
-        >
-          <ArrowRightLeft size={20} color={colors.white} />
+
+      {/* Bottom Action Buttons */}
+      <View style={styles.bottomActionContainer}>
+        <TouchableOpacity style={styles.actionButton}>
+          <ArrowRightLeft size={20} color="#fff" />
           <Text style={styles.actionButtonText}>Trade</Text>
         </TouchableOpacity>
-        
-        <View style={styles.actionButtonsGroup}>
-          <TouchableOpacity 
-            style={styles.actionButton} 
-            onPress={() => navigateToTransaction('send')}
-          >
-            <ArrowUp size={20} color={colors.white} />
-            <Text style={styles.actionButtonText}>Send</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.actionButton} 
-            onPress={() => navigateToTransaction('receive')}
-          >
-            <ArrowDown size={20} color={colors.white} />
-            <Text style={styles.actionButtonText}>Receive</Text>
-          </TouchableOpacity>
-        </View>
-      </Animated.View>
+        <TouchableOpacity style={styles.actionButton}>
+          <ArrowUpRight size={20} color="#fff" />
+          <Text style={styles.actionButtonText}>Send</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.actionButton}>
+          <ArrowDownLeft size={20} color="#fff" />
+          <Text style={styles.actionButtonText}>Receive</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -278,223 +175,154 @@ export default function TokenDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.backgroundDark,
+    backgroundColor: '#1a1a1a',
   },
-  loadingContainer: {
+  scrollView: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.backgroundDark,
-  },
-  loadingText: {
-    color: colors.textPrimary,
-    fontSize: 16,
-    fontFamily: 'Inter-Medium',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingBottom: 16,
+    paddingVertical: 12,
+    paddingTop: 20,
   },
-  backButton: {
+  headerButton: {
     width: 40,
     height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.backgroundMedium,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  titleContainer: {
-    flex: 1,
+  headerCenter: {
     alignItems: 'center',
   },
-  cryptoSymbol: {
-    fontSize: 20,
-    fontFamily: 'Inter-Bold',
-    color: colors.textPrimary,
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#fff',
   },
-  cryptoName: {
+  headerSubtitle: {
     fontSize: 14,
-    fontFamily: 'Inter-Regular',
-    color: colors.textSecondary,
-  },
-  favoriteButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.backgroundMedium,
-    alignItems: 'center',
-    justifyContent: 'center',
+    color: '#9ca3af',
   },
   priceSection: {
     alignItems: 'center',
-    paddingVertical: 16,
+    paddingVertical: 20,
   },
-  priceValue: {
+  price: {
     fontSize: 36,
-    fontFamily: 'Inter-Bold',
-    color: colors.textPrimary,
+    fontWeight: '700',
+    color: '#fff',
+    marginBottom: 4,
   },
-  changeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  changeValue: {
+  priceChange: {
     fontSize: 16,
-    fontFamily: 'Inter-SemiBold',
+    fontWeight: '600',
   },
-  changePeriod: {
-    fontSize: 14,
-    fontFamily: 'Inter-Regular',
-    color: colors.textSecondary,
-    marginLeft: 4,
-  },
-  chartSection: {
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-  },
-  timeframeSelector: {
-    flexDirection: 'row',
-    backgroundColor: colors.backgroundMedium,
-    borderRadius: 16,
-    padding: 4,
-    marginBottom: 16,
-    alignSelf: 'center',
-  },
-  timeframeOption: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  activeTimeframe: {
-    backgroundColor: colors.primary,
-  },
-  timeframeText: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    fontFamily: 'Inter-Medium',
-  },
-  activeTimeframeText: {
-    color: colors.white,
+  chartContainer: {
+    alignItems: 'center',
+    marginBottom: 20,
   },
   chart: {
-    marginVertical: 8,
     borderRadius: 16,
   },
-  assetsSection: {
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontFamily: 'Inter-SemiBold',
-    color: colors.textPrimary,
-    marginBottom: 12,
-  },
-  assetCard: {
-    backgroundColor: colors.backgroundMedium,
-    borderRadius: 16,
-    padding: 16,
-  },
-  assetRow: {
+  timeframeContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  assetLabel: {
-    fontSize: 14,
-    fontFamily: 'Inter-Regular',
-    color: colors.textSecondary,
-  },
-  assetValue: {
-    fontSize: 16,
-    fontFamily: 'Inter-SemiBold',
-    color: colors.textPrimary,
-  },
-  transactionsSection: {
     paddingHorizontal: 16,
-    paddingVertical: 16,
+    marginBottom: 32,
+    gap: 8,
+    justifyContent: 'center',
   },
-  noTransactions: {
+  timeframeButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#2a2a2a',
+  },
+  timeframeButtonActive: {
+    backgroundColor: '#6366f1',
+  },
+  timeframeText: {
     fontSize: 14,
-    fontFamily: 'Inter-Regular',
-    color: colors.textSecondary,
-    textAlign: 'center',
-    padding: 20,
-    backgroundColor: colors.backgroundMedium,
-    borderRadius: 16,
+    color: '#9ca3af',
+    fontWeight: '500',
+  },
+  timeframeTextActive: {
+    color: '#fff',
+  },
+  section: {
+    paddingHorizontal: 16,
+    marginBottom: 32,
   },
   aboutSection: {
     paddingHorizontal: 16,
-    paddingVertical: 16,
-    paddingBottom: 100, // Extra padding for action buttons
+    marginBottom: 120, // Extra space for bottom buttons
   },
-  aboutText: {
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#fff',
+    marginBottom: 12,
+  },
+  description: {
     fontSize: 14,
-    fontFamily: 'Inter-Regular',
-    color: colors.textSecondary,
-    lineHeight: 22,
+    color: '#9ca3af',
+    lineHeight: 20,
     marginBottom: 20,
   },
   statsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  statItem: {
-    width: '48%',
-    backgroundColor: colors.backgroundMedium,
+    backgroundColor: '#2a2a2a',
     borderRadius: 12,
-    padding: 12,
-    marginBottom: 12,
+    padding: 16,
+  },
+  statRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#333',
+  },
+  lastStatRow: {
+    borderBottomWidth: 0,
   },
   statLabel: {
-    fontSize: 12,
-    fontFamily: 'Inter-Regular',
-    color: colors.textSecondary,
-    marginBottom: 4,
+    fontSize: 14,
+    color: '#9ca3af',
   },
   statValue: {
     fontSize: 14,
-    fontFamily: 'Inter-SemiBold',
-    color: colors.textPrimary,
+    fontWeight: '600',
+    color: '#fff',
   },
-  actionButtonsContainer: {
+  bottomActionContainer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: colors.backgroundMedium,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingVertical: 16,
-    paddingHorizontal: 16,
     flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  actionButtonsGroup: {
-    flexDirection: 'row',
+    backgroundColor: '#1a1a1a',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    paddingBottom: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#333',
+    gap: 8,
   },
   actionButton: {
     flex: 1,
+    backgroundColor: '#6366f1',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.backgroundLight,
-    borderRadius: 16,
     paddingVertical: 12,
-    marginHorizontal: 4,
-  },
-  buyButton: {
-    backgroundColor: colors.primary,
-    marginRight: 8,
+    borderRadius: 12,
+    gap: 8,
   },
   actionButtonText: {
-    color: colors.white,
-    fontFamily: 'Inter-SemiBold',
-    fontSize: 14,
-    marginLeft: 8,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
   },
 });

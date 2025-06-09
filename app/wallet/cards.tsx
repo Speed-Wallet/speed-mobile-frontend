@@ -119,7 +119,7 @@ const fetchWalletAddress = async () => {
   }
 };
 
-const createCard = async (cardBrand: 'mastercard' | 'visa', amountInUSD: number): Promise<CreateCardResponse> => {
+const createCard = async (cardBrand: 'mastercard' | 'visa', amountInUSD: number, customCardName: string): Promise<CreateCardResponse> => {
   try {
     // Load personal info from KYC persistent storage
     const personalInfo = await StorageService.loadPersonalInfo();
@@ -144,7 +144,7 @@ const createCard = async (cardBrand: 'mastercard' | 'visa', amountInUSD: number)
       dateOfBirth: personalInfo.dateOfBirth,
       homeAddressNumber: personalInfo.streetNumber,
       homeAddress: personalInfo.address,
-      cardName: personalInfo.name,
+      cardName: customCardName, // Use the required custom name
       cardType: "Virtual",
       cardBrand: cardBrand.charAt(0).toUpperCase() + cardBrand.slice(1).toLowerCase(), // Capitalize first letter
       amountInUSD: amountInUSD
@@ -228,8 +228,10 @@ export default function CardsScreen() {
   const [showAddCard, setShowAddCard] = useState(false);
   const [selectedBrand, setSelectedBrand] = useState<'mastercard' | 'visa'>('mastercard');
   const [cardBalance, setCardBalance] = useState('');
+  const [cardName, setCardName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [visibleCards, setVisibleCards] = useState<{ [key: string]: boolean }>({});
+  const [showValidationError, setShowValidationError] = useState(false);
 
   useEffect(() => {
     loadCards();
@@ -258,10 +260,25 @@ export default function CardsScreen() {
   };
 
   const handleAddCard = async () => {
-    if (!cardBalance || parseFloat(cardBalance) <= 0) {
+    const balance = parseFloat(cardBalance);
+    
+    if (!cardName.trim()) {
+      Alert.alert('Error', 'Please enter a card name');
+      return;
+    }
+    
+    if (!cardBalance || balance <= 0) {
       Alert.alert('Error', 'Please enter a valid balance amount');
       return;
     }
+    
+    if (balance < 10 || balance > 2500) {
+      setShowValidationError(true);
+      Alert.alert('Error', 'Balance must be between $10.00 and $2,500.00');
+      return;
+    }
+    
+    setShowValidationError(false);
     setIsLoading(true);
 
     try {
@@ -278,7 +295,7 @@ export default function CardsScreen() {
       console.log('USDT sent successfully:', sendResult.signature);
 
       // Create the card using the API
-      const cardResponse = await createCard(selectedBrand, parseFloat(cardBalance));
+      const cardResponse = await createCard(selectedBrand, parseFloat(cardBalance), cardName.trim());
       console.log('Card created:', cardResponse);
 
       // If creation is successful, fetch detailed card information
@@ -331,6 +348,7 @@ export default function CardsScreen() {
 
         setShowAddCard(false);
         setCardBalance('');
+        setCardName('');
         setIsLoading(false);
         
         Alert.alert('Success', 'Virtual card created successfully!');
@@ -512,6 +530,21 @@ export default function CardsScreen() {
               </View>
             </View>
 
+            {/* Card Name Input */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Card Name</Text>
+              <View style={styles.inputWrapper}>
+                <CreditCard size={20} color="#9ca3af" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.balanceInput}
+                  placeholder="Enter card name (e.g., Personal Card)"
+                  placeholderTextColor="#6b7280"
+                  value={cardName}
+                  onChangeText={setCardName}
+                />
+              </View>
+            </View>
+
             {/* Balance Input */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Initial Balance</Text>
@@ -522,12 +555,23 @@ export default function CardsScreen() {
                   placeholder="Enter amount (e.g., 500.00)"
                   placeholderTextColor="#6b7280"
                   value={cardBalance}
-                  onChangeText={setCardBalance}
+                  onChangeText={(text) => {
+                    setCardBalance(text);
+                    const balance = parseFloat(text);
+                    if (text && !isNaN(balance)) {
+                      setShowValidationError(balance < 10 || balance > 2500);
+                    } else {
+                      setShowValidationError(false);
+                    }
+                  }}
                   keyboardType="decimal-pad"
                 />
               </View>
-              <Text style={styles.inputHint}>
-                Minimum balance: $10.00 • Maximum balance: $10,000.00
+              <Text style={[
+                styles.inputHint,
+                showValidationError && styles.inputHintError
+              ]}>
+                {showValidationError ? '*' : ''}Min: $10.00 • Max: $2,500.00{showValidationError ? ' *' : ''}
               </Text>
             </View>
 
@@ -540,7 +584,9 @@ export default function CardsScreen() {
                     <View style={styles.previewUserIcon}>
                       <User size={14} color="#ffffff" />
                     </View>
-                    <Text style={styles.previewCardHolderName}>TRISTAN</Text>
+                    <Text style={styles.previewCardHolderName}>
+                      {cardName.trim() || 'Enter card name'}
+                    </Text>
                   </View>
                   <Image
                     source={getBrandLogo(selectedBrand)}
@@ -580,10 +626,10 @@ export default function CardsScreen() {
             <TouchableOpacity
               style={[
                 styles.createButton,
-                (!cardBalance || parseFloat(cardBalance) <= 0 || isLoading) && styles.createButtonDisabled
+                (!cardName.trim() || !cardBalance || parseFloat(cardBalance) <= 0 || isLoading || showValidationError) && styles.createButtonDisabled
               ]}
               onPress={handleAddCard}
-              disabled={!cardBalance || parseFloat(cardBalance) <= 0 || isLoading}
+              disabled={!cardName.trim() || !cardBalance || parseFloat(cardBalance) <= 0 || isLoading || showValidationError}
             >
               <CreditCard size={20} color="#ffffff" />
               <Text style={styles.createButtonText}>
@@ -792,9 +838,12 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   inputHint: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#9ca3af',
     marginTop: 8,
+  },
+  inputHintError: {
+    color: '#ef4444',
   },
   previewCard: {
     backgroundColor: '#1a1a1a',
