@@ -1,5 +1,5 @@
 import { useShallow } from 'zustand/react/shallow';
-import { useTokenBalanceStore, TokenBalanceDetails } from '../stores/tokenBalanceStore';
+import { useTokenBalanceStore } from '../stores/tokenBalanceStore';
 
 interface UseTokenBalanceResult {
     balance: number; // Human-readable balance

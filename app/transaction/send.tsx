@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { X, Search, ArrowRight } from 'lucide-react-native';
+import { Search, ArrowRight } from 'lucide-react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import colors from '@/constants/colors';
 import { getAllTokenInfo, getTokenByAddress } from '@/data/tokens';
@@ -56,8 +56,6 @@ export default function SendScreen() {
   if (Array.isArray(tokenAddress)) {
     throw new Error('tokenAddress should not be an array');
   }
-
-
 
   const handleSend = async () => {
     if (!selectedToken) {
