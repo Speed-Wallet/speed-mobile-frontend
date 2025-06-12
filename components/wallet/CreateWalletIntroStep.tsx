@@ -4,6 +4,7 @@ import { useRef, useEffect } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import { RefreshCw } from 'lucide-react-native';
+import 'react-native-get-random-values';
 
 interface CreateWalletIntroStepProps {
   onCreateWallet: () => void;

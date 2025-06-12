@@ -1,8 +1,6 @@
 // TODO use getTokenAccountsByOwner to get all token accounts for a wallet
 // see https://www.helius.dev/docs/rpc/optimization-techniques#efficient-token-balance-lookup
 
-import { Buffer } from 'buffer';
-global.Buffer = Buffer;
 import { create } from 'zustand';
 import { LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
 import { getAccount, getAssociatedTokenAddressSync } from '@solana/spl-token';

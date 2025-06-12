@@ -27,36 +27,6 @@ Notifications.setNotificationHandler({
   }),
 });
 
-interface CardDetailsResponse {
-  code: string;
-  customerName: string;
-  customerFirstName: string;
-  customerLastName: string;
-  customerEmail: string;
-  cardBrand: 'visa' | 'mastercard';
-  cardType: 'virtual' | 'physical';
-  reference: string;
-  last4: string;
-  cardName: string;
-  expiryOn: string;
-  expiryOnInfo: string;
-  expiryOnMaxked: string;
-  validMonthYear: string;
-  status: string;
-  cardBalance: number;
-  cardBalanceInfo: string;
-  cardNumber: string;
-  cardNumberMaxked: string | null;
-  cvV2: string;
-  cvV2Maxed: string;
-  billingAddressCity: string;
-  billingAddressStreet: string;
-  billingAddressCountry: string;
-  billingAddressZipCode: string;
-  billingAddressCountryCode: string;
-  createdOn: string;
-}
-
 const initialCards: PaymentCard[] = [
   {
     id: '1',

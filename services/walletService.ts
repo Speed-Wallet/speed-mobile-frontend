@@ -1,5 +1,29 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as bip39 from 'bip39';
+
+// Ensure crypto is available before importing bip39
+const ensureCryptoReady = () => {
+  if (!global.crypto || !global.crypto.getRandomValues) {
+    throw new Error('Crypto polyfill not ready. Make sure react-native-quick-crypto is properly installed.');
+  }
+  if (!global.Buffer) {
+    throw new Error('Buffer polyfill not ready. Make sure @craftzdog/react-native-buffer is properly set up.');
+  }
+};
+ensureCryptoReady();
+
+// import {
+//   generateMnemonic,
+//   mnemonicToSeed,
+//   validateMnemonic,
+// } from "@dreson4/react-native-quick-bip39";
+// import * as bip39 from '@dreson4/react-native-quick-bip39'
+import bip39 from "react-native-bip39";
+// import * as bip39 from '@dreson4/react-native-quick-bip39'
+// import {
+//   generateMnemonic,
+//   mnemonicToSeed,
+//   validateMnemonic,
+// } from "bip39";
 import bs58 from 'bs58';
 import {
   Keypair,
@@ -20,9 +44,6 @@ import {
 import CryptoJS from 'crypto-js';
 import { useEffect, useState } from 'react';
 import { registerSwapAttempt } from './apis';
-
-import { Buffer } from 'buffer';
-global.Buffer = Buffer; // Polyfill global Buffer
 
 export const CONNECTION = new Connection(`https://mainnet.helius-rpc.com/?api-key=${process.env.EXPO_PUBLIC_HELIUS_API_KEY}`);
 const JUPITER_API_URL = 'https://lite-api.jup.ag/swap/v1/';

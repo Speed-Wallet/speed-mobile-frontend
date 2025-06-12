@@ -1,8 +1,3 @@
-import { Buffer } from 'buffer';
-global.Buffer = Buffer; // Polyfill global Buffer
-import 'react-native-get-random-values'; // Ensure this is at the very top
-
-
 import { useEffect, useState } from 'react';
 import { Stack, SplashScreen } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -16,6 +11,7 @@ import EnterPinScreen from '@/app/wallet/EnterPinScreen';
 import colors from '@/constants/colors';
 import { useTokenBalanceStore } from '@/stores/tokenBalanceStore';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import 'react-native-get-random-values';
 
 
 // Prevent splash screen from auto-hiding

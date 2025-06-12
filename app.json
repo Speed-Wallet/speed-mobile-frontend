@@ -9,7 +9,8 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.alexthelion123.boltexponativewind"
     },
     "web": {
       "bundler": "metro",
@@ -34,7 +35,7 @@
       "package": "com.alexthelion123.boltexponativewind"
     },
     "runtimeVersion": {
-      "policy": "appVersion"
+      "policy": "exposdk:52.0.46"
     },
     "updates": {
       "url": "https://u.expo.dev/939feec9-4d34-423e-a883-96b0de3874e3"
