@@ -14,31 +14,18 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, Plus, CreditCard, DollarSign, User, Eye, EyeOff } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { StorageService, PaymentCard } from '@/utils/storage';
-import { sendUSDT } from '@/utils/sendTransaction';
+import { sendUSDTToCashwyre } from '@/utils/sendTransaction';
+import { setupNotificationListeners } from '@/services/notificationService';
+import * as Notifications from 'expo-notifications';
 
-// Constants
-const BUSINESS_CODE = "C4B20250607000033";
-const CASHWYRE_BASE_URL = "https://businessapi.cashwyre.com/api/v1.0";
-
-// API Response Types
-interface CreateCardResponse {
-  CustomerId: string;
-  FirstName: string;
-  LastName: string;
-  Email: string;
-  PhoneCode: string;
-  PhoneNumber: string;
-  Country: string;
-  DateOfBirth: string;
-  CreatedOn: string;
-  Status: string;
-  HomeAddressNumber: string;
-  HomeAddress: string;
-  // Possible card code fields (API might return any of these)
-  cardCode?: string;
-  code?: string;
-  CardCode?: string;
-}
+// Configure notification handler
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
 
 interface CardDetailsResponse {
   code: string;
@@ -82,147 +69,6 @@ const initialCards: PaymentCard[] = [
   },
 ];
 
-const generateRequestId = () => {
-  return Math.floor(100000000000 + Math.random() * 900000000000).toString();
-};
-
-const fetchWalletAddress = async () => {
-  try {
-    const requestBody = {
-      appId: BUSINESS_CODE,
-      requestId: generateRequestId(),
-      businessCode: BUSINESS_CODE,
-      currency: "USD",
-      assetNetwork: "SOLANA"
-    };
-
-    const response = await fetch(`${CASHWYRE_BASE_URL}/Wallet/getFundwalletAccountInfo`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `bearer ${BUSINESS_CODE}`,
-      },
-      body: JSON.stringify(requestBody),
-    });
-
-    console.log("response", response)
-    const data = await response.json();
-    console.log("data", data)
-    if (data.success && data.data && data.data.businessWalletAccount) {
-      return data.data.businessWalletAccount.number;
-    } else {
-      throw new Error(data.message || 'Failed to fetch wallet address');
-    }
-  } catch (error) {
-    console.error('Error fetching wallet address:', error);
-    throw error;
-  }
-};
-
-const createCard = async (cardBrand: 'mastercard' | 'visa', amountInUSD: number, customCardName: string): Promise<CreateCardResponse> => {
-  try {
-    // Load personal info from KYC persistent storage
-    const personalInfo = await StorageService.loadPersonalInfo();
-    if (!personalInfo) {
-      throw new Error('Personal information not found. Please complete KYC verification first.');
-    }
-
-    // Split the name into first and last name
-    const nameParts = personalInfo.name.split(' ');
-    const firstName = nameParts[0] || '';
-    const lastName = nameParts.slice(1).join(' ') || '';
-
-    const requestBody = {
-      appId: BUSINESS_CODE,
-      requestId: generateRequestId(),
-      businessCode: BUSINESS_CODE,
-      firstName: firstName,
-      lastName: lastName,
-      email: personalInfo.email,
-      phoneCode: personalInfo.selectedCountry.dialCode,
-      phoneNumber: personalInfo.phoneNumber,
-      dateOfBirth: personalInfo.dateOfBirth,
-      homeAddressNumber: personalInfo.streetNumber,
-      homeAddress: personalInfo.address,
-      cardName: customCardName, // Use the required custom name
-      cardType: "Virtual",
-      cardBrand: cardBrand.charAt(0).toUpperCase() + cardBrand.slice(1).toLowerCase(), // Capitalize first letter
-      amountInUSD: amountInUSD
-    };
-
-    // TODO use tanstack with retries
-    const response = await fetch(`${CASHWYRE_BASE_URL}/Card/createCard`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `bearer ${BUSINESS_CODE}`,
-      },
-      body: JSON.stringify(requestBody),
-    });
-
-    console.log("createCard response", response);
-    const data = await response.json();
-    console.log("createCard data", data);
-    
-    if (data.success && data.data) {
-      return data.data as CreateCardResponse;
-    } else {
-      throw new Error(data.message || 'Failed to create card');
-    }
-  } catch (error) {
-    console.error('Error creating card:', error);
-    throw error;
-  }
-};
-
-const fetchCardDetails = async (cardCode: string): Promise<CardDetailsResponse> => {
-  try {
-    const requestBody = {
-      appId: BUSINESS_CODE,
-      requestId: generateRequestId(),
-      cardCode: cardCode,
-      businessCode: BUSINESS_CODE
-    };
-
-    const response = await fetch(`${CASHWYRE_BASE_URL}/Card/getCardDetails`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `bearer ${BUSINESS_CODE}`,
-      },
-      body: JSON.stringify(requestBody),
-    });
-
-    console.log("fetchCardDetails response", response);
-    const data = await response.json();
-    console.log("fetchCardDetails data", data);
-    
-    if (data.success && data.data) {
-      return data.data as CardDetailsResponse;
-    } else {
-      throw new Error(data.message || 'Failed to fetch card details');
-    }
-  } catch (error) {
-    console.error('Error fetching card details:', error);
-    throw error;
-  }
-};
-
-// Helper function to update card details from API response
-const updateCardFromApiDetails = (apiCardDetails: CardDetailsResponse): PaymentCard => {
-  return {
-    id: apiCardDetails.code,
-    type: 'virtual',
-    brand: apiCardDetails.cardBrand as 'mastercard' | 'visa',
-    last4: apiCardDetails.last4,
-    holder: apiCardDetails.cardName,
-    expires: apiCardDetails.expiryOnInfo, // Format: "2027/12"
-    balance: apiCardDetails.cardBalance,
-  };
-};
-
-
-
 export default function CardsScreen() {
   const [cards, setCards] = useState<PaymentCard[]>([]);
   const [showAddCard, setShowAddCard] = useState(false);
@@ -235,6 +81,14 @@ export default function CardsScreen() {
 
   useEffect(() => {
     loadCards();
+    
+    // Set up notification listeners
+    const cleanupNotifications = setupNotificationListeners();
+    
+    // Cleanup on unmount
+    return () => {
+      cleanupNotifications();
+    };
   }, []);
 
   const loadCards = async () => {
@@ -282,77 +136,64 @@ export default function CardsScreen() {
     setIsLoading(true);
 
     try {
-      const walletAddress = await fetchWalletAddress();
-      console.log('Wallet address fetched:', walletAddress);
+      // Load personal info for card creation
+      const personalInfo = await StorageService.loadPersonalInfo();
+      if (!personalInfo) {
+        throw new Error('Personal information not found. Please complete KYC verification first.');
+      }
 
-      // First send usdt to the wallet address
-      const sendResult = await sendUSDT(cardBalance, walletAddress);
+      // Split the name into first and last name
+      const nameParts = personalInfo.name.split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+
+      // Prepare card data
+      const cardData = {
+        firstName,
+        lastName,
+        email: personalInfo.email,
+        phoneCode: personalInfo.selectedCountry.dialCode,
+        phoneNumber: personalInfo.phoneNumber,
+        dateOfBirth: personalInfo.dateOfBirth,
+        homeAddressNumber: personalInfo.streetNumber,
+        homeAddress: personalInfo.address,
+        cardName: cardName.trim(),
+        cardBrand: selectedBrand.charAt(0).toUpperCase() + selectedBrand.slice(1).toLowerCase(),
+      };
+
+      // Send USDT to Cashwyre and register for auto card creation
+      const sendResult = await sendUSDTToCashwyre(cardBalance, cardData);
       
       if (!sendResult.success) {
         throw new Error(`Failed to send USDT: ${sendResult.error}`);
       }
       
       console.log('USDT sent successfully:', sendResult.signature);
+      
+      // Create a temporary card for immediate UI feedback
+      const tempCard: PaymentCard = {
+        id: Date.now().toString(),
+        type: 'virtual',
+        brand: selectedBrand,
+        last4: generateCardNumber(),
+        holder: cardName.trim(),
+        expires: generateExpiryDate(),
+        balance: parseFloat(cardBalance),
+      };
 
-      // Create the card using the API
-      const cardResponse = await createCard(selectedBrand, parseFloat(cardBalance), cardName.trim());
-      console.log('Card created:', cardResponse);
+      const updatedCards = [...cards, tempCard];
+      setCards(updatedCards);
+      await StorageService.saveCards(updatedCards);
 
-      // If creation is successful, fetch detailed card information
-      if (cardResponse.CustomerId) {
-        // Check if the response includes a card code to fetch details
-        // The card code might be in a field like 'cardCode', 'code', or similar
-        let newCard: PaymentCard;
-        
-        // Try to find card code in the response (adjust field name based on actual API response)
-        const cardCode = cardResponse.cardCode || cardResponse.code || cardResponse.CardCode;
-        
-        if (cardCode) {
-          try {
-            // Fetch detailed card information using the card code
-            const cardDetails = await fetchCardDetails(cardCode);
-            console.log('Card details fetched:', cardDetails);
-            
-            // Use the helper function to convert API response to PaymentCard
-            newCard = updateCardFromApiDetails(cardDetails);
-          } catch (detailsError) {
-            console.warn('Failed to fetch card details, using basic info:', detailsError);
-            // Fallback to basic card info if fetchCardDetails fails
-            newCard = {
-              id: cardResponse.CustomerId || Date.now().toString(),
-              type: 'virtual',
-              brand: selectedBrand,
-              last4: generateCardNumber(),
-              holder: `${cardResponse.FirstName} ${cardResponse.LastName}` || 'TRISTAN',
-              expires: generateExpiryDate(),
-              balance: parseFloat(cardBalance),
-            };
-          }
-        } else {
-          // No card code available, create card with basic info
-          console.warn('No card code in response, using basic card info');
-          newCard = {
-            id: cardResponse.CustomerId || Date.now().toString(),
-            type: 'virtual',
-            brand: selectedBrand,
-            last4: generateCardNumber(),
-            holder: `${cardResponse.FirstName} ${cardResponse.LastName}` || 'TRISTAN',
-            expires: generateExpiryDate(),
-            balance: parseFloat(cardBalance),
-          };
-        }
-
-        const updatedCards = [...cards, newCard];
-        setCards(updatedCards);
-        await StorageService.saveCards(updatedCards);
-
-        setShowAddCard(false);
-        setCardBalance('');
-        setCardName('');
-        setIsLoading(false);
-        
-        Alert.alert('Success', 'Virtual card created successfully!');
-      }
+      setShowAddCard(false);
+      setCardBalance('');
+      setCardName('');
+      setIsLoading(false);
+      
+      Alert.alert(
+        'Success', 
+        'USDT sent successfully! Your card will be created automatically when the transaction is confirmed. You will receive push notifications with updates.'
+      );
     } catch (error) {
       setIsLoading(false);
       Alert.alert('Error', error instanceof Error ? error.message : 'Failed to create card. Please try again.');

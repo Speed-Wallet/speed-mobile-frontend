@@ -1,6 +1,8 @@
 import { PublicKey, sendAndConfirmTransaction, Transaction, SystemProgram } from '@solana/web3.js';
 import { createTransferInstruction, getAccount, getAssociatedTokenAddress, getOrCreateAssociatedTokenAccount } from '@solana/spl-token';
 import { CONNECTION, WALLET, WSOL_MINT } from '@/services/walletService';
+import { registerForPushNotificationsAsync } from '@/services/notificationService';
+import { getWalletAddress, registerUSDTTransaction } from '@/services/apis';
 
 export interface SendTransactionParams {
   amount: string;
@@ -142,4 +144,75 @@ export async function sendUSDT(amount: string, recipientAddress: string): Promis
     tokenDecimals: 6,
     showAlert: false // Don't show alerts for automated card creation
   });
+}
+
+/**
+ * Complete USDT to Cashwyre flow:
+ * 1. Get wallet address from Cashwyre
+ * 2. Get push token for notifications
+ * 3. Send USDT to Cashwyre wallet
+ * 4. Register transaction with backend for auto card creation
+ */
+export async function sendUSDTToCashwyre(
+  amount: string,
+  cardData: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phoneCode: string;
+    phoneNumber: string;
+    dateOfBirth: string;
+    homeAddressNumber: string;
+    homeAddress: string;
+    cardName: string;
+    cardBrand: string;
+  }
+): Promise<SendTransactionResult> {
+  try {
+    // 1. Get wallet address from APIs
+    const walletResponse = await getWalletAddress();
+    
+    if (!walletResponse.success || !walletResponse.data) {
+      return { success: false, error: 'Failed to get Cashwyre wallet address' };
+    }
+
+    const walletAddress = walletResponse.data.number;
+
+    // 2. Get push token for notifications
+    const pushToken = await registerForPushNotificationsAsync();
+    
+    if (!pushToken) {
+      console.warn('Failed to get push token, proceeding without notifications');
+    }
+
+    // 3. Send USDT transaction
+    const sendResult = await sendUSDT(amount, walletAddress);
+    
+    if (!sendResult.success) {
+      return sendResult;
+    }
+
+    // 4. Register transaction with backend for auto card creation
+    const registrationResult = await registerUSDTTransaction({
+      pushToken: pushToken || '',
+      walletAddress,
+      amount: parseFloat(amount),
+      userWalletAddress: WALLET?.publicKey.toBase58() || '',
+      transactionSignature: sendResult.signature || '',
+      cardData
+    });
+
+    if (!registrationResult.success) {
+      console.warn('Failed to register transaction for auto card creation:', registrationResult.error);
+      // Don't fail the entire flow if registration fails
+    }
+
+    return sendResult;
+  } catch (error) {
+    console.error('Error in sendUSDTToCashwyre:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Failed to complete USDT transfer'
+    };
+  }
 }
