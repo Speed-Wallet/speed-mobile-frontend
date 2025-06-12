@@ -6,6 +6,7 @@ import CreateWalletIntroStep from '@/components/wallet/CreateWalletIntroStep';
 import ShowMnemonicStep from '@/components/wallet/ShowMnemonicStep';
 import CreatePinStep from '@/components/wallet/CreatePinStep';
 import ConfirmPinStep from '@/components/wallet/ConfirmPinStep';
+import 'react-native-get-random-values';
 
 interface SetupWalletScreenProps {
   onWalletSetupComplete: () => void;

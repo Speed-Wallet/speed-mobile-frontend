@@ -10,6 +10,7 @@ import { EnrichedTokenEntry } from '@/data/types';
 import BalanceCard from '@/components/BalanceCard';
 import { useWalletPublicKey } from '@/services/walletService';
 import { setStringAsync } from 'expo-clipboard';
+// import CryptoTest from '@/components/CryptoTest';
 
 
 export default function HomeScreen() {
@@ -32,6 +33,9 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
+        {/* Crypto Test - Remove this after testing */}
+        {/* <CryptoTest /> */}
+        
         {/* Header section */}
         <View style={styles.header}>
           <View style={styles.userSection}>
