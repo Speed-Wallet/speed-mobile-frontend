@@ -1,29 +1,16 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Ensure crypto is available before importing bip39
-const ensureCryptoReady = () => {
-  if (!global.crypto || !global.crypto.getRandomValues) {
-    throw new Error('Crypto polyfill not ready. Make sure react-native-quick-crypto is properly installed.');
-  }
-  if (!global.Buffer) {
-    throw new Error('Buffer polyfill not ready. Make sure @craftzdog/react-native-buffer is properly set up.');
-  }
-};
-ensureCryptoReady();
+// const ensureCryptoReady = () => {
+//   if (!global.crypto || !global.crypto.getRandomValues) {
+//     throw new Error('Crypto polyfill not ready. Make sure react-native-quick-crypto is properly installed.');
+//   }
+//   if (!global.Buffer) {
+//     throw new Error('Buffer polyfill not ready. Make sure @craftzdog/react-native-buffer is properly set up.');
+//   }
+// };
+// ensureCryptoReady();
 
-// import {
-//   generateMnemonic,
-//   mnemonicToSeed,
-//   validateMnemonic,
-// } from "@dreson4/react-native-quick-bip39";
-// import * as bip39 from '@dreson4/react-native-quick-bip39'
-import bip39 from "react-native-bip39";
-// import * as bip39 from '@dreson4/react-native-quick-bip39'
-// import {
-//   generateMnemonic,
-//   mnemonicToSeed,
-//   validateMnemonic,
-// } from "bip39";
 import bs58 from 'bs58';
 import {
   Keypair,
@@ -44,6 +31,7 @@ import {
 import CryptoJS from 'crypto-js';
 import { useEffect, useState } from 'react';
 import { registerSwapAttempt } from './apis';
+import { generateMnemonic, mnemonicToSeed, validateMnemonic } from '@/utils/bip39';
 
 export const CONNECTION = new Connection(`https://mainnet.helius-rpc.com/?api-key=${process.env.EXPO_PUBLIC_HELIUS_API_KEY}`);
 const JUPITER_API_URL = 'https://lite-api.jup.ag/swap/v1/';
@@ -179,8 +167,8 @@ const decryptMnemonic = (encryptedMnemonic: string, pin: string, salt: string, i
 // --- End Encryption/Decryption Helpers ---
 
 export const generateSolanaWallet = async (): Promise<SolanaWallet> => {
-  const mnemonic = bip39.generateMnemonic();
-  const seed = await bip39.mnemonicToSeed(mnemonic);
+  const mnemonic = await generateMnemonic();
+  const seed = await mnemonicToSeed(mnemonic);
   const keypair = Keypair.fromSeed(Uint8Array.from(seed.subarray(0, 32)));
 
   return {
@@ -239,7 +227,7 @@ export const unlockWalletWithPin = async (pin: string): Promise<SolanaWallet | n
 
     if (mnemonic) {
       // Verify the mnemonic is valid (optional but good)
-      if (!bip39.validateMnemonic(mnemonic)) {
+      if (!validateMnemonic(mnemonic)) {
         console.warn("Decrypted mnemonic is invalid. PIN might be incorrect or data corrupted.");
         if (WALLET) {
             WALLET = null;
@@ -248,7 +236,7 @@ export const unlockWalletWithPin = async (pin: string): Promise<SolanaWallet | n
         return null;
       }
 
-      const seed = await bip39.mnemonicToSeed(mnemonic);
+      const seed = await mnemonicToSeed(mnemonic);
       const keypair = Keypair.fromSeed(Uint8Array.from(seed.subarray(0, 32)));
       
       if (keypair.publicKey.toBase58() !== storedPublicKey) {
