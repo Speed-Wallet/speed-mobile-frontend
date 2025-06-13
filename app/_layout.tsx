@@ -11,6 +11,7 @@ import EnterPinScreen from '@/app/wallet/EnterPinScreen';
 import colors from '@/constants/colors';
 import { useTokenBalanceStore } from '@/stores/tokenBalanceStore';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-get-random-values';
 
 
@@ -71,23 +72,33 @@ export default function RootLayout() {
 
   if (walletState === 'loading') {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loadingText}>Initializing...</Text>
-      </View>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.loadingText}>Initializing...</Text>
+        </View>
+      </GestureHandlerRootView>
     );
   }
 
   if (walletState === 'no_wallet') {
-    return <SetupWalletScreen onWalletSetupComplete={() => setWalletState('unlocked')} />;
+    return (
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <SetupWalletScreen onWalletSetupComplete={() => setWalletState('unlocked')} />
+      </GestureHandlerRootView>
+    );
   }
 
   if (walletState === 'locked') {
-    return <EnterPinScreen onWalletUnlocked={() => setWalletState('unlocked')} publicKey={storedPublicKey} />;
+    return (
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <EnterPinScreen onWalletUnlocked={() => setWalletState('unlocked')} publicKey={storedPublicKey} />
+      </GestureHandlerRootView>
+    );
   }
 
   return (
-    <>
+    <GestureHandlerRootView style={{ flex: 1 }}>
       <QueryClientProvider client={queryClient}>
         <Stack screenOptions={{ headerShown: false, contentStyle: { paddingTop: 10, backgroundColor: colors.backgroundDark } }}>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -106,7 +117,7 @@ export default function RootLayout() {
         </Stack>
         <StatusBar style="light" />
       </QueryClientProvider>
-    </>
+    </GestureHandlerRootView>
   );
 }
 

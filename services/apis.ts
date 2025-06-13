@@ -1,5 +1,5 @@
 // Backend API service functions
-const BASE_BACKEND_URL = process.env.BASE_BACKEND_URL || 'http://localhost:3000';
+const BASE_BACKEND_URL = process.env.EXPO_PUBLIC_BASE_BACKEND_URL;
 
 // Types for API requests/responses
 export interface BusinessWalletAccount {
@@ -62,7 +62,11 @@ export async function registerSwapAttempt(txSig: string) {
  */
 export async function getWalletAddress(): Promise<GetWalletAddressResponse> {
   try {
-    const response = await fetch(`${BASE_BACKEND_URL}/api/cashwyre/wallet-address`, {
+    const url = `${BASE_BACKEND_URL}/api/cashwyre/wallet-address`;
+    console.log('🌐 Calling URL:', url);
+    console.log('🔧 BASE_BACKEND_URL:', BASE_BACKEND_URL);
+    
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -70,6 +74,7 @@ export async function getWalletAddress(): Promise<GetWalletAddressResponse> {
     });
 
     const data = await response.json();
+    console.log('📊 Response data:', data);
     return data;
   } catch (error) {
     console.error('Error fetching wallet address:', error);

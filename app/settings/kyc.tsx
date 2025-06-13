@@ -21,6 +21,8 @@ import Animated, {
   interpolate,
   withSpring,
   runOnJS,
+  useAnimatedRef,
+  scrollTo,
 } from 'react-native-reanimated';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import { StorageService, PersonalInfo } from '@/utils/storage';
@@ -87,14 +89,6 @@ const verificationLevels: VerificationLevel[] = [
     icon: 'check',
     inputs: [
       {
-        id: 'email',
-        label: 'Email Address',
-        placeholder: 'Enter your email address',
-        type: 'email',
-        icon: Mail,
-        value: 'tristan@example.com'
-      },
-      {
         id: 'phone',
         label: 'Phone Number',
         placeholder: 'Enter your phone number',
@@ -115,10 +109,10 @@ const verificationLevels: VerificationLevel[] = [
   {
     id: 2,
     title: 'Level 2 - Enhanced',
-    status: 'completed',
+    status: 'not_started',
     description: 'Enhanced verification with documents',
     color: '#3b82f6',
-    icon: 'check',
+    icon: 'alert',
     inputs: [
       {
         id: 'id_document',
@@ -146,10 +140,10 @@ const verificationLevels: VerificationLevel[] = [
   {
     id: 3,
     title: 'Level 3 - Premium',
-    status: 'pending',
+    status: 'not_started',
     description: 'Premium verification for high-value transactions',
     color: '#f59e0b',
-    icon: 'clock',
+    icon: 'alert',
     inputs: [
       {
         id: 'bank_statement',
@@ -196,7 +190,7 @@ export default function AccountScreen() {
   const [tempYear, setTempYear] = useState(1990);
   
   const scrollX = useSharedValue(0);
-  const scrollViewRef = React.useRef<Animated.ScrollView>(null);
+  const scrollViewRef = useAnimatedRef<Animated.ScrollView>();
 
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: (event) => {
@@ -210,6 +204,7 @@ export default function AccountScreen() {
 
   const panGesture = Gesture.Pan()
     .onEnd((event) => {
+      'worklet';
       const threshold = 50;
       let targetIndex = currentLevel;
 
@@ -220,10 +215,7 @@ export default function AccountScreen() {
       }
 
       if (targetIndex !== currentLevel) {
-        scrollViewRef.current?.scrollTo({
-          x: targetIndex * CARD_WIDTH,
-          animated: true,
-        });
+        scrollTo(scrollViewRef, targetIndex * CARD_WIDTH, 0, true);
         runOnJS(setCurrentLevel)(targetIndex);
       }
     });
@@ -567,74 +559,99 @@ export default function AccountScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Required Information</Text>
           <View style={styles.inputsContainer}>
-            {/* First Name Field */}
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>First Name</Text>
-              <View style={styles.inputWrapper}>
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="Enter your first name"
-                  placeholderTextColor="#6b7280"
-                  value={firstName}
-                  onChangeText={(text) => {
-                    setFirstName(text);
-                    savePersonalInfo();
-                  }}
-                />
-              </View>
-            </View>
+            {/* Level 1 - Basic Personal Information */}
+            {currentLevel === 0 && (
+              <>
+                {/* First Name Field */}
+                <View style={styles.inputContainer}>
+                  <Text style={styles.inputLabel}>First Name</Text>
+                  <View style={styles.inputWrapper}>
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder="Enter your first name"
+                      placeholderTextColor="#6b7280"
+                      value={firstName}
+                      onChangeText={(text) => {
+                        setFirstName(text);
+                        savePersonalInfo();
+                      }}
+                    />
+                  </View>
+                </View>
 
-            {/* Last Name Field */}
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Last Name</Text>
-              <View style={styles.inputWrapper}>
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="Enter your last name"
-                  placeholderTextColor="#6b7280"
-                  value={lastName}
-                  onChangeText={(text) => {
-                    setLastName(text);
-                    savePersonalInfo();
-                  }}
-                />
-              </View>
-            </View>
+                {/* Last Name Field */}
+                <View style={styles.inputContainer}>
+                  <Text style={styles.inputLabel}>Last Name</Text>
+                  <View style={styles.inputWrapper}>
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder="Enter your last name"
+                      placeholderTextColor="#6b7280"
+                      value={lastName}
+                      onChangeText={(text) => {
+                        setLastName(text);
+                        savePersonalInfo();
+                      }}
+                    />
+                  </View>
+                </View>
 
-            {/* Home Street Number Field */}
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Home Street Number</Text>
-              <View style={styles.inputWrapper}>
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="Enter your street number"
-                  placeholderTextColor="#6b7280"
-                  value={streetNumber}
-                  onChangeText={(text) => {
-                    setStreetNumber(text);
-                    savePersonalInfo();
-                  }}
-                />
-              </View>
-            </View>
+                {/* Email Field */}
+                <View style={styles.inputContainer}>
+                  <Text style={styles.inputLabel}>Email Address</Text>
+                  <View style={styles.inputWrapper}>
+                    <Mail size={20} color="#9ca3af" style={styles.inputIcon} />
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder="Enter your email address"
+                      placeholderTextColor="#6b7280"
+                      value={email}
+                      onChangeText={(text) => {
+                        setEmail(text);
+                        savePersonalInfo();
+                      }}
+                      keyboardType="email-address"
+                    />
+                  </View>
+                </View>
 
-            {/* Home Address Field */}
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Home Address</Text>
-              <View style={styles.inputWrapper}>
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="Enter your home address"
-                  placeholderTextColor="#6b7280"
-                  value={address}
-                  onChangeText={(text) => {
-                    setAddress(text);
-                    savePersonalInfo();
-                  }}
-                />
-              </View>
-            </View>
+                {/* Home Street Number Field */}
+                <View style={styles.inputContainer}>
+                  <Text style={styles.inputLabel}>Home Street Number</Text>
+                  <View style={styles.inputWrapper}>
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder="Enter your street number"
+                      placeholderTextColor="#6b7280"
+                      value={streetNumber}
+                      onChangeText={(text) => {
+                        setStreetNumber(text);
+                        savePersonalInfo();
+                      }}
+                    />
+                  </View>
+                </View>
 
+                {/* Home Address Field */}
+                <View style={styles.inputContainer}>
+                  <Text style={styles.inputLabel}>Home Address</Text>
+                  <View style={styles.inputWrapper}>
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder="Enter your home address"
+                      placeholderTextColor="#6b7280"
+                      value={address}
+                      onChangeText={(text) => {
+                        setAddress(text);
+                        savePersonalInfo();
+                      }}
+                    />
+                  </View>
+                </View>
+              </>
+            )}
+
+            {/* Level-specific fields from verification levels */}
             {verificationLevels[currentLevel]?.inputs.map(renderInputField)}
           </View>
         </View>
@@ -1007,3 +1024,56 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
+
+// Export function to get current verification level status
+export const getCurrentVerificationLevel = async (): Promise<{
+  level: number;
+  status: 'completed' | 'pending' | 'not_started';
+  title: string;
+  color: string;
+}> => {
+  // Load personal info and verification documents
+  const personalInfo = await StorageService.loadPersonalInfo();
+  const savedCards = await StorageService.loadCards();
+  
+  // Check Level 1 completion (basic personal info)
+  const level1Complete = personalInfo && 
+    personalInfo.name && 
+    personalInfo.email && 
+    personalInfo.phoneNumber && 
+    personalInfo.dateOfBirth && 
+    personalInfo.address && 
+    personalInfo.streetNumber;
+
+  // Check Level 2 completion (documents uploaded - simplified check)
+  // In a real app, you'd check if documents are uploaded and verified
+  const level2Complete = false; // This should check actual document upload status
+  
+  // Check Level 3 completion
+  const level3Complete = false; // This should check bank statements and video verification
+  
+  let currentLevel = 0;
+  let currentStatus: 'completed' | 'pending' | 'not_started' = 'not_started';
+  
+  if (level1Complete) {
+    currentLevel = 1;
+    currentStatus = 'completed';
+    
+    if (level2Complete) {
+      currentLevel = 2;
+      currentStatus = 'completed';
+      
+      if (level3Complete) {
+        currentLevel = 3;
+        currentStatus = 'completed';
+      }
+    }
+  }
+  
+  return {
+    level: currentLevel,
+    status: currentStatus,
+    title: currentLevel > 0 ? verificationLevels[currentLevel - 1].title : 'Not Started',
+    color: currentLevel > 0 ? verificationLevels[currentLevel - 1].color : '#6b7280'
+  };
+};

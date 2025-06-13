@@ -16,7 +16,11 @@ import { router } from 'expo-router';
 import { StorageService, PaymentCard } from '@/utils/storage';
 import { sendUSDTToCashwyre } from '@/utils/sendTransaction';
 import { setupNotificationListeners } from '@/services/notificationService';
+import { getCurrentVerificationLevel } from '@/app/settings/kyc';
 import * as Notifications from 'expo-notifications';
+
+
+const MIN_KYC_LEVEL = 1; // Minimum KYC level required for virtual cards
 
 // Configure notification handler
 Notifications.setNotificationHandler({
@@ -81,6 +85,36 @@ export default function CardsScreen() {
     const futureYear = currentYear + 3;
     const month = Math.floor(Math.random() * 12) + 1;
     return `${month.toString().padStart(2, '0')}/${futureYear.toString().slice(-2)}`;
+  };
+
+  const checkKYCLevel = async (minLevel: 1 | 2 | 3) => {
+    const verificationLevel = await getCurrentVerificationLevel();
+    return verificationLevel.level >= minLevel && verificationLevel.status === 'completed';
+  };
+
+  const handleAddCardPress = async () => {
+    const isKYCCompliant = await checkKYCLevel(MIN_KYC_LEVEL);
+    
+    if (!isKYCCompliant) {
+      Alert.alert(
+        'KYC Verification Required',
+        `You need to complete KYC Level ${MIN_KYC_LEVEL} verification to create virtual cards. Please complete your document verification first.`,
+        [
+          {
+            text: 'Cancel',
+            style: 'cancel',
+          },
+          {
+            text: 'Complete KYC',
+            onPress: () => {
+              router.push('/settings/kyc');
+            },
+          },
+        ]
+      );
+      return;
+    }
+    setShowAddCard(true);
   };
 
   const handleAddCard = async () => {
@@ -276,7 +310,7 @@ export default function CardsScreen() {
         {/* Add New Card Button */}
         <TouchableOpacity
           style={styles.addCardButton}
-          onPress={() => setShowAddCard(true)}
+          onPress={handleAddCardPress}
         >
           <Plus size={24} color="#ffffff" />
           <Text style={styles.addCardText}>ADD NEW CARD</Text>

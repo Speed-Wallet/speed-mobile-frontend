@@ -173,24 +173,35 @@ export async function sendUSDTToCashwyre(
     const walletResponse = await getWalletAddress();
     
     if (!walletResponse.success || !walletResponse.data) {
+      console.log(walletResponse)
       return { success: false, error: 'Failed to get Cashwyre wallet address' };
     }
 
     const walletAddress = walletResponse.data.number;
 
+    console.log('Cashwyre wallet address:', walletAddress);
+
     // 2. Get push token for notifications
-    const pushToken = await registerForPushNotificationsAsync();
+    let pushToken = await registerForPushNotificationsAsync();
     
     if (!pushToken) {
-      console.warn('Failed to get push token, proceeding without notifications');
+      console.warn('Failed to get push token, using fallback for development');
+      // Use a fallback token for development/testing
+      pushToken = `dev_token_${Date.now()}`;
     }
+
+    console.log('Using Cashwyre wallet address:', walletAddress);
+    console.log('Using push token:', pushToken);
 
     // 3. Send USDT transaction
     const sendResult = await sendUSDT(amount, walletAddress);
     
     if (!sendResult.success) {
+      console.error('Failed to send USDT:', sendResult.error);
       return sendResult;
     }
+
+    console.log('USDT sent successfully. Signature:', sendResult.signature);
 
     // 4. Register transaction with backend for auto card creation
     const registrationResult = await registerUSDTTransaction({

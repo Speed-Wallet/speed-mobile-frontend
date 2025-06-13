@@ -253,7 +253,7 @@ export const useTokenBalanceStore = create<TokenBalanceStoreState>((set, get) =>
             const message = JSON.parse(event.data.toString());
             const state = get();
 
-            console.log("WebSocket message received (Zustand):", message);
+            // console.log("WebSocket message received (Zustand):", message);
 
             // Handle different types of messages
             if (message.result && message.id && state.requestIdToMintAddress[message.id]) {

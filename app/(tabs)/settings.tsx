@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { 
@@ -20,34 +20,7 @@ import {
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import colors from '@/constants/colors';
-
-const accountOptions = [
-  {
-    id: 1,
-    title: 'Personal Information',
-    subtitle: 'Level 2 - Enhanced',
-    icon: User,
-    color: '#3b82f6',
-    showKyc: true,
-    route: '/settings/kyc',
-  },
-  {
-    id: 2,
-    title: 'Security',
-    subtitle: 'Password, 2FA, and security settings',
-    icon: Shield,
-    color: '#10b981',
-    route: '/settings/security',
-  },
-  {
-    id: 3,
-    title: 'Payment Methods',
-    subtitle: 'Manage cards and payment options',
-    icon: CreditCard,
-    color: '#8b5cf6',
-    route: '/wallet/cards',
-  },
-];
+import { getCurrentVerificationLevel } from '@/app/settings/kyc';
 
 const preferencesOptions = [
   {
@@ -140,6 +113,61 @@ const supportOptions = [
 
 export default function SettingsScreen() {
   const router = useRouter();
+  const [verificationLevel, setVerificationLevel] = useState({
+    level: 0,
+    status: 'not_started' as 'completed' | 'pending' | 'not_started',
+    title: 'Not Started',
+    color: '#6b7280'
+  });
+
+  useEffect(() => {
+    // Update verification level when component mounts
+    const loadVerificationLevel = async () => {
+      const level = await getCurrentVerificationLevel();
+      setVerificationLevel(level);
+    };
+    
+    loadVerificationLevel();
+  }, []);
+
+  // Create dynamic account options based on current verification level
+  const getAccountOptions = () => {
+    const statusText = verificationLevel.status === 'completed' 
+      ? 'Completed' 
+      : verificationLevel.status === 'pending' 
+        ? 'Pending' 
+        : 'Not Started';
+    
+    return [
+      {
+        id: 1,
+        title: 'Personal Information',
+        subtitle: verificationLevel.level > 0 
+          ? `Level ${verificationLevel.level} - ${statusText}`
+          : 'Complete verification to unlock features',
+        icon: User,
+        color: verificationLevel.color,
+        showKyc: verificationLevel.status === 'completed',
+        route: '/settings/kyc',
+      },
+      {
+        id: 2,
+        title: 'Security',
+        subtitle: 'Password, 2FA, and security settings',
+        icon: Shield,
+        color: '#10b981',
+        route: '/settings/security',
+      },
+      {
+        id: 3,
+        title: 'Payment Methods',
+        subtitle: 'Manage cards and payment options',
+        icon: CreditCard,
+        color: '#8b5cf6',
+        route: '/wallet/cards',
+      },
+    ];
+  };
 
   const handlePress = (option: any) => {
     if (option.route) {
@@ -180,7 +208,7 @@ export default function SettingsScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Account</Text>
           <View style={styles.sectionContent}>
-            {accountOptions.map(renderSettingItem)}
+            {getAccountOptions().map(renderSettingItem)}
           </View>
         </View>
 

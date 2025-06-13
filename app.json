@@ -32,7 +32,8 @@
       }
     },
     "android": {
-      "package": "com.alexthelion123.boltexponativewind"
+      "package": "com.alexthelion123.boltexponativewind",
+      "googleServicesFile": "./google-services.json"
     },
     "runtimeVersion": {
       "policy": "exposdk:52.0.46"
