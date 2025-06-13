@@ -3,9 +3,7 @@ node_modules/
 .vscode
 .expo
 .bolt
-android
 .idea
-ios
 google-services.json
 
 # expo
