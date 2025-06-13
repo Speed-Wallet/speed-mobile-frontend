@@ -11,12 +11,14 @@ import {
   Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, Plus, CreditCard, DollarSign, User, Eye, EyeOff } from 'lucide-react-native';
+import { ArrowLeft, Plus, CreditCard, DollarSign, User, Eye, EyeOff, X } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { StorageService, PaymentCard } from '@/utils/storage';
 import { sendUSDTToCashwyre } from '@/utils/sendTransaction';
 import { setupNotificationListeners } from '@/services/notificationService';
 import { getCurrentVerificationLevel } from '@/app/settings/kyc';
+import { simulateUSDTReceived, getWalletAddress, simulateCardCreated } from '@/services/apis';
+import LoadingSkeleton from '@/components/LoadingSkeleton';
 import * as Notifications from 'expo-notifications';
 
 
@@ -55,13 +57,19 @@ export default function CardsScreen() {
 
   useEffect(() => {
     loadCards();
-    
+
     // Set up notification listeners
     const cleanupNotifications = setupNotificationListeners();
-    
+
+    // Set up periodic refresh to catch storage updates from notifications
+    const refreshInterval = setInterval(() => {
+      loadCards(); // Reload cards from storage every 2 seconds
+    }, 2000);
+
     // Cleanup on unmount
     return () => {
       cleanupNotifications();
+      clearInterval(refreshInterval);
     };
   }, []);
 
@@ -94,7 +102,7 @@ export default function CardsScreen() {
 
   const handleAddCardPress = async () => {
     const isKYCCompliant = await checkKYCLevel(MIN_KYC_LEVEL);
-    
+
     if (!isKYCCompliant) {
       Alert.alert(
         'KYC Verification Required',
@@ -119,23 +127,23 @@ export default function CardsScreen() {
 
   const handleAddCard = async () => {
     const balance = parseFloat(cardBalance);
-    
+
     if (!cardName.trim()) {
       Alert.alert('Error', 'Please enter a card name');
       return;
     }
-    
+
     if (!cardBalance || balance <= 0) {
       Alert.alert('Error', 'Please enter a valid balance amount');
       return;
     }
-    
+
     if (balance < 10 || balance > 2500) {
       setShowValidationError(true);
       Alert.alert('Error', 'Balance must be between $10.00 and $2,500.00');
       return;
     }
-    
+
     setShowValidationError(false);
     setIsLoading(true);
 
@@ -167,22 +175,23 @@ export default function CardsScreen() {
 
       // Send USDT to Cashwyre and register for auto card creation
       const sendResult = await sendUSDTToCashwyre(cardBalance, cardData);
-      
+
       if (!sendResult.success) {
         throw new Error(`Failed to send USDT: ${sendResult.error}`);
       }
-      
+
       console.log('USDT sent successfully:', sendResult.signature);
-      
-      // Create a temporary card for immediate UI feedback
+
+      // Create a temporary card with loading skeletons for immediate UI feedback
       const tempCard: PaymentCard = {
         id: Date.now().toString(),
         type: 'virtual',
         brand: selectedBrand,
-        last4: generateCardNumber(),
+        last4: '••••', // Show loading state for card number
         holder: cardName.trim(),
-        expires: generateExpiryDate(),
+        expires: '••/••', // Show loading state for expiry
         balance: parseFloat(cardBalance),
+        isLoading: true, // Mark as loading to show skeleton states
       };
 
       const updatedCards = [...cards, tempCard];
@@ -193,11 +202,36 @@ export default function CardsScreen() {
       setCardBalance('');
       setCardName('');
       setIsLoading(false);
-      
-      Alert.alert(
-        'Success', 
-        'USDT sent successfully! Your card will be created automatically when the transaction is confirmed. You will receive push notifications with updates.'
-      );
+
+      // Capture personal info for dev mode simulation
+      const userEmail = personalInfo.email;
+
+      // In development mode, automatically simulate webhook for testing
+      if (process.env.EXPO_PUBLIC_APP_ENV === 'development') {
+        console.log('🧪 DEV MODE: Simulating webhook automatically...');
+        try {
+          const walletResponse = await getWalletAddress();
+
+          if (walletResponse.success && walletResponse.data) {
+            // Delay to show the loading state briefly
+            setTimeout(async () => {
+              // First simulate USDT received
+              await simulateUSDTReceived(walletResponse.data!.number, cardBalance);
+              console.log('🎯 DEV: USDT received webhook simulation completed');
+
+              // // Then simulate card creation 5 seconds later
+              // setTimeout(async () => {
+              //   console.log('🎯 DEV: Starting card creation simulation...');
+              //   const result = await simulateCardCreated(userEmail);
+              //   console.log('🎯 DEV: Card creation webhook simulation result:', result);
+              //   console.log('🎯 DEV: Card creation webhook simulation completed');
+              // }, 5000); // 5 seconds after USDT received
+            }, 2000); // 2 second delay to show loading skeleton briefly
+          }
+        } catch (error) {
+          console.error('Failed to simulate webhook:', error);
+        }
+      }
     } catch (error) {
       setIsLoading(false);
       Alert.alert('Error', error instanceof Error ? error.message : 'Failed to create card. Please try again.');
@@ -210,6 +244,13 @@ export default function CardsScreen() {
       ...prev,
       [cardId]: !prev[cardId]
     }));
+  };
+
+  const handleDeleteCard = async (cardId: string) => {
+    const updatedCards = cards.filter(card => card.id !== cardId);
+    setCards(updatedCards);
+    await StorageService.saveCards(updatedCards);
+    console.log('🗑️ DEV MODE: Card deleted:', cardId);
   };
 
   const formatBalance = (amount: number) => {
@@ -227,35 +268,57 @@ export default function CardsScreen() {
 
   const renderPaymentCard = (card: PaymentCard) => {
     const isVisible = visibleCards[card.id];
+    const isLoading = card.isLoading;
+    const isDevelopment = process.env.EXPO_PUBLIC_APP_ENV === 'development';
 
     return (
-      <View key={card.id} style={styles.paymentCard}>
+      <View key={card.id} style={[styles.paymentCard, isLoading && styles.loadingCard]}>
         <View style={styles.cardHeader}>
           <View style={styles.cardHolderSection}>
             <View style={styles.userIcon}>
               <User size={14} color="#ffffff" />
             </View>
             <Text style={styles.cardHolderName}>{card.holder}</Text>
+            {isLoading && (
+              <View style={styles.loadingBadge}>
+                <Text style={styles.loadingBadgeText}>Creating...</Text>
+              </View>
+            )}
           </View>
-          <Image
-            source={getBrandLogo(card.brand)}
-            style={styles.brandLogo}
-            resizeMode="contain"
-          />
+          <View style={styles.cardHeaderActions}>
+            <Image
+              source={getBrandLogo(card.brand)}
+              style={[styles.brandLogo, isLoading && styles.loadingOpacity]}
+              resizeMode="contain"
+            />
+            {isDevelopment && (
+              <TouchableOpacity
+                style={styles.deleteButton}
+                onPress={() => handleDeleteCard(card.id)}
+              >
+                <X size={16} color="#ef4444" />
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
 
         <View style={styles.cardNumberSection}>
-          <Text style={styles.cardNumberText}>
-            {isVisible ? `•••• •••• •••• ${card.last4}` : '•••• •••• •••• ••••'}
-          </Text>
+          {isLoading ? (
+            <LoadingSkeleton width="60%" height={22} borderRadius={4} />
+          ) : (
+            <Text style={styles.cardNumberText}>
+              {isVisible ? `•••• •••• •••• ${card.last4}` : '•••• •••• •••• ••••'}
+            </Text>
+          )}
           <TouchableOpacity
             style={styles.visibilityButton}
             onPress={() => toggleCardVisibility(card.id)}
+            disabled={isLoading}
           >
             {isVisible ? (
-              <EyeOff size={20} color="#9ca3af" />
+              <EyeOff size={20} color={isLoading ? "#555555" : "#9ca3af"} />
             ) : (
-              <Eye size={20} color="#9ca3af" />
+              <Eye size={20} color={isLoading ? "#555555" : "#9ca3af"} />
             )}
           </TouchableOpacity>
         </View>
@@ -270,18 +333,23 @@ export default function CardsScreen() {
               <TouchableOpacity
                 style={styles.balanceVisibilityButton}
                 onPress={() => toggleCardVisibility(card.id)}
+                disabled={isLoading}
               >
                 {isVisible ? (
-                  <EyeOff size={16} color="#10b981" />
+                  <EyeOff size={16} color={isLoading ? "#555555" : "#10b981"} />
                 ) : (
-                  <Eye size={16} color="#10b981" />
+                  <Eye size={16} color={isLoading ? "#555555" : "#10b981"} />
                 )}
               </TouchableOpacity>
             </View>
           </View>
           <View style={styles.expirySection}>
             <Text style={styles.cardLabel}>EXPIRES</Text>
-            <Text style={styles.cardValue}>{card.expires}</Text>
+            {isLoading ? (
+              <LoadingSkeleton width={40} height={16} borderRadius={4} />
+            ) : (
+              <Text style={styles.cardValue}>{card.expires}</Text>
+            )}
           </View>
         </View>
       </View>
@@ -791,5 +859,37 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#ffffff',
     marginLeft: 8,
+  },
+  loadingCard: {
+    borderColor: '#4a5568',
+    borderWidth: 1,
+  },
+  loadingBadge: {
+    backgroundColor: '#3182ce',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    marginLeft: 8,
+  },
+  loadingBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#ffffff',
+  },
+  loadingOpacity: {
+    opacity: 0.5,
+  },
+  cardHeaderActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  deleteButton: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

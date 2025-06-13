@@ -1,6 +1,9 @@
 // Backend API service functions
 const BASE_BACKEND_URL = process.env.EXPO_PUBLIC_BASE_BACKEND_URL;
 
+// Import PersonalInfo type from storage
+import type { PersonalInfo } from '@/utils/storage';
+
 // Types for API requests/responses
 export interface BusinessWalletAccount {
   number: string;
@@ -22,17 +25,10 @@ export interface USDTTransactionRequest {
   amount: number;
   userWalletAddress: string;
   transactionSignature: string;
-  cardData: {
-    firstName: string;
-    lastName: string;
-    email: string;
-    phoneCode: string;
-    phoneNumber: string;
-    dateOfBirth: string;
-    homeAddressNumber: string;
-    homeAddress: string;
+  cardCreationData?: {
+    selectedBrand: string;
     cardName: string;
-    cardBrand: string;
+    personalInfo?: PersonalInfo;
   };
 }
 
@@ -181,6 +177,30 @@ export async function simulateUSDTReceived(walletAddress: string, amount: string
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to simulate USDT received'
+    };
+  }
+}
+
+/**
+ * Simulate card creation webhook (for testing)
+ */
+export async function simulateCardCreated(email: string, cardCode?: string): Promise<RegisterTransactionResponse & { cardCode?: string }> {
+  try {
+    const response = await fetch(`${BASE_BACKEND_URL}/api/test/simulate-card-created`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, cardCode }),
+    });
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error simulating card creation:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to simulate card creation'
     };
   }
 }
