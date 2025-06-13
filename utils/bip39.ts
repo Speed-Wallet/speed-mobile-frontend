@@ -7,7 +7,7 @@
 import { TextEncoder } from 'text-encoding';
 
 // Wordlist import (2048 words)
-import wordlist from './wordlists/english';
+import { englishWordlist as wordlist } from '../assets/wordlists/english';
 
 // Generate cryptographically secure random bytes
 function getRandomBytes(size: number): Uint8Array {

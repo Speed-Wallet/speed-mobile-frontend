@@ -1,20 +1,5 @@
-// Import polyfills first
-// import 'react-native-get-random-values';
-
-// Option 1
-// import {Buffer } from 'buffer';
-// global.Buffer = Buffer;
-
-global.process = process || {}
-global.process.browser = false
-
 import { install } from 'react-native-quick-crypto';
 install();
-
-
-// Option 2
-// import {Buffer } from 'buffer';
-// global.Buffer = Buffer;
 
 // Test if crypto is working
 try {
