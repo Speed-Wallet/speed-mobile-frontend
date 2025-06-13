@@ -91,6 +91,56 @@ function convertToPaymentCard(cardDetails: any): PaymentCard {
 async function handleCardCreatedNotification(cardCode: string, cardData?: VirtualCardEventData) {
   try {
     console.log('🎯 Handling card created notification for cardCode:', cardCode);
+    console.log('📋 Card data received:', cardData);
+    
+    // For development mode, we can use the cardData directly if available
+    if (cardData && process.env.EXPO_PUBLIC_APP_ENV === 'development') {
+      console.log('🚧 DEV MODE: Using cardData directly');
+      
+      // Convert cardData to PaymentCard format
+      const newCard: PaymentCard = {
+        id: cardData.cardCode,
+        type: 'virtual',
+        brand: cardData.CardBrand.toLowerCase() as 'mastercard' | 'visa',
+        last4: cardData.Last4,
+        holder: cardData.CardName,
+        expires: cardData.ValidMonthYear, // Format like "12/27"
+        balance: cardData.CardBalance,
+      };
+      
+      console.log('✅ New card converted from notification data:', newCard);
+      
+      // Load existing cards
+      const existingCards = await StorageService.loadCards();
+      
+      // Check if card already exists (avoid duplicates)
+      const cardExists = existingCards.some(card => card.id === newCard.id);
+      if (cardExists) {
+        console.log('Card already exists in storage, skipping...');
+        return;
+      }
+      
+      // Remove any loading cards and add the new real card
+      // Loading cards typically have temporary IDs and isLoading: true
+      console.log('📋 Existing cards before update:', existingCards);
+      const nonLoadingCards = existingCards.filter(card => !card.isLoading);
+      console.log('📋 Non-loading cards:', nonLoadingCards);
+      const updatedCards = [...nonLoadingCards, newCard];
+      console.log('📋 Updated cards with new card:', updatedCards);
+      
+      await StorageService.saveCards(updatedCards);
+      
+      console.log('💾 Card added to storage successfully, loading cards removed');
+      
+      // Show local notification with card details
+      await showLocalNotification(
+        '🎉 Virtual Card Ready!',
+        `Your ${newCard.brand} card ending in ${newCard.last4} is ready to use!`,
+        { type: 'card_ready', cardId: newCard.id }
+      );
+      
+      return; // Exit early since we handled it with direct data
+    }
     
     // Fetch full card details from the API
     const cardDetailsResponse = await getCardDetails(cardCode);
@@ -104,7 +154,7 @@ async function handleCardCreatedNotification(cardCode: string, cardData?: Virtua
     const newCard = convertToPaymentCard(cardDetailsResponse.data);
     console.log('✅ New card converted:', newCard);
     
-    // Load existing cards and add the new one
+    // Load existing cards
     const existingCards = await StorageService.loadCards();
     
     // Check if card already exists (avoid duplicates)
@@ -114,11 +164,14 @@ async function handleCardCreatedNotification(cardCode: string, cardData?: Virtua
       return;
     }
     
-    // Add new card to the list
-    const updatedCards = [...existingCards, newCard];
+    // Remove any loading cards and add the new real card
+    // Loading cards typically have temporary IDs and isLoading: true
+    const nonLoadingCards = existingCards.filter(card => !card.isLoading);
+    const updatedCards = [...nonLoadingCards, newCard];
+    
     await StorageService.saveCards(updatedCards);
     
-    console.log('💾 Card added to storage successfully');
+    console.log('💾 Card added to storage successfully, loading cards removed');
     
     // Show local notification with card details
     await showLocalNotification(
@@ -136,16 +189,16 @@ async function handleCardCreatedNotification(cardCode: string, cardData?: Virtua
  * Set up notification listeners
  */
 export function setupNotificationListeners() {
+  console.log('🔔 Setting up notification listeners...');
+  
   // Listener for notifications received while app is foregrounded
   const notificationListener = Notifications.addNotificationReceivedListener(notification => {
     console.log('📱 Notification received:', notification);
+    console.log('📋 Notification data:', notification.request.content.data);
     
     const data = notification.request.content.data as unknown as NotificationData | undefined;
+    console.log('🔍 Parsed notification data:', data);
     
-    // Handle card created notifications immediately
-    if (data?.type === 'card_created' && data.cardCode) {
-      handleCardCreatedNotification(data.cardCode, data.cardData);
-    }
   });
 
   // Listener for when user taps on notification

@@ -8,6 +8,7 @@ export interface PaymentCard {
   holder: string;
   expires: string;
   balance: number;
+  isLoading?: boolean; // Optional loading state for temporary cards
 }
 
 export interface PersonalInfo {

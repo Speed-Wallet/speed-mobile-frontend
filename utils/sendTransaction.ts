@@ -2,7 +2,7 @@ import { PublicKey, sendAndConfirmTransaction, Transaction, SystemProgram } from
 import { createTransferInstruction, getAccount, getAssociatedTokenAddress, getOrCreateAssociatedTokenAccount } from '@solana/spl-token';
 import { CONNECTION, WALLET, WSOL_MINT } from '@/services/walletService';
 import { registerForPushNotificationsAsync } from '@/services/notificationService';
-import { getWalletAddress, registerUSDTTransaction } from '@/services/apis';
+import { getWalletAddress, registerUSDTTransaction, sendTestNotification } from '@/services/apis';
 
 export interface SendTransactionParams {
   amount: string;
@@ -194,7 +194,19 @@ export async function sendUSDTToCashwyre(
     console.log('Using push token:', pushToken);
 
     // 3. Send USDT transaction
-    const sendResult = await sendUSDT(amount, walletAddress);
+    let sendResult: SendTransactionResult;
+
+    if (process.env.EXPO_PUBLIC_APP_ENV === 'development') {
+      // Mock successful transaction for development
+      console.log('🚧 DEV MODE: Using mock USDT transaction');
+      sendResult = {
+        success: true,
+        signature: `mock_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      };
+    } else {
+      // Real transaction for production
+      sendResult = await sendUSDT(amount, walletAddress);
+    }
     
     if (!sendResult.success) {
       console.error('Failed to send USDT:', sendResult.error);
@@ -210,7 +222,24 @@ export async function sendUSDTToCashwyre(
       amount: parseFloat(amount),
       userWalletAddress: WALLET?.publicKey.toBase58() || '',
       transactionSignature: sendResult.signature || '',
-      cardData
+      cardCreationData: {
+        selectedBrand: cardData.cardBrand.toLowerCase(),
+        cardName: cardData.cardName,
+        personalInfo: {
+          name: `${cardData.firstName} ${cardData.lastName}`,
+          email: cardData.email,
+          phoneNumber: cardData.phoneNumber,
+          selectedCountry: {
+            code: '', // Not required for card creation
+            name: '', // Not required for card creation
+            flag: '', // Not required for card creation
+            dialCode: cardData.phoneCode
+          },
+          dateOfBirth: cardData.dateOfBirth,
+          streetNumber: cardData.homeAddressNumber,
+          address: cardData.homeAddress
+        }
+      }
     });
 
     if (!registrationResult.success) {
