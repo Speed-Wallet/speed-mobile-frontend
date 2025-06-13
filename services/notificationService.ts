@@ -20,7 +20,11 @@ Notifications.setNotificationHandler({
  * Register for push notifications and get the Expo push token
  */
 export async function registerForPushNotificationsAsync(): Promise<string | null> {
+  console.log('🔔 Starting push token registration...');
+  console.log('📱 Platform:', Platform.OS);
+  
   if (Platform.OS === 'android') {
+    console.log('🤖 Setting up Android notification channel...');
     await Notifications.setNotificationChannelAsync('default', {
       name: 'default',
       importance: Notifications.AndroidImportance.MAX,
@@ -29,26 +33,39 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
     });
   }
 
+  console.log('🔑 Checking notification permissions...');
   const { status: existingStatus } = await Notifications.getPermissionsAsync();
+  console.log('📋 Existing permission status:', existingStatus);
+  
   let finalStatus = existingStatus;
   
   if (existingStatus !== 'granted') {
+    console.log('📝 Requesting notification permissions...');
     const { status } = await Notifications.requestPermissionsAsync();
     finalStatus = status;
+    console.log('✅ Permission request result:', status);
   }
   
   if (finalStatus !== 'granted') {
-    console.error('Failed to get push token for push notification!');
+    console.error('❌ Push notification permissions denied!');
     return null;
   }
   
   try {
+    console.log('🎯 Getting Expo push token...');
     const tokenData = await Notifications.getExpoPushTokenAsync();
     const token = tokenData.data;
-    console.log('Expo push token:', token);
+    console.log('✅ Expo push token obtained:', token);
     return token;
   } catch (error) {
-    console.error('Error getting push token:', error);
+    console.error('❌ Error getting push token:', error);
+    
+    // More specific error handling
+    if (error instanceof Error) {
+      console.error('Error details:', error.message);
+      console.error('Error stack:', error.stack);
+    }
+    
     return null;
   }
 }
