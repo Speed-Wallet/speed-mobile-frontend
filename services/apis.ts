@@ -117,7 +117,7 @@ export async function sendTestNotification(pushToken: string, title: string, bod
 /**
  * Get card details by card code
  */
-export async function getCardDetails(cardCode: string): Promise<{
+export async function getCard(cardCode: string): Promise<{
   success: boolean;
   data?: any;
   error?: string;
