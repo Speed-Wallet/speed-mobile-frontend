@@ -2,7 +2,7 @@ import * as Notifications from 'expo-notifications';
 import { Platform, Alert, ToastAndroid } from 'react-native';
 import { router } from 'expo-router';
 import { StorageService, PaymentCard } from '@/utils/storage';
-import { getCardDetails } from './apis';
+import { getCard } from './apis';
 import type { NotificationData, VirtualCardEventData } from '@/types/notifications';
 
 // Configure notification handler
@@ -112,7 +112,7 @@ async function handleCardCreatedNotification(cardCode: string, cardData?: Virtua
       newCard = convertCardDataToPaymentCard(cardData);
     } else {
       console.log('🏭 PROD MODE: Fetching card details from API');
-      const cardDetailsResponse = await getCardDetails(cardCode);
+      const cardDetailsResponse = await getCard(cardCode);
       if (!cardDetailsResponse.success || !cardDetailsResponse.data) {
         console.error('Failed to fetch card details:', cardDetailsResponse.error);
         return;
