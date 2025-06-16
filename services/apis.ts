@@ -1,8 +1,8 @@
-// Backend API service functions
-const BASE_BACKEND_URL = process.env.EXPO_PUBLIC_BASE_BACKEND_URL;
-
 // Import PersonalInfo type from storage
 import type { PersonalInfo } from '@/utils/storage';
+
+// Backend API service functions
+const BASE_BACKEND_URL = process.env.EXPO_PUBLIC_BASE_BACKEND_URL;
 
 // Types for API requests/responses
 export interface BusinessWalletAccount {
@@ -36,21 +36,6 @@ export interface RegisterTransactionResponse {
   success: boolean;
   message?: string;
   error?: string;
-}
-
-export async function registerSwapAttempt(txSig: string) {
-    return;
-
-    // todo
-    const response = await fetch(`${BASE_BACKEND_URL}/registerSwapAttempt`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-
-        })
-    });
 }
 
 /**
@@ -203,4 +188,50 @@ export async function simulateCardCreated(email: string, cardCode?: string): Pro
       error: error instanceof Error ? error.message : 'Failed to simulate card creation'
     };
   }
+}
+
+
+
+// Backend API Calls
+export async function registerUser(name: string, username: string) {
+    const response = await fetch(`${BASE_BACKEND_URL}registerUser`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ name, username })
+    });
+}
+
+export async function registerDebit(
+    txSignature: string,
+    blockhash: string, 
+    lastValidBlockHeight: number
+) {
+    const response = await fetch(`${BASE_BACKEND_URL}registerDebitAttempt`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ txSignature, blockhash, lastValidBlockHeight })
+    });
+}
+
+export async function registerSwap(
+    signature: string,
+    blockHash: string, 
+    lastValidBlockHeight: number
+) {
+    try {
+        await fetch(`${BASE_BACKEND_URL}registerSwap`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ signature, blockHash, lastValidBlockHeight })
+        });
+    } catch (err) {
+        // todo 
+        // retry logic
+    }
 }
