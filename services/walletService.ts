@@ -30,7 +30,7 @@ import {
 } from '@solana/spl-token';
 import CryptoJS from 'crypto-js';
 import { useEffect, useState } from 'react';
-import { registerSwapAttempt } from './apis';
+import { registerSwap } from './apis';
 import { generateMnemonic, mnemonicToSeed, validateMnemonic } from '@/utils/bip39';
 
 export const CONNECTION = new Connection(`https://mainnet.helius-rpc.com/?api-key=${process.env.EXPO_PUBLIC_HELIUS_API_KEY}`);
@@ -433,31 +433,29 @@ export const jupiterSwap = async (quoteResponse: any, platformFee: number): Prom
   instructions.unshift(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: computeUnitPrice }));
   instructions.unshift(ComputeBudgetProgram.setComputeUnitLimit({ units: totalComputeUnits }));
 
-  const [swapTx, lastValidBlockHeight] = await composeAndSignTransaction(
+  const [swapTx, blockhash, lastValidBlockHeight] = await composeAndSignTransaction(
     instructions,
     WALLET,
     deserializedAddressLookupTableAccounts
   );
 
   // Transaction signature is the first signature in the "signatures" list.
-  const sig = bs58.encode(swapTx.signatures[0]);
+  const signature = bs58.encode(swapTx.signatures[0]);
   const txSendPromise = CONNECTION.sendRawTransaction(swapTx.serialize(), { 
     maxRetries: 2, 
     skipPreflight: false, 
     preflightCommitment: 'finalized' 
   });
-  const registerSwapAttemptPromise = registerSwapAttempt(sig);
+  const registerSwapPromise = registerSwap(signature, blockhash, lastValidBlockHeight);
 
   try {
-    await Promise.all([txSendPromise, registerSwapAttemptPromise]);
+    await Promise.all([txSendPromise, registerSwapPromise]);
   } catch (err) {
     throw parseError(err);
   }
 
   const res = await CONNECTION.confirmTransaction({
-    signature: sig,
-    blockhash: swapTx.message.recentBlockhash,
-    lastValidBlockHeight
+    signature, blockhash, lastValidBlockHeight
   }, 'finalized');
 
   if (res.value.err) {
@@ -465,7 +463,7 @@ export const jupiterSwap = async (quoteResponse: any, platformFee: number): Prom
     throw new Error('Swap failed');
   }
   
-  return sig;
+  return signature;
 }
 
 async function getCUsForTransaction(instructions: TransactionInstruction[], wallet: Keypair)
@@ -496,7 +494,7 @@ async function composeAndSignTransaction(
   instructions: TransactionInstruction[],
   wallet: Keypair,
   lutAccounts?: AddressLookupTableAccount[]
-): Promise<[VersionedTransaction, number]> {
+): Promise<[VersionedTransaction, string, number]> {
   const { blockhash, lastValidBlockHeight } = await CONNECTION.getLatestBlockhash('finalized');
   const messageV0 = new TransactionMessage({
     payerKey: wallet.publicKey,
@@ -506,7 +504,7 @@ async function composeAndSignTransaction(
 
   const transaction = new VersionedTransaction(messageV0);
   transaction.sign([wallet]);
-  return [transaction, lastValidBlockHeight];
+  return [transaction, blockhash, lastValidBlockHeight];
 }
 
 function deserializeInstruction(instructionPayload: any): TransactionInstruction {
