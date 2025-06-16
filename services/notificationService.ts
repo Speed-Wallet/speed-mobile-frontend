@@ -1,5 +1,5 @@
 import * as Notifications from 'expo-notifications';
-import { Platform } from 'react-native';
+import { Platform, Alert, ToastAndroid } from 'react-native';
 import { router } from 'expo-router';
 import { StorageService, PaymentCard } from '@/utils/storage';
 import { getCardDetails } from './apis';
@@ -15,6 +15,18 @@ Notifications.setNotificationHandler({
     shouldShowBanner: true,
   }),
 });
+
+/**
+ * Show a simple toast notification (works better than complex toast libraries)
+ */
+export function showToast(message: string) {
+  if (Platform.OS === 'android') {
+    ToastAndroid.show(message, ToastAndroid.SHORT);
+  } else {
+    // For iOS, use local notification as a fallback
+    showLocalNotification('💰 USDT Received!', message);
+  }
+}
 
 /**
  * Register for push notifications and get the Expo push token
@@ -86,102 +98,175 @@ function convertToPaymentCard(cardDetails: any): PaymentCard {
 }
 
 /**
- * Handle card created notification by fetching full details and updating storage
+ * Handle card created notification by routing to dev or prod handlers
  */
 async function handleCardCreatedNotification(cardCode: string, cardData?: VirtualCardEventData) {
   try {
     console.log('🎯 Handling card created notification for cardCode:', cardCode);
     console.log('📋 Card data received:', cardData);
-    
-    // For development mode, we can use the cardData directly if available
+
+    let newCard: PaymentCard;
+
     if (cardData && process.env.EXPO_PUBLIC_APP_ENV === 'development') {
       console.log('🚧 DEV MODE: Using cardData directly');
-      
-      // Convert cardData to PaymentCard format
-      const newCard: PaymentCard = {
-        id: cardData.cardCode,
-        type: 'virtual',
-        brand: cardData.CardBrand.toLowerCase() as 'mastercard' | 'visa',
-        last4: cardData.Last4,
-        holder: cardData.CardName,
-        expires: cardData.ValidMonthYear, // Format like "12/27"
-        balance: cardData.CardBalance,
-      };
-      
-      console.log('✅ New card converted from notification data:', newCard);
-      
-      // Load existing cards
-      const existingCards = await StorageService.loadCards();
-      
-      // Check if card already exists (avoid duplicates)
-      const cardExists = existingCards.some(card => card.id === newCard.id);
-      if (cardExists) {
-        console.log('Card already exists in storage, skipping...');
+      newCard = convertCardDataToPaymentCard(cardData);
+    } else {
+      console.log('🏭 PROD MODE: Fetching card details from API');
+      const cardDetailsResponse = await getCardDetails(cardCode);
+      if (!cardDetailsResponse.success || !cardDetailsResponse.data) {
+        console.error('Failed to fetch card details:', cardDetailsResponse.error);
         return;
       }
-      
-      // Remove any loading cards and add the new real card
-      // Loading cards typically have temporary IDs and isLoading: true
-      console.log('📋 Existing cards before update:', existingCards);
-      const nonLoadingCards = existingCards.filter(card => !card.isLoading);
-      console.log('📋 Non-loading cards:', nonLoadingCards);
-      const updatedCards = [...nonLoadingCards, newCard];
-      console.log('📋 Updated cards with new card:', updatedCards);
-      
-      await StorageService.saveCards(updatedCards);
-      
-      console.log('💾 Card added to storage successfully, loading cards removed');
-      
-      // Show local notification with card details
-      await showLocalNotification(
-        '🎉 Virtual Card Ready!',
-        `Your ${newCard.brand} card ending in ${newCard.last4} is ready to use!`,
-        { type: 'card_ready', cardId: newCard.id }
-      );
-      
-      return; // Exit early since we handled it with direct data
+      newCard = convertToPaymentCard(cardDetailsResponse.data);
+    }
+
+    await replaceLoadingCardWithNewCard(newCard);
+  } catch (error) {
+    console.error('Error handling card created notification:', error);
+  }
+}
+
+/**
+ * Convert notification cardData to PaymentCard format
+ */
+function convertCardDataToPaymentCard(cardData: VirtualCardEventData): PaymentCard {
+  return {
+    id: cardData.cardCode,
+    type: 'virtual',
+    brand: cardData.CardBrand.toLowerCase() as 'mastercard' | 'visa',
+    last4: cardData.Last4,
+    holder: cardData.CardName,
+    expires: cardData.ValidMonthYear,
+    balance: cardData.CardBalance,
+  };
+}
+
+/**
+ * Replace loading card with new card in storage
+ */
+async function replaceLoadingCardWithNewCard(newCard: PaymentCard) {
+  console.log('✅ New card converted:', newCard);
+
+  const existingCards = await StorageService.loadCards();
+  
+  // Check if card already exists (avoid duplicates)
+  if (existingCards.some(card => card.id === newCard.id)) {
+    console.log('Card already exists in storage, skipping...');
+    return;
+  }
+
+  console.log('📋 Existing cards before update:', existingCards);
+  
+  // Find and replace the loading card with matching holder name
+  const loadingCards = existingCards.filter(card => card.isLoading);
+  
+  if (loadingCards.length > 0) {
+    console.log('🔍 Found loading cards:', loadingCards.map(c => ({ id: c.id, holder: c.holder })));
+    
+    // Find a loading card with matching holder name
+    const targetLoadingCard = loadingCards.find(card => card.holder === newCard.holder);
+    
+    if (!targetLoadingCard) {
+      const errorMsg = `❌ CRITICAL ERROR: No loading card found with matching holder name "${newCard.holder}". Available loading cards: ${loadingCards.map(c => c.holder).join(', ')}`;
+      console.error(errorMsg);
+      throw new Error(`Card creation notification received for "${newCard.holder}" but no matching loading card found. This indicates a serious data inconsistency.`);
     }
     
-    // Fetch full card details from the API
-    const cardDetailsResponse = await getCardDetails(cardCode);
+    console.log('🎯 Replacing loading card:', targetLoadingCard.id, 'with new card:', newCard.id);
     
-    if (!cardDetailsResponse.success || !cardDetailsResponse.data) {
-      console.error('Failed to fetch card details:', cardDetailsResponse.error);
-      return;
-    }
+    // Replace the specific loading card with the new card
+    const updatedCards = existingCards.map(card => 
+      card.id === targetLoadingCard.id ? newCard : card
+    );
     
-    // Convert to PaymentCard format
-    const newCard = convertToPaymentCard(cardDetailsResponse.data);
-    console.log('✅ New card converted:', newCard);
+    console.log('📋 Updated cards with replaced card:', updatedCards.map(c => ({ id: c.id, holder: c.holder, isLoading: c.isLoading })));
+    
+    await StorageService.saveCards(updatedCards);
+    console.log('💾 Loading card replaced successfully');
+  } else {
+    console.log('⚠️ No loading cards found, adding new card directly');
+    const updatedCards = [...existingCards, newCard];
+    await StorageService.saveCards(updatedCards);
+    console.log('💾 New card added directly');
+  }
+
+  await showLocalNotification(
+    '🎉 Virtual Card Ready!',
+    `Your ${newCard.brand} card ending in ${newCard.last4} is ready to use!`,
+    { type: 'card_ready', cardId: newCard.id }
+  );
+}
+
+/**
+ * Handle card creation failed notification by updating loading cards to failed state
+ */
+async function handleCardCreationFailedNotification(error: string, eventData?: any) {
+  try {
+    console.log('❌ Handling card creation failed notification:', error);
+    console.log('📋 Event data received:', eventData);
     
     // Load existing cards
     const existingCards = await StorageService.loadCards();
     
-    // Check if card already exists (avoid duplicates)
-    const cardExists = existingCards.some(card => card.id === newCard.id);
-    if (cardExists) {
-      console.log('Card already exists in storage, skipping...');
-      return;
+    // Find loading cards and mark the most recent one as failed
+    const loadingCards = existingCards.filter(card => card.isLoading);
+    
+    if (loadingCards.length > 0) {
+      console.log('🔍 Found loading cards to mark as failed:', loadingCards);
+      
+      // Get the most recent loading card (highest timestamp ID)
+      const mostRecentLoadingCard = loadingCards.reduce((latest, current) => {
+        return parseInt(current.id) > parseInt(latest.id) ? current : latest;
+      });
+      
+      // Update the cards array
+      const updatedCards = existingCards.map(card => {
+        if (card.id === mostRecentLoadingCard.id) {
+          return {
+            ...card,
+            isLoading: false,
+            isFailed: true,
+            failureReason: error,
+            last4: 'FAIL', // Show FAIL instead of card number
+            expires: '••/••' // Keep expiry hidden for failed cards
+          };
+        }
+        return card;
+      });
+      
+      await StorageService.saveCards(updatedCards);
+      console.log('💾 Updated failed card in storage');
+      
+      // Show alert with error message
+      setTimeout(() => {
+        Alert.alert(
+          'Card Creation Failed',
+          `Failed to create your virtual card: ${error}`,
+          [
+            {
+              text: 'Try Again',
+              onPress: () => router.push('/wallet/cards'),
+            },
+            {
+              text: 'OK',
+              style: 'cancel',
+            },
+          ]
+        );
+      }, 1000); // Delay to ensure the cards screen is visible
+      
+      // Show local notification with error details
+      await showLocalNotification(
+        '❌ Card Creation Failed',
+        `Failed to create your virtual card: ${error}`,
+        { type: 'card_failed', error }
+      );
+    } else {
+      console.log('⚠️ No loading cards found to mark as failed');
     }
     
-    // Remove any loading cards and add the new real card
-    // Loading cards typically have temporary IDs and isLoading: true
-    const nonLoadingCards = existingCards.filter(card => !card.isLoading);
-    const updatedCards = [...nonLoadingCards, newCard];
-    
-    await StorageService.saveCards(updatedCards);
-    
-    console.log('💾 Card added to storage successfully, loading cards removed');
-    
-    // Show local notification with card details
-    await showLocalNotification(
-      '🎉 Virtual Card Ready!',
-      `Your ${newCard.brand} card ending in ${newCard.last4} is ready to use!`,
-      { type: 'card_ready', cardId: newCard.id }
-    );
-    
   } catch (error) {
-    console.error('Error handling card created notification:', error);
+    console.error('Error handling card creation failed notification:', error);
   }
 }
 
@@ -193,12 +278,29 @@ export function setupNotificationListeners() {
   
   // Listener for notifications received while app is foregrounded
   const notificationListener = Notifications.addNotificationReceivedListener(notification => {
-    console.log('📱 Notification received:', notification);
-    console.log('📋 Notification data:', notification.request.content.data);
-    
     const data = notification.request.content.data as unknown as NotificationData | undefined;
     console.log('🔍 Parsed notification data:', data);
     
+    // Handle USDT received notifications with toast
+    if (data?.type === 'usdt_received') {
+      console.log('💰 USDT received notification received');
+      const amount = data.eventData?.amount || 'Unknown';
+      showToast(`💰 ${amount} USDT received! Creating card...`);
+    }
+    
+    // Handle card created notifications immediately
+    if (data?.type === 'card_created') {
+      console.log('💳 Card created notification received in foreground');
+      if (data.cardCode) {
+        handleCardCreatedNotification(data.cardCode, data.cardData);
+      }
+    }
+    
+    // Handle card creation failed notifications immediately
+    if (data?.type === 'card_creation_failed') {
+      console.log('❌ Card creation failed notification received');
+      handleCardCreationFailedNotification(data.error || 'Unknown error', data);
+    }
   });
 
   // Listener for when user taps on notification
@@ -221,6 +323,10 @@ export function setupNotificationListeners() {
       router.push('/wallet/cards');
     } else if (data?.type === 'card_creation_failed') {
       console.log('❌ Card creation failed notification tapped');
+      // Handle the failed notification if not already handled
+      if (data.error) {
+        handleCardCreationFailedNotification(data.error, data);
+      }
       // Navigate to cards screen where user can try again
       router.push('/wallet/cards');
     }

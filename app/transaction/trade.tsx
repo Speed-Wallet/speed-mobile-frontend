@@ -6,13 +6,13 @@ import { LinearGradient } from 'expo-linear-gradient';
 import colors from '@/constants/colors';
 import { formatCurrency } from '@/utils/formatters';
 import { getAllTokenInfo, getTokenByAddress } from '@/data/tokens';
-import TokenSelector from '@/components/TokenSelector';
 import AmountInput from '@/components/AmountInput'; // Added import
 import { EnrichedTokenEntry } from '@/data/types';
 import { PLATFORM_FEE_RATE, JupiterQuote, jupiterSwap } from '@/services/walletService';
 import BackButton from '@/components/BackButton';
 import { useTokenValue } from '@/hooks/useTokenValue';
 import { useTokenPrice } from '@/hooks/useTokenPrice';
+import { triggerShake } from '@/utils/animations';
 
 const WAIT_ON_AMOUNT_CHANGE = 2000;
 const LOOP_QUOTE_INTERVAL = 10000;
@@ -51,7 +51,11 @@ const TokenSelectorDisplay: React.FC<TokenSelectorDisplayProps> = ({ token, onPr
 
 
 export default function TradeScreen() {
-  const { tokenAddress } = useLocalSearchParams(); // TODO change array
+  const { tokenAddress, selectedTokenAddress, returnParam } = useLocalSearchParams<{
+    tokenAddress?: string;
+    selectedTokenAddress?: string;
+    returnParam?: string;
+  }>();
   const router = useRouter();
   const [fromToken, setFromToken] = useState<EnrichedTokenEntry | null>(null);
   const [toToken, setToToken] = useState<EnrichedTokenEntry | null>(null);
@@ -63,16 +67,6 @@ export default function TradeScreen() {
 
   const shakeAnimationValue = useRef(new Animated.Value(0)).current;
   const { price: fromTokenPrice } = useTokenPrice(fromToken?.extensions.coingeckoId);
-
-  function triggerShake() {
-    shakeAnimationValue.setValue(0);
-    Animated.sequence([
-      Animated.timing(shakeAnimationValue, { toValue: 10, duration: 50, useNativeDriver: true }),
-      Animated.timing(shakeAnimationValue, { toValue: -10, duration: 50, useNativeDriver: true }),
-      Animated.timing(shakeAnimationValue, { toValue: 10, duration: 50, useNativeDriver: true }),
-      Animated.timing(shakeAnimationValue, { toValue: 0, duration: 50, useNativeDriver: true }),
-    ]).start();
-  }
 
   function updateAmounts() {
     if (timeoutID !== undefined) {
@@ -133,6 +127,29 @@ export default function TradeScreen() {
   }
 
   useEffect(updateAmounts, [fromAmount]);
+  
+  // Handle token selection from the token selector page
+  useEffect(() => {
+    if (selectedTokenAddress && returnParam) {
+      const tokens = getAllTokenInfo();
+      const selectedToken = tokens.find(token => token.address === selectedTokenAddress);
+      
+      if (selectedToken) {
+        if (returnParam === 'fromToken') {
+          setFromToken(selectedToken);
+        } else if (returnParam === 'toToken') {
+          setToToken(selectedToken);
+        }
+      }
+      
+      // Clear the params to prevent re-triggering
+      router.setParams({ 
+        selectedTokenAddress: undefined, 
+        returnParam: undefined 
+      });
+    }
+  }, [selectedTokenAddress, returnParam]);
+  
   useEffect(() => {
     const loadData = () => {
       const tokens = getAllTokenInfo();
@@ -274,7 +291,7 @@ export default function TradeScreen() {
 
   const handleTradeAttempt = () => {
     if (isButtonDisabled) {
-      triggerShake();
+      triggerShake(shakeAnimationValue);
     } else {
       handleTrade();
     }
@@ -294,7 +311,14 @@ export default function TradeScreen() {
         <TokenSelectorDisplay
           labelText="From"
           token={fromToken}
-          onPress={() => setShowFromSelector(true)}
+          onPress={() => router.push({
+            pathname: '/token/select',
+            params: {
+              excludeAddress: toToken?.address,
+              selectedAddress: fromToken?.address,
+              returnParam: 'fromToken'
+            }
+          })}
         />
 
         {/* Swap Button */}
@@ -308,7 +332,14 @@ export default function TradeScreen() {
         <TokenSelectorDisplay
           labelText="To"
           token={toToken}
-          onPress={() => setShowToSelector(true)}
+          onPress={() => router.push({
+            pathname: '/token/select',
+            params: {
+              excludeAddress: fromToken?.address,
+              selectedAddress: toToken?.address,
+              returnParam: 'toToken'
+            }
+          })}
         />
 
         {/* Amount Input */}
@@ -389,34 +420,7 @@ export default function TradeScreen() {
 
       </ScrollView>
 
-      {/* Token Selectors Modals (existing logic) */}
-      {showFromSelector && (
-        <TokenSelector
-          selectedToken={fromToken}
-          excludeTokenAddress={toToken?.address}
-          onSelectToken={(token) => {
-            setFromToken(token);
-            setShowFromSelector(false);
-            // Reset fromAmount if token changes, or let user decide
-            // setFromAmount(''); 
-            // setToAmount('');
-          }}
-          onClose={() => setShowFromSelector(false)}
-        />
-      )}
 
-      {showToSelector && (
-        <TokenSelector
-          selectedToken={toToken}
-          excludeTokenAddress={fromToken?.address}
-          onSelectToken={(token) => {
-            setToToken(token);
-            setShowToSelector(false);
-            // setToAmount(''); // Quote will be re-fetched
-          }}
-          onClose={() => setShowToSelector(false)}
-        />
-      )}
     </SafeAreaView>
   );
 }

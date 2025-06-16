@@ -9,6 +9,8 @@ export interface PaymentCard {
   expires: string;
   balance: number;
   isLoading?: boolean; // Optional loading state for temporary cards
+  isFailed?: boolean; // Optional failed state for failed card creation
+  failureReason?: string; // Optional failure reason for failed cards
 }
 
 export interface PersonalInfo {

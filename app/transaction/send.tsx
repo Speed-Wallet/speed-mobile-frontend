@@ -5,7 +5,7 @@ import { Search, ArrowRight } from 'lucide-react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import colors from '@/constants/colors';
 import { getAllTokenInfo, getTokenByAddress } from '@/data/tokens';
-import TokenSelector from '@/components/TokenSelector';
+
 import RecentContacts from '@/data/contacts';
 import { EnrichedTokenEntry } from '@/data/types';
 import BackButton from '@/components/BackButton';
@@ -15,13 +15,15 @@ import { sendCryptoTransaction } from '@/utils/sendTransaction';
 
 
 export default function SendScreen() {
-  const { tokenAddress } = useLocalSearchParams();
+  const { tokenAddress, selectedTokenAddress } = useLocalSearchParams<{
+    tokenAddress?: string;
+    selectedTokenAddress?: string;
+  }>();
   const router = useRouter();
   const [selectedToken, setSelectedToken] = useState<EnrichedTokenEntry | null>(null);
   const [amount, setAmount] = useState<string | null>(null);
   const [recipient, setRecipient] = useState<string | null>(null);
   const [note, setNote] = useState('');
-  const [showTokenSelector, setShowTokenSelector] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedContact, setSelectedContact] = useState<any>(null);
   const [filteredContacts, setFilteredContacts] = useState(RecentContacts);
@@ -40,6 +42,20 @@ export default function SendScreen() {
     };
     loadData();
   }, [tokenAddress]);
+
+  // Handle token selection from the token selector page
+  useEffect(() => {
+    if (selectedTokenAddress) {
+      const loadSelectedToken = async () => {
+        const token = await getTokenByAddress(selectedTokenAddress);
+        setSelectedToken(token);
+      };
+      loadSelectedToken();
+      
+      // Clear the param to prevent re-triggering
+      router.setParams({ selectedTokenAddress: undefined });
+    }
+  }, [selectedTokenAddress]);
 
   useEffect(() => {
     if (searchQuery) {
@@ -99,7 +115,16 @@ export default function SendScreen() {
         {selectedToken && (
           <>
             <Text style={styles.inputLabel}>Token</Text>
-            <TokenItem token={selectedToken} onPress={() => setShowTokenSelector(true)} showSelectorIcon={true} />
+            <TokenItem 
+              token={selectedToken} 
+              onPress={() => router.push({
+                pathname: '/token/select',
+                params: {
+                  selectedAddress: selectedToken?.address
+                }
+              })} 
+              showSelectorIcon={true} 
+            />
             <Text style={styles.inputLabel}>Amount</Text>
             <AmountInputWithValue
               address={selectedToken.address}
@@ -232,18 +257,6 @@ export default function SendScreen() {
           <ArrowRight size={20} color={colors.white} />
         </TouchableOpacity>
       </Animated.View>
-
-      {/* Token Selector Modal */}
-      {showTokenSelector && (
-        <TokenSelector
-          selectedToken={selectedToken}
-          onSelectToken={(token) => {
-            setSelectedToken(token);
-            setShowTokenSelector(false);
-          }}
-          onClose={() => setShowTokenSelector(false)}
-        />
-      )}
     </View>
   );
 }
@@ -326,7 +339,6 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontFamily: 'Inter-SemiBold',
     color: colors.textPrimary,
-    outlineStyle: 'none',
   },
   amountCurrency: {
     fontSize: 16,
@@ -374,7 +386,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'Inter-Regular',
     color: colors.textPrimary,
-    outlineStyle: 'none',
   },
   optionsRow: {
     flexDirection: 'row',

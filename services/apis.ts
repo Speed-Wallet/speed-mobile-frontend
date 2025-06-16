@@ -122,6 +122,7 @@ export async function getCardDetails(cardCode: string): Promise<{
   data?: any;
   error?: string;
 }> {
+  console.log("cardCode", cardCode)
   try {
     const response = await fetch(`${BASE_BACKEND_URL}/api/cashwyre/card-details`, {
       method: 'POST',
@@ -132,6 +133,7 @@ export async function getCardDetails(cardCode: string): Promise<{
     });
 
     const data = await response.json();
+    console.log('📊 Card details response:', data);
     return data;
   } catch (error) {
     console.error('Error fetching card details:', error);
@@ -234,4 +236,31 @@ export async function registerSwap(
         // todo 
         // retry logic
     }
+}
+
+/**
+ * Simulate card creation failure webhook (for testing)
+ */
+export async function simulateCardCreationFailed(email: string, error?: string): Promise<RegisterTransactionResponse> {
+  try {
+    const response = await fetch(`${BASE_BACKEND_URL}/api/test/simulate-card-failed`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ 
+        email: email,
+        error: error || 'Test card creation failure'
+      }),
+    });
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error simulating card failure:', error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Failed to simulate card failure'
+    };
+  }
 }
