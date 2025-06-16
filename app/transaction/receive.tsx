@@ -6,7 +6,6 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 import colors from '@/constants/colors';
 import { getTokenByAddress, getAllTokenInfo } from '@/data/tokens';
 import UserData from '@/data/user';
-import TokenSelector from '@/components/TokenSelector';
 import QRCode from '@/components/QRCode';
 import { TokenEntry } from '@/data/types';
 import BackButton from '@/components/BackButton';
@@ -16,11 +15,13 @@ const { width } = Dimensions.get('window');
 const QR_SIZE = width * 0.7;
 
 export default function ReceiveScreen() {
-  const { tokenAddress } = useLocalSearchParams();
+  const { tokenAddress, selectedTokenAddress } = useLocalSearchParams<{
+    tokenAddress?: string;
+    selectedTokenAddress?: string;
+  }>();
   const router = useRouter();
   const [selectedToken, setSelectedToken] = useState<TokenEntry | null>(null);
   const [walletAddress, setWalletAddress] = useState('');
-  const [showTokenSelector, setShowTokenSelector] = useState(false);
   const addressInputRef = useRef(null);
 
   useEffect(() => {
@@ -44,6 +45,18 @@ export default function ReceiveScreen() {
     }
 
   }, [tokenAddress]);
+
+  // Handle token selection from the token selector page
+  useEffect(() => {
+    if (selectedTokenAddress) {
+      const token = getTokenByAddress(selectedTokenAddress);
+      setSelectedToken(token);
+      setWalletAddress(UserData.walletAddress);
+      
+      // Clear the param to prevent re-triggering
+      router.setParams({ selectedTokenAddress: undefined });
+    }
+  }, [selectedTokenAddress]);
 
   if (Array.isArray(tokenAddress)) {
     throw new Error('tokenAddress should not be an array');
@@ -81,7 +94,12 @@ export default function ReceiveScreen() {
             <Animated.View entering={FadeIn} style={styles.tokenSelector}>
               <TouchableOpacity
                 style={styles.tokenButton}
-                onPress={() => setShowTokenSelector(true)}
+                onPress={() => router.push({
+                  pathname: '/token/select',
+                  params: {
+                    selectedAddress: selectedToken?.address
+                  }
+                })}
               >
                 <View style={styles.tokenInfo}>
                   <View
@@ -164,18 +182,6 @@ export default function ReceiveScreen() {
           <Text style={styles.actionButtonText}>Save QR</Text>
         </TouchableOpacity>
       </View>
-
-      {showTokenSelector && (
-        <TokenSelector
-          selectedToken={selectedToken}
-          onSelectToken={(token) => {
-            setSelectedToken(token);
-            setWalletAddress(UserData.walletAddress);
-            setShowTokenSelector(false);
-          }}
-          onClose={() => setShowTokenSelector(false)}
-        />
-      )}
     </View>
   );
 }

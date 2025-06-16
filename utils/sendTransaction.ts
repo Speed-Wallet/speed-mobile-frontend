@@ -52,6 +52,8 @@ export async function sendCryptoTransaction(params: SendTransactionParams): Prom
     return { success: false, error };
   }
 
+  console.log('your wallet address: ', WALLET.publicKey.toBase58());
+
   try {
     if (showAlert) {
       alert(`Sending ${amount} ${tokenSymbol} to ${recipient}`);

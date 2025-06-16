@@ -6,7 +6,6 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 import colors from '@/constants/colors';
 import { formatCurrency } from '@/utils/formatters';
 import { getAllTokenInfo, getTokenByAddress } from '@/data/tokens';
-import TokenSelector from '@/components/TokenSelector';
 import { EnrichedTokenEntry } from '@/data/types';
 import BackButton from '@/components/BackButton';
 
@@ -40,17 +39,33 @@ const paymentMethods = [
 const quickAmounts = [10, 100, 1000];
 
 export default function BuyScreen() {
-  const { tokenAddress } = useLocalSearchParams();
+  const { tokenAddress, selectedTokenAddress } = useLocalSearchParams<{
+    tokenAddress?: string;
+    selectedTokenAddress?: string;
+  }>();
   const router = useRouter();
   const [selectedToken, setSelectedToken] = useState<EnrichedTokenEntry | null>(null);
   const [tokenList, setTokenList] = useState<EnrichedTokenEntry[]>([]);
   const [amount, setAmount] = useState('');
-  const [showTokenSelector, setShowTokenSelector] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState(paymentMethods[0]);
 
   useEffect(() => {
     loadData();
   }, [tokenAddress]);
+
+  // Handle token selection from the token selector page
+  useEffect(() => {
+    if (selectedTokenAddress) {
+      const loadSelectedToken = async () => {
+        const token = await getTokenByAddress(selectedTokenAddress);
+        setSelectedToken(token);
+      };
+      loadSelectedToken();
+      
+      // Clear the param to prevent re-triggering
+      router.setParams({ selectedTokenAddress: undefined });
+    }
+  }, [selectedTokenAddress]);
 
   if (Array.isArray(tokenAddress)) {
     throw new Error('tokenAddress should not be an array');
@@ -194,18 +209,6 @@ export default function BuyScreen() {
           <ArrowRight size={20} color={colors.white} />
         </TouchableOpacity>
       </View>
-
-      {/* Token Selector Modal */}
-      {showTokenSelector && (
-        <TokenSelector
-          selectedToken={selectedToken}
-          onSelectToken={(token) => {
-            setSelectedToken(token);
-            setShowTokenSelector(false);
-          }}
-          onClose={() => setShowTokenSelector(false)}
-        />
-      )}
     </View>
   );
 }

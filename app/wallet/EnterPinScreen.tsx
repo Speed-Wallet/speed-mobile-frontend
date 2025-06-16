@@ -4,6 +4,7 @@ import { unlockWalletWithPin } from '@/services/walletService';
 import PinInputCard from '@/components/wallet/PinInputCard';
 import { Lock } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { triggerShake } from '@/utils/animations';
 
 
 interface EnterPinScreenProps {
@@ -16,16 +17,6 @@ const EnterPinScreen: React.FC<EnterPinScreenProps> = ({ onWalletUnlocked, publi
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const shakeAnimationValue = useRef(new Animated.Value(0)).current;
-
-  function triggerShake() {
-    shakeAnimationValue.setValue(0);
-    Animated.sequence([
-      Animated.timing(shakeAnimationValue, { toValue: 10, duration: 50, useNativeDriver: true }),
-      Animated.timing(shakeAnimationValue, { toValue: -10, duration: 50, useNativeDriver: true }),
-      Animated.timing(shakeAnimationValue, { toValue: 10, duration: 50, useNativeDriver: true }),
-      Animated.timing(shakeAnimationValue, { toValue: 0, duration: 50, useNativeDriver: true }),
-    ]).start();
-  }
 
   useEffect(() => {
     console.log(process.env.EXPO_PUBLIC_APP_ENV)
@@ -61,7 +52,7 @@ const EnterPinScreen: React.FC<EnterPinScreenProps> = ({ onWalletUnlocked, publi
   const handleUnlockWallet = async () => {
     if (pin.length < 4) {
       setError("PIN must be at least 4 digits.");
-      triggerShake();
+      triggerShake(shakeAnimationValue);
       return;
     }
     setIsLoading(true);
@@ -73,13 +64,13 @@ const EnterPinScreen: React.FC<EnterPinScreenProps> = ({ onWalletUnlocked, publi
       } else {
         setError("Invalid PIN. Please try again.");
         setPin('');
-        triggerShake();
+        triggerShake(shakeAnimationValue);
       }
     } catch (err) {
       console.error("Unlock error:", err);
       setError("Failed to unlock wallet. Please try again.");
       setPin('');
-      triggerShake();
+      triggerShake(shakeAnimationValue);
     }
     setIsLoading(false);
   };

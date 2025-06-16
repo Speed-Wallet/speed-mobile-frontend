@@ -28,7 +28,9 @@ import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import { StorageService, PersonalInfo } from '@/utils/storage';
 
 const { width: screenWidth } = Dimensions.get('window');
-const CARD_WIDTH = screenWidth - 40;
+const CARD_WIDTH = screenWidth - 40; // Match input field width (20px padding on each side)
+const CARD_MARGIN = 0; // No additional margin needed since we're matching input width
+const SNAP_INTERVAL = CARD_WIDTH; // Use card width directly for snapping
 
 interface Country {
   code: string;
@@ -184,6 +186,10 @@ export default function AccountScreen() {
   const [address, setAddress] = useState('Cape Town');
   const [streetNumber, setStreetNumber] = useState('123 Main Street');
   
+  // Validation states
+  const [firstNameError, setFirstNameError] = useState(false);
+  const [lastNameError, setLastNameError] = useState(false);
+  
   // Date picker state
   const [tempDay, setTempDay] = useState(15);
   const [tempMonth, setTempMonth] = useState(0);
@@ -195,7 +201,7 @@ export default function AccountScreen() {
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: (event) => {
       scrollX.value = event.contentOffset.x;
-      const index = Math.round(event.contentOffset.x / CARD_WIDTH);
+      const index = Math.round(event.contentOffset.x / SNAP_INTERVAL);
       if (index !== currentLevel) {
         runOnJS(setCurrentLevel)(index);
       }
@@ -215,7 +221,7 @@ export default function AccountScreen() {
       }
 
       if (targetIndex !== currentLevel) {
-        scrollTo(scrollViewRef, targetIndex * CARD_WIDTH, 0, true);
+        scrollTo(scrollViewRef, targetIndex * SNAP_INTERVAL, 0, true);
         runOnJS(setCurrentLevel)(targetIndex);
       }
     });
@@ -245,6 +251,12 @@ export default function AccountScreen() {
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
+
+  const validateName = (name: string) => {
+    // Only allow English letters and spaces, minimum 3 characters
+    const cleanName = name.replace(/[^a-zA-Z\s]/g, '').replace(/\s+/g, ' ').replace(/^\s+/, '');
+    return cleanName.length >= 3 ? cleanName : name.replace(/[^a-zA-Z\s]/g, '').replace(/\s+/g, ' ').replace(/^\s+/, '');
+  };
 
   const getDaysInMonth = (month: number, year: number) => {
     return new Date(year, month + 1, 0).getDate();
@@ -292,8 +304,15 @@ export default function AccountScreen() {
     if (savedInfo) {
       // Split the name into first and last name
       const nameParts = savedInfo.name.split(' ');
-      setFirstName(nameParts[0] || 'Tristan');
-      setLastName(nameParts.slice(1).join(' ') || 'Smith');
+      const firstName = nameParts[0] || 'Tristan';
+      const lastName = nameParts.slice(1).join(' ') || 'Smith';
+      
+      setFirstName(firstName);
+      setLastName(lastName);
+      
+      // Validate names on load
+      setFirstNameError(firstName.length < 4);
+      setLastNameError(lastName.length < 4);
       
       setEmail(savedInfo.email);
       setPhoneNumber(savedInfo.phoneNumber);
@@ -463,16 +482,16 @@ export default function AccountScreen() {
                 showsHorizontalScrollIndicator={false}
                 onScroll={scrollHandler}
                 scrollEventThrottle={16}
-                snapToInterval={CARD_WIDTH}
+                snapToInterval={SNAP_INTERVAL}
                 decelerationRate="fast"
                 contentContainerStyle={styles.scrollContent}
               >
                 {verificationLevels.map((level, index) => {
                   const animatedStyle = useAnimatedStyle(() => {
                     const inputRange = [
-                      (index - 1) * CARD_WIDTH,
-                      index * CARD_WIDTH,
-                      (index + 1) * CARD_WIDTH,
+                      (index - 1) * SNAP_INTERVAL,
+                      index * SNAP_INTERVAL,
+                      (index + 1) * SNAP_INTERVAL,
                     ];
                     
                     const scale = interpolate(
@@ -524,14 +543,14 @@ export default function AccountScreen() {
                   const animatedIndicatorStyle = useAnimatedStyle(() => {
                     const opacity = interpolate(
                       scrollX.value,
-                      [(index - 0.5) * CARD_WIDTH, index * CARD_WIDTH, (index + 0.5) * CARD_WIDTH],
+                      [(index - 0.5) * SNAP_INTERVAL, index * SNAP_INTERVAL, (index + 0.5) * SNAP_INTERVAL],
                       [0.3, 1, 0.3],
                       'clamp'
                     );
                     
                     const scale = interpolate(
                       scrollX.value,
-                      [(index - 0.5) * CARD_WIDTH, index * CARD_WIDTH, (index + 0.5) * CARD_WIDTH],
+                      [(index - 0.5) * SNAP_INTERVAL, index * SNAP_INTERVAL, (index + 0.5) * SNAP_INTERVAL],
                       [0.8, 1.2, 0.8],
                       'clamp'
                     );
@@ -557,7 +576,7 @@ export default function AccountScreen() {
 
         {/* Dynamic Input Fields */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Required Information</Text>
+          {/* <Text style={styles.sectionLabel}>Required Information</Text> */}
           <View style={styles.inputsContainer}>
             {/* Level 1 - Basic Personal Information */}
             {currentLevel === 0 && (
@@ -572,11 +591,25 @@ export default function AccountScreen() {
                       placeholderTextColor="#6b7280"
                       value={firstName}
                       onChangeText={(text) => {
-                        setFirstName(text);
-                        savePersonalInfo();
+                        // Only allow English letters and spaces
+                        const letterRegex = /^[a-zA-Z\s]*$/;
+                        const cleanedText = text.replace(/[^a-zA-Z\s]/g, '');
+                        const normalizedText = cleanedText.replace(/\s+/g, ' ').replace(/^\s+/, '');
+                        
+                        if (letterRegex.test(normalizedText)) {
+                          setFirstName(normalizedText);
+                          setFirstNameError(normalizedText.length < 4);
+                          savePersonalInfo();
+                        }
                       }}
                     />
                   </View>
+                  <Text style={[
+                    styles.inputHint,
+                    firstNameError && styles.inputHintError
+                  ]}>
+                    {firstNameError ? '*' : ''}Minimum 4 characters, letters only{firstNameError ? ' *' : ''}
+                  </Text>
                 </View>
 
                 {/* Last Name Field */}
@@ -589,11 +622,25 @@ export default function AccountScreen() {
                       placeholderTextColor="#6b7280"
                       value={lastName}
                       onChangeText={(text) => {
-                        setLastName(text);
-                        savePersonalInfo();
+                        // Only allow English letters and spaces
+                        const letterRegex = /^[a-zA-Z\s]*$/;
+                        const cleanedText = text.replace(/[^a-zA-Z\s]/g, '');
+                        const normalizedText = cleanedText.replace(/\s+/g, ' ').replace(/^\s+/, '');
+                        
+                        if (letterRegex.test(normalizedText)) {
+                          setLastName(normalizedText);
+                          setLastNameError(normalizedText.length < 4);
+                          savePersonalInfo();
+                        }
                       }}
                     />
                   </View>
+                  <Text style={[
+                    styles.inputHint,
+                    lastNameError && styles.inputHintError
+                  ]}>
+                    {lastNameError ? '*' : ''}Minimum 4 characters, letters only{lastNameError ? ' *' : ''}
+                  </Text>
                 </View>
 
                 {/* Email Field */}
@@ -625,9 +672,12 @@ export default function AccountScreen() {
                       placeholderTextColor="#6b7280"
                       value={streetNumber}
                       onChangeText={(text) => {
-                        setStreetNumber(text);
+                        // Only allow digits 0-9
+                        const numericText = text.replace(/[^0-9]/g, '');
+                        setStreetNumber(numericText);
                         savePersonalInfo();
                       }}
+                      keyboardType="numeric"
                     />
                   </View>
                 </View>
@@ -766,7 +816,7 @@ const styles = StyleSheet.create({
   },
   section: {
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingVertical: 12,
   },
   sectionLabel: {
     fontSize: 14,
@@ -788,7 +838,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   scrollContent: {
-    paddingHorizontal: (screenWidth - CARD_WIDTH) / 2,
+    // paddingHorizontal: 20, // Match section padding to align with input fields
   },
   verificationCard: {
     width: CARD_WIDTH,
@@ -798,7 +848,7 @@ const styles = StyleSheet.create({
     borderColor: '#404040',
     borderLeftWidth: 4,
     padding: 20,
-    marginHorizontal: 4,
+    marginHorizontal: CARD_MARGIN, // Use the defined margin constant
   },
   cardHeader: {
     flexDirection: 'row',
@@ -1022,6 +1072,14 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#e5e7eb',
     textAlign: 'center',
+  },
+  inputHint: {
+    fontSize: 14,
+    color: '#9ca3af',
+    marginTop: 8,
+  },
+  inputHintError: {
+    color: '#ef4444',
   },
 });
 
