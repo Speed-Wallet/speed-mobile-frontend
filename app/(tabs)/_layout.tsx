@@ -51,7 +51,7 @@ export default function TabLayout() {
           ),
         }}
       />
-      <Tabs.Screen
+      {/* <Tabs.Screen
         name="portfolio"
         options={{
           title: 'Portfolio',
@@ -59,7 +59,7 @@ export default function TabLayout() {
             <PieChart size={size} color={color} />
           ),
         }}
-      />
+      /> */}
       <Tabs.Screen
         name="rewards"
         options={{

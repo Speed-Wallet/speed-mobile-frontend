@@ -1,20 +1,16 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { ArrowUpRight, ArrowDownRight, ChevronDown } from 'lucide-react-native';
 import colors from '@/constants/colors';
 import { formatCurrency, formatPercentage } from '@/utils/formatters';
 import GreyCard from './GreyCard';
-import { useTokenBalanceStore } from '@/stores/tokenBalanceStore';
-import { useWalletPublicKey } from '@/services/walletService';
-import { useShallow } from 'zustand/react/shallow'
 import { useTokenBalance } from '@/hooks/useTokenBalance';
 import { useTokenPrice } from '@/hooks/useTokenPrice';
 import { EnrichedTokenEntry } from '@/data/types';
-
+import TokenLogo from './TokenLogo';
 
 // Define constants for image sizes
-const TOKEN_SYMBOL_CONTAINER_SIZE = 40; // Increased from 24
-const OVERLAY_LOGO_SIZE = 16; // Increased from 
+const TOKEN_SYMBOL_CONTAINER_SIZE = 40; 
 
 type TokenItemProps = {
   token: EnrichedTokenEntry;
@@ -48,21 +44,10 @@ const TokenItem = ({ token, onPress, showBalance = true, priceFontSize = 14, sho
     >
       <TouchableOpacity style={styles.touchableContent} onPress={onPress}>
         <View style={styles.leftSection}>
-          <View style={styles.logoContainer}>
-            {/* Replace Text with new Image components */}
-            {token.logoURI && (
-              <>
-                <Image
-                  source={{ uri: token.logoURI }}
-                  style={styles.logoMainImage}
-                />
-                {/* <Image 
-                  source={{ uri: token.logoURI }} 
-                  style={styles.logoOverlayImage} 
-                /> */}
-              </>
-            )}
-          </View>
+          <TokenLogo 
+            logoURI={token.logoURI} 
+            size={TOKEN_SYMBOL_CONTAINER_SIZE} 
+          />
         </View>
 
         <View style={styles.infoContainer}>
@@ -134,30 +119,6 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     marginRight: 8,
-  },
-  logoContainer: { // Modified style
-    width: TOKEN_SYMBOL_CONTAINER_SIZE,
-    height: TOKEN_SYMBOL_CONTAINER_SIZE,
-    position: 'relative',
-    // Removed backgroundColor, borderRadius, paddingHorizontal, paddingVertical from original
-  },
-  // styles.symbol (text style) is no longer used by the logoContainer's direct children
-
-  // New styles for the images within logoContainer
-  logoMainImage: {
-    width: '100%',
-    height: '100%',
-    borderRadius: TOKEN_SYMBOL_CONTAINER_SIZE / 2,
-  },
-  logoOverlayImage: {
-    position: 'absolute',
-    width: OVERLAY_LOGO_SIZE,
-    height: OVERLAY_LOGO_SIZE,
-    borderRadius: OVERLAY_LOGO_SIZE / 2,
-    bottom: -1, // Slight offset for better visual
-    right: -1,  // Slight offset for better visual
-    borderWidth: 1,
-    borderColor: colors.backgroundMedium, // Border to help distinguish from main image
   },
   infoContainer: {
     flex: 1,

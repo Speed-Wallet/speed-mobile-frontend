@@ -26,7 +26,6 @@ const preferencesOptions = [
   {
     id: 4,
     title: 'Notifications',
-    subtitle: 'Manage your notification preferences',
     icon: Bell,
     color: '#f59e0b',
     route: null,
@@ -34,7 +33,6 @@ const preferencesOptions = [
   {
     id: 5,
     title: 'Language',
-    subtitle: 'Choose your preferred language',
     icon: Globe,
     color: '#06b6d4',
     route: null,
@@ -42,7 +40,6 @@ const preferencesOptions = [
   {
     id: 6,
     title: 'Theme',
-    subtitle: 'Dark mode and appearance settings',
     icon: Moon,
     color: '#6b7280',
     route: null,
@@ -53,7 +50,6 @@ const referralOptions = [
   {
     id: 7,
     title: 'Referral Program',
-    subtitle: 'Invite friends and earn rewards',
     icon: Users,
     color: '#10b981',
     route: null,
@@ -61,7 +57,6 @@ const referralOptions = [
   {
     id: 8,
     title: 'Affiliate Applications',
-    subtitle: 'Apply for partner programs',
     icon: Link,
     color: '#3b82f6',
     route: null,
@@ -69,7 +64,6 @@ const referralOptions = [
   {
     id: 9,
     title: 'Earnings Dashboard',
-    subtitle: 'Track your referral earnings',
     icon: TrendingUp,
     color: '#f59e0b',
     route: null,
@@ -77,7 +71,6 @@ const referralOptions = [
   {
     id: 10,
     title: 'Rewards & Bonuses',
-    subtitle: 'View available rewards and bonuses',
     icon: Gift,
     color: '#8b5cf6',
     route: null,
@@ -88,7 +81,6 @@ const supportOptions = [
   {
     id: 11,
     title: 'Help Center',
-    subtitle: 'FAQs and troubleshooting guides',
     icon: HelpCircle,
     color: '#ef4444',
     route: null,
@@ -96,7 +88,6 @@ const supportOptions = [
   {
     id: 12,
     title: 'Contact Support',
-    subtitle: 'Get help from our support team',
     icon: MessageCircle,
     color: '#f97316',
     route: null,
@@ -104,7 +95,6 @@ const supportOptions = [
   {
     id: 13,
     title: 'Terms & Privacy',
-    subtitle: 'Legal documents and policies',
     icon: FileText,
     color: '#84cc16',
     route: null,
@@ -132,36 +122,26 @@ export default function SettingsScreen() {
 
   // Create dynamic account options based on current verification level
   const getAccountOptions = () => {
-    const statusText = verificationLevel.status === 'completed' 
-      ? 'Completed' 
-      : verificationLevel.status === 'pending' 
-        ? 'Pending' 
-        : 'Not Started';
-    
     return [
       {
         id: 1,
-        title: 'Personal Information',
-        subtitle: verificationLevel.level > 0 
-          ? `Level ${verificationLevel.level} - ${statusText}`
-          : 'Complete verification to unlock features',
+        title: 'Personal Info',
         icon: User,
         color: verificationLevel.color,
         showKyc: verificationLevel.status === 'completed',
+        kycLevel: verificationLevel.level,
         route: '/settings/kyc',
       },
       {
         id: 2,
         title: 'Security',
-        subtitle: 'Password, 2FA, and security settings',
         icon: Shield,
-        color: '#10b981',
+        color: '#1e40af',
         route: '/settings/security',
       },
       {
         id: 3,
         title: 'Payment Methods',
-        subtitle: 'Manage cards and payment options',
         icon: CreditCard,
         color: '#8b5cf6',
         route: '/wallet/cards',
@@ -175,26 +155,40 @@ export default function SettingsScreen() {
     }
   };
 
-  const renderSettingItem = (option: any) => (
-    <TouchableOpacity key={option.id} style={styles.settingItem} onPress={() => handlePress(option)}>
-      <View style={[styles.iconContainer, { backgroundColor: option.color }]}>
-        <option.icon size={20} color="#ffffff" />
-      </View>
-      <View style={styles.settingContent}>
-        <Text style={styles.settingTitle}>{option.title}</Text>
-        <View style={styles.subtitleContainer}>
-          <Text style={styles.settingSubtitle}>{option.subtitle}</Text>
-          {option.showKyc && (
-            <View style={styles.kycBadge}>
-              <Check size={12} color="#ffffff" />
-              <Text style={styles.kycText}>Verified</Text>
-            </View>
-          )}
+  const renderSettingItem = (option: any, index: number, array: any[]) => {
+    const isFirst = index === 0;
+    const isLast = index === array.length - 1;
+    const isOnly = array.length === 1;
+    
+    return (
+      <TouchableOpacity 
+        key={option.id} 
+        style={[
+          styles.settingItem,
+          isFirst && styles.firstItem,
+          isLast && styles.lastItem,
+          isOnly && styles.onlyItem,
+        ]} 
+        onPress={() => handlePress(option)}
+      >
+        <View style={[styles.iconContainer, { backgroundColor: option.color }]}>
+          <option.icon size={18} color="#ffffff" />
         </View>
-      </View>
-      <ChevronRight size={20} color="#9ca3af" />
-    </TouchableOpacity>
-  );
+        <View style={styles.settingContent}>
+          <View style={styles.titleContainer}>
+            <Text style={styles.settingTitle}>{option.title}</Text>
+            {option.showKyc && (
+              <View style={styles.kycBadge}>
+                <Check size={12} color="#ffffff" />
+                <Text style={styles.kycText}>Level {option.kycLevel}</Text>
+              </View>
+            )}
+          </View>
+        </View>
+        <ChevronRight size={20} color="#9ca3af" />
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -208,7 +202,7 @@ export default function SettingsScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Account</Text>
           <View style={styles.sectionContent}>
-            {getAccountOptions().map(renderSettingItem)}
+            {getAccountOptions().map((option, index, array) => renderSettingItem(option, index, array))}
           </View>
         </View>
 
@@ -216,7 +210,7 @@ export default function SettingsScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Preferences</Text>
           <View style={styles.sectionContent}>
-            {preferencesOptions.map(renderSettingItem)}
+            {preferencesOptions.map((option, index, array) => renderSettingItem(option, index, array))}
           </View>
         </View>
 
@@ -224,7 +218,7 @@ export default function SettingsScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Referrals & Affiliates</Text>
           <View style={styles.sectionContent}>
-            {referralOptions.map(renderSettingItem)}
+            {referralOptions.map((option, index, array) => renderSettingItem(option, index, array))}
           </View>
         </View>
 
@@ -232,7 +226,7 @@ export default function SettingsScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Support</Text>
           <View style={styles.sectionContent}>
-            {supportOptions.map(renderSettingItem)}
+            {supportOptions.map((option, index, array) => renderSettingItem(option, index, array))}
           </View>
         </View>
 
@@ -266,31 +260,44 @@ const styles = StyleSheet.create({
   },
   section: {
     paddingHorizontal: 20,
-    paddingTop: 24,
+    paddingTop: 16, // Reduced from 24
   },
   sectionTitle: {
     fontSize: 18,
     fontFamily: 'Inter-Bold',
-    color: colors.textPrimary,
-    marginBottom: 16,
+    color: '#a1a1aa', // Updated to specific hex color
+    marginBottom: 10, // Reduced from 16
   },
   sectionContent: {
-    gap: 12,
+    // Remove gap to make items touch
   },
   settingItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 16,
+    paddingVertical: 10, // Reduced from 12
     paddingHorizontal: 16,
     backgroundColor: colors.backgroundMedium,
-    borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.backgroundLight,
+    borderTopWidth: 0, // Remove top border for connected look
+  },
+  firstItem: {
+    borderTopWidth: 1, // Only first item gets top border
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+  },
+  lastItem: {
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
+  },
+  onlyItem: {
+    borderTopWidth: 1,
+    borderRadius: 12,
   },
   iconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
+    width: 32, // Reduced from 36
+    height: 32, // Reduced from 36
+    borderRadius: 7, // Adjusted to maintain proportion
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 16,
@@ -298,22 +305,15 @@ const styles = StyleSheet.create({
   settingContent: {
     flex: 1,
   },
-  settingTitle: {
-    fontSize: 16,
-    fontFamily: 'Inter-SemiBold',
-    color: colors.textPrimary,
-    marginBottom: 4,
-  },
-  subtitleContainer: {
+  titleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  settingSubtitle: {
-    fontSize: 14,
-    fontFamily: 'Inter-Regular',
-    color: colors.textSecondary,
-    flex: 1,
+  settingTitle: {
+    fontSize: 16,
+    fontFamily: 'Inter-Medium', // Changed from Inter-SemiBold to Inter-Medium
+    color: colors.textPrimary,
   },
   kycBadge: {
     flexDirection: 'row',
@@ -322,7 +322,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
-    marginLeft: 8,
+    marginRight: 8, // Added margin to create space from chevron
   },
   kycText: {
     fontSize: 12,
