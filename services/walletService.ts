@@ -32,6 +32,7 @@ import CryptoJS from 'crypto-js';
 import { useEffect, useState } from 'react';
 import { registerSwap } from './apis';
 import { generateMnemonic, mnemonicToSeed, validateMnemonic } from '@/utils/bip39';
+import { createKeypairFromMnemonic, getSolanaDerivationPath, getNextAccountIndex } from '@/utils/derivation';
 
 export const CONNECTION = new Connection(`https://mainnet.helius-rpc.com/?api-key=${process.env.EXPO_PUBLIC_HELIUS_API_KEY}`);
 const JUPITER_API_URL = 'https://lite-api.jup.ag/swap/v1/';
@@ -41,6 +42,7 @@ const ACTIVE_WALLET_KEY = 'solanaActiveWallet'; // Key for active wallet ID
 const APP_PIN_KEY = 'appPin'; // Key for storing app-level PIN hash
 const APP_SALT_KEY = 'appSalt'; // Key for storing app-level salt
 const APP_IV_KEY = 'appIV'; // Key for storing app-level IV
+const MASTER_MNEMONIC_KEY = 'masterMnemonic'; // Key for storing encrypted master mnemonic
 
 export const PLATFORM_FEE_RATE = 0.001;
 export const WSOL_MINT = 'So11111111111111111111111111111111111111112';
@@ -62,6 +64,9 @@ interface StoredWalletItem {
   publicKey: string;
   encryptedMnemonic: string;
   createdAt: number;
+  accountIndex?: number; // For BIP44 derivation
+  derivationPath?: string; // The full derivation path
+  isMasterWallet?: boolean; // True for the first wallet with the master mnemonic
 }
 
 // Listener pattern for wallet state changes
@@ -286,6 +291,92 @@ export const generateSolanaWallet = async (): Promise<SolanaWallet> => {
   };
 };
 
+// === Master Mnemonic and Derivation Functions ===
+
+/**
+ * Store the master mnemonic encrypted with app PIN
+ */
+export const storeMasterMnemonic = async (mnemonic: string): Promise<void> => {
+  if (!TEMP_APP_PIN) {
+    throw new Error('App not unlocked - no temporary PIN available');
+  }
+
+  const appCrypto = await getAppCrypto();
+  if (!appCrypto) {
+    throw new Error('Failed to get app crypto settings');
+  }
+
+  const encryption = encryptMnemonic(mnemonic, TEMP_APP_PIN, appCrypto.salt, appCrypto.iv);
+  await AsyncStorage.setItem(MASTER_MNEMONIC_KEY, encryption.encryptedMnemonic);
+};
+
+/**
+ * Get the master mnemonic decrypted
+ */
+export const getMasterMnemonic = async (): Promise<string | null> => {
+  if (!TEMP_APP_PIN) {
+    throw new Error('App not unlocked - no temporary PIN available');
+  }
+
+  const appCrypto = await getAppCrypto();
+  if (!appCrypto) {
+    return null;
+  }
+
+  const encryptedMnemonic = await AsyncStorage.getItem(MASTER_MNEMONIC_KEY);
+  if (!encryptedMnemonic) {
+    return null;
+  }
+
+  return decryptMnemonic(encryptedMnemonic, TEMP_APP_PIN, appCrypto.salt, appCrypto.iv);
+};
+
+/**
+ * Check if master mnemonic exists
+ */
+export const hasMasterMnemonic = async (): Promise<boolean> => {
+  const encryptedMnemonic = await AsyncStorage.getItem(MASTER_MNEMONIC_KEY);
+  return !!encryptedMnemonic;
+};
+
+/**
+ * Generate a new wallet using the master mnemonic and next available derivation path
+ */
+export const generateSolanaWalletFromMaster = async (): Promise<SolanaWallet & { accountIndex: number; derivationPath: string }> => {
+  const masterMnemonic = await getMasterMnemonic();
+  if (!masterMnemonic) {
+    // If no master mnemonic exists, create one and store it
+    const newMasterMnemonic = await generateMnemonic();
+    await storeMasterMnemonic(newMasterMnemonic);
+    
+    // Create the first wallet (account index 0)
+    const keypair = await createKeypairFromMnemonic(newMasterMnemonic, 0);
+    const derivationPath = getSolanaDerivationPath(0);
+    
+    return {
+      mnemonic: newMasterMnemonic,
+      publicKey: keypair.publicKey.toBase58(),
+      accountIndex: 0,
+      derivationPath,
+    };
+  }
+
+  // Get existing wallets to determine next account index
+  const existingWallets = await getAllStoredWallets();
+  const nextAccountIndex = getNextAccountIndex(existingWallets, masterMnemonic);
+  
+  // Create wallet with next derivation path
+  const keypair = await createKeypairFromMnemonic(masterMnemonic, nextAccountIndex);
+  const derivationPath = getSolanaDerivationPath(nextAccountIndex);
+  
+  return {
+    mnemonic: masterMnemonic,
+    publicKey: keypair.publicKey.toBase58(),
+    accountIndex: nextAccountIndex,
+    derivationPath,
+  };
+};
+
 export const saveWalletWithPin = async (mnemonic: string, publicKey: string, pin: string): Promise<void> => {
   // This function is kept for compatibility with the new multi-wallet system
   // It's called internally by saveWalletToList to maintain legacy storage format
@@ -354,8 +445,10 @@ export const unlockWalletWithPin = async (pin: string): Promise<SolanaWallet | n
         return null;
       }
 
-      const seed = await mnemonicToSeed(mnemonic);
-      const keypair = Keypair.fromSeed(Uint8Array.from(seed.subarray(0, 32)));
+      // Create keypair using derivation path if available, otherwise use legacy seed method
+      const keypair = activeWallet.accountIndex !== undefined 
+        ? await createKeypairFromMnemonic(mnemonic, activeWallet.accountIndex)
+        : Keypair.fromSeed(Uint8Array.from((await mnemonicToSeed(mnemonic)).subarray(0, 32)));
       
       if (keypair.publicKey.toBase58() !== activeWallet.publicKey) {
           console.warn("Decrypted wallet's public key does not match stored public key. PIN might be incorrect or data corrupted.");
@@ -795,7 +888,9 @@ export const saveWalletToList = async (
   name: string,
   mnemonic: string,
   publicKey: string,
-  pin: string
+  pin: string,
+  accountIndex?: number,
+  derivationPath?: string
 ): Promise<void> => {
   try {
     // Check if app PIN exists, if not create it
@@ -814,6 +909,10 @@ export const saveWalletToList = async (
       throw new Error('Failed to get app crypto settings');
     }
 
+    // Check if this is the first wallet
+    const existingWallets = await getAllStoredWallets();
+    const isMasterWallet = existingWallets.length === 0;
+
     // Encrypt with app-level salt/IV
     const encryption = encryptMnemonic(mnemonic, pin, appCrypto.salt, appCrypto.iv);
     const walletItem: StoredWalletItem = {
@@ -822,9 +921,11 @@ export const saveWalletToList = async (
       publicKey,
       encryptedMnemonic: encryption.encryptedMnemonic,
       createdAt: Date.now(),
+      accountIndex,
+      derivationPath,
+      isMasterWallet,
     };
 
-    const existingWallets = await getAllStoredWallets();
     const updatedWallets = [...existingWallets, walletItem];
     
     await AsyncStorage.setItem(WALLETS_LIST_KEY, JSON.stringify(updatedWallets));
@@ -833,8 +934,9 @@ export const saveWalletToList = async (
     await setActiveWallet(id);
     
     // Load wallet into memory immediately
-    const seed = await mnemonicToSeed(mnemonic);
-    const keypair = Keypair.fromSeed(Uint8Array.from(seed.subarray(0, 32)));
+    const keypair = accountIndex !== undefined 
+      ? await createKeypairFromMnemonic(mnemonic, accountIndex)
+      : Keypair.fromSeed(Uint8Array.from((await mnemonicToSeed(mnemonic)).subarray(0, 32)));
     WALLET = keypair;
     notifyWalletStateChange();
   } catch (error) {
@@ -851,10 +953,17 @@ export const removeWalletFromList = async (walletId: string): Promise<void> => {
     
     const activeWalletId = await getActiveWalletId();
     if (activeWalletId === walletId) {
-      // If removing the active wallet, clear legacy storage and set new active if available
-      await clearWallet();
+      // If removing the active wallet, clear it from memory and set new active if available
+      if (WALLET) {
+        WALLET = null;
+        notifyWalletStateChange();
+      }
+      
       if (updatedWallets.length > 0) {
         await setActiveWallet(updatedWallets[0].id);
+      } else {
+        // No wallets left, clear the active wallet key
+        await AsyncStorage.removeItem(ACTIVE_WALLET_KEY);
       }
     }
   } catch (error) {
@@ -917,8 +1026,10 @@ export const switchToWallet = async (walletId: string, pin: string): Promise<boo
       throw new Error('Invalid mnemonic in stored wallet');
     }
 
-    const seed = await mnemonicToSeed(mnemonic);
-    const keypair = Keypair.fromSeed(Uint8Array.from(seed.subarray(0, 32)));
+    // Create keypair using derivation path if available, otherwise use legacy seed method
+    const keypair = targetWallet.accountIndex !== undefined 
+      ? await createKeypairFromMnemonic(mnemonic, targetWallet.accountIndex)
+      : Keypair.fromSeed(Uint8Array.from((await mnemonicToSeed(mnemonic)).subarray(0, 32)));
 
     if (keypair.publicKey.toBase58() !== targetWallet.publicKey) {
       throw new Error('Public key mismatch');
@@ -975,8 +1086,10 @@ export const switchToWalletWithAppPin = async (walletId: string, appPin: string)
       throw new Error('Invalid mnemonic in stored wallet');
     }
 
-    const seed = await mnemonicToSeed(mnemonic);
-    const keypair = Keypair.fromSeed(Uint8Array.from(seed.subarray(0, 32)));
+    // Create keypair using derivation path if available, otherwise use legacy seed method
+    const keypair = targetWallet.accountIndex !== undefined 
+      ? await createKeypairFromMnemonic(mnemonic, targetWallet.accountIndex)
+      : Keypair.fromSeed(Uint8Array.from((await mnemonicToSeed(mnemonic)).subarray(0, 32)));
 
     if (keypair.publicKey.toBase58() !== targetWallet.publicKey) {
       throw new Error('Public key mismatch');
@@ -1043,7 +1156,9 @@ export const saveWalletWithAppPin = async (
   id: string,
   name: string,
   mnemonic: string,
-  publicKey: string
+  publicKey: string,
+  accountIndex?: number,
+  derivationPath?: string
 ): Promise<void> => {
   try {
     if (!TEMP_APP_PIN) {
@@ -1056,6 +1171,10 @@ export const saveWalletWithAppPin = async (
       throw new Error('Failed to get app crypto settings');
     }
 
+    // Check if this is the first wallet
+    const existingWallets = await getAllStoredWallets();
+    const isMasterWallet = existingWallets.length === 0;
+
     // Encrypt with app-level salt/IV using the temporary PIN
     const encryption = encryptMnemonic(mnemonic, TEMP_APP_PIN, appCrypto.salt, appCrypto.iv);
     const walletItem: StoredWalletItem = {
@@ -1064,9 +1183,11 @@ export const saveWalletWithAppPin = async (
       publicKey,
       encryptedMnemonic: encryption.encryptedMnemonic,
       createdAt: Date.now(),
+      accountIndex,
+      derivationPath,
+      isMasterWallet,
     };
 
-    const existingWallets = await getAllStoredWallets();
     const updatedWallets = [...existingWallets, walletItem];
     
     await AsyncStorage.setItem(WALLETS_LIST_KEY, JSON.stringify(updatedWallets));
@@ -1075,8 +1196,10 @@ export const saveWalletWithAppPin = async (
     await setActiveWallet(id);
     
     // Load wallet into memory immediately
-    const seed = await mnemonicToSeed(mnemonic);
-    const keypair = Keypair.fromSeed(Uint8Array.from(seed.subarray(0, 32)));
+    const keypair = accountIndex !== undefined 
+      ? await createKeypairFromMnemonic(mnemonic, accountIndex)
+      : Keypair.fromSeed(Uint8Array.from((await mnemonicToSeed(mnemonic)).subarray(0, 32)));
+    
     WALLET = keypair;
     notifyWalletStateChange();
     
@@ -1126,8 +1249,10 @@ export const unlockApp = async (pin: string): Promise<boolean> => {
       return false;
     }
 
-    const seed = await mnemonicToSeed(mnemonic);
-    const keypair = Keypair.fromSeed(Uint8Array.from(seed.subarray(0, 32)));
+    // Create keypair using derivation path if available, otherwise use legacy seed method
+    const keypair = activeWallet.accountIndex !== undefined 
+      ? await createKeypairFromMnemonic(mnemonic, activeWallet.accountIndex)
+      : Keypair.fromSeed(Uint8Array.from((await mnemonicToSeed(mnemonic)).subarray(0, 32)));
     
     // Load wallet into memory
     WALLET = keypair;

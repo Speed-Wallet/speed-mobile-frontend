@@ -89,9 +89,9 @@ export default function CreateWalletIntroStep({ onCreateWallet, isLoading }: Cre
           </TouchableOpacity>
 
           <TouchableOpacity 
-            style={styles.importLink}
-            onPress={() => router.push('/wallet/import')}>
-            <Text style={styles.importText}>I already have a wallet</Text>
+            style={[styles.importLink, styles.disabledLink]}
+            disabled={true}>
+            <Text style={[styles.importText, styles.disabledText]}>I already have a wallet (Coming Soon)</Text>
           </TouchableOpacity>
         </Animated.View>
       </View>
@@ -174,5 +174,11 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#7c5cff',
     fontWeight: '500',
+  },
+  disabledLink: {
+    opacity: 0.5,
+  },
+  disabledText: {
+    color: '#888888',
   },
 });

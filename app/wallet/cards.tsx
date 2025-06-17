@@ -42,6 +42,7 @@ const initialCards: PaymentCard[] = [
     type: 'virtual',
     brand: 'mastercard',
     last4: '4242',
+    cardNumber: '5555555555554242', // Full card number for testing
     holder: 'TRISTAN',
     expires: '12/25',
     balance: 2500.00,
@@ -254,6 +255,7 @@ export default function CardsScreen() {
         type: 'virtual',
         brand: selectedBrand,
         last4: '••••', // Show loading state for card number
+        cardNumber: undefined, // No card number during loading
         holder: cardName.trim(),
         expires: '••/••', // Show loading state for expiry
         balance: parseFloat(cardBalance),
@@ -406,7 +408,11 @@ export default function CardsScreen() {
             </Text>
           ) : (
             <Text style={styles.cardNumberText}>
-              {isVisible ? `•••• •••• •••• ${card.last4}` : '•••• •••• •••• ••••'}
+              {isVisible 
+                ? (card.cardNumber 
+                    ? `${card.cardNumber.slice(0, 4)} ${card.cardNumber.slice(4, 8)} ${card.cardNumber.slice(8, 12)} ${card.cardNumber.slice(12, 16)}`
+                    : `•••• •••• •••• ${card.last4}`) 
+                : '•••• •••• •••• ••••'}
             </Text>
           )}
           {!isFailed && (
