@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, SafeAreaView, Animated } from 'react-native';
-import { unlockWalletWithPin } from '@/services/walletService';
+import { unlockApp } from '@/services/walletService';
 import PinInputCard from '@/components/wallet/PinInputCard';
 import { Lock } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -28,8 +28,8 @@ const EnterPinScreen: React.FC<EnterPinScreenProps> = ({ onWalletUnlocked, publi
           console.log(`Development mode: Attempting auto-unlock with EXPO_PUBLIC_DEV_PIN ${devPin}`);
           setIsLoading(true);
           try {
-            const wallet = await unlockWalletWithPin(devPin);
-            if (wallet) {
+            const success = await unlockApp(devPin);
+            if (success) {
               console.log('Development mode: Auto-unlock successful.');
               onWalletUnlocked();
             } else {
@@ -58,8 +58,8 @@ const EnterPinScreen: React.FC<EnterPinScreenProps> = ({ onWalletUnlocked, publi
     setIsLoading(true);
     setError(null);
     try {
-      const wallet = await unlockWalletWithPin(pin);
-      if (wallet) {
+      const success = await unlockApp(pin);
+      if (success) {
         onWalletUnlocked();
       } else {
         setError("Invalid PIN. Please try again.");

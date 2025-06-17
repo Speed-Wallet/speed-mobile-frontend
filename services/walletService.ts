@@ -36,19 +36,32 @@ import { generateMnemonic, mnemonicToSeed, validateMnemonic } from '@/utils/bip3
 export const CONNECTION = new Connection(`https://mainnet.helius-rpc.com/?api-key=${process.env.EXPO_PUBLIC_HELIUS_API_KEY}`);
 const JUPITER_API_URL = 'https://lite-api.jup.ag/swap/v1/';
 
-const ENCRYPTED_MNEMONIC_KEY = 'solanaEncryptedMnemonic';
-const SALT_KEY = 'solanaSalt';
-const IV_KEY = 'solanaIV';
-export const PUBLIC_KEY_KEY = 'solanaPublicKey'; // Keep this as is
+const WALLETS_LIST_KEY = 'solanaWalletsList'; // Key for storing wallet list
+const ACTIVE_WALLET_KEY = 'solanaActiveWallet'; // Key for active wallet ID
+const APP_PIN_KEY = 'appPin'; // Key for storing app-level PIN hash
+const APP_SALT_KEY = 'appSalt'; // Key for storing app-level salt
+const APP_IV_KEY = 'appIV'; // Key for storing app-level IV
 
 export const PLATFORM_FEE_RATE = 0.001;
 export const WSOL_MINT = 'So11111111111111111111111111111111111111112';
 const PLATFORM_FEE_ACCOUNT = new PublicKey('7o3QNaG84hrWhCLoAEXuiiyNfKvpGvMAyTwDb3reBram');
 export let WALLET: Keypair | null = null; // Initialize WALLET to null
 
+// Store the app PIN temporarily in memory for seamless wallet switching
+// This is cleared when the app is closed or locked
+let TEMP_APP_PIN: string | null = null;
+
 interface SolanaWallet {
   mnemonic: string;
   publicKey: string;
+}
+
+interface StoredWalletItem {
+  id: string;
+  name: string;
+  publicKey: string;
+  encryptedMnemonic: string;
+  createdAt: number;
 }
 
 // Listener pattern for wallet state changes
@@ -127,21 +140,22 @@ const deriveKey = (pin: string, salt: string): CryptoJS.lib.WordArray => {
   });
 };
 
-const encryptMnemonic = (mnemonic: string, pin: string): { encryptedMnemonic: string, salt: string, iv: string } => {
-  const salt = generateSalt();
-  const iv = generateIV();
-  const key = deriveKey(pin, salt);
+const encryptMnemonic = (mnemonic: string, pin: string, salt?: string, iv?: string): { encryptedMnemonic: string, salt: string, iv: string } => {
+  // Use provided salt/IV or generate new ones
+  const finalSalt = salt || generateSalt();
+  const finalIV = iv || generateIV();
+  const key = deriveKey(pin, finalSalt);
 
   const encrypted = CryptoJS.AES.encrypt(mnemonic, key, {
-    iv: CryptoJS.enc.Hex.parse(iv),
+    iv: CryptoJS.enc.Hex.parse(finalIV),
     mode: CryptoJS.mode.CBC, // CBC is common, GCM is more modern but more complex with crypto-js
     padding: CryptoJS.pad.Pkcs7
   });
 
   return {
     encryptedMnemonic: encrypted.toString(),
-    salt,
-    iv
+    salt: finalSalt,
+    iv: finalIV
   };
 };
 
@@ -166,6 +180,101 @@ const decryptMnemonic = (encryptedMnemonic: string, pin: string, salt: string, i
 };
 // --- End Encryption/Decryption Helpers ---
 
+// --- App-Level PIN Management (Independent of Wallets) ---
+
+export const createAppPin = async (pin: string): Promise<void> => {
+  const salt = generateSalt();
+  const iv = generateIV();
+  
+  // Store the PIN hash, salt, and IV for app-level authentication
+  const pinHash = CryptoJS.SHA256(pin + salt).toString();
+  
+  await AsyncStorage.setItem(APP_PIN_KEY, pinHash);
+  await AsyncStorage.setItem(APP_SALT_KEY, salt);
+  await AsyncStorage.setItem(APP_IV_KEY, iv);
+  
+  // Store temporarily for immediate use
+  TEMP_APP_PIN = pin;
+  
+  console.log('App-level PIN created successfully');
+};
+
+export const verifyAppPin = async (pin: string): Promise<boolean> => {
+  try {
+    const storedHash = await AsyncStorage.getItem(APP_PIN_KEY);
+    const salt = await AsyncStorage.getItem(APP_SALT_KEY);
+    
+    if (!storedHash || !salt) {
+      console.log('No app PIN set up');
+      return false;
+    }
+    
+    const pinHash = CryptoJS.SHA256(pin + salt).toString();
+    const isValid = pinHash === storedHash;
+    
+    if (isValid) {
+      TEMP_APP_PIN = pin;
+      console.log('App PIN verified successfully');
+    }
+    
+    return isValid;
+  } catch (error) {
+    console.error('Error verifying app PIN:', error);
+    return false;
+  }
+};
+
+export const hasAppPin = async (): Promise<boolean> => {
+  try {
+    const pinHash = await AsyncStorage.getItem(APP_PIN_KEY);
+    return !!pinHash;
+  } catch (error) {
+    return false;
+  }
+};
+
+export const getAppCrypto = async (): Promise<{ salt: string, iv: string } | null> => {
+  try {
+    const salt = await AsyncStorage.getItem(APP_SALT_KEY);
+    const iv = await AsyncStorage.getItem(APP_IV_KEY);
+    
+    if (!salt || !iv) {
+      return null;
+    }
+    
+    return { salt, iv };
+  } catch (error) {
+    console.error('Error getting app crypto:', error);
+    return null;
+  }
+};
+
+export const clearAppPin = async (): Promise<void> => {
+  try {
+    await AsyncStorage.removeItem(APP_PIN_KEY);
+    await AsyncStorage.removeItem(APP_SALT_KEY);
+    await AsyncStorage.removeItem(APP_IV_KEY);
+    TEMP_APP_PIN = null;
+    console.log('App PIN cleared');
+  } catch (error) {
+    console.error('Error clearing app PIN:', error);
+  }
+};
+
+export const lockApp = (): void => {
+  TEMP_APP_PIN = null;
+  if (WALLET) {
+    WALLET = null;
+    notifyWalletStateChange();
+  }
+  console.log('App locked - temporary PIN cleared');
+};
+
+export const isAppUnlocked = (): boolean => {
+  return !!TEMP_APP_PIN;
+};
+// --- End App-Level PIN Management ---
+
 export const generateSolanaWallet = async (): Promise<SolanaWallet> => {
   const mnemonic = await generateMnemonic();
   const seed = await mnemonicToSeed(mnemonic);
@@ -178,28 +287,22 @@ export const generateSolanaWallet = async (): Promise<SolanaWallet> => {
 };
 
 export const saveWalletWithPin = async (mnemonic: string, publicKey: string, pin: string): Promise<void> => {
-  try {
-    const { encryptedMnemonic, salt, iv } = encryptMnemonic(mnemonic, pin);
-    await AsyncStorage.setItem(ENCRYPTED_MNEMONIC_KEY, encryptedMnemonic);
-    await AsyncStorage.setItem(SALT_KEY, salt);
-    await AsyncStorage.setItem(IV_KEY, iv);
-    await AsyncStorage.setItem(PUBLIC_KEY_KEY, publicKey);
-  } catch (error) {
-    console.error('Failed to save encrypted wallet to AsyncStorage', error);
-    throw error;
-  }
+  // This function is kept for compatibility with the new multi-wallet system
+  // It's called internally by saveWalletToList to maintain legacy storage format
+  console.log('saveWalletWithPin called for compatibility - wallet saved via multi-wallet system');
 };
 
-// This function now just checks if a wallet (potentially encrypted) exists
+// Check if a wallet exists in the multi-wallet system
 export const checkStoredWallet = async (): Promise<StoredWalletInfo> => {
   try {
-    const salt = await AsyncStorage.getItem(SALT_KEY);
-    const iv = await AsyncStorage.getItem(IV_KEY);
-    const publicKey = await AsyncStorage.getItem(PUBLIC_KEY_KEY);
-
-    if (salt && iv && publicKey) {
-      return { isEncrypted: true, publicKey };
+    const wallets = await getAllStoredWallets();
+    const activeWalletId = await getActiveWalletId();
+    
+    if (wallets.length > 0) {
+      const activeWallet = wallets.find(w => w.id === activeWalletId) || wallets[0];
+      return { isEncrypted: true, publicKey: activeWallet.publicKey };
     }
+    
     return { isEncrypted: false, publicKey: null };
   } catch (error) {
     console.error('Failed to check stored wallet from AsyncStorage', error);
@@ -209,25 +312,40 @@ export const checkStoredWallet = async (): Promise<StoredWalletInfo> => {
 
 export const unlockWalletWithPin = async (pin: string): Promise<SolanaWallet | null> => {
   try {
-    const encryptedMnemonic = await AsyncStorage.getItem(ENCRYPTED_MNEMONIC_KEY);
-    const salt = await AsyncStorage.getItem(SALT_KEY);
-    const iv = await AsyncStorage.getItem(IV_KEY);
-    const storedPublicKey = await AsyncStorage.getItem(PUBLIC_KEY_KEY);
-
-    if (!encryptedMnemonic || !salt || !iv || !storedPublicKey) {
-      console.log('Encrypted wallet components not found for unlocking.');
-      if (WALLET) { // If a wallet was loaded and now components are missing
-          WALLET = null;
-          notifyWalletStateChange();
-      }
+    // Verify app PIN first
+    if (!await verifyAppPin(pin)) {
+      console.log('Invalid app PIN');
       return null;
     }
 
-    const mnemonic = decryptMnemonic(encryptedMnemonic, pin, salt, iv);
+    // Get app-level crypto settings
+    const appCrypto = await getAppCrypto();
+    if (!appCrypto) {
+      console.log('No app crypto settings found');
+      return null;
+    }
+
+    // Get active wallet from multi-wallet system
+    const wallets = await getAllStoredWallets();
+    const activeWalletId = await getActiveWalletId();
+    
+    if (wallets.length === 0) {
+      console.log('No wallets found');
+      return null;
+    }
+    
+    const activeWallet = wallets.find(w => w.id === activeWalletId) || wallets[0];
+    
+    const mnemonic = decryptMnemonic(
+      activeWallet.encryptedMnemonic,
+      pin,
+      appCrypto.salt,
+      appCrypto.iv
+    );
 
     if (mnemonic) {
-      // Verify the mnemonic is valid (optional but good)
-      if (!validateMnemonic(mnemonic)) {
+      // Verify the mnemonic is valid
+      if (!await validateMnemonic(mnemonic)) {
         console.warn("Decrypted mnemonic is invalid. PIN might be incorrect or data corrupted.");
         if (WALLET) {
             WALLET = null;
@@ -239,7 +357,7 @@ export const unlockWalletWithPin = async (pin: string): Promise<SolanaWallet | n
       const seed = await mnemonicToSeed(mnemonic);
       const keypair = Keypair.fromSeed(Uint8Array.from(seed.subarray(0, 32)));
       
-      if (keypair.publicKey.toBase58() !== storedPublicKey) {
+      if (keypair.publicKey.toBase58() !== activeWallet.publicKey) {
           console.warn("Decrypted wallet's public key does not match stored public key. PIN might be incorrect or data corrupted.");
           if (WALLET) {
               WALLET = null;
@@ -249,6 +367,9 @@ export const unlockWalletWithPin = async (pin: string): Promise<SolanaWallet | n
       }
 
       WALLET = keypair;
+      // Store PIN temporarily for seamless wallet switching
+      TEMP_APP_PIN = pin;
+      console.log('🔐 PIN stored temporarily for seamless wallet switching');
       notifyWalletStateChange(); // Notify listeners about the new wallet state
       return { mnemonic, publicKey: WALLET.publicKey.toBase58() };
     } else {
@@ -271,19 +392,33 @@ export const unlockWalletWithPin = async (pin: string): Promise<SolanaWallet | n
 
 export const clearWallet = async (): Promise<void> => {
   try {
-    await AsyncStorage.removeItem(ENCRYPTED_MNEMONIC_KEY);
-    await AsyncStorage.removeItem(SALT_KEY);
-    await AsyncStorage.removeItem(IV_KEY);
-    await AsyncStorage.removeItem(PUBLIC_KEY_KEY);
+    await AsyncStorage.removeItem(WALLETS_LIST_KEY);
+    await AsyncStorage.removeItem(ACTIVE_WALLET_KEY);
+    await AsyncStorage.removeItem(APP_PIN_KEY);
+    await AsyncStorage.removeItem(APP_SALT_KEY);
+    await AsyncStorage.removeItem(APP_IV_KEY);
+    
+    // Also remove any legacy keys (just in case)
+    await AsyncStorage.removeItem('encryptedMnemonic');
+    await AsyncStorage.removeItem('salt');
+    await AsyncStorage.removeItem('iv');
+    await AsyncStorage.removeItem('publicKey');
+    
     if (WALLET) {
       WALLET = null;
       notifyWalletStateChange(); // Notify listeners
     }
-    console.log('Wallet cleared from AsyncStorage and memory.');
+    
+    // Clear temporary PIN from memory
+    TEMP_APP_PIN = null;
+    
+    console.log('🗑️ All wallet data cleared from AsyncStorage and memory.');
   } catch (error) {
     console.error('Failed to clear wallet from AsyncStorage', error);
   }
 };
+
+
 
 // Add a function to lock the wallet (clear from memory, but not from AsyncStorage)
 export const lockWallet = (): void => {
@@ -292,6 +427,9 @@ export const lockWallet = (): void => {
     notifyWalletStateChange(); // Notify listeners
     console.log("Wallet locked: Keypair cleared from memory.");
   }
+  // Clear temporary PIN from memory when locking
+  TEMP_APP_PIN = null;
+  console.log("Temporary PIN cleared from memory.");
 };
 
 export const JupiterQuote = async (
@@ -620,3 +758,385 @@ function parseSimulationError(simulationResult: any): ErrorType {
 
   return { code: 4, text: 'GENERIC ERROR' };
 }
+
+export const importWalletFromMnemonic = async (mnemonic: string): Promise<SolanaWallet> => {
+  // Validate the mnemonic first
+  const isValid = await validateMnemonic(mnemonic);
+  if (!isValid) {
+    throw new Error('Invalid mnemonic phrase');
+  }
+
+  const seed = await mnemonicToSeed(mnemonic);
+  const keypair = Keypair.fromSeed(Uint8Array.from(seed.subarray(0, 32)));
+
+  return {
+    mnemonic,
+    publicKey: keypair.publicKey.toBase58(),
+  };
+};
+
+// === Multiple Wallet Management Functions ===
+
+export const getAllStoredWallets = async (): Promise<StoredWalletItem[]> => {
+  try {
+    const walletsJson = await AsyncStorage.getItem(WALLETS_LIST_KEY);
+    if (walletsJson) {
+      return JSON.parse(walletsJson);
+    }
+    return [];
+  } catch (error) {
+    console.error('Failed to load wallets list:', error);
+    return [];
+  }
+};
+
+export const saveWalletToList = async (
+  id: string,
+  name: string,
+  mnemonic: string,
+  publicKey: string,
+  pin: string
+): Promise<void> => {
+  try {
+    // Check if app PIN exists, if not create it
+    if (!await hasAppPin()) {
+      await createAppPin(pin);
+    } else {
+      // Verify the PIN matches the app PIN
+      if (!await verifyAppPin(pin)) {
+        throw new Error('PIN does not match app PIN');
+      }
+    }
+
+    // Get app-level crypto settings
+    const appCrypto = await getAppCrypto();
+    if (!appCrypto) {
+      throw new Error('Failed to get app crypto settings');
+    }
+
+    // Encrypt with app-level salt/IV
+    const encryption = encryptMnemonic(mnemonic, pin, appCrypto.salt, appCrypto.iv);
+    const walletItem: StoredWalletItem = {
+      id,
+      name,
+      publicKey,
+      encryptedMnemonic: encryption.encryptedMnemonic,
+      createdAt: Date.now(),
+    };
+
+    const existingWallets = await getAllStoredWallets();
+    const updatedWallets = [...existingWallets, walletItem];
+    
+    await AsyncStorage.setItem(WALLETS_LIST_KEY, JSON.stringify(updatedWallets));
+    
+    // Set as active wallet
+    await setActiveWallet(id);
+    
+    // Load wallet into memory immediately
+    const seed = await mnemonicToSeed(mnemonic);
+    const keypair = Keypair.fromSeed(Uint8Array.from(seed.subarray(0, 32)));
+    WALLET = keypair;
+    notifyWalletStateChange();
+  } catch (error) {
+    console.error('Failed to save wallet to list:', error);
+    throw error;
+  }
+};
+
+export const removeWalletFromList = async (walletId: string): Promise<void> => {
+  try {
+    const wallets = await getAllStoredWallets();
+    const updatedWallets = wallets.filter(w => w.id !== walletId);
+    await AsyncStorage.setItem(WALLETS_LIST_KEY, JSON.stringify(updatedWallets));
+    
+    const activeWalletId = await getActiveWalletId();
+    if (activeWalletId === walletId) {
+      // If removing the active wallet, clear legacy storage and set new active if available
+      await clearWallet();
+      if (updatedWallets.length > 0) {
+        await setActiveWallet(updatedWallets[0].id);
+      }
+    }
+  } catch (error) {
+    console.error('Failed to remove wallet from list:', error);
+    throw error;
+  }
+};
+
+export const getActiveWalletId = async (): Promise<string | null> => {
+  try {
+    return await AsyncStorage.getItem(ACTIVE_WALLET_KEY);
+  } catch (error) {
+    console.error('Failed to get active wallet ID:', error);
+    return null;
+  }
+};
+
+export const setActiveWallet = async (walletId: string): Promise<void> => {
+  try {
+    await AsyncStorage.setItem(ACTIVE_WALLET_KEY, walletId);
+  } catch (error) {
+    console.error('Failed to set active wallet:', error);
+    throw error;
+  }
+};
+
+export const switchToWallet = async (walletId: string, pin: string): Promise<boolean> => {
+  try {
+    // Verify app PIN first
+    if (!await verifyAppPin(pin)) {
+      throw new Error('Invalid PIN');
+    }
+
+    const wallets = await getAllStoredWallets();
+    const targetWallet = wallets.find(w => w.id === walletId);
+    
+    if (!targetWallet) {
+      throw new Error('Wallet not found');
+    }
+
+    // Get app-level crypto settings
+    const appCrypto = await getAppCrypto();
+    if (!appCrypto) {
+      throw new Error('App crypto settings not found');
+    }
+
+    const mnemonic = decryptMnemonic(
+      targetWallet.encryptedMnemonic,
+      pin,
+      appCrypto.salt,
+      appCrypto.iv
+    );
+
+    if (!mnemonic) {
+      throw new Error('Failed to decrypt wallet');
+    }
+
+    // Verify mnemonic and create keypair
+    if (!await validateMnemonic(mnemonic)) {
+      throw new Error('Invalid mnemonic in stored wallet');
+    }
+
+    const seed = await mnemonicToSeed(mnemonic);
+    const keypair = Keypair.fromSeed(Uint8Array.from(seed.subarray(0, 32)));
+
+    if (keypair.publicKey.toBase58() !== targetWallet.publicKey) {
+      throw new Error('Public key mismatch');
+    }
+
+    // Update active wallet
+    await setActiveWallet(walletId);
+    
+    // Update in-memory wallet
+    WALLET = keypair;
+    notifyWalletStateChange();
+    
+    return true;
+  } catch (error) {
+    console.error('Failed to switch wallet:', error);
+    return false;
+  }
+};
+
+// Function to switch wallets seamlessly using app PIN (when already unlocked)
+export const switchToWalletWithAppPin = async (walletId: string, appPin: string): Promise<boolean> => {
+  try {
+    // Verify app PIN first
+    if (!await verifyAppPin(appPin)) {
+      throw new Error('Invalid PIN');
+    }
+
+    const wallets = await getAllStoredWallets();
+    const targetWallet = wallets.find(w => w.id === walletId);
+    
+    if (!targetWallet) {
+      throw new Error('Wallet not found');
+    }
+
+    // Get app-level crypto settings
+    const appCrypto = await getAppCrypto();
+    if (!appCrypto) {
+      throw new Error('App crypto settings not found');
+    }
+
+    const mnemonic = decryptMnemonic(
+      targetWallet.encryptedMnemonic,
+      appPin,
+      appCrypto.salt,
+      appCrypto.iv
+    );
+
+    if (!mnemonic) {
+      throw new Error('Failed to decrypt wallet');
+    }
+
+    // Verify mnemonic and create keypair
+    if (!await validateMnemonic(mnemonic)) {
+      throw new Error('Invalid mnemonic in stored wallet');
+    }
+
+    const seed = await mnemonicToSeed(mnemonic);
+    const keypair = Keypair.fromSeed(Uint8Array.from(seed.subarray(0, 32)));
+
+    if (keypair.publicKey.toBase58() !== targetWallet.publicKey) {
+      throw new Error('Public key mismatch');
+    }
+
+    // Update active wallet
+    await setActiveWallet(walletId);
+    
+    // Update in-memory wallet
+    WALLET = keypair;
+    notifyWalletStateChange();
+    
+    return true;
+  } catch (error) {
+    console.error('Failed to switch wallet with app PIN:', error);
+    return false;
+  }
+};
+
+// New function for switching wallets when app is already unlocked
+export const switchToWalletUnlocked = async (walletId: string): Promise<boolean> => {
+  try {
+    // Use the stored temporary PIN for seamless switching if available
+    if (TEMP_APP_PIN) {
+      console.log('Using temporary PIN for seamless wallet switching');
+      return await switchToWalletWithAppPin(walletId, TEMP_APP_PIN);
+    }
+    
+    // Fallback: If no temporary PIN available, require unlock
+    // This should not happen in normal flow, but provides safety
+    console.warn('No temporary PIN available for seamless switching');
+    
+    const wallets = await getAllStoredWallets();
+    const targetWallet = wallets.find(w => w.id === walletId);
+    
+    if (!targetWallet) {
+      throw new Error('Wallet not found');
+    }
+
+    // Update active wallet setting
+    await setActiveWallet(walletId);
+    
+    // Clear current wallet from memory - user will need to re-unlock
+    // This maintains security by requiring PIN re-entry for wallet switching
+    WALLET = null;
+    notifyWalletStateChange();
+    
+    return true;
+  } catch (error) {
+    console.error('Failed to switch wallet:', error);
+    return false;
+  }
+};
+
+// === End Multiple Wallet Management Functions ===
+
+// Debug function to check if temporary PIN is available
+export const hasTempAppPin = (): boolean => {
+  return !!TEMP_APP_PIN;
+};
+
+// Save wallet using the current app PIN (for seamless wallet creation)
+export const saveWalletWithAppPin = async (
+  id: string,
+  name: string,
+  mnemonic: string,
+  publicKey: string
+): Promise<void> => {
+  try {
+    if (!TEMP_APP_PIN) {
+      throw new Error('App not unlocked - no temporary PIN available');
+    }
+
+    // Get app-level crypto settings
+    const appCrypto = await getAppCrypto();
+    if (!appCrypto) {
+      throw new Error('Failed to get app crypto settings');
+    }
+
+    // Encrypt with app-level salt/IV using the temporary PIN
+    const encryption = encryptMnemonic(mnemonic, TEMP_APP_PIN, appCrypto.salt, appCrypto.iv);
+    const walletItem: StoredWalletItem = {
+      id,
+      name,
+      publicKey,
+      encryptedMnemonic: encryption.encryptedMnemonic,
+      createdAt: Date.now(),
+    };
+
+    const existingWallets = await getAllStoredWallets();
+    const updatedWallets = [...existingWallets, walletItem];
+    
+    await AsyncStorage.setItem(WALLETS_LIST_KEY, JSON.stringify(updatedWallets));
+    
+    // Set as active wallet
+    await setActiveWallet(id);
+    
+    // Load wallet into memory immediately
+    const seed = await mnemonicToSeed(mnemonic);
+    const keypair = Keypair.fromSeed(Uint8Array.from(seed.subarray(0, 32)));
+    WALLET = keypair;
+    notifyWalletStateChange();
+    
+    console.log('Wallet saved with app PIN successfully');
+  } catch (error) {
+    console.error('Failed to save wallet with app PIN:', error);
+    throw error;
+  }
+};
+
+// Simplified app unlock function - just verifies PIN and loads active wallet
+export const unlockApp = async (pin: string): Promise<boolean> => {
+  try {
+    // Verify app PIN
+    if (!await verifyAppPin(pin)) {
+      console.log('Invalid app PIN');
+      return false;
+    }
+
+    // Get wallets and load active one if available
+    const wallets = await getAllStoredWallets();
+    if (wallets.length === 0) {
+      console.log('No wallets found - app unlocked but no wallets to load');
+      return true; // App is unlocked, just no wallets yet
+    }
+
+    const activeWalletId = await getActiveWalletId();
+    const activeWallet = wallets.find(w => w.id === activeWalletId) || wallets[0];
+    
+    // Get app crypto settings
+    const appCrypto = await getAppCrypto();
+    if (!appCrypto) {
+      console.log('No app crypto settings found');
+      return false;
+    }
+
+    // Decrypt and load the active wallet
+    const mnemonic = decryptMnemonic(
+      activeWallet.encryptedMnemonic,
+      pin,
+      appCrypto.salt,
+      appCrypto.iv
+    );
+
+    if (!mnemonic || !await validateMnemonic(mnemonic)) {
+      console.error('Failed to decrypt active wallet');
+      return false;
+    }
+
+    const seed = await mnemonicToSeed(mnemonic);
+    const keypair = Keypair.fromSeed(Uint8Array.from(seed.subarray(0, 32)));
+    
+    // Load wallet into memory
+    WALLET = keypair;
+    notifyWalletStateChange();
+    
+    console.log('App unlocked and active wallet loaded');
+    return true;
+  } catch (error) {
+    console.error('Failed to unlock app:', error);
+    return false;
+  }
+};

@@ -16,7 +16,8 @@ import {
   Users,
   Gift,
   TrendingUp,
-  Link
+  Link,
+  Wallet
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import colors from '@/constants/colors';
@@ -141,6 +142,13 @@ export default function SettingsScreen() {
       },
       {
         id: 3,
+        title: 'Wallets',
+        icon: Wallet,
+        color: '#ea580c',
+        route: '/settings/wallets',
+      },
+      {
+        id: 4,
         title: 'Payment Methods',
         icon: CreditCard,
         color: '#8b5cf6',
