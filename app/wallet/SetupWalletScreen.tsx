@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, ActivityIndicator, Alert } from 'react-native';
-import { generateSolanaWallet, saveWalletWithPin } from '@/services/walletService';
+import { generateSolanaWallet, saveWalletToList, createAppPin } from '@/services/walletService';
 import colors from '@/constants/colors';
 import CreateWalletIntroStep from '@/components/wallet/CreateWalletIntroStep';
 import ShowMnemonicStep from '@/components/wallet/ShowMnemonicStep';
@@ -36,6 +36,7 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComp
   };
 
   const handleMnemonicSaved = () => {
+    // Since this is the first wallet, we need to create the app PIN
     setStep(3); // Move to PIN creation
   };
 
@@ -68,7 +69,13 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComp
 
     setIsLoading(true);
     try {
-      await saveWalletWithPin(mnemonic, publicKey, pin);
+      // Create the app-level PIN first (this is the first wallet)
+      await createAppPin(pin);
+      
+      // Generate unique wallet ID and save to multi-wallet system using app PIN
+      const walletId = `wallet-${Date.now()}`;
+      await saveWalletToList(walletId, 'Main Wallet', mnemonic, publicKey, pin);
+      
       Alert.alert("Success", "Your wallet has been created and secured with a PIN. Keep your seed phrase and PIN safe!");
       onWalletSetupComplete();
     } catch (error) {
