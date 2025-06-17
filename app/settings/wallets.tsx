@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Plus, Key, Check, Copy, RefreshCw, Trash2 } from 'lucide-react-native';
+import { Plus, Key, Check, Copy, RefreshCw, Trash2, X } from 'lucide-react-native';
 import colors from '@/constants/colors';
 import BackButton from '@/components/BackButton';
 import { 
-  generateSolanaWallet, 
+  generateSolanaWalletFromMaster,
   getAllStoredWallets,
   saveWalletWithAppPin,
   removeWalletFromList,
@@ -78,9 +78,16 @@ export default function WalletsScreen() {
 
     setLoading(true);
     try {
-      const wallet = await generateSolanaWallet();
+      const wallet = await generateSolanaWalletFromMaster();
       const walletId = `wallet_${Date.now()}`;
-      await saveWalletWithAppPin(walletId, walletName.trim(), wallet.mnemonic, wallet.publicKey);
+      await saveWalletWithAppPin(
+        walletId, 
+        walletName.trim(), 
+        wallet.mnemonic, 
+        wallet.publicKey,
+        wallet.accountIndex,
+        wallet.derivationPath
+      );
       
       Alert.alert('Success', 'Wallet created successfully!', [
         { text: 'OK', onPress: () => {
@@ -301,13 +308,16 @@ export default function WalletsScreen() {
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionCard} onPress={handleImportWallet}>
-            <View style={[styles.actionIcon, { backgroundColor: colors.warning }]}>
+          <TouchableOpacity 
+            style={[styles.actionCard, styles.disabledCard]} 
+            disabled={true}
+          >
+            <View style={[styles.actionIcon, { backgroundColor: colors.textSecondary }]}>
               <Key size={20} color={colors.white} />
             </View>
             <View style={styles.actionContent}>
-              <Text style={styles.actionTitle}>Import Wallet</Text>
-              <Text style={styles.actionSubtitle}>Import existing wallet using seed phrase</Text>
+              <Text style={[styles.actionTitle, styles.disabledText]}>Import Wallet</Text>
+              <Text style={[styles.actionSubtitle, styles.disabledText]}>Import existing wallet using seed phrase (Coming Soon)</Text>
             </View>
           </TouchableOpacity>
         </View>
@@ -325,6 +335,16 @@ export default function WalletsScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
+            <TouchableOpacity 
+              style={styles.modalCloseButton}
+              onPress={() => {
+                setShowCreateModal(false);
+                setShowImportModal(false);
+              }}
+            >
+              <X size={24} color={colors.textSecondary} />
+            </TouchableOpacity>
+            
             {renderModalContent()}
             
             <View style={styles.modalActions}>
@@ -490,6 +510,17 @@ const styles = StyleSheet.create({
     padding: 24,
     width: '90%',
     maxWidth: 400,
+    position: 'relative',
+  },
+  modalCloseButton: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
   },
   modalTitle: {
     fontSize: 20,
@@ -540,5 +571,11 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: {
     opacity: 0.5,
+  },
+  disabledCard: {
+    opacity: 0.6,
+  },
+  disabledText: {
+    color: colors.textSecondary,
   },
 });

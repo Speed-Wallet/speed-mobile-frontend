@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, ActivityIndicator, Alert } from 'react-native';
-import { generateSolanaWallet, saveWalletToList, createAppPin } from '@/services/walletService';
+import { generateSolanaWalletFromMaster, saveWalletToList, createAppPin } from '@/services/walletService';
 import colors from '@/constants/colors';
 import CreateWalletIntroStep from '@/components/wallet/CreateWalletIntroStep';
 import ShowMnemonicStep from '@/components/wallet/ShowMnemonicStep';
@@ -16,6 +16,8 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComp
   const [step, setStep] = useState(1); // 1: Initial, 2: Show Mnemonic, 3: Create PIN, 4: Confirm PIN
   const [mnemonic, setMnemonic] = useState<string | null>(null);
   const [publicKey, setPublicKey] = useState<string | null>(null);
+  const [accountIndex, setAccountIndex] = useState<number | undefined>(undefined);
+  const [derivationPath, setDerivationPath] = useState<string | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(false);
   const [pin, setPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
@@ -24,9 +26,11 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComp
   const handleCreateWallet = async () => {
     setIsLoading(true);
     try {
-      const wallet = await generateSolanaWallet();
+      const wallet = await generateSolanaWalletFromMaster();
       setMnemonic(wallet.mnemonic);
       setPublicKey(wallet.publicKey);
+      setAccountIndex(wallet.accountIndex);
+      setDerivationPath(wallet.derivationPath);
       setStep(2);
     } catch (error) {
       Alert.alert("Error", "Could not generate wallet. Please try again.");
@@ -74,7 +78,7 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComp
       
       // Generate unique wallet ID and save to multi-wallet system using app PIN
       const walletId = `wallet-${Date.now()}`;
-      await saveWalletToList(walletId, 'Main Wallet', mnemonic, publicKey, pin);
+      await saveWalletToList(walletId, 'Main Wallet', mnemonic, publicKey, pin, accountIndex, derivationPath);
       
       Alert.alert("Success", "Your wallet has been created and secured with a PIN. Keep your seed phrase and PIN safe!");
       onWalletSetupComplete();

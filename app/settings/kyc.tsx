@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -197,6 +197,9 @@ export default function AccountScreen() {
   
   const scrollX = useSharedValue(0);
   const scrollViewRef = useAnimatedRef<Animated.ScrollView>();
+  
+  // Add a ref to prevent multiple simultaneous saves
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: (event) => {
@@ -286,17 +289,34 @@ export default function AccountScreen() {
     await savePersonalInfo();
   };
 
-  const savePersonalInfo = async () => {
-    const personalInfo: PersonalInfo = {
-      name: `${firstName} ${lastName}`,
-      email,
-      phoneNumber,
-      dateOfBirth: selectedDate.toISOString(),
-      address,
-      streetNumber,
-      selectedCountry,
-    };
-    await StorageService.savePersonalInfo(personalInfo);
+  const savePersonalInfo = async (overrides?: Partial<PersonalInfo>) => {
+    try {
+      const personalInfo: PersonalInfo = {
+        name: `${firstName} ${lastName}`,
+        email,
+        phoneNumber,
+        dateOfBirth: selectedDate.toISOString(),
+        address,
+        streetNumber,
+        selectedCountry,
+        ...overrides, // Allow overriding specific fields
+      };
+      console.log('Saving personal info:', personalInfo);
+      await StorageService.savePersonalInfo(personalInfo);
+      console.log('Personal info saved successfully');
+    } catch (error) {
+      console.error('Error saving personal info:', error);
+    }
+  };
+
+  // Debounced save function to prevent too many saves
+  const debouncedSave = (overrides?: Partial<PersonalInfo>) => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    saveTimeoutRef.current = setTimeout(() => {
+      savePersonalInfo(overrides);
+    }, 300); // 300ms debounce
   };
 
   const loadPersonalInfo = async () => {
@@ -338,12 +358,12 @@ export default function AccountScreen() {
   const handleCountrySelect = async (country: Country) => {
     setSelectedCountry(country);
     setShowCountryPicker(false);
-    await savePersonalInfo();
+    await savePersonalInfo({ selectedCountry: country });
   };
 
   const handlePhoneChange = async (phone: string) => {
     setPhoneNumber(phone);
-    await savePersonalInfo();
+    await savePersonalInfo({ phoneNumber: phone });
   };
 
   const renderCountryItem = ({ item }: { item: Country }) => (
@@ -414,9 +434,9 @@ export default function AccountScreen() {
               placeholder={input.placeholder}
               placeholderTextColor="#6b7280"
               value={email}
-              onChangeText={(text) => {
+              onChangeText={async (text) => {
                 setEmail(text);
-                savePersonalInfo();
+                debouncedSave({ email: text });
               }}
               keyboardType="email-address"
             />
@@ -590,7 +610,7 @@ export default function AccountScreen() {
                       placeholder="Enter your first name"
                       placeholderTextColor="#6b7280"
                       value={firstName}
-                      onChangeText={(text) => {
+                      onChangeText={async (text) => {
                         // Only allow English letters and spaces
                         const letterRegex = /^[a-zA-Z\s]*$/;
                         const cleanedText = text.replace(/[^a-zA-Z\s]/g, '');
@@ -599,7 +619,7 @@ export default function AccountScreen() {
                         if (letterRegex.test(normalizedText)) {
                           setFirstName(normalizedText);
                           setFirstNameError(normalizedText.length < 4);
-                          savePersonalInfo();
+                          await savePersonalInfo({ name: `${normalizedText} ${lastName}` });
                         }
                       }}
                     />
@@ -621,7 +641,7 @@ export default function AccountScreen() {
                       placeholder="Enter your last name"
                       placeholderTextColor="#6b7280"
                       value={lastName}
-                      onChangeText={(text) => {
+                      onChangeText={async (text) => {
                         // Only allow English letters and spaces
                         const letterRegex = /^[a-zA-Z\s]*$/;
                         const cleanedText = text.replace(/[^a-zA-Z\s]/g, '');
@@ -630,7 +650,7 @@ export default function AccountScreen() {
                         if (letterRegex.test(normalizedText)) {
                           setLastName(normalizedText);
                           setLastNameError(normalizedText.length < 4);
-                          savePersonalInfo();
+                          await savePersonalInfo({ name: `${firstName} ${normalizedText}` });
                         }
                       }}
                     />
@@ -653,9 +673,9 @@ export default function AccountScreen() {
                       placeholder="Enter your email address"
                       placeholderTextColor="#6b7280"
                       value={email}
-                      onChangeText={(text) => {
+                      onChangeText={async (text) => {
                         setEmail(text);
-                        savePersonalInfo();
+                        debouncedSave({ email: text });
                       }}
                       keyboardType="email-address"
                     />
@@ -671,11 +691,11 @@ export default function AccountScreen() {
                       placeholder="Enter your street number"
                       placeholderTextColor="#6b7280"
                       value={streetNumber}
-                      onChangeText={(text) => {
+                      onChangeText={async (text) => {
                         // Only allow digits 0-9
                         const numericText = text.replace(/[^0-9]/g, '');
                         setStreetNumber(numericText);
-                        savePersonalInfo();
+                        await savePersonalInfo({ streetNumber: numericText });
                       }}
                       keyboardType="numeric"
                     />
@@ -691,9 +711,9 @@ export default function AccountScreen() {
                       placeholder="Enter your home address"
                       placeholderTextColor="#6b7280"
                       value={address}
-                      onChangeText={(text) => {
+                      onChangeText={async (text) => {
                         setAddress(text);
-                        savePersonalInfo();
+                        debouncedSave({ address: text });
                       }}
                     />
                   </View>
