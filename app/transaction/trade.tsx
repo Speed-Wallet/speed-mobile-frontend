@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react'; // Added useMemo
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, SafeAreaView, StatusBar, ScrollView, Image, Animated } from 'react-native'; // Removed Dimensions, Added Animated
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, SafeAreaView, StatusBar, ScrollView, Animated } from 'react-native'; // Removed Dimensions, Removed Image, Added Animated
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowDownUp, ArrowRightLeft, DollarSign, Lock, ChevronDown } from 'lucide-react-native'; // Changed ArrowUpDown to ArrowDownUp, Added Lock, Added ChevronDown
 import { LinearGradient } from 'expo-linear-gradient';
@@ -7,12 +7,14 @@ import colors from '@/constants/colors';
 import { formatCurrency } from '@/utils/formatters';
 import { getAllTokenInfo, getTokenByAddress } from '@/data/tokens';
 import AmountInput from '@/components/AmountInput'; // Added import
+import TokenLogo from '@/components/TokenLogo'; // Added import
 import { EnrichedTokenEntry } from '@/data/types';
 import { PLATFORM_FEE_RATE, JupiterQuote, jupiterSwap } from '@/services/walletService';
 import BackButton from '@/components/BackButton';
 import { useTokenValue } from '@/hooks/useTokenValue';
 import { useTokenPrice } from '@/hooks/useTokenPrice';
 import { triggerShake } from '@/utils/animations';
+import { useTokenBalance } from '@/hooks/useTokenBalance';
 
 const WAIT_ON_AMOUNT_CHANGE = 2000;
 const LOOP_QUOTE_INTERVAL = 10000;
@@ -37,7 +39,7 @@ const TokenSelectorDisplay: React.FC<TokenSelectorDisplayProps> = ({ token, onPr
       <TouchableOpacity onPress={onPress} style={styles.tokenSelectorContainer}>
         {token ? (
           <View style={styles.tokenDisplay}>
-            <Image source={{ uri: token.logoURI }} style={styles.tokenIcon} />
+            <TokenLogo logoURI={token.logoURI} size={24} style={styles.tokenLogo} />
             <Text style={styles.tokenNameText}>{token.name}</Text>
           </View>
         ) : (
@@ -67,6 +69,7 @@ export default function TradeScreen() {
 
   const shakeAnimationValue = useRef(new Animated.Value(0)).current;
   const { price: fromTokenPrice } = useTokenPrice(fromToken?.extensions.coingeckoId);
+  const { balance: fromTokenBalance } = useTokenBalance(fromToken?.address);
 
   function updateAmounts() {
     if (timeoutID !== undefined) {
@@ -127,13 +130,13 @@ export default function TradeScreen() {
   }
 
   useEffect(updateAmounts, [fromAmount]);
-  
+
   // Handle token selection from the token selector page
   useEffect(() => {
     if (selectedTokenAddress && returnParam) {
       const tokens = getAllTokenInfo();
       const selectedToken = tokens.find(token => token.address === selectedTokenAddress);
-      
+
       if (selectedToken) {
         if (returnParam === 'fromToken') {
           setFromToken(selectedToken);
@@ -141,15 +144,15 @@ export default function TradeScreen() {
           setToToken(selectedToken);
         }
       }
-      
+
       // Clear the params to prevent re-triggering
-      router.setParams({ 
-        selectedTokenAddress: undefined, 
-        returnParam: undefined 
+      router.setParams({
+        selectedTokenAddress: undefined,
+        returnParam: undefined
       });
     }
   }, [selectedTokenAddress, returnParam]);
-  
+
   useEffect(() => {
     const loadData = () => {
       const tokens = getAllTokenInfo();
@@ -223,11 +226,13 @@ export default function TradeScreen() {
       alert('Invalid amount');
       return;
     }
+
     if (!fromToken || !toToken) {
       alert('Please select both tokens.');
       return;
     }
-    if (amount > fromToken.balance) {
+
+    if (amount > fromTokenBalance) {
       alert('Insufficient balance');
       return;
     }
@@ -493,11 +498,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  tokenIcon: { // Add if you have icons
-    width: 24,
-    height: 24,
+  tokenLogo: {
     marginRight: 8,
-    borderRadius: 12,
   },
   tokenSymbolText: {
     fontSize: 18,

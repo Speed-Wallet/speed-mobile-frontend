@@ -1,8 +1,8 @@
 import React from 'react';
-import { View, Text, TextInput, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TextInput, StyleSheet } from 'react-native';
 import colors from '@/constants/colors'; // Assuming colors are used in styles
-import { EnrichedTokenEntry } from '@/data/types'; // Assuming this type is needed for fromToken
 import { useTokenBalance } from '@/hooks/useTokenBalance';
+import TokenLogo from '@/components/TokenLogo';
 
 interface AmountInputProps {
     address: string | null | undefined;
@@ -27,7 +27,7 @@ const AmountInput: React.FC<AmountInputProps> = ({
             <Text style={styles.label}>Amount</Text>
             <View style={styles.amountInputSection}>
                 <View style={styles.amountInputRow}>
-                    {address && <Image source={{ uri: logoURI }} style={styles.amountTokenIcon} />}
+                    {address && <TokenLogo logoURI={logoURI} size={24} style={styles.amountTokenIcon} />}
                     <TextInput
                         style={styles.amountTextInput}
                         placeholder="0.00"
@@ -84,10 +84,7 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     amountTokenIcon: {
-        width: 24,
-        height: 24,
         marginRight: 8,
-        borderRadius: 12,
     },
     amountTextInput: {
         fontSize: 20,
@@ -95,7 +92,6 @@ const styles = StyleSheet.create({
         color: colors.white,
         flex: 1,
         paddingVertical: 0,
-        outlineStyle: 'none' // This is not a standard React Native style and will likely be ignored on native platforms.
     },
     balanceText: {
         fontSize: 14,

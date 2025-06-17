@@ -1,9 +1,10 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import colors from '@/constants/colors';
 import { formatCurrency } from '@/utils/formatters';
 import { EnrichedTokenEntry, TokenEntry } from '@/data/types';
 import { useTokenBalance } from '@/hooks/useTokenBalance';
+import TokenLogo from './TokenLogo';
 
 interface TokenItemAltProps {
     token: EnrichedTokenEntry;
@@ -23,7 +24,7 @@ const TokenItemAlt: React.FC<TokenItemAltProps> = ({ token, selectedToken, onSel
             ]}
             onPress={() => onSelectToken(token)}
         >
-            <Image source={{ uri: logoURI }} style={styles.tokenIcon} />
+            <TokenLogo logoURI={logoURI} size={40} style={styles.tokenIcon} />
             <View style={styles.tokenInfo}>
                 <Text style={styles.tokenName}>{name}</Text>
                 <Text style={styles.tokenSymbol}>{symbol}</Text>

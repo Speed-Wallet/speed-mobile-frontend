@@ -4,7 +4,6 @@ node_modules/
 .expo
 .bolt
 .idea
-google-services.json
 
 # expo
 .expo/

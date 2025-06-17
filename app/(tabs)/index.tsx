@@ -60,7 +60,7 @@ export default function HomeScreen() {
         <View style={styles.assetsSection}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>TOKEN</Text>
-            <Text style={styles.sectionTitle}>YOUR BALANCE</Text>
+            <Text style={styles.sectionTitle}>BALANCE</Text>
           </View>
 
           <TokenList
@@ -115,6 +115,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 16,
+    paddingHorizontal: 16,
   },
   sectionTitle: {
     color: colors.textSecondary,

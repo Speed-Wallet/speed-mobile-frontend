@@ -72,8 +72,8 @@ export default function CardsScreen() {
 
     // Set up periodic refresh to catch storage updates from notifications
     const refreshInterval = setInterval(() => {
-      loadCards(); // Reload cards from storage every 2 seconds
-    }, 2000);
+      loadCards(); // Reload cards from storage every 30 seconds
+    }, 30000);
 
     // Cleanup on unmount
     return () => {
@@ -93,26 +93,23 @@ export default function CardsScreen() {
     }
   };
 
-  const generateCardNumber = () => {
-    return Math.floor(1000 + Math.random() * 9000).toString();
-  };
-
-  const generateExpiryDate = () => {
-    const currentYear = new Date().getFullYear();
-    const futureYear = currentYear + 3;
-    const month = Math.floor(Math.random() * 12) + 1;
-    return `${month.toString().padStart(2, '0')}/${futureYear.toString().slice(-2)}`;
-  };
-
   const checkKYCLevel = async (minLevel: 1 | 2 | 3) => {
     const verificationLevel = await getCurrentVerificationLevel();
     return verificationLevel.level >= minLevel && verificationLevel.status === 'completed';
   };
 
   const handleAddCardPress = async () => {
+    // Show modal immediately for better UX
+    setShowAddCard(true);
+    
+    // Check KYC in the background
     const isKYCCompliant = await checkKYCLevel(MIN_KYC_LEVEL);
 
     if (!isKYCCompliant) {
+      // Close the modal first
+      setShowAddCard(false);
+      
+      // Then show the KYC alert
       Alert.alert(
         'KYC Verification Required',
         `You need to complete KYC Level ${MIN_KYC_LEVEL} verification to create virtual cards. Please complete your document verification first.`,
@@ -131,7 +128,6 @@ export default function CardsScreen() {
       );
       return;
     }
-    setShowAddCard(true);
   };
 
   const simulateCardFailureFlow = async (userEmail: string, cardBalance: string) => {
@@ -392,10 +388,10 @@ export default function CardsScreen() {
             />
             {(isDevelopment || isFailed) && (
               <TouchableOpacity
-                style={styles.deleteButton}
+                style={styles.deleteButtonFailed}
                 onPress={() => handleDeleteCard(card.id)}
               >
-                <X size={16} color="#ef4444" />
+                <X size={16} color="#ffffff" />
               </TouchableOpacity>
             )}
           </View>
@@ -458,14 +454,16 @@ export default function CardsScreen() {
               )}
             </View>
           </View>
-          <View style={styles.expirySection}>
-            <Text style={styles.cardLabel}>EXPIRES</Text>
-            {isLoading ? (
-              <LoadingSkeleton width={40} height={16} borderRadius={4} />
-            ) : (
-              <Text style={styles.cardValue}>{card.expires}</Text>
-            )}
-          </View>
+          {!isFailed && (
+            <View style={styles.expirySection}>
+              <Text style={styles.cardLabel}>EXPIRES</Text>
+              {isLoading ? (
+                <LoadingSkeleton width={40} height={16} borderRadius={4} />
+              ) : (
+                <Text style={styles.cardValue}>{card.expires}</Text>
+              )}
+            </View>
+          )}
         </View>
       </View>
     );
@@ -513,21 +511,21 @@ export default function CardsScreen() {
       >
         <SafeAreaView style={styles.container}>
           <View style={styles.header}>
+            <View style={styles.placeholder} />
+            <Text style={styles.title}>Create New Card</Text>
             <TouchableOpacity
-              style={styles.backButton}
+              style={styles.closeButton}
               onPress={() => {
                 setShowAddCard(false);
                 setShowValidationError(false);
                 setShowNameValidationError(false);
               }}
             >
-              <ArrowLeft size={24} color="#ffffff" />
+              <X size={24} color="#ffffff" />
             </TouchableOpacity>
-            <Text style={styles.title}>Create New Card</Text>
-            <View style={styles.placeholder} />
           </View>
 
-          <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          <ScrollView style={styles.content} showsVerticalScrollIndicator={false} contentContainerStyle={styles.modalScrollContent}>
             {/* Card Brand Selection */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Card Brand</Text>
@@ -696,42 +694,42 @@ export default function CardsScreen() {
                 </View>
               </View>
             </View>
+          </ScrollView>
 
+          {/* Sticky Button Container */}
+          <View style={styles.modalStickyButtonContainer}>
             {/* Development Mode: Simulation Buttons */}
             {process.env.EXPO_PUBLIC_APP_ENV === 'development' && (
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>🧪 Development Testing</Text>
-                <View style={styles.devButtonsContainer}>
-                  <Animated.View style={{ transform: [{ translateX: devButton1ShakeAnim }] }}>
-                    <TouchableOpacity
-                      style={[
-                        styles.devSimulateButton,
-                        (!cardName.trim() || cardName.trim().length < 4 || !cardBalance || parseFloat(cardBalance) <= 0 || isLoading || showValidationError || showNameValidationError) && styles.devSimulateButtonDisabled
-                      ]}
-                      onPress={handleDevButton1Attempt}
-                    >
-                      <Text style={[
-                        styles.devSimulateButtonText,
-                        (!cardName.trim() || cardName.trim().length < 4 || !cardBalance || parseFloat(cardBalance) <= 0 || isLoading || showValidationError || showNameValidationError) && styles.devSimulateButtonTextDisabled
-                      ]}>Simulate USDT Send Failed</Text>
-                    </TouchableOpacity>
-                  </Animated.View>
+              <View style={styles.devButtonsContainer}>
+                <Animated.View style={{ transform: [{ translateX: devButton1ShakeAnim }] }}>
+                  <TouchableOpacity
+                    style={[
+                      styles.devSimulateButton,
+                      (!cardName.trim() || cardName.trim().length < 4 || !cardBalance || parseFloat(cardBalance) <= 0 || isLoading || showValidationError || showNameValidationError) && styles.devSimulateButtonDisabled
+                    ]}
+                    onPress={handleDevButton1Attempt}
+                  >
+                    <Text style={[
+                      styles.devSimulateButtonText,
+                      (!cardName.trim() || cardName.trim().length < 4 || !cardBalance || parseFloat(cardBalance) <= 0 || isLoading || showValidationError || showNameValidationError) && styles.devSimulateButtonTextDisabled
+                    ]}>Simulate USDT Send Failed</Text>
+                  </TouchableOpacity>
+                </Animated.View>
 
-                  <Animated.View style={{ transform: [{ translateX: devButton2ShakeAnim }] }}>
-                    <TouchableOpacity
-                      style={[
-                        styles.devSimulateButton,
-                        (!cardName.trim() || cardName.trim().length < 4 || !cardBalance || parseFloat(cardBalance) <= 0 || isLoading || showValidationError || showNameValidationError) && styles.devSimulateButtonDisabled
-                      ]}
-                      onPress={handleDevButton2Attempt}
-                    >
-                      <Text style={[
-                        styles.devSimulateButtonText,
-                        (!cardName.trim() || cardName.trim().length < 4 || !cardBalance || parseFloat(cardBalance) <= 0 || isLoading || showValidationError || showNameValidationError) && styles.devSimulateButtonTextDisabled
-                      ]}>Simulate Card Creation Failed</Text>
-                    </TouchableOpacity>
-                  </Animated.View>
-                </View>
+                <Animated.View style={{ transform: [{ translateX: devButton2ShakeAnim }] }}>
+                  <TouchableOpacity
+                    style={[
+                      styles.devSimulateButton,
+                      (!cardName.trim() || cardName.trim().length < 4 || !cardBalance || parseFloat(cardBalance) <= 0 || isLoading || showValidationError || showNameValidationError) && styles.devSimulateButtonDisabled
+                    ]}
+                    onPress={handleDevButton2Attempt}
+                  >
+                    <Text style={[
+                      styles.devSimulateButtonText,
+                      (!cardName.trim() || cardName.trim().length < 4 || !cardBalance || parseFloat(cardBalance) <= 0 || isLoading || showValidationError || showNameValidationError) && styles.devSimulateButtonTextDisabled
+                    ]}>Simulate Card Creation Failed</Text>
+                  </TouchableOpacity>
+                </Animated.View>
               </View>
             )}
 
@@ -750,7 +748,7 @@ export default function CardsScreen() {
                 </Text>
               </TouchableOpacity>
             </Animated.View>
-          </ScrollView>
+          </View>
         </SafeAreaView>
       </Modal>
     </SafeAreaView>
@@ -770,6 +768,14 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#1a1a1a',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  closeButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -901,7 +907,22 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 100, // Add space for the sticky button
   },
+  modalScrollContent: {
+    paddingBottom: 160, // Extra space for sticky buttons in modal (dev buttons + create button)
+  },
   stickyButtonContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#000000',
+    paddingHorizontal: 16,
+    paddingBottom: 24, // Extra padding for safe area
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  modalStickyButtonContainer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
@@ -1135,6 +1156,14 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 12,
     backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteButtonFailed: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#ef4444',
     alignItems: 'center',
     justifyContent: 'center',
   },

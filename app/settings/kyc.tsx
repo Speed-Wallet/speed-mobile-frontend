@@ -1092,7 +1092,7 @@ export const getCurrentVerificationLevel = async (): Promise<{
 }> => {
   // Load personal info and verification documents
   const personalInfo = await StorageService.loadPersonalInfo();
-  const savedCards = await StorageService.loadCards();
+  // const savedCards = await StorageService.loadCards();
   
   // Check Level 1 completion (basic personal info)
   const level1Complete = personalInfo && 

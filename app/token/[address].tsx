@@ -105,8 +105,9 @@ export default function HomeScreen() {
             style={styles.chart}
             withInnerLines={false}
             withOuterLines={false}
-            withVerticalLabels={false}
+            withVerticalLabels={true}
             withHorizontalLabels={true}
+            fromZero={false}
           />
         </View>
 
@@ -222,7 +223,9 @@ const styles = StyleSheet.create({
   },
   chartContainer: {
     alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 20,
+    paddingVertical: 10,
   },
   chart: {
     borderRadius: 16,

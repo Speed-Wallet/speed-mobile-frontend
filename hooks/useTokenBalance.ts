@@ -26,6 +26,7 @@ interface UseTokenBalanceResult {
  *          wsError, storeError, and isConnectingOrFetching status from the store.
  */
 export const useTokenBalance = (address: string | null | undefined): UseTokenBalanceResult => {
+    console.log("getting balance")
     const { tokenBalanceDetails, wsError, storeError, isConnectingOrFetchingOverall } = useTokenBalanceStore(
         useShallow((state) => ({
             tokenBalanceDetails: state.tokenBalanceDetails,
@@ -34,8 +35,9 @@ export const useTokenBalance = (address: string | null | undefined): UseTokenBal
             isConnectingOrFetchingOverall: state.isConnectingOrFetching, // Renamed to avoid conflict in return object
         }))
     );
-
+    console.log('balance')
     const tokenDetails = address ? tokenBalanceDetails[address] : undefined;
+    console.log('token balance', tokenDetails?.balance)
 
     return {
         balance: tokenDetails?.balance || 0,

@@ -26,8 +26,7 @@ export const useTokenPrice = (coingeckoId: string | undefined): {
       return data.market_data.current_price.usd;
     },
     enabled: !!coingeckoId,
-    staleTime: 2 * 60 * 1000, // 2 minutes - longer than refetch interval
-    refetchInterval: 60 * 1000, // 1 minute
+    refetchInterval: 30 * 1000, // 30 seconds
   });
 
   return {
