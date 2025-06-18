@@ -6,6 +6,7 @@ export interface PaymentCard {
   brand: 'mastercard' | 'visa';
   last4: string;
   cardNumber?: string; // Full card number (optional for backward compatibility)
+  cvv?: string; // CVV code (optional for backward compatibility)
   holder: string;
   expires: string;
   balance: number;
