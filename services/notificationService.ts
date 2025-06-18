@@ -136,6 +136,7 @@ function convertCardDataToPaymentCard(cardData: VirtualCardEventData): PaymentCa
     brand: cardData.CardBrand.toLowerCase() as 'mastercard' | 'visa',
     last4: cardData.Last4,
     cardNumber: cardData.CardNumber, // Store full card number
+    cvv: cardData.CVV2, // Store CVV code
     holder: cardData.CardName,
     expires: cardData.ValidMonthYear,
     balance: cardData.CardBalance,

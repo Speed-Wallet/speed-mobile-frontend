@@ -21,6 +21,7 @@ import { setupNotificationListeners } from '@/services/notificationService';
 import { getCurrentVerificationLevel } from '@/app/settings/kyc';
 import { simulateUSDTReceived, getWalletAddress, simulateCardCreated, simulateCardCreationFailed } from '@/services/apis';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
+import { SuccessfulPaymentCard, FailedPaymentCard } from '@/components/wallet/PaymentCard';
 import { triggerShake } from '@/utils/animations';
 import * as Notifications from 'expo-notifications';
 
@@ -43,6 +44,7 @@ const initialCards: PaymentCard[] = [
     brand: 'mastercard',
     last4: '4242',
     cardNumber: '5555555555554242', // Full card number for testing
+    cvv: '123', // CVV code for testing
     holder: 'TRISTAN',
     expires: '12/25',
     balance: 2500.00,
@@ -351,127 +353,36 @@ export default function CardsScreen() {
   };
 
   const renderPaymentCard = (card: PaymentCard) => {
-    const isVisible = visibleCards[card.id];
-    const isLoading = card.isLoading;
-    const isFailed = card.isFailed;
+    const isVisible = visibleCards[card.id] || false;
+    const isLoading = card.isLoading || false;
+    const isFailed = card.isFailed || false;
     const isDevelopment = process.env.EXPO_PUBLIC_APP_ENV === 'development';
 
+    if (isFailed) {
+      return (
+        <FailedPaymentCard
+          key={card.id}
+          card={card}
+          onDeleteCard={handleDeleteCard}
+          getBrandLogo={getBrandLogo}
+          styles={styles}
+        />
+      );
+    }
+
     return (
-      <View key={card.id} style={[
-        styles.paymentCard,
-        isLoading && styles.loadingCard,
-        isFailed && styles.failedCard
-      ]}>
-        <View style={styles.cardHeader}>
-          <View style={styles.cardHolderSection}>
-            <View style={styles.userIcon}>
-              <User size={14} color="#ffffff" />
-            </View>
-            <Text style={styles.cardHolderName}>{card.holder}</Text>
-            {isLoading && (
-              <View style={styles.loadingBadge}>
-                <Text style={styles.loadingBadgeText}>Creating...</Text>
-              </View>
-            )}
-            {isFailed && (
-              <View style={styles.failedBadge}>
-                <Text style={styles.failedBadgeText}>Failed to Create</Text>
-              </View>
-            )}
-          </View>
-          <View style={styles.cardHeaderActions}>
-            <Image
-              source={getBrandLogo(card.brand)}
-              style={[
-                styles.brandLogo,
-                (isLoading || isFailed) && styles.loadingOpacity
-              ]}
-              resizeMode="contain"
-            />
-            {(isDevelopment || isFailed) && (
-              <TouchableOpacity
-                style={styles.deleteButtonFailed}
-                onPress={() => handleDeleteCard(card.id)}
-              >
-                <X size={16} color="#ffffff" />
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-
-        <View style={styles.cardNumberSection}>
-          {isLoading ? (
-            <LoadingSkeleton width="60%" height={22} borderRadius={4} />
-          ) : isFailed ? (
-            <Text style={[styles.cardNumberText, styles.failedText]}>
-              Failed to Create Card
-            </Text>
-          ) : (
-            <Text style={styles.cardNumberText}>
-              {isVisible 
-                ? (card.cardNumber 
-                    ? `${card.cardNumber.slice(0, 4)} ${card.cardNumber.slice(4, 8)} ${card.cardNumber.slice(8, 12)} ${card.cardNumber.slice(12, 16)}`
-                    : `•••• •••• •••• ${card.last4}`) 
-                : '•••• •••• •••• ••••'}
-            </Text>
-          )}
-          {!isFailed && (
-            <TouchableOpacity
-              style={styles.visibilityButton}
-              onPress={() => toggleCardVisibility(card.id)}
-              disabled={isLoading}
-            >
-              {isVisible ? (
-                <EyeOff size={20} color={isLoading ? "#555555" : "#9ca3af"} />
-              ) : (
-                <Eye size={20} color={isLoading ? "#555555" : "#9ca3af"} />
-              )}
-            </TouchableOpacity>
-          )}
-        </View>
-
-        <View style={styles.cardFooter}>
-          <View style={styles.balanceSection}>
-            <Text style={styles.cardLabel}>
-              {isFailed ? 'ERROR' : 'BALANCE'}
-            </Text>
-            <View style={styles.balanceRow}>
-              {isFailed ? (
-                <Text style={[styles.balanceValue, styles.failedText]} numberOfLines={2}>
-                  {card.failureReason || 'Unknown error'}
-                </Text>
-              ) : (
-                <>
-                  <Text style={styles.balanceValue}>
-                    {isVisible ? formatBalance(card.balance) : '••••••'}
-                  </Text>
-                  <TouchableOpacity
-                    style={styles.balanceVisibilityButton}
-                    onPress={() => toggleCardVisibility(card.id)}
-                    disabled={isLoading}
-                  >
-                    {isVisible ? (
-                      <EyeOff size={16} color={isLoading ? "#555555" : "#10b981"} />
-                    ) : (
-                      <Eye size={16} color={isLoading ? "#555555" : "#10b981"} />
-                    )}
-                  </TouchableOpacity>
-                </>
-              )}
-            </View>
-          </View>
-          {!isFailed && (
-            <View style={styles.expirySection}>
-              <Text style={styles.cardLabel}>EXPIRES</Text>
-              {isLoading ? (
-                <LoadingSkeleton width={40} height={16} borderRadius={4} />
-              ) : (
-                <Text style={styles.cardValue}>{card.expires}</Text>
-              )}
-            </View>
-          )}
-        </View>
-      </View>
+      <SuccessfulPaymentCard
+        key={card.id}
+        card={card}
+        isVisible={isVisible}
+        isLoading={isLoading}
+        isDevelopment={isDevelopment}
+        onToggleVisibility={toggleCardVisibility}
+        onDeleteCard={handleDeleteCard}
+        formatBalance={formatBalance}
+        getBrandLogo={getBrandLogo}
+        styles={styles}
+      />
     );
   };
 
@@ -693,6 +604,10 @@ export default function CardsScreen() {
                       </View>
                     </View>
                   </View>
+                  <View style={styles.previewCvvSection}>
+                    <Text style={styles.previewCardLabel}>CVV</Text>
+                    <Text style={styles.previewCardValue}>•••</Text>
+                  </View>
                   <View style={styles.previewExpirySection}>
                     <Text style={styles.previewCardLabel}>EXPIRES</Text>
                     <Text style={styles.previewCardValue}>••/••</Text>
@@ -858,6 +773,7 @@ const styles = StyleSheet.create({
   cardFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'flex-end',
   },
   balanceSection: {
     flex: 1,
@@ -881,8 +797,14 @@ const styles = StyleSheet.create({
   balanceVisibilityButton: {
     padding: 2,
   },
+  cvvSection: {
+    alignItems: 'center',
+    minWidth: 60, // Ensure consistent width
+    marginHorizontal: 20, // Add spacing from sides
+  },
   expirySection: {
     alignItems: 'flex-end',
+    flex: 1,
   },
   cardValue: {
     fontSize: 14,
@@ -1064,6 +986,7 @@ const styles = StyleSheet.create({
   previewCardFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'flex-end',
   },
   previewBalanceSection: {
     flex: 1,
@@ -1087,8 +1010,14 @@ const styles = StyleSheet.create({
   previewBalanceVisibilityButton: {
     padding: 2,
   },
+  previewCvvSection: {
+    alignItems: 'center',
+    minWidth: 60, // Ensure consistent width
+    marginHorizontal: 20, // Add spacing from sides
+  },
   previewExpirySection: {
     alignItems: 'flex-end',
+    flex: 1,
   },
   previewCardValue: {
     fontSize: 14,
