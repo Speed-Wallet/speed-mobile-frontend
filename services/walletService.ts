@@ -341,6 +341,7 @@ export const hasMasterMnemonic = async (): Promise<boolean> => {
 
 /**
  * Generate a new wallet using the master mnemonic and next available derivation path
+ * This version requires the app to be unlocked (temporary PIN available)
  */
 export const generateSolanaWalletFromMaster = async (): Promise<SolanaWallet & { accountIndex: number; derivationPath: string }> => {
   const masterMnemonic = await getMasterMnemonic();
@@ -375,6 +376,77 @@ export const generateSolanaWalletFromMaster = async (): Promise<SolanaWallet & {
     accountIndex: nextAccountIndex,
     derivationPath,
   };
+};
+
+/**
+ * Generate the first wallet during initial setup (doesn't require app to be unlocked)
+ * This is used during the initial wallet setup flow when no PIN exists yet
+ */
+export const generateInitialSolanaWallet = async (): Promise<SolanaWallet & { accountIndex: number; derivationPath: string }> => {
+  // Check if we already have wallets stored (which would mean this isn't really initial setup)
+  const existingWallets = await getAllStoredWallets();
+  if (existingWallets.length > 0) {
+    throw new Error('Wallets already exist. Use generateSolanaWalletFromMaster instead.');
+  }
+  
+  // Check if master mnemonic exists but no wallets are stored
+  // This can happen if initial setup was interrupted
+  const hasMaster = await hasMasterMnemonic();
+  if (hasMaster) {
+    console.log('Master mnemonic exists but no wallets found. Clearing master mnemonic for fresh start.');
+    // Clear the master mnemonic so we can start fresh
+    await AsyncStorage.removeItem(MASTER_MNEMONIC_KEY);
+  }
+  
+  // Generate new master mnemonic for the first wallet
+  const newMasterMnemonic = await generateMnemonic();
+  
+  // Create the first wallet (account index 0) 
+  const keypair = await createKeypairFromMnemonic(newMasterMnemonic, 0);
+  const derivationPath = getSolanaDerivationPath(0);
+  
+  return {
+    mnemonic: newMasterMnemonic,
+    publicKey: keypair.publicKey.toBase58(),
+    accountIndex: 0,
+    derivationPath,
+  };
+};
+
+/**
+ * Clear any incomplete wallet setup state (useful for debugging or recovering from interrupted setup)
+ */
+export const clearIncompleteSetup = async (): Promise<void> => {
+  try {
+    const wallets = await getAllStoredWallets();
+    const hasAppPinSet = await hasAppPin();
+    
+    // If no wallets exist but we have a master mnemonic or app PIN, clear them
+    if (wallets.length === 0) {
+      if (await hasMasterMnemonic()) {
+        await AsyncStorage.removeItem(MASTER_MNEMONIC_KEY);
+        console.log('Cleared orphaned master mnemonic');
+      }
+      
+      if (hasAppPinSet) {
+        await clearAppPin();
+        console.log('Cleared orphaned app PIN');
+      }
+      
+      // Clear any temporary state
+      TEMP_APP_PIN = null;
+      if (WALLET) {
+        WALLET = null;
+        notifyWalletStateChange();
+      }
+      
+      console.log('Incomplete setup state cleared');
+    } else {
+      console.log('Wallets exist, no cleanup needed');
+    }
+  } catch (error) {
+    console.error('Error clearing incomplete setup:', error);
+  }
 };
 
 export const saveWalletWithPin = async (mnemonic: string, publicKey: string, pin: string): Promise<void> => {
@@ -912,6 +984,14 @@ export const saveWalletToList = async (
     // Check if this is the first wallet
     const existingWallets = await getAllStoredWallets();
     const isMasterWallet = existingWallets.length === 0;
+
+    // Store master mnemonic if this is the first wallet (and it doesn't exist already)
+    if (isMasterWallet && !await hasMasterMnemonic()) {
+      // Store the master mnemonic encrypted with the app PIN
+      const masterEncryption = encryptMnemonic(mnemonic, pin, appCrypto.salt, appCrypto.iv);
+      await AsyncStorage.setItem(MASTER_MNEMONIC_KEY, masterEncryption.encryptedMnemonic);
+      console.log('Master mnemonic stored during initial wallet creation');
+    }
 
     // Encrypt with app-level salt/IV
     const encryption = encryptMnemonic(mnemonic, pin, appCrypto.salt, appCrypto.iv);

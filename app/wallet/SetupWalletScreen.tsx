@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, ActivityIndicator, Alert } from 'react-native';
-import { generateSolanaWalletFromMaster, saveWalletToList, createAppPin } from '@/services/walletService';
+import { generateInitialSolanaWallet, saveWalletToList, createAppPin } from '@/services/walletService';
 import colors from '@/constants/colors';
 import CreateWalletIntroStep from '@/components/wallet/CreateWalletIntroStep';
 import ShowMnemonicStep from '@/components/wallet/ShowMnemonicStep';
@@ -26,7 +26,7 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComp
   const handleCreateWallet = async () => {
     setIsLoading(true);
     try {
-      const wallet = await generateSolanaWalletFromMaster();
+      const wallet = await generateInitialSolanaWallet();
       setMnemonic(wallet.mnemonic);
       setPublicKey(wallet.publicKey);
       setAccountIndex(wallet.accountIndex);
