@@ -58,7 +58,7 @@ export async function getWalletAddress(): Promise<GetWalletAddressResponse> {
     console.log('📊 Response data:', data);
     return data;
   } catch (error) {
-    console.error('Error fetching wallet address:', error);
+    console.error('Error fetching wallet address, check that the backend is running and url is correct:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to fetch wallet address'

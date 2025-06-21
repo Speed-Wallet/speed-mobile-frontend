@@ -4,7 +4,8 @@ import { useRouter } from 'expo-router';
 import colors from '@/constants/colors';
 import BackButton from '@/components/BackButton';
 import { unlockWalletWithPin } from '@/services/walletService';
-import { Eye, EyeOff } from 'lucide-react-native';
+import { Eye, EyeOff, Copy } from 'lucide-react-native';
+import { setStringAsync } from 'expo-clipboard';
 
 export default function SecuritySettingsScreen() {
   const router = useRouter();
@@ -45,6 +46,13 @@ export default function SecuritySettingsScreen() {
     }
     setIsLoading(false);
     setPin(''); // Clear PIN input
+  };
+
+  const copySeedPhrase = async () => {
+    if (seedPhrase) {
+      await setStringAsync(seedPhrase);
+      Alert.alert('Copied', 'Seed phrase copied to clipboard');
+    }
   };
 
   return (
@@ -113,9 +121,15 @@ export default function SecuritySettingsScreen() {
             <View style={styles.mnemonicDisplay}>
               <Text style={styles.mnemonicText}>{seedPhrase}</Text>
             </View>
-            <TouchableOpacity style={styles.button} onPress={() => setSeedPhrase(null)}>
-              <Text style={styles.buttonText}>Hide Seed Phrase</Text>
-            </TouchableOpacity>
+            <View style={styles.buttonRow}>
+              <TouchableOpacity style={[styles.button, styles.copyButton]} onPress={copySeedPhrase}>
+                <Copy size={18} color={colors.white} />
+                <Text style={[styles.buttonText, { marginLeft: 8 }]}>Copy</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.button, styles.hideButton]} onPress={() => setSeedPhrase(null)}>
+                <Text style={styles.buttonText}>Hide</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         )}
 
@@ -201,7 +215,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Regular',
     fontSize: 18,
     paddingVertical: 12,
-    outlineStyle: 'none',
   },
   eyeIcon: {
     padding: 8,
@@ -263,5 +276,21 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     textAlign: 'center',
     lineHeight: 26,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    width: '100%',
+    gap: 12,
+  },
+  copyButton: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+  },
+  hideButton: {
+    flex: 1,
+    backgroundColor: colors.textSecondary,
   },
 });
