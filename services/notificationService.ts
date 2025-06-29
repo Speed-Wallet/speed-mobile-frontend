@@ -1,8 +1,6 @@
 import * as Notifications from 'expo-notifications';
 import { Platform, Alert, ToastAndroid } from 'react-native';
 import { router } from 'expo-router';
-import { StorageService, PaymentCard } from '@/utils/storage';
-import { getCard } from './apis';
 import type { NotificationData, VirtualCardEventData } from '@/types/notifications';
 
 // Configure notification handler
@@ -85,17 +83,10 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
 /**
  * Convert API card details to PaymentCard format
  */
-function convertToPaymentCard(cardDetails: any): PaymentCard {
-  return {
-    id: cardDetails.code,
-    type: 'virtual',
-    brand: cardDetails.cardBrand.toLowerCase() as 'mastercard' | 'visa',
-    last4: cardDetails.last4,
-    holder: cardDetails.cardName,
-    expires: cardDetails.validMonthYear, // Format like "12/27"
-    balance: cardDetails.cardBalance,
-  };
-}
+// Function no longer needed since we use API-based card loading
+// function convertToPaymentCard(cardDetails: any): PaymentCard {
+//   // This function has been deprecated in favor of convertApiCardToPaymentCard in apis.ts
+// }
 
 /**
  * Handle card created notification by routing to dev or prod handlers
@@ -105,22 +96,9 @@ async function handleCardCreatedNotification(cardCode: string, cardData?: Virtua
     console.log('🎯 Handling card created notification for cardCode:', cardCode);
     console.log('📋 Card data received:', cardData);
 
-    let newCard: PaymentCard;
-
-    if (cardData && process.env.EXPO_PUBLIC_APP_ENV === 'development') {
-      console.log('🚧 DEV MODE: Using cardData directly');
-      newCard = convertCardDataToPaymentCard(cardData);
-    } else {
-      console.log('🏭 PROD MODE: Fetching card details from API');
-      const cardDetailsResponse = await getCard(cardCode);
-      if (!cardDetailsResponse.success || !cardDetailsResponse.data) {
-        console.error('Failed to fetch card details:', cardDetailsResponse.error);
-        return;
-      }
-      newCard = convertToPaymentCard(cardDetailsResponse.data);
-    }
-
-    await replaceLoadingCardWithNewCard(newCard);
+    // Since we're using API-based card loading, we don't need to manually update storage
+    // The cards will be refreshed via the callback in setupNotificationListeners
+    console.log('✅ Card created notification processed. Cards will be refreshed from API.');
   } catch (error) {
     console.error('Error handling card created notification:', error);
   }
@@ -129,75 +107,18 @@ async function handleCardCreatedNotification(cardCode: string, cardData?: Virtua
 /**
  * Convert notification cardData to PaymentCard format
  */
-function convertCardDataToPaymentCard(cardData: VirtualCardEventData): PaymentCard {
-  return {
-    id: cardData.cardCode,
-    type: 'virtual',
-    brand: cardData.CardBrand.toLowerCase() as 'mastercard' | 'visa',
-    last4: cardData.Last4,
-    cardNumber: cardData.CardNumber, // Store full card number
-    cvv: cardData.CVV2, // Store CVV code
-    holder: cardData.CardName,
-    expires: cardData.ValidMonthYear,
-    balance: cardData.CardBalance,
-  };
-}
+// Function no longer needed since we use API-based card loading
+// function convertCardDataToPaymentCard(cardData: VirtualCardEventData): PaymentCard {
+//   // This function has been deprecated in favor of convertApiCardToPaymentCard in apis.ts
+// }
 
 /**
  * Replace loading card with new card in storage
  */
-async function replaceLoadingCardWithNewCard(newCard: PaymentCard) {
-  console.log('✅ New card converted:', newCard);
-
-  const existingCards = await StorageService.loadCards();
-  
-  // Check if card already exists (avoid duplicates)
-  if (existingCards.some(card => card.id === newCard.id)) {
-    console.log('Card already exists in storage, skipping...');
-    return;
-  }
-
-  console.log('📋 Existing cards before update:', existingCards);
-  
-  // Find and replace the loading card with matching holder name
-  const loadingCards = existingCards.filter(card => card.isLoading);
-  
-  if (loadingCards.length > 0) {
-    console.log('🔍 Found loading cards:', loadingCards.map(c => ({ id: c.id, holder: c.holder })));
-    
-    // Find a loading card with matching holder name
-    const targetLoadingCard = loadingCards.find(card => card.holder === newCard.holder);
-    
-    if (!targetLoadingCard) {
-      const errorMsg = `❌ CRITICAL ERROR: No loading card found with matching holder name "${newCard.holder}". Available loading cards: ${loadingCards.map(c => c.holder).join(', ')}`;
-      console.error(errorMsg);
-      throw new Error(`Card creation notification received for "${newCard.holder}" but no matching loading card found. This indicates a serious data inconsistency.`);
-    }
-    
-    console.log('🎯 Replacing loading card:', targetLoadingCard.id, 'with new card:', newCard.id);
-    
-    // Replace the specific loading card with the new card
-    const updatedCards = existingCards.map(card => 
-      card.id === targetLoadingCard.id ? newCard : card
-    );
-    
-    console.log('📋 Updated cards with replaced card:', updatedCards.map(c => ({ id: c.id, holder: c.holder, isLoading: c.isLoading })));
-    
-    await StorageService.saveCards(updatedCards);
-    console.log('💾 Loading card replaced successfully');
-  } else {
-    console.log('⚠️ No loading cards found, adding new card directly');
-    const updatedCards = [...existingCards, newCard];
-    await StorageService.saveCards(updatedCards);
-    console.log('💾 New card added directly');
-  }
-
-  await showLocalNotification(
-    '🎉 Virtual Card Ready!',
-    `Your ${newCard.brand} card ending in ${newCard.last4} is ready to use!`,
-    { type: 'card_ready', cardId: newCard.id }
-  );
-}
+// Function no longer needed since we use API-based card loading
+// async function replaceLoadingCardWithNewCard(newCard: PaymentCard) {
+//   // This function has been deprecated in favor of API-based card refresh
+// }
 
 /**
  * Handle card creation failed notification by updating loading cards to failed state
@@ -207,75 +128,37 @@ async function handleCardCreationFailedNotification(error: string, eventData?: a
     console.log('❌ Handling card creation failed notification:', error);
     console.log('📋 Event data received:', eventData);
     
-    // Load existing cards
-    const existingCards = await StorageService.loadCards();
+    // Since we're using API-based card loading, we don't need to manually update storage
+    // The cards will be refreshed via the callback in setupNotificationListeners
+    console.log('❌ Card creation failed notification processed. Cards will be refreshed from API.');
     
-    // Find loading cards and mark the most recent one as failed
-    const loadingCards = existingCards.filter(card => card.isLoading);
-    
-    if (loadingCards.length > 0) {
-      console.log('🔍 Found loading cards to mark as failed:', loadingCards);
-      
-      // Get the most recent loading card (highest timestamp ID)
-      const mostRecentLoadingCard = loadingCards.reduce((latest, current) => {
-        return parseInt(current.id) > parseInt(latest.id) ? current : latest;
-      });
-      
-      // Update the cards array
-      const updatedCards = existingCards.map(card => {
-        if (card.id === mostRecentLoadingCard.id) {
-          return {
-            ...card,
-            isLoading: false,
-            isFailed: true,
-            failureReason: error,
-            last4: 'FAIL', // Show FAIL instead of card number
-            expires: '••/••' // Keep expiry hidden for failed cards
-          };
-        }
-        return card;
-      });
-      
-      await StorageService.saveCards(updatedCards);
-      console.log('💾 Updated failed card in storage');
-      
-      // Show alert with error message
-      setTimeout(() => {
-        Alert.alert(
-          'Card Creation Failed',
-          `Failed to create your virtual card: ${error}`,
-          [
-            {
-              text: 'Try Again',
-              onPress: () => router.push('/wallet/cards'),
-            },
-            {
-              text: 'OK',
-              style: 'cancel',
-            },
-          ]
-        );
-      }, 1000); // Delay to ensure the cards screen is visible
-      
-      // Show local notification with error details
-      await showLocalNotification(
-        '❌ Card Creation Failed',
+    // Show alert with error message
+    setTimeout(() => {
+      Alert.alert(
+        'Card Creation Failed',
         `Failed to create your virtual card: ${error}`,
-        { type: 'card_failed', error }
+        [
+          {
+            text: 'Try Again',
+            onPress: () => router.push('/wallet/cards'),
+          },
+          {
+            text: 'OK',
+            style: 'cancel',
+          },
+        ]
       );
-    } else {
-      console.log('⚠️ No loading cards found to mark as failed');
-    }
+    }, 1000); // Delay to ensure the cards screen is visible
     
-  } catch (error) {
-    console.error('Error handling card creation failed notification:', error);
+  } catch (err) {
+    console.error('Error handling card creation failed notification:', err);
   }
 }
 
 /**
  * Set up notification listeners
  */
-export function setupNotificationListeners() {
+export function setupNotificationListeners(onCardsUpdated?: () => void) {
   console.log('🔔 Setting up notification listeners...');
   
   // Listener for notifications received while app is foregrounded
@@ -295,6 +178,8 @@ export function setupNotificationListeners() {
       console.log('💳 Card created notification received in foreground');
       if (data.cardCode) {
         handleCardCreatedNotification(data.cardCode, data.cardData);
+        // Call the callback to refresh cards
+        onCardsUpdated?.();
       }
     }
     
@@ -302,6 +187,8 @@ export function setupNotificationListeners() {
     if (data?.type === 'card_creation_failed') {
       console.log('❌ Card creation failed notification received');
       handleCardCreationFailedNotification(data.error || 'Unknown error', data);
+      // Call the callback to refresh cards
+      onCardsUpdated?.();
     }
   });
 
@@ -320,6 +207,8 @@ export function setupNotificationListeners() {
       // If we haven't handled it yet, handle it now
       if (data.cardCode) {
         handleCardCreatedNotification(data.cardCode, data.cardData);
+        // Call the callback to refresh cards
+        onCardsUpdated?.();
       }
       // Navigate to cards screen to show new card
       router.push('/wallet/cards');
@@ -328,6 +217,8 @@ export function setupNotificationListeners() {
       // Handle the failed notification if not already handled
       if (data.error) {
         handleCardCreationFailedNotification(data.error, data);
+        // Call the callback to refresh cards
+        onCardsUpdated?.();
       }
       // Navigate to cards screen where user can try again
       router.push('/wallet/cards');

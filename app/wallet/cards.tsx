@@ -14,12 +14,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, Plus, CreditCard, DollarSign, User, Eye, EyeOff, X } from 'lucide-react-native';
 import { router } from 'expo-router';
-import { StorageService, PaymentCard } from '@/utils/storage';
+import { StorageService } from '@/utils/storage';
+import { PaymentCard } from '@/data/types';
 import { sendUSDTToCashwyre } from '@/utils/sendTransaction';
 import { mockSendUSDTToCashwyre } from '@/utils/mockTransaction';
 import { setupNotificationListeners } from '@/services/notificationService';
 import { getCurrentVerificationLevel } from '@/app/settings/kyc';
-import { simulateUSDTReceived, getWalletAddress, simulateCardCreated, simulateCardCreationFailed } from '@/services/apis';
+import { simulateUSDTReceived, getWalletAddress, simulateCardCreated, simulateCardCreationFailed, getCards, convertApiCardToPaymentCard } from '@/services/apis';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
 import { SuccessfulPaymentCard, FailedPaymentCard } from '@/components/wallet/PaymentCard';
 import { triggerShake } from '@/utils/animations';
@@ -70,12 +71,15 @@ export default function CardsScreen() {
   useEffect(() => {
     loadCards();
 
-    // Set up notification listeners
-    const cleanupNotifications = setupNotificationListeners();
+    // Set up notification listeners with card refresh callback
+    const cleanupNotifications = setupNotificationListeners(() => {
+      // Refresh cards when notifications are received
+      loadCards();
+    });
 
-    // Set up periodic refresh to catch storage updates from notifications
+    // Set up periodic refresh to catch any missed updates
     const refreshInterval = setInterval(() => {
-      loadCards(); // Reload cards from storage every 30 seconds
+      loadCards(); // Reload cards from API every 30 seconds
     }, 30000);
 
     // Cleanup on unmount
@@ -86,13 +90,46 @@ export default function CardsScreen() {
   }, []);
 
   const loadCards = async () => {
-    const savedCards = await StorageService.loadCards();
-    if (savedCards.length > 0) {
-      setCards(savedCards);
-    } else {
-      // Use initial cards if no saved cards exist
-      setCards(initialCards);
-      await StorageService.saveCards(initialCards);
+    try {
+      // Get personal info to get customer email
+      const personalInfo = await StorageService.loadPersonalInfo();
+      if (!personalInfo) {
+        console.log('No personal info found, showing empty cards list');
+        setCards([]);
+        return;
+      }
+
+      // In development mode, show demo cards if no real cards exist
+      if (process.env.EXPO_PUBLIC_APP_ENV === 'development') {
+        try {
+          // Try to fetch real cards first
+          const cardsResponse = await getCards(personalInfo.email);
+          if (cardsResponse.success && cardsResponse.data && cardsResponse.data.length > 0) {
+            const paymentCards = cardsResponse.data.map(convertApiCardToPaymentCard);
+            setCards(paymentCards);
+            return;
+          }
+        } catch (error) {
+          console.log('Failed to fetch cards in dev mode, will show demo cards:', error);
+        }
+        
+        // If no real cards or API call failed in dev mode, show demo cards
+        setCards(initialCards);
+        return;
+      }
+
+      // Production mode: fetch cards from API
+      const cardsResponse = await getCards(personalInfo.email);
+      if (cardsResponse.success && cardsResponse.data) {
+        const paymentCards = cardsResponse.data.map(convertApiCardToPaymentCard);
+        setCards(paymentCards);
+      } else {
+        console.error('Failed to fetch cards:', cardsResponse.error);
+        setCards([]);
+      }
+    } catch (error) {
+      console.error('Error loading cards:', error);
+      setCards([]);
     }
   };
 
@@ -251,30 +288,16 @@ export default function CardsScreen() {
 
       console.log('USDT sent successfully:', sendResult.signature);
 
-      // Only create and add the loading card after USDT succeeds
-      const tempCard: PaymentCard = {
-        id: Date.now().toString(),
-        type: 'virtual',
-        brand: selectedBrand,
-        last4: '••••', // Show loading state for card number
-        cardNumber: undefined, // No card number during loading
-        holder: cardName.trim(),
-        expires: '••/••', // Show loading state for expiry
-        balance: parseFloat(cardBalance),
-        isLoading: true, // Mark as loading to show skeleton states
-      };
-
-      // Add the temporary card to state and storage for immediate UI feedback
-      const updatedCards = [...cards, tempCard];
-      setCards(updatedCards);
-      await StorageService.saveCards(updatedCards);
-
+      // Close the modal and reset form
       setShowAddCard(false);
       setCardBalance('');
       setCardName('');
       setShowValidationError(false);
       setShowNameValidationError(false);
       setIsLoading(false);
+
+      // Refresh cards from API to show any new cards
+      await loadCards();
 
       // Capture personal info for dev mode simulation
       const userEmail = personalInfo.email;
@@ -305,10 +328,16 @@ export default function CardsScreen() {
   };
 
   const handleDeleteCard = async (cardId: string) => {
-    const updatedCards = cards.filter(card => card.id !== cardId);
-    setCards(updatedCards);
-    await StorageService.saveCards(updatedCards);
-    console.log('🗑️ DEV MODE: Card deleted:', cardId);
+    // In development mode, allow deletion for demo purposes
+    if (process.env.EXPO_PUBLIC_APP_ENV === 'development') {
+      const updatedCards = cards.filter(card => card.id !== cardId);
+      setCards(updatedCards);
+      console.log('🗑️ DEV MODE: Card deleted:', cardId);
+    } else {
+      // In production, you might want to call an API to delete the card
+      console.log('� PROD MODE: Card deletion not implemented');
+      Alert.alert('Info', 'Card deletion is not available in production mode');
+    }
   };
 
   const formatBalance = (amount: number) => {
@@ -354,15 +383,24 @@ export default function CardsScreen() {
 
   const renderPaymentCard = (card: PaymentCard) => {
     const isVisible = visibleCards[card.id] || false;
-    const isLoading = card.isLoading || false;
-    const isFailed = card.isFailed || false;
     const isDevelopment = process.env.EXPO_PUBLIC_APP_ENV === 'development';
+
+    // Determine card state based on status
+    const isLoading = card.isLoading || card.status === 'new' || card.status === 'pending';
+    const isFailed = card.isFailed || card.status === 'inactive' || card.status === 'failed' || card.status === 'terminated';
 
     if (isFailed) {
       return (
         <FailedPaymentCard
           key={card.id}
-          card={card}
+          card={{
+            ...card,
+            isFailed: true,
+            failureReason: card.failureReason || 
+                          (card.status === 'inactive' ? 'Card is inactive' :
+                           card.status === 'failed' ? 'Card creation failed' :
+                           card.status === 'terminated' ? 'Card has been terminated' : 'Unknown error')
+          }}
           onDeleteCard={handleDeleteCard}
           getBrandLogo={getBrandLogo}
           styles={styles}
@@ -373,7 +411,10 @@ export default function CardsScreen() {
     return (
       <SuccessfulPaymentCard
         key={card.id}
-        card={card}
+        card={{
+          ...card,
+          isLoading: isLoading
+        }}
         isVisible={isVisible}
         isLoading={isLoading}
         isDevelopment={isDevelopment}
