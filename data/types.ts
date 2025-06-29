@@ -35,3 +35,60 @@ export interface EnrichedTokenEntry extends TokenEntry {
   // decimalsShown is inherited from TokenEntry -> TokenJsonEntry
 }
 
+// Card status types
+export type CardStatus = 'new' | 'active' | 'inactive' | 'failed' | 'pending' | 'terminated';
+
+// Get Card API types (matching backend)
+export interface GetCardData {
+  code: string;
+  customerName: string;
+  customerFirstName: string;
+  customerLastName: string;
+  customerEmail: string;
+  cardBrand: string;
+  cardType: string;
+  reference: string;
+  last4: string;
+  cardName: string;
+  expiryOn: string;
+  expiryOnInfo: string;
+  expiryOnMaxked: string;
+  validMonthYear: string;
+  status: CardStatus;
+  cardBalance: number;
+  cardBalanceInfo: string;
+  cardNumber: string;
+  cardNumberMaxked: string | null;
+  cvV2: string;
+  cvV2Maxed: string;
+  billingAddressCity: string;
+  billingAddressStreet: string;
+  billingAddressCountry: string;
+  billingAddressZipCode: string;
+  billingAddressCountryCode: string;
+  createdOn: string;
+}
+
+export interface GetCardsResponse {
+  success: boolean;
+  message: string;
+  data: GetCardData[];
+}
+
+// PaymentCard interface for the frontend (maps from GetCardData)
+export interface PaymentCard {
+  id: string; // Maps to code
+  type: 'virtual';
+  brand: 'mastercard' | 'visa';
+  last4: string;
+  cardNumber?: string;
+  cvv?: string;
+  holder: string; // Maps to cardName
+  expires: string; // Maps to expiryOnInfo
+  balance: number; // Maps to cardBalance
+  isLoading?: boolean;
+  isFailed?: boolean;
+  status?: CardStatus;
+  failureReason?: string;
+}
+

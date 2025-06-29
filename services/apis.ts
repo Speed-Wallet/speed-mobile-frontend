@@ -1,5 +1,6 @@
 // Import PersonalInfo type from storage
 import type { PersonalInfo } from '@/utils/storage';
+import type { GetCardData, PaymentCard, CardStatus } from '@/data/types';
 
 // Backend API service functions
 const BASE_BACKEND_URL = process.env.EXPO_PUBLIC_BASE_BACKEND_URL;
@@ -145,6 +146,36 @@ export async function getCard(cardCode: string): Promise<{
 }
 
 /**
+ * Get all cards for a customer
+ */
+export async function getCards(customerCode: string): Promise<{
+  success: boolean;
+  data?: any[];
+  error?: string;
+}> {
+  console.log("customerCode", customerCode)
+  try {
+    const response = await fetch(`${BASE_BACKEND_URL}/api/cashwyre/cards`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ customerCode }),
+    });
+
+    const data = await response.json();
+    console.log('📊 Cards response:', data);
+    return data;
+  } catch (error) {
+    console.error('Error fetching cards:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to fetch cards'
+    };
+  }
+}
+
+/**
  * Simulate USDT received webhook (for testing)
  */
 export async function simulateUSDTReceived(walletAddress: string, amount: string): Promise<RegisterTransactionResponse> {
@@ -263,4 +294,28 @@ export async function simulateCardCreationFailed(email: string, error?: string):
       message: error instanceof Error ? error.message : 'Failed to simulate card failure'
     };
   }
+}
+
+/**
+ * Convert API card data to PaymentCard format
+ */
+export function convertApiCardToPaymentCard(apiCard: GetCardData): PaymentCard {
+  return {
+    id: apiCard.code,
+    type: 'virtual',
+    brand: apiCard.cardBrand.toLowerCase() as 'mastercard' | 'visa',
+    last4: apiCard.last4,
+    cardNumber: apiCard.cardNumber,
+    cvv: apiCard.cvV2,
+    holder: apiCard.cardName,
+    expires: apiCard.expiryOnInfo, // Format like "12/27"
+    balance: apiCard.cardBalance,
+    status: apiCard.status,
+    // Set loading/failed states based on status
+    isLoading: apiCard.status === 'new' || apiCard.status === 'pending',
+    isFailed: apiCard.status === 'inactive' || apiCard.status === 'failed' || apiCard.status === 'terminated',
+    failureReason: apiCard.status === 'inactive' ? 'Card is inactive' : 
+                   apiCard.status === 'failed' ? 'Card creation failed' :
+                   apiCard.status === 'terminated' ? 'Card has been terminated' : undefined,
+  };
 }
