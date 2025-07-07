@@ -91,24 +91,6 @@ const CreatePinStep: React.FC<CreatePinStepProps> = ({
           />
         </Animated.View>
 
-        {/* Security Note */}
-        <Animated.View
-          style={[
-            styles.securityNote,
-            {
-              opacity: fadeAnim,
-              transform: [{ scale: scaleAnim }],
-            },
-          ]}>
-          <LinearGradient
-            colors={['rgba(124, 92, 255, 0.1)', 'rgba(124, 92, 255, 0.05)']}
-            style={styles.securityCard}>
-            <View style={styles.securityContent}>
-              <Shield size={18} color="#7c5cff" />
-            </View>
-          </LinearGradient>
-        </Animated.View>
-
         {/* Action Button */}
         <View style={styles.buttonContainer}>
           <TouchableOpacity

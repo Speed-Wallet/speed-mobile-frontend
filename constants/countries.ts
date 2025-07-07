@@ -8,13 +8,14 @@ export interface Country {
 export const countries: Country[] = [
   // popular
   { code: 'ZA', name: 'South Africa', flag: '🇿🇦', dialCode: '+27' },
+  { code: 'NG', name: 'Nigeria', flag: '🇳🇬', dialCode: '+234' },
   { code: 'KE', name: 'Kenya', flag: '🇰🇪', dialCode: '+254' },
   { code: 'GH', name: 'Ghana', flag: '🇬🇭', dialCode: '+233' },
-  { code: 'NG', name: 'Nigeria', flag: '🇳🇬', dialCode: '+234' },
   { code: 'ZW', name: 'Zimbabwe', flag: '🇿🇼', dialCode: '+263' },
   { code: 'CN', name: 'China', flag: '🇨🇳', dialCode: '+86' },
   { code: 'SG', name: 'Singapore', flag: '🇸🇬', dialCode: '+65' },
   { code: 'US', name: 'United States', flag: '🇺🇸', dialCode: '+1' },
+  { code: 'CA', name: 'Canada', flag: '🇨🇦', dialCode: '+1' },
   // african countries
   { code: 'DZ', name: 'Algeria', flag: '🇩🇿', dialCode: '+213' },
   { code: 'AO', name: 'Angola', flag: '🇦🇴', dialCode: '+244' },
@@ -70,7 +71,6 @@ export const countries: Country[] = [
   { code: 'AT', name: 'Austria', flag: '🇦🇹', dialCode: '+43' },
   { code: 'BE', name: 'Belgium', flag: '🇧🇪', dialCode: '+32' },
   { code: 'BR', name: 'Brazil', flag: '🇧🇷', dialCode: '+55' },
-  { code: 'CA', name: 'Canada', flag: '🇨🇦', dialCode: '+1' },
   { code: 'CL', name: 'Chile', flag: '🇨🇱', dialCode: '+56' },
   { code: 'CO', name: 'Colombia', flag: '🇨🇴', dialCode: '+57' },
   { code: 'CZ', name: 'Czech Republic', flag: '🇨🇿', dialCode: '+420' },

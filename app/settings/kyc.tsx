@@ -7,12 +7,11 @@ import {
   Dimensions,
   TouchableOpacity,
   TextInput,
-  Modal,
-  FlatList,
   Animated as RNAnimated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import { CreditCard as Edit2, Check, Clock, CircleAlert as AlertCircle, Mail, MapPin, CreditCard, FileText, Video, Shield, ChevronDown, Calendar, Save, Lock } from 'lucide-react-native';
 import BackButton from '@/components/BackButton';
 import Toast from '@/components/Toast';
@@ -66,7 +65,7 @@ interface InputField {
   value?: string;
 }
 
-const verificationLevels: VerificationLevel[] = [
+const getVerificationLevels = (isDevelopment: boolean): VerificationLevel[] => [
   {
     id: 1,
     title: 'Level 1 - Basic',
@@ -82,7 +81,7 @@ const verificationLevels: VerificationLevel[] = [
         placeholder: 'Enter your phone number',
         type: 'phone',
         icon: Calendar, // Using Calendar instead of Phone
-        value: '60 123 4567'
+        value: isDevelopment ? '60 123 4567' : undefined
       },
       {
         id: 'date_of_birth',
@@ -90,7 +89,7 @@ const verificationLevels: VerificationLevel[] = [
         placeholder: 'Select your date of birth',
         type: 'date',
         icon: Calendar,
-        value: '1990-01-15'
+        value: isDevelopment ? '1990-01-15' : undefined
       }
     ]
   },
@@ -157,20 +156,20 @@ const verificationLevels: VerificationLevel[] = [
         icon: Video,
       }
     ]
-  },
+  }
 ];
 
 export default function AccountScreen() {
   const router = useRouter();
+  
   const [currentLevel, setCurrentLevel] = useState(0);
   const [selectedCountry, setSelectedCountry] = useState<Country>(countries[0]);
-  const [showCountryPicker, setShowCountryPicker] = useState(false);
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date(1990, 0, 15));
   
   // Set default values only in development mode
   const isDevelopment = process.env.EXPO_PUBLIC_APP_ENV === 'development';
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const verificationLevels = getVerificationLevels(isDevelopment);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(isDevelopment ? new Date(1990, 0, 15) : null);
+  const [phoneNumber, setPhoneNumber] = useState(isDevelopment ? developmentInfo.phoneNumber : '');
   const [firstName, setFirstName] = useState(isDevelopment ? developmentInfo.firstName : '');
   const [lastName, setLastName] = useState(isDevelopment ? developmentInfo.lastName : '');
   const [email, setEmail] = useState(isDevelopment ? developmentInfo.email : '');
@@ -179,6 +178,7 @@ export default function AccountScreen() {
   
   // Validation states
   const [firstNameError, setFirstNameError] = useState(false);
+
   const [lastNameError, setLastNameError] = useState(false);
   const [emailError, setEmailError] = useState(false);
   const [addressError, setAddressError] = useState(false);
@@ -203,11 +203,6 @@ export default function AccountScreen() {
   const addressRef = useRef<TextInput>(null);
   const streetNumberRef = useRef<TextInput>(null);
   const phoneNumberRef = useRef<TextInput>(null);
-  
-  // Date picker state
-  const [tempDay, setTempDay] = useState(15);
-  const [tempMonth, setTempMonth] = useState(0);
-  const [tempYear, setTempYear] = useState(1990);
   
   const scrollX = useSharedValue(0);
   const scrollViewRef = useAnimatedRef<Animated.ScrollView>();
@@ -286,44 +281,13 @@ export default function AccountScreen() {
     }
   };
 
-  const formatDate = (date: Date) => {
+  const formatDate = (date: Date | null) => {
+    if (!date) return 'Select your date of birth';
     return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
     });
-  };
-
-  const months = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ];
-
-  const getDaysInMonth = (month: number, year: number) => {
-    return new Date(year, month + 1, 0).getDate();
-  };
-
-  const generateYears = () => {
-    const currentYear = new Date().getFullYear();
-    const years = [];
-    for (let year = currentYear - 18; year >= currentYear - 100; year--) {
-      years.push(year);
-    }
-    return years;
-  };
-
-  const generateDays = () => {
-    const daysInMonth = getDaysInMonth(tempMonth, tempYear);
-    const days = [];
-    for (let day = 1; day <= daysInMonth; day++) {
-      days.push(day);
-    }
-    return days;
-  };
-
-  const handleDateConfirm = async () => {
-    setSelectedDate(new Date(tempYear, tempMonth, tempDay));
-    setShowDatePicker(false);
   };
 
   // Validation functions
@@ -333,8 +297,7 @@ export default function AccountScreen() {
   };
 
   const validateName = (name: string): boolean => {
-    const cleanName = name.replace(/[^a-zA-Z\s]/g, '').replace(/\s+/g, ' ').trim();
-    return cleanName.length >= 4;
+    return name.trim().length >= 4;
   };
 
   const validatePhoneNumber = (phone: string): boolean => {
@@ -413,7 +376,7 @@ export default function AccountScreen() {
         name: `${firstName} ${lastName}`,
         email,
         phoneNumber,
-        dateOfBirth: selectedDate.toISOString(),
+        dateOfBirth: selectedDate?.toISOString() || '',
         address,
         streetNumber,
         selectedCountry,
@@ -449,7 +412,15 @@ export default function AccountScreen() {
       setPhoneNumber(savedInfo.phoneNumber);
       setPhoneNumberError(!validatePhoneNumber(savedInfo.phoneNumber));
       
-      setSelectedDate(new Date(savedInfo.dateOfBirth));
+      // Only set date if it exists and is valid
+      if (savedInfo.dateOfBirth && savedInfo.dateOfBirth.trim() !== '') {
+        const savedDate = new Date(savedInfo.dateOfBirth);
+        // Check if the date is valid
+        if (!isNaN(savedDate.getTime())) {
+          setSelectedDate(savedDate);
+        }
+      }
+      
       setAddress(savedInfo.address);
       setAddressError(!validateAddress(savedInfo.address));
       
@@ -468,50 +439,72 @@ export default function AccountScreen() {
     loadPersonalInfo();
   }, []);
 
-  const handleCountrySelect = (country: Country) => {
-    setSelectedCountry(country);
-    setShowCountryPicker(false);
+  // Reload data when screen becomes focused (after returning from picker screens)
+  useFocusEffect(
+    React.useCallback(() => {
+      loadPersonalInfo();
+    }, [])
+  );
+
+  const handleCountrySelect = () => {
+    // Navigate to country picker - it will save to storage and return
+    router.push('/settings/country-picker');
+  };
+
+  const handleDateSelect = () => {
+    // Navigate to date picker - it will save to storage and return
+    router.push('/settings/date-picker');
   };
 
   const handlePhoneChange = (phone: string) => {
-    setPhoneNumber(phone);
+    // Only allow numbers and spaces
+    const numericText = phone.replace(/[^0-9\s]/g, '');
+    setPhoneNumber(numericText);
+    // Only check error state on text change if already in error state
+    if (phoneNumberError) {
+      setPhoneNumberError(!validatePhoneNumber(numericText));
+    }
   };
 
-  const handlePhoneBlur = () => {
+  const handlePhoneBlur = async () => {
+    // Always check error state on blur
     setPhoneNumberError(!validatePhoneNumber(phoneNumber));
+    // Only save to storage on blur (slow operation)
+    if (phoneNumber.trim()) {
+      await saveFieldToStorage({ phoneNumber });
+    }
   };
 
-  const renderCountryItem = ({ item }: { item: Country }) => (
-    <TouchableOpacity
-      style={styles.countryItem}
-      onPress={() => handleCountrySelect(item)}
-    >
-      <Text style={styles.countryFlag}>{item.flag}</Text>
-      <Text style={styles.countryName}>{item.name}</Text>
-      <Text style={styles.countryCode}>{item.dialCode}</Text>
-    </TouchableOpacity>
-  );
-
-  const renderPickerItem = (item: any, type: 'day' | 'month' | 'year') => (
-    <TouchableOpacity
-      style={styles.pickerItem}
-      onPress={() => {
-        if (type === 'day') setTempDay(item);
-        else if (type === 'month') setTempMonth(item);
-        else if (type === 'year') setTempYear(item);
-      }}
-    >
-      <Text style={[
-        styles.pickerItemText,
-        (type === 'day' && item === tempDay) ||
-        (type === 'month' && item === tempMonth) ||
-        (type === 'year' && item === tempYear)
-          ? styles.pickerItemSelected : {}
-      ]}>
-        {type === 'month' ? months[item] : item}
-      </Text>
-    </TouchableOpacity>
-  );
+  // Save field to storage on blur
+  const saveFieldToStorage = async (field: Partial<PersonalInfo>) => {
+    try {
+      const currentInfo = await StorageService.loadPersonalInfo();
+      
+      // If no existing info, create a complete PersonalInfo with current state
+      if (!currentInfo) {
+        const completeInfo: PersonalInfo = {
+          name: `${firstName} ${lastName}`,
+          email,
+          phoneNumber,
+          dateOfBirth: selectedDate?.toISOString() || '',
+          address,
+          streetNumber,
+          selectedCountry,
+          ...field, // Override with the specific field being saved
+        };
+        await StorageService.savePersonalInfo(completeInfo);
+      } else {
+        // If existing info exists, merge with it
+        const updatedInfo: PersonalInfo = {
+          ...currentInfo,
+          ...field,
+        };
+        await StorageService.savePersonalInfo(updatedInfo);
+      }
+    } catch (error) {
+      console.error('Error saving field to storage:', error);
+    }
+  };
 
   const renderInputField = (input: InputField) => {
     const IconComponent = input.icon;
@@ -528,7 +521,7 @@ export default function AccountScreen() {
             <View style={styles.phoneInputContainer}>
               <TouchableOpacity
                 style={styles.countrySelector}
-                onPress={() => setShowCountryPicker(true)}
+                onPress={handleCountrySelect}
               >
                 <Text style={styles.countryFlag}>{selectedCountry.flag}</Text>
                 <Text style={styles.dialCode}>{selectedCountry.dialCode}</Text>
@@ -552,21 +545,32 @@ export default function AccountScreen() {
               placeholder={input.placeholder}
               placeholderTextColor="#6b7280"
               value={email}
-              onChangeText={setEmail}
-              onBlur={() => setEmailError(!validateEmail(email))}
+              onChangeText={(text) => {
+                setEmail(text);
+                // Only check error state on text change if already in error state
+                if (emailError) {
+                  setEmailError(!validateEmail(text));
+                }
+              }}
+              onBlur={async () => {
+                // Always check error state on blur
+                setEmailError(!validateEmail(email));
+                // Only save to storage on blur (slow operation)
+                if (email.trim()) {
+                  await saveFieldToStorage({ email });
+                }
+              }}
               keyboardType="email-address"
             />
           ) : input.type === 'date' ? (
             <TouchableOpacity
               style={styles.dateSelector}
-              onPress={() => {
-                setTempDay(selectedDate.getDate());
-                setTempMonth(selectedDate.getMonth());
-                setTempYear(selectedDate.getFullYear());
-                setShowDatePicker(true);
-              }}
+              onPress={handleDateSelect}
             >
-              <Text style={styles.dateText}>
+              <Text style={[
+                styles.dateText,
+                !selectedDate && styles.dateTextPlaceholder
+              ]}>
                 {formatDate(selectedDate)}
               </Text>
               <ChevronDown size={16} color="#9ca3af" />
@@ -584,6 +588,15 @@ export default function AccountScreen() {
             />
           )}
         </View>
+        {/* Add error hint for phone input */}
+        {input.type === 'phone' && (
+          <Text style={[
+            styles.inputHint,
+            phoneNumberError && styles.inputHintError
+          ]}>
+            {phoneNumberError ? '*' : ''}Minimum 8 digits{phoneNumberError ? ' *' : ''}
+          </Text>
+        )}
       </View>
     );
   };
@@ -598,11 +611,6 @@ export default function AccountScreen() {
           <TouchableOpacity style={styles.editButton}>
             <Edit2 size={20} color="#3b82f6" />
           </TouchableOpacity>
-        </View>
-
-        {/* User Info */}
-        <View style={styles.nameSection}>
-          <Text style={styles.nameDisplay}>{firstName} {lastName}</Text>
         </View>
 
         {/* Verification Level Section */}
@@ -751,16 +759,27 @@ export default function AccountScreen() {
                         
                         if (letterRegex.test(normalizedText)) {
                           setFirstName(normalizedText);
+                          // Only check error state on text change if already in error state
+                          if (firstNameError) {
+                            setFirstNameError(!validateName(normalizedText));
+                          }
                         }
                       }}
-                      onBlur={() => setFirstNameError(!validateName(firstName))}
+                      onBlur={async () => {
+                        // Always check error state on blur
+                        setFirstNameError(!validateName(firstName));
+                        // Only save to storage on blur (slow operation)
+                        if (firstName.trim()) {
+                          await saveFieldToStorage({ name: `${firstName} ${lastName}` });
+                        }
+                      }}
                     />
                   </View>
                   <Text style={[
                     styles.inputHint,
                     firstNameError && styles.inputHintError
                   ]}>
-                    {firstNameError ? '*' : ''}Minimum 4 characters, letters only{firstNameError ? ' *' : ''}
+                    {firstNameError ? '*' : ''}Minimum 4 characters{firstNameError ? ' *' : ''}
                   </Text>
                 </View>
 
@@ -782,16 +801,27 @@ export default function AccountScreen() {
                         
                         if (letterRegex.test(normalizedText)) {
                           setLastName(normalizedText);
+                          // Only check error state on text change if already in error state
+                          if (lastNameError) {
+                            setLastNameError(!validateName(normalizedText));
+                          }
                         }
                       }}
-                      onBlur={() => setLastNameError(!validateName(lastName))}
+                      onBlur={async () => {
+                        // Always check error state on blur
+                        setLastNameError(!validateName(lastName));
+                        // Only save to storage on blur (slow operation)
+                        if (lastName.trim()) {
+                          await saveFieldToStorage({ name: `${firstName} ${lastName}` });
+                        }
+                      }}
                     />
                   </View>
                   <Text style={[
                     styles.inputHint,
                     lastNameError && styles.inputHintError
                   ]}>
-                    {lastNameError ? '*' : ''}Minimum 4 characters, letters only{lastNameError ? ' *' : ''}
+                    {lastNameError ? '*' : ''}Minimum 4 characters{lastNameError ? ' *' : ''}
                   </Text>
                 </View>
 
@@ -805,8 +835,21 @@ export default function AccountScreen() {
                       placeholder="Enter your email address"
                       placeholderTextColor="#6b7280"
                       value={email}
-                      onChangeText={setEmail}
-                      onBlur={() => setEmailError(!validateEmail(email))}
+                      onChangeText={(text) => {
+                        setEmail(text);
+                        // Only check error state on text change if already in error state
+                        if (emailError) {
+                          setEmailError(!validateEmail(text));
+                        }
+                      }}
+                      onBlur={async () => {
+                        // Always check error state on blur
+                        setEmailError(!validateEmail(email));
+                        // Only save to storage on blur (slow operation)
+                        if (email.trim()) {
+                          await saveFieldToStorage({ email });
+                        }
+                      }}
                       keyboardType="email-address"
                       ref={emailRef}
                     />
@@ -827,8 +870,19 @@ export default function AccountScreen() {
                         // Only allow digits 0-9
                         const numericText = text.replace(/[^0-9]/g, '');
                         setStreetNumber(numericText);
+                        // Only check error state on text change if already in error state
+                        if (streetNumberError) {
+                          setStreetNumberError(!validateStreetNumber(numericText));
+                        }
                       }}
-                      onBlur={() => setStreetNumberError(!validateStreetNumber(streetNumber))}
+                      onBlur={async () => {
+                        // Always check error state on blur
+                        setStreetNumberError(!validateStreetNumber(streetNumber));
+                        // Only save to storage on blur (slow operation)
+                        if (streetNumber.trim()) {
+                          await saveFieldToStorage({ streetNumber });
+                        }
+                      }}
                       keyboardType="numeric"
                     />
                   </View>
@@ -843,11 +897,30 @@ export default function AccountScreen() {
                       placeholder="Enter your home address"
                       placeholderTextColor="#6b7280"
                       value={address}
-                      onChangeText={setAddress}
-                      onBlur={() => setAddressError(!validateAddress(address))}
+                      onChangeText={(text) => {
+                        setAddress(text);
+                        // Only check error state on text change if already in error state
+                        if (addressError) {
+                          setAddressError(!validateAddress(text));
+                        }
+                      }}
+                      onBlur={async () => {
+                        // Always check error state on blur
+                        setAddressError(!validateAddress(address));
+                        // Only save to storage on blur (slow operation)
+                        if (address.trim()) {
+                          await saveFieldToStorage({ address });
+                        }
+                      }}
                       ref={addressRef}
                     />
                   </View>
+                  <Text style={[
+                    styles.inputHint,
+                    addressError && styles.inputHintError
+                  ]}>
+                    {addressError ? '*' : ''}Minimum 5 characters{addressError ? ' *' : ''}
+                  </Text>
                 </View>
               </>
             )}
@@ -877,85 +950,6 @@ export default function AccountScreen() {
           </Text>
         </TouchableOpacity>
       </View>
-
-      {/* Country Picker Modal */}
-      <Modal
-        visible={showCountryPicker}
-        animationType="slide"
-        presentationStyle="pageSheet"
-      >
-        <SafeAreaView style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Select Country</Text>
-            <TouchableOpacity
-              style={styles.modalCloseButton}
-              onPress={() => setShowCountryPicker(false)}
-            >
-              <Text style={styles.modalCloseText}>✕</Text>
-            </TouchableOpacity>
-          </View>
-          <FlatList
-            data={countries}
-            renderItem={renderCountryItem}
-            keyExtractor={(item) => item.code}
-            style={styles.modalList}
-          />
-        </SafeAreaView>
-      </Modal>
-
-      {/* Date Picker Modal */}
-      <Modal
-        visible={showDatePicker}
-        animationType="slide"
-        presentationStyle="pageSheet"
-      >
-        <SafeAreaView style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Select Date of Birth</Text>
-            <TouchableOpacity
-              style={styles.modalCloseButton}
-              onPress={handleDateConfirm}
-            >
-              <Text style={styles.modalCloseText}>✕</Text>
-            </TouchableOpacity>
-          </View>
-          
-          <View style={styles.datePickerContainer}>
-            <View style={styles.pickerColumn}>
-              <Text style={styles.pickerColumnTitle}>Month</Text>
-              <FlatList
-                data={months.map((_, index) => index)}
-                renderItem={({ item }) => renderPickerItem(item, 'month')}
-                keyExtractor={(item) => item.toString()}
-                style={styles.pickerList}
-                showsVerticalScrollIndicator={false}
-              />
-            </View>
-            
-            <View style={styles.pickerColumn}>
-              <Text style={styles.pickerColumnTitle}>Day</Text>
-              <FlatList
-                data={generateDays()}
-                renderItem={({ item }) => renderPickerItem(item, 'day')}
-                keyExtractor={(item) => item.toString()}
-                style={styles.pickerList}
-                showsVerticalScrollIndicator={false}
-              />
-            </View>
-            
-            <View style={styles.pickerColumn}>
-              <Text style={styles.pickerColumnTitle}>Year</Text>
-              <FlatList
-                data={generateYears()}
-                renderItem={({ item }) => renderPickerItem(item, 'year')}
-                keyExtractor={(item) => item.toString()}
-                style={styles.pickerList}
-                showsVerticalScrollIndicator={false}
-              />
-            </View>
-          </View>
-        </SafeAreaView>
-      </Modal>
 
       {/* Toast */}
       <Toast
@@ -1151,6 +1145,9 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontWeight: '500',
   },
+  dateTextPlaceholder: {
+    color: '#6b7280',
+  },
   fileInput: {
     flex: 1,
   },
@@ -1158,111 +1155,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#6b7280',
     fontWeight: '500',
-  },
-  modalContainer: {
-    flex: 1,
-    backgroundColor: '#1a1a1a',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#404040',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#ffffff',
-  },
-  modalCloseButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: '#3b82f6',
-    borderRadius: 8,
-  },
-  modalCloseText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#ffffff',
-  },
-  modalList: {
-    flex: 1,
-  },
-  countryItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#404040',
-  },
-  countryName: {
-    flex: 1,
-    fontSize: 16,
-    color: '#ffffff',
-    fontWeight: '500',
-    marginLeft: 12,
-  },
-  countryCode: {
-    fontSize: 16,
-    color: '#9ca3af',
-    fontWeight: '500',
-  },
-  datePickerContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    paddingHorizontal: 20,
-    paddingTop: 20,
-  },
-  pickerColumn: {
-    flex: 1,
-    marginHorizontal: 8,
-  },
-  pickerColumnTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#ffffff',
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  pickerList: {
-    flex: 1,
-  },
-  pickerItem: {
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginVertical: 2,
-  },
-  pickerItemText: {
-    fontSize: 16,
-    color: '#9ca3af',
-    textAlign: 'center',
-    fontWeight: '500',
-  },
-  pickerItemSelected: {
-    color: '#3b82f6',
-    fontWeight: '700',
-  },
-  userName: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#ffffff',
-    textAlign: 'center',
-  },
-  nameSection: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#404040',
-  },
-  nameDisplay: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#e5e7eb',
-    textAlign: 'center',
   },
   inputHint: {
     fontSize: 14,
@@ -1313,6 +1205,10 @@ export const getCurrentVerificationLevel = async (): Promise<{
   // Load personal info and verification documents
   const personalInfo = await StorageService.loadPersonalInfo();
   // const savedCards = await StorageService.loadCards();
+  
+  // Create verification levels for status checking
+  const isDevelopment = process.env.EXPO_PUBLIC_APP_ENV === 'development';
+  const verificationLevels = getVerificationLevels(isDevelopment);
   
   // Check Level 1 completion (basic personal info)
   const level1Complete = personalInfo && 

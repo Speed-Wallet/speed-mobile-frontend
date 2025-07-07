@@ -63,9 +63,6 @@ export default function TradeScreen() {
   const [toToken, setToToken] = useState<EnrichedTokenEntry | null>(null);
   const [fromAmount, setFromAmount] = useState('');
   const [toAmount, setToAmount] = useState('');
-  const [showFromSelector, setShowFromSelector] = useState(false);
-  const [showToSelector, setShowToSelector] = useState(false);
-  // const [selectedPercentage, setSelectedPercentage] = useState('25'); // Add selected percentage state
 
   const shakeAnimationValue = useRef(new Animated.Value(0)).current;
   const { price: fromTokenPrice } = useTokenPrice(fromToken?.extensions.coingeckoId);
@@ -173,30 +170,9 @@ export default function TradeScreen() {
     loadData()
   }, [tokenAddress]);
 
-  useEffect(() => {
-    if (fromToken && !fromAmount) {
-      // handlePercentageSelect('25');
-    }
-  }, [fromToken]);
-
   if (Array.isArray(tokenAddress)) {
     throw new Error('tokenAddress should not be an array');
   }
-
-
-
-  const handlePercentageSelect = (percentage: string) => {
-    if (!fromToken) return;
-
-    // setSelectedPercentage(percentage);
-
-    if (percentage === 'MAX') {
-      setFromAmount(fromToken.balance.toString());
-    } else {
-      const percent = parseInt(percentage);
-      setFromAmount((fromToken.balance * percent / 100).toFixed(fromToken.decimals));
-    }
-  };
 
   const handleSwapTokens = () => {
     setFromToken(toToken);
