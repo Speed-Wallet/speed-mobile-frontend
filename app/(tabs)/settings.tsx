@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { 
   User, 
   Shield, 
@@ -21,7 +22,7 @@ import {
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import colors from '@/constants/colors';
-import { getCurrentVerificationLevel } from '@/app/settings/kyc';
+import { getCurrentVerificationLevel } from '@/utils/verification';
 
 const preferencesOptions = [
   {
@@ -104,22 +105,37 @@ const supportOptions = [
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const [verificationLevel, setVerificationLevel] = useState({
-    level: 0,
-    status: 'not_started' as 'completed' | 'pending' | 'not_started',
-    title: 'Not Started',
-    color: '#6b7280'
-  });
+  const [verificationLevel, setVerificationLevel] = useState(0);
 
-  useEffect(() => {
-    // Update verification level when component mounts
-    const loadVerificationLevel = async () => {
-      const level = await getCurrentVerificationLevel();
-      setVerificationLevel(level);
-    };
-    
-    loadVerificationLevel();
-  }, []);
+  // Recalculate verification level whenever screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      let mounted = true;
+      (async () => {
+        const level = await getCurrentVerificationLevel();
+        if (mounted) {
+          setVerificationLevel(level);
+        }
+      })();
+      return () => {
+        mounted = false;
+      };
+    }, [])
+  );
+
+  // Get color for verification level
+  const getVerificationColor = (level: number) => {
+    switch (level) {
+      case 1:
+        return '#10b981'; // Green for Level 1
+      case 2:
+        return '#f59e0b'; // Orange for Level 2
+      case 3:
+        return '#8b5cf6'; // Purple for Level 3
+      default:
+        return '#6b7280'; // Gray for no level
+    }
+  };
 
   // Create dynamic account options based on current verification level
   const getAccountOptions = () => {
@@ -128,9 +144,9 @@ export default function SettingsScreen() {
         id: 1,
         title: 'Personal Info',
         icon: User,
-        color: verificationLevel.color,
-        showKyc: verificationLevel.status === 'completed',
-        kycLevel: verificationLevel.level,
+        color: getVerificationColor(verificationLevel),
+        showKyc: verificationLevel >= 1,
+        kycLevel: verificationLevel,
         route: '/settings/kyc',
       },
       {
