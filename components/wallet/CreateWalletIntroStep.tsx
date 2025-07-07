@@ -8,10 +8,11 @@ import 'react-native-get-random-values';
 
 interface CreateWalletIntroStepProps {
   onCreateWallet: () => void;
+  onImportWallet?: () => void;
   isLoading: boolean;
 }
 
-export default function CreateWalletIntroStep({ onCreateWallet, isLoading }: CreateWalletIntroStepProps) {
+export default function CreateWalletIntroStep({ onCreateWallet, onImportWallet, isLoading }: CreateWalletIntroStepProps) {
   const router = useRouter();
   useFrameworkReady();
   
@@ -89,9 +90,13 @@ export default function CreateWalletIntroStep({ onCreateWallet, isLoading }: Cre
           </TouchableOpacity>
 
           <TouchableOpacity 
-            style={[styles.importLink, styles.disabledLink]}
-            disabled={true}>
-            <Text style={[styles.importText, styles.disabledText]}>I already have a wallet (Coming Soon)</Text>
+            style={styles.importLink}
+            onPress={() => {
+              if (onImportWallet) {
+                onImportWallet();
+              }
+            }}>
+            <Text style={styles.importText}>I already have a wallet</Text>
           </TouchableOpacity>
         </Animated.View>
       </View>

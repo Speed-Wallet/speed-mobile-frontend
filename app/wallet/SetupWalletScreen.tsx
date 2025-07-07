@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { View, ActivityIndicator, Alert } from 'react-native';
-import { generateInitialSolanaWallet, saveWalletToList, createAppPin } from '@/services/walletService';
+import { View, ActivityIndicator, Alert, Modal, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { generateInitialSolanaWallet, saveWalletToList, createAppPin, importWalletFromMnemonic } from '@/services/walletService';
 import colors from '@/constants/colors';
 import CreateWalletIntroStep from '@/components/wallet/CreateWalletIntroStep';
 import ShowMnemonicStep from '@/components/wallet/ShowMnemonicStep';
 import CreatePinStep from '@/components/wallet/CreatePinStep';
 import ConfirmPinStep from '@/components/wallet/ConfirmPinStep';
+import { X } from 'lucide-react-native';
 import 'react-native-get-random-values';
 
 interface SetupWalletScreenProps {
@@ -22,6 +23,11 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComp
   const [pin, setPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
   const [pinError, setPinError] = useState<string>('');
+  
+  // Import wallet states
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importPhrase, setImportPhrase] = useState('');
+  const [isImporting, setIsImporting] = useState(false);
 
   const handleCreateWallet = async () => {
     setIsLoading(true);
@@ -50,6 +56,33 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComp
       return;
     }
     setStep(4); // Move to PIN confirmation
+  };
+
+  const handleImportWallet = () => {
+    setShowImportModal(true);
+  };
+
+  const processImportWallet = async () => {
+    if (!importPhrase.trim()) {
+      Alert.alert('Invalid Phrase', 'Please enter a valid seed phrase.');
+      return;
+    }
+
+    setIsImporting(true);
+    try {
+      const cleanPhrase = importPhrase.trim().toLowerCase();
+      const wallet = await importWalletFromMnemonic(cleanPhrase);
+      
+      // Set the imported wallet data and proceed to PIN creation
+      setMnemonic(wallet.mnemonic);
+      setPublicKey(wallet.publicKey);
+      setShowImportModal(false);
+      setStep(3); // Move to PIN creation
+    } catch (error) {
+      Alert.alert('Error', 'Failed to import wallet. Please check your seed phrase and try again.');
+      console.error('Error importing wallet:', error);
+    }
+    setIsImporting(false);
   };
 
   const handleConfirmPinChange = (newPin: string) => {
@@ -108,6 +141,7 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComp
       {step === 1 && (
         <CreateWalletIntroStep 
           onCreateWallet={handleCreateWallet}
+          onImportWallet={handleImportWallet}
           isLoading={isLoading}
         />
       )}
@@ -140,8 +174,133 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComp
           pinError={pinError}
         />
       )}
+
+      {/* Import Wallet Modal */}
+      <Modal
+        visible={showImportModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowImportModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <TouchableOpacity 
+              style={styles.modalCloseButton}
+              onPress={() => setShowImportModal(false)}
+            >
+              <X size={24} color={colors.textSecondary} />
+            </TouchableOpacity>
+            
+            <Text style={styles.modalTitle}>Import Wallet</Text>
+            <Text style={styles.modalSubtitle}>
+              Enter your existing wallet's seed phrase
+            </Text>
+            
+            <Text style={styles.inputLabel}>Seed Phrase</Text>
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              placeholder="Enter your 12 or 24 word seed phrase"
+              placeholderTextColor={colors.textSecondary}
+              value={importPhrase}
+              onChangeText={setImportPhrase}
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
+              autoFocus
+            />
+            
+            <View style={styles.modalActions}>
+              <TouchableOpacity 
+                style={[styles.primaryButton, isImporting && styles.buttonDisabled]}
+                onPress={processImportWallet}
+                disabled={isImporting}
+              >
+                <Text style={styles.primaryButtonText}>
+                  {isImporting ? 'Importing...' : 'Import Wallet'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    backgroundColor: colors.backgroundDark,
+    borderRadius: 16,
+    padding: 24,
+    width: '90%',
+    maxWidth: 400,
+    position: 'relative',
+  },
+  modalCloseButton: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontFamily: 'Inter-Bold',
+    color: colors.textPrimary,
+    marginBottom: 8,
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    color: colors.textSecondary,
+    marginBottom: 24,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontFamily: 'Inter-Medium',
+    color: colors.textPrimary,
+    marginBottom: 8,
+  },
+  input: {
+    backgroundColor: colors.backgroundMedium,
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    fontFamily: 'Inter-Regular',
+    color: colors.textPrimary,
+    marginBottom: 16,
+  },
+  textArea: {
+    height: 100,
+    textAlignVertical: 'top',
+  },
+  modalActions: {
+    marginTop: 24,
+  },
+  primaryButton: {
+    backgroundColor: colors.primary,
+    borderRadius: 8,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+  },
+  primaryButtonText: {
+    fontSize: 16,
+    fontFamily: 'Inter-SemiBold',
+    color: colors.white,
+    textAlign: 'center',
+  },
+  buttonDisabled: {
+    opacity: 0.5,
+  },
+});
 
 export default SetupWalletScreen;
