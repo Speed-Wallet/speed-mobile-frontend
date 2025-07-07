@@ -21,6 +21,7 @@ interface WalletInfo {
   name: string;
   publicKey: string;
   isActive: boolean;
+  isMasterWallet?: boolean;
 }
 
 export default function WalletsScreen() {
@@ -31,6 +32,8 @@ export default function WalletsScreen() {
   const [importPhrase, setImportPhrase] = useState('');
   const [walletName, setWalletName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [walletNameError, setWalletNameError] = useState('');
+  const [seedPhraseError, setSeedPhraseError] = useState('');
 
   useEffect(() => {
     loadWallets();
@@ -45,7 +48,8 @@ export default function WalletsScreen() {
         id: wallet.id,
         name: wallet.name,
         publicKey: wallet.publicKey,
-        isActive: wallet.id === activeWalletId
+        isActive: wallet.id === activeWalletId,
+        isMasterWallet: wallet.isMasterWallet
       }));
       
       setWallets(walletInfos);
@@ -56,25 +60,79 @@ export default function WalletsScreen() {
 
   const handleCreateWallet = () => {
     setWalletName('');
+    setWalletNameError('');
     setShowCreateModal(true);
   };
 
   const handleImportWallet = () => {
     setImportPhrase('');
     setWalletName('');
+    setWalletNameError('');
+    setSeedPhraseError('');
     setShowImportModal(true);
   };
 
-  const validateWalletName = () => {
-    if (walletName.trim().length < 3) {
-      Alert.alert('Invalid Name', 'Wallet name must be at least 3 characters long.');
-      return false;
+  const validateWalletName = (name: string) => {
+    const trimmedName = name.trim();
+    
+    if (trimmedName.length < 3) {
+      return 'Wallet name must be at least 3 characters long';
     }
+    
+    const existingWallet = wallets.find(wallet => 
+      wallet.name.toLowerCase() === trimmedName.toLowerCase()
+    );
+    
+    if (existingWallet) {
+      return 'Wallet name already exists';
+    }
+    
+    return '';
+  };
+
+  const validateSeedPhrase = (phrase: string) => {
+    const trimmedPhrase = phrase.trim();
+    
+    if (!trimmedPhrase) {
+      return 'Seed phrase is required';
+    }
+    
+    const words = trimmedPhrase.split(/\s+/);
+    if (words.length !== 12 && words.length !== 24) {
+      return 'Seed phrase must be 12 or 24 words';
+    }
+    
+    return '';
+  };
+
+  const handleWalletNameBlur = () => {
+    const error = validateWalletName(walletName);
+    setWalletNameError(error);
+  };
+
+  const handleSeedPhraseBlur = () => {
+    const error = validateSeedPhrase(importPhrase);
+    setSeedPhraseError(error);
+  };
+
+  const isFormValid = () => {
+    const nameError = validateWalletName(walletName);
+    if (nameError) return false;
+    
+    if (showImportModal) {
+      const seedError = validateSeedPhrase(importPhrase);
+      if (seedError) return false;
+    }
+    
     return true;
   };
 
   const processCreateWallet = async () => {
-    if (!validateWalletName()) return;
+    const nameError = validateWalletName(walletName);
+    if (nameError) {
+      setWalletNameError(nameError);
+      return;
+    }
 
     setLoading(true);
     try {
@@ -103,10 +161,12 @@ export default function WalletsScreen() {
   };
 
   const processImportWallet = async () => {
-    if (!validateWalletName()) return;
-
-    if (!importPhrase.trim()) {
-      Alert.alert('Invalid Phrase', 'Please enter a valid seed phrase.');
+    const nameError = validateWalletName(walletName);
+    const seedError = validateSeedPhrase(importPhrase);
+    
+    if (nameError || seedError) {
+      setWalletNameError(nameError);
+      setSeedPhraseError(seedError);
       return;
     }
 
@@ -130,7 +190,16 @@ export default function WalletsScreen() {
     setLoading(false);
   };
 
-  const handleDeleteWallet = (walletId: string) => {
+  const handleDeleteWallet = (walletId: string, isMasterWallet?: boolean) => {
+    if (isMasterWallet) {
+      Alert.alert(
+        'Cannot Delete Main Wallet',
+        'The main wallet cannot be deleted as it contains the master seed phrase for your account.',
+        [{ text: 'OK', style: 'default' }]
+      );
+      return;
+    }
+
     Alert.alert(
       'Delete Wallet',
       'Are you sure you want to delete this wallet? This action cannot be undone.',
@@ -189,27 +258,41 @@ export default function WalletsScreen() {
         </Text>
         
         <TextInput
-          style={styles.input}
-          placeholder="Wallet name (e.g., Main Wallet)"
+          style={[styles.input, walletNameError && styles.inputError]}
+          placeholder="Wallet name (e.g. Wallet 2)"
           placeholderTextColor={colors.textSecondary}
           value={walletName}
-          onChangeText={setWalletName}
+          onChangeText={(text) => {
+            setWalletName(text);
+            if (walletNameError) setWalletNameError('');
+          }}
+          onBlur={handleWalletNameBlur}
           autoFocus
         />
+        {walletNameError && (
+          <Text style={styles.errorText}>* {walletNameError}</Text>
+        )}
 
         {showImportModal && (
           <>
             <Text style={styles.inputLabel}>Seed Phrase</Text>
             <TextInput
-              style={[styles.input, styles.textArea]}
+              style={[styles.input, styles.textArea, seedPhraseError && styles.inputError]}
               placeholder="Enter your 12 or 24 word seed phrase"
               placeholderTextColor={colors.textSecondary}
               value={importPhrase}
-              onChangeText={setImportPhrase}
+              onChangeText={(text) => {
+                setImportPhrase(text);
+                if (seedPhraseError) setSeedPhraseError('');
+              }}
+              onBlur={handleSeedPhraseBlur}
               multiline
               numberOfLines={4}
               textAlignVertical="top"
             />
+            {seedPhraseError && (
+              <Text style={styles.errorText}>* {seedPhraseError}</Text>
+            )}
           </>
         )}
       </>
@@ -279,15 +362,20 @@ export default function WalletsScreen() {
                     </TouchableOpacity>
                   )}
                   
-                  <TouchableOpacity 
-                    style={styles.deleteButton}
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      handleDeleteWallet(wallet.id);
-                    }}
-                  >
-                    <Trash2 size={18} color={colors.error} />
-                  </TouchableOpacity>
+                  {!wallet.isMasterWallet && (
+                    <TouchableOpacity 
+                      style={styles.deleteButton}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        handleDeleteWallet(wallet.id, wallet.isMasterWallet);
+                      }}
+                    >
+                      <Trash2 
+                        size={18} 
+                        color={colors.error} 
+                      />
+                    </TouchableOpacity>
+                  )}
                 </View>
               </TouchableOpacity>
             ))
@@ -308,16 +396,13 @@ export default function WalletsScreen() {
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={[styles.actionCard, styles.disabledCard]} 
-            disabled={true}
-          >
-            <View style={[styles.actionIcon, { backgroundColor: colors.textSecondary }]}>
+          <TouchableOpacity style={styles.actionCard} onPress={handleImportWallet}>
+            <View style={[styles.actionIcon, { backgroundColor: colors.success }]}>
               <Key size={20} color={colors.white} />
             </View>
             <View style={styles.actionContent}>
-              <Text style={[styles.actionTitle, styles.disabledText]}>Import Wallet</Text>
-              <Text style={[styles.actionSubtitle, styles.disabledText]}>Import existing wallet using seed phrase (Coming Soon)</Text>
+              <Text style={styles.actionTitle}>Import Wallet</Text>
+              <Text style={styles.actionSubtitle}>Import existing wallet using seed phrase</Text>
             </View>
           </TouchableOpacity>
         </View>
@@ -349,9 +434,12 @@ export default function WalletsScreen() {
             
             <View style={styles.modalActions}>
               <TouchableOpacity 
-                style={[styles.primaryButton, loading && styles.buttonDisabled]}
+                style={[
+                  styles.primaryButton, 
+                  (loading || !isFormValid()) && styles.buttonDisabled
+                ]}
                 onPress={showCreateModal ? processCreateWallet : processImportWallet}
-                disabled={loading}
+                disabled={loading || !isFormValid()}
               >
                 <Text style={styles.primaryButtonText}>
                   {showCreateModal ? 'Create Wallet' : 'Import Wallet'}
@@ -549,6 +637,17 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Regular',
     color: colors.textPrimary,
     marginBottom: 16,
+  },
+  inputError: {
+    borderWidth: 1,
+    borderColor: colors.error,
+    marginBottom: 4,
+  },
+  errorText: {
+    fontSize: 12,
+    fontFamily: 'Inter-Regular',
+    color: colors.error,
+    marginBottom: 12,
   },
   textArea: {
     height: 100,

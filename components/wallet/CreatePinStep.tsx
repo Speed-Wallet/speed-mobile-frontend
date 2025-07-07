@@ -105,9 +105,6 @@ const CreatePinStep: React.FC<CreatePinStepProps> = ({
             style={styles.securityCard}>
             <View style={styles.securityContent}>
               <Shield size={18} color="#7c5cff" />
-              <Text style={styles.securityText}>
-                Your PIN is stored securely on your device and never shared.
-              </Text>
             </View>
           </LinearGradient>
         </Animated.View>

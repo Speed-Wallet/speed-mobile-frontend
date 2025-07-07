@@ -9,11 +9,13 @@ import {
   TextInput,
   Modal,
   FlatList,
+  Animated as RNAnimated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { CreditCard as Edit2, Check, Clock, CircleAlert as AlertCircle, Mail, MapPin, CreditCard, FileText, Video, Shield, ChevronDown, Calendar } from 'lucide-react-native';
+import { CreditCard as Edit2, Check, Clock, CircleAlert as AlertCircle, Mail, MapPin, CreditCard, FileText, Video, Shield, ChevronDown, Calendar, Save, Lock } from 'lucide-react-native';
 import BackButton from '@/components/BackButton';
+import Toast from '@/components/Toast';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -26,49 +28,32 @@ import Animated, {
 } from 'react-native-reanimated';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import { StorageService, PersonalInfo } from '@/utils/storage';
+import { triggerShake } from '@/utils/animations';
+import { countries, Country } from '@/constants/countries';
 
 const { width: screenWidth } = Dimensions.get('window');
+
+// Development default values
+const developmentInfo = {
+  phoneNumber: '60 123 4567',
+  firstName: 'Tristan',
+  lastName: 'Smith',
+  email: 'tristan@example.com',
+  address: 'Cape Town',
+  streetNumber: '123',
+};
 const CARD_WIDTH = screenWidth - 40; // Match input field width (20px padding on each side)
 const CARD_MARGIN = 0; // No additional margin needed since we're matching input width
 const SNAP_INTERVAL = CARD_WIDTH; // Use card width directly for snapping
 
-interface Country {
-  code: string;
-  name: string;
-  flag: string;
-  dialCode: string;
-}
-
-const countries: Country[] = [
-  { code: 'ZA', name: 'South Africa', flag: '🇿🇦', dialCode: '+27' },
-  { code: 'US', name: 'United States', flag: '🇺🇸', dialCode: '+1' },
-  { code: 'GB', name: 'United Kingdom', flag: '🇬🇧', dialCode: '+44' },
-  { code: 'CA', name: 'Canada', flag: '🇨🇦', dialCode: '+1' },
-  { code: 'AU', name: 'Australia', flag: '🇦🇺', dialCode: '+61' },
-  { code: 'DE', name: 'Germany', flag: '🇩🇪', dialCode: '+49' },
-  { code: 'FR', name: 'France', flag: '🇫🇷', dialCode: '+33' },
-  { code: 'IT', name: 'Italy', flag: '🇮🇹', dialCode: '+39' },
-  { code: 'ES', name: 'Spain', flag: '🇪🇸', dialCode: '+34' },
-  { code: 'NL', name: 'Netherlands', flag: '🇳🇱', dialCode: '+31' },
-  { code: 'BE', name: 'Belgium', flag: '🇧🇪', dialCode: '+32' },
-  { code: 'CH', name: 'Switzerland', flag: '🇨🇭', dialCode: '+41' },
-  { code: 'AT', name: 'Austria', flag: '🇦🇹', dialCode: '+43' },
-  { code: 'SE', name: 'Sweden', flag: '🇸🇪', dialCode: '+46' },
-  { code: 'NO', name: 'Norway', flag: '🇳🇴', dialCode: '+47' },
-  { code: 'DK', name: 'Denmark', flag: '🇩🇰', dialCode: '+45' },
-  { code: 'FI', name: 'Finland', flag: '🇫🇮', dialCode: '+358' },
-  { code: 'IE', name: 'Ireland', flag: '🇮🇪', dialCode: '+353' },
-  { code: 'PT', name: 'Portugal', flag: '🇵🇹', dialCode: '+351' },
-  { code: 'GR', name: 'Greece', flag: '🇬🇷', dialCode: '+30' },
-];
-
 interface VerificationLevel {
   id: number;
   title: string;
-  status: 'completed' | 'pending' | 'not_started';
+  status: 'completed' | 'pending' | 'not_started' | 'locked';
   description: string;
   color: string;
-  icon: 'check' | 'clock' | 'alert';
+  icon: 'check' | 'clock' | 'alert' | 'lock';
+  accessible: boolean;
   inputs: InputField[];
 }
 
@@ -89,6 +74,7 @@ const verificationLevels: VerificationLevel[] = [
     description: 'Basic account verification',
     color: '#10b981',
     icon: 'check',
+    accessible: true,
     inputs: [
       {
         id: 'phone',
@@ -111,10 +97,11 @@ const verificationLevels: VerificationLevel[] = [
   {
     id: 2,
     title: 'Level 2 - Enhanced',
-    status: 'not_started',
+    status: 'locked',
     description: 'Enhanced verification with documents',
-    color: '#3b82f6',
-    icon: 'alert',
+    color: '#6b7280',
+    icon: 'lock',
+    accessible: false,
     inputs: [
       {
         id: 'id_document',
@@ -142,10 +129,11 @@ const verificationLevels: VerificationLevel[] = [
   {
     id: 3,
     title: 'Level 3 - Premium',
-    status: 'not_started',
+    status: 'locked',
     description: 'Premium verification for high-value transactions',
-    color: '#f59e0b',
-    icon: 'alert',
+    color: '#6b7280',
+    icon: 'lock',
+    accessible: false,
     inputs: [
       {
         id: 'bank_statement',
@@ -179,16 +167,42 @@ export default function AccountScreen() {
   const [showCountryPicker, setShowCountryPicker] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date(1990, 0, 15));
-  const [phoneNumber, setPhoneNumber] = useState('60 123 4567');
-  const [firstName, setFirstName] = useState('Tristan');
-  const [lastName, setLastName] = useState('Smith');
-  const [email, setEmail] = useState('tristan@example.com');
-  const [address, setAddress] = useState('Cape Town');
-  const [streetNumber, setStreetNumber] = useState('123 Main Street');
+  
+  // Set default values only in development mode
+  const isDevelopment = process.env.EXPO_PUBLIC_APP_ENV === 'development';
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [firstName, setFirstName] = useState(isDevelopment ? developmentInfo.firstName : '');
+  const [lastName, setLastName] = useState(isDevelopment ? developmentInfo.lastName : '');
+  const [email, setEmail] = useState(isDevelopment ? developmentInfo.email : '');
+  const [address, setAddress] = useState(isDevelopment ? developmentInfo.address : '');
+  const [streetNumber, setStreetNumber] = useState(isDevelopment ? developmentInfo.streetNumber : '');
   
   // Validation states
   const [firstNameError, setFirstNameError] = useState(false);
   const [lastNameError, setLastNameError] = useState(false);
+  const [emailError, setEmailError] = useState(false);
+  const [addressError, setAddressError] = useState(false);
+  const [streetNumberError, setStreetNumberError] = useState(false);
+  const [phoneNumberError, setPhoneNumberError] = useState(false);
+  
+  // Toast state
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState<'success' | 'error' | 'info'>('success');
+  
+  // Save button state
+  const [isSaving, setIsSaving] = useState(false);
+  
+  // Animation for shake effect
+  const shakeAnimationValue = useRef(new RNAnimated.Value(0)).current;
+  
+  // Input refs for focusing on errors
+  const firstNameRef = useRef<TextInput>(null);
+  const lastNameRef = useRef<TextInput>(null);
+  const emailRef = useRef<TextInput>(null);
+  const addressRef = useRef<TextInput>(null);
+  const streetNumberRef = useRef<TextInput>(null);
+  const phoneNumberRef = useRef<TextInput>(null);
   
   // Date picker state
   const [tempDay, setTempDay] = useState(15);
@@ -201,11 +215,17 @@ export default function AccountScreen() {
   // Add a ref to prevent multiple simultaneous saves
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Wrapper function for shake animation that can be called from worklet
+  const handleShakeAnimation = () => {
+    triggerShake(shakeAnimationValue);
+  };
+
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: (event) => {
       scrollX.value = event.contentOffset.x;
       const index = Math.round(event.contentOffset.x / SNAP_INTERVAL);
-      if (index !== currentLevel) {
+      // Only allow navigation to accessible levels
+      if (index !== currentLevel && verificationLevels[index]?.accessible) {
         runOnJS(setCurrentLevel)(index);
       }
     },
@@ -216,14 +236,36 @@ export default function AccountScreen() {
       'worklet';
       const threshold = 50;
       let targetIndex = currentLevel;
+      let attemptedLockedLevel = false;
 
       if (event.translationX > threshold && currentLevel > 0) {
-        targetIndex = currentLevel - 1;
+        // Find the previous accessible level
+        for (let i = currentLevel - 1; i >= 0; i--) {
+          if (verificationLevels[i]?.accessible) {
+            targetIndex = i;
+            break;
+          }
+        }
       } else if (event.translationX < -threshold && currentLevel < verificationLevels.length - 1) {
-        targetIndex = currentLevel + 1;
+        // Check if user is trying to access a locked level
+        const nextIndex = currentLevel + 1;
+        if (nextIndex < verificationLevels.length && !verificationLevels[nextIndex]?.accessible) {
+          attemptedLockedLevel = true;
+        }
+        
+        // Find the next accessible level
+        for (let i = currentLevel + 1; i < verificationLevels.length; i++) {
+          if (verificationLevels[i]?.accessible) {
+            targetIndex = i;
+            break;
+          }
+        }
       }
 
-      if (targetIndex !== currentLevel) {
+      if (attemptedLockedLevel) {
+        // Trigger shake animation when trying to access locked level
+        runOnJS(handleShakeAnimation)();
+      } else if (targetIndex !== currentLevel) {
         scrollTo(scrollViewRef, targetIndex * SNAP_INTERVAL, 0, true);
         runOnJS(setCurrentLevel)(targetIndex);
       }
@@ -237,6 +279,8 @@ export default function AccountScreen() {
         return <Clock size={16} color={color} />;
       case 'alert':
         return <AlertCircle size={16} color={color} />;
+      case 'lock':
+        return <Lock size={16} color={color} />;
       default:
         return <Check size={16} color={color} />;
     }
@@ -254,12 +298,6 @@ export default function AccountScreen() {
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
-
-  const validateName = (name: string) => {
-    // Only allow English letters and spaces, minimum 3 characters
-    const cleanName = name.replace(/[^a-zA-Z\s]/g, '').replace(/\s+/g, ' ').replace(/^\s+/, '');
-    return cleanName.length >= 3 ? cleanName : name.replace(/[^a-zA-Z\s]/g, '').replace(/\s+/g, ' ').replace(/^\s+/, '');
-  };
 
   const getDaysInMonth = (month: number, year: number) => {
     return new Date(year, month + 1, 0).getDate();
@@ -286,7 +324,87 @@ export default function AccountScreen() {
   const handleDateConfirm = async () => {
     setSelectedDate(new Date(tempYear, tempMonth, tempDay));
     setShowDatePicker(false);
-    await savePersonalInfo();
+  };
+
+  // Validation functions
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const validateName = (name: string): boolean => {
+    const cleanName = name.replace(/[^a-zA-Z\s]/g, '').replace(/\s+/g, ' ').trim();
+    return cleanName.length >= 4;
+  };
+
+  const validatePhoneNumber = (phone: string): boolean => {
+    const cleanPhone = phone.replace(/[^0-9]/g, '');
+    return cleanPhone.length >= 8;
+  };
+
+  const validateAddress = (address: string): boolean => {
+    return address.trim().length >= 5;
+  };
+
+  const validateStreetNumber = (streetNumber: string): boolean => {
+    return streetNumber.trim().length >= 1;
+  };
+
+  // Check if all fields are valid
+  const isFormValid = (): boolean => {
+    return !firstNameError && !lastNameError && !emailError && !addressError && !streetNumberError && !phoneNumberError &&
+           firstName.trim().length > 0 && lastName.trim().length > 0 && email.trim().length > 0 && 
+           address.trim().length > 0 && streetNumber.trim().length > 0 && phoneNumber.trim().length > 0;
+  };
+
+  // Focus first invalid field
+  const focusFirstInvalidField = () => {
+    if (firstNameError && firstNameRef.current) {
+      firstNameRef.current.focus();
+      return;
+    }
+    if (lastNameError && lastNameRef.current) {
+      lastNameRef.current.focus();
+      return;
+    }
+    if (emailError && emailRef.current) {
+      emailRef.current.focus();
+      return;
+    }
+    if (addressError && addressRef.current) {
+      addressRef.current.focus();
+      return;
+    }
+    if (streetNumberError && streetNumberRef.current) {
+      streetNumberRef.current.focus();
+      return;
+    }
+    if (phoneNumberError && phoneNumberRef.current) {
+      phoneNumberRef.current.focus();
+      return;
+    }
+  };
+
+  const handleSaveButtonPress = async () => {
+    if (!isFormValid()) {
+      handleShakeAnimation();
+      focusFirstInvalidField();
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      await savePersonalInfo();
+      setToastMessage('Details saved successfully ✅');
+      setToastType('success');
+      setShowToast(true);
+    } catch (error) {
+      setToastMessage('Error saving details');
+      setToastType('error');
+      setShowToast(true);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const savePersonalInfo = async (overrides?: Partial<PersonalInfo>) => {
@@ -306,17 +424,8 @@ export default function AccountScreen() {
       console.log('Personal info saved successfully');
     } catch (error) {
       console.error('Error saving personal info:', error);
+      throw error;
     }
-  };
-
-  // Debounced save function to prevent too many saves
-  const debouncedSave = (overrides?: Partial<PersonalInfo>) => {
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-    saveTimeoutRef.current = setTimeout(() => {
-      savePersonalInfo(overrides);
-    }, 300); // 300ms debounce
   };
 
   const loadPersonalInfo = async () => {
@@ -324,30 +433,34 @@ export default function AccountScreen() {
     if (savedInfo) {
       // Split the name into first and last name
       const nameParts = savedInfo.name.split(' ');
-      const firstName = nameParts[0] || 'Tristan';
-      const lastName = nameParts.slice(1).join(' ') || 'Smith';
+      const firstName = nameParts[0] || (isDevelopment ? developmentInfo.firstName : '');
+      const lastName = nameParts.slice(1).join(' ') || (isDevelopment ? developmentInfo.lastName : '');
       
       setFirstName(firstName);
       setLastName(lastName);
       
       // Validate names on load
-      setFirstNameError(firstName.length < 4);
-      setLastNameError(lastName.length < 4);
+      setFirstNameError(!validateName(firstName));
+      setLastNameError(!validateName(lastName));
       
       setEmail(savedInfo.email);
+      setEmailError(!validateEmail(savedInfo.email));
+      
       setPhoneNumber(savedInfo.phoneNumber);
+      setPhoneNumberError(!validatePhoneNumber(savedInfo.phoneNumber));
+      
       setSelectedDate(new Date(savedInfo.dateOfBirth));
       setAddress(savedInfo.address);
-      setStreetNumber(savedInfo.streetNumber || '123 Main Street');
+      setAddressError(!validateAddress(savedInfo.address));
+      
+      setStreetNumber(savedInfo.streetNumber || (isDevelopment ? developmentInfo.streetNumber : ''));
+      setStreetNumberError(!validateStreetNumber(savedInfo.streetNumber || (isDevelopment ? developmentInfo.streetNumber : '')));
       
       // Find and set the selected country
       const country = countries.find(c => c.code === savedInfo.selectedCountry.code);
       if (country) {
         setSelectedCountry(country);
       }
-    } else {
-      // Save default values if no saved info exists
-      await savePersonalInfo();
     }
   };
 
@@ -355,15 +468,17 @@ export default function AccountScreen() {
     loadPersonalInfo();
   }, []);
 
-  const handleCountrySelect = async (country: Country) => {
+  const handleCountrySelect = (country: Country) => {
     setSelectedCountry(country);
     setShowCountryPicker(false);
-    await savePersonalInfo({ selectedCountry: country });
   };
 
-  const handlePhoneChange = async (phone: string) => {
+  const handlePhoneChange = (phone: string) => {
     setPhoneNumber(phone);
-    await savePersonalInfo({ phoneNumber: phone });
+  };
+
+  const handlePhoneBlur = () => {
+    setPhoneNumberError(!validatePhoneNumber(phoneNumber));
   };
 
   const renderCountryItem = ({ item }: { item: Country }) => (
@@ -420,24 +535,25 @@ export default function AccountScreen() {
                 <ChevronDown size={16} color="#9ca3af" />
               </TouchableOpacity>
               <TextInput
+                ref={phoneNumberRef}
                 style={styles.phoneInput}
                 placeholder={input.placeholder}
                 placeholderTextColor="#6b7280"
                 value={phoneNumber}
                 onChangeText={handlePhoneChange}
+                onBlur={handlePhoneBlur}
                 keyboardType="phone-pad"
               />
             </View>
           ) : input.type === 'email' ? (
             <TextInput
+              ref={emailRef}
               style={styles.textInput}
               placeholder={input.placeholder}
               placeholderTextColor="#6b7280"
               value={email}
-              onChangeText={async (text) => {
-                setEmail(text);
-                debouncedSave({ email: text });
-              }}
+              onChangeText={setEmail}
+              onBlur={() => setEmailError(!validateEmail(email))}
               keyboardType="email-address"
             />
           ) : input.type === 'date' ? (
@@ -495,18 +611,21 @@ export default function AccountScreen() {
           
           <GestureDetector gesture={panGesture}>
             <View>
-              <Animated.ScrollView
-                ref={scrollViewRef}
-                horizontal
-                pagingEnabled
-                showsHorizontalScrollIndicator={false}
-                onScroll={scrollHandler}
-                scrollEventThrottle={16}
-                snapToInterval={SNAP_INTERVAL}
-                decelerationRate="fast"
-                contentContainerStyle={styles.scrollContent}
-              >
-                {verificationLevels.map((level, index) => {
+              <RNAnimated.View style={[
+                { transform: [{ translateX: shakeAnimationValue }] }
+              ]}>
+                <Animated.ScrollView
+                  ref={scrollViewRef}
+                  horizontal
+                  pagingEnabled
+                  showsHorizontalScrollIndicator={false}
+                  onScroll={scrollHandler}
+                  scrollEventThrottle={16}
+                  snapToInterval={SNAP_INTERVAL}
+                  decelerationRate="fast"
+                  contentContainerStyle={styles.scrollContent}
+                >
+                  {verificationLevels.map((level, index) => {
                   const animatedStyle = useAnimatedStyle(() => {
                     const inputRange = [
                       (index - 1) * SNAP_INTERVAL,
@@ -556,10 +675,11 @@ export default function AccountScreen() {
                   );
                 })}
               </Animated.ScrollView>
+              </RNAnimated.View>
               
               {/* Level Indicators */}
               <View style={styles.indicators}>
-                {verificationLevels.map((_, index) => {
+                {verificationLevels.map((level, index) => {
                   const animatedIndicatorStyle = useAnimatedStyle(() => {
                     const opacity = interpolate(
                       scrollX.value,
@@ -579,14 +699,26 @@ export default function AccountScreen() {
                   });
 
                   return (
-                    <Animated.View
-                      key={index}
-                      style={[
-                        styles.indicator,
-                        { backgroundColor: verificationLevels[index].color },
-                        animatedIndicatorStyle,
-                      ]}
-                    />
+                    <View key={index} style={styles.indicatorContainer}>
+                      {level.accessible ? (
+                        <Animated.View
+                          style={[
+                            styles.indicator,
+                            { backgroundColor: index === currentLevel ? '#10b981' : '#6b7280' },
+                            animatedIndicatorStyle,
+                          ]}
+                        />
+                      ) : (
+                        <Animated.View
+                          style={[
+                            styles.lockedIndicator,
+                            animatedIndicatorStyle,
+                          ]}
+                        >
+                          <Lock size={12} color="#d1d5db" strokeWidth={4} />
+                        </Animated.View>
+                      )}
+                    </View>
                   );
                 })}
               </View>
@@ -606,11 +738,12 @@ export default function AccountScreen() {
                   <Text style={styles.inputLabel}>First Name</Text>
                   <View style={styles.inputWrapper}>
                     <TextInput
+                      ref={firstNameRef}
                       style={styles.textInput}
                       placeholder="Enter your first name"
                       placeholderTextColor="#6b7280"
                       value={firstName}
-                      onChangeText={async (text) => {
+                      onChangeText={(text) => {
                         // Only allow English letters and spaces
                         const letterRegex = /^[a-zA-Z\s]*$/;
                         const cleanedText = text.replace(/[^a-zA-Z\s]/g, '');
@@ -618,10 +751,9 @@ export default function AccountScreen() {
                         
                         if (letterRegex.test(normalizedText)) {
                           setFirstName(normalizedText);
-                          setFirstNameError(normalizedText.length < 4);
-                          await savePersonalInfo({ name: `${normalizedText} ${lastName}` });
                         }
                       }}
+                      onBlur={() => setFirstNameError(!validateName(firstName))}
                     />
                   </View>
                   <Text style={[
@@ -637,11 +769,12 @@ export default function AccountScreen() {
                   <Text style={styles.inputLabel}>Last Name</Text>
                   <View style={styles.inputWrapper}>
                     <TextInput
+                      ref={lastNameRef}
                       style={styles.textInput}
                       placeholder="Enter your last name"
                       placeholderTextColor="#6b7280"
                       value={lastName}
-                      onChangeText={async (text) => {
+                      onChangeText={(text) => {
                         // Only allow English letters and spaces
                         const letterRegex = /^[a-zA-Z\s]*$/;
                         const cleanedText = text.replace(/[^a-zA-Z\s]/g, '');
@@ -649,10 +782,9 @@ export default function AccountScreen() {
                         
                         if (letterRegex.test(normalizedText)) {
                           setLastName(normalizedText);
-                          setLastNameError(normalizedText.length < 4);
-                          await savePersonalInfo({ name: `${firstName} ${normalizedText}` });
                         }
                       }}
+                      onBlur={() => setLastNameError(!validateName(lastName))}
                     />
                   </View>
                   <Text style={[
@@ -673,11 +805,10 @@ export default function AccountScreen() {
                       placeholder="Enter your email address"
                       placeholderTextColor="#6b7280"
                       value={email}
-                      onChangeText={async (text) => {
-                        setEmail(text);
-                        debouncedSave({ email: text });
-                      }}
+                      onChangeText={setEmail}
+                      onBlur={() => setEmailError(!validateEmail(email))}
                       keyboardType="email-address"
+                      ref={emailRef}
                     />
                   </View>
                 </View>
@@ -687,16 +818,17 @@ export default function AccountScreen() {
                   <Text style={styles.inputLabel}>Home Street Number</Text>
                   <View style={styles.inputWrapper}>
                     <TextInput
+                      ref={streetNumberRef}
                       style={styles.textInput}
                       placeholder="Enter your street number"
                       placeholderTextColor="#6b7280"
                       value={streetNumber}
-                      onChangeText={async (text) => {
+                      onChangeText={(text) => {
                         // Only allow digits 0-9
                         const numericText = text.replace(/[^0-9]/g, '');
                         setStreetNumber(numericText);
-                        await savePersonalInfo({ streetNumber: numericText });
                       }}
+                      onBlur={() => setStreetNumberError(!validateStreetNumber(streetNumber))}
                       keyboardType="numeric"
                     />
                   </View>
@@ -711,10 +843,9 @@ export default function AccountScreen() {
                       placeholder="Enter your home address"
                       placeholderTextColor="#6b7280"
                       value={address}
-                      onChangeText={async (text) => {
-                        setAddress(text);
-                        debouncedSave({ address: text });
-                      }}
+                      onChangeText={setAddress}
+                      onBlur={() => setAddressError(!validateAddress(address))}
+                      ref={addressRef}
                     />
                   </View>
                 </View>
@@ -726,6 +857,26 @@ export default function AccountScreen() {
           </View>
         </View>
       </ScrollView>
+
+      {/* Save Button */}
+      <View style={styles.saveButtonContainer}>
+        <TouchableOpacity
+          style={[
+            styles.saveButton,
+            (!isFormValid() || isSaving) && styles.saveButtonDisabled
+          ]}
+          onPress={handleSaveButtonPress}
+          disabled={isSaving}
+        >
+          <Save size={20} color={isFormValid() && !isSaving ? "#ffffff" : "#9ca3af"} />
+          <Text style={[
+            styles.saveButtonText,
+            (!isFormValid() || isSaving) && styles.saveButtonTextDisabled
+          ]}>
+            {isSaving ? 'Saving...' : 'Save Details'}
+          </Text>
+        </TouchableOpacity>
+      </View>
 
       {/* Country Picker Modal */}
       <Modal
@@ -740,7 +891,7 @@ export default function AccountScreen() {
               style={styles.modalCloseButton}
               onPress={() => setShowCountryPicker(false)}
             >
-              <Text style={styles.modalCloseText}>Done</Text>
+              <Text style={styles.modalCloseText}>✕</Text>
             </TouchableOpacity>
           </View>
           <FlatList
@@ -765,7 +916,7 @@ export default function AccountScreen() {
               style={styles.modalCloseButton}
               onPress={handleDateConfirm}
             >
-              <Text style={styles.modalCloseText}>Done</Text>
+              <Text style={styles.modalCloseText}>✕</Text>
             </TouchableOpacity>
           </View>
           
@@ -805,6 +956,14 @@ export default function AccountScreen() {
           </View>
         </SafeAreaView>
       </Modal>
+
+      {/* Toast */}
+      <Toast
+        message={toastMessage}
+        visible={showToast}
+        onHide={() => setShowToast(false)}
+        type={toastType}
+      />
     </SafeAreaView>
   );
 }
@@ -904,10 +1063,22 @@ const styles = StyleSheet.create({
     marginTop: 20,
     gap: 8,
   },
+  indicatorContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   indicator: {
     width: 8,
     height: 8,
     borderRadius: 4,
+  },
+  lockedIndicator: {
+    width: 24,
+    height: 24,
+    backgroundColor: '#6b7280',
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   inputsContainer: {
     gap: 16,
@@ -1100,6 +1271,35 @@ const styles = StyleSheet.create({
   },
   inputHintError: {
     color: '#ef4444',
+  },
+  saveButtonContainer: {
+    padding: 20,
+    backgroundColor: '#1a1a1a',
+    borderTopWidth: 1,
+    borderTopColor: '#404040',
+  },
+  saveButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#3b82f6',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    minHeight: 56,
+  },
+  saveButtonDisabled: {
+    backgroundColor: '#4a4a4a',
+    opacity: 0.6,
+  },
+  saveButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  saveButtonTextDisabled: {
+    color: '#9ca3af',
   },
 });
 

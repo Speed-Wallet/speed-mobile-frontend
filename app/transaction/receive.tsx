@@ -1,83 +1,38 @@
 import { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Share, TextInput, Dimensions, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { X, Copy, Download as DownloadSimple, Share as ShareIcon } from 'lucide-react-native';
-import Animated, { FadeIn } from 'react-native-reanimated';
+import { Copy, Share as ShareIcon } from 'lucide-react-native';
+import QRCode from 'react-native-qrcode-svg';
 import colors from '@/constants/colors';
-import { getTokenByAddress, getAllTokenInfo } from '@/data/tokens';
-import UserData from '@/data/user';
-import QRCode from '@/components/QRCode';
-import { TokenEntry } from '@/data/types';
 import BackButton from '@/components/BackButton';
 import { setStringAsync } from 'expo-clipboard';
+import { useWalletPublicKey } from '@/services/walletService';
 
 const { width } = Dimensions.get('window');
 const QR_SIZE = width * 0.7;
 
 export default function ReceiveScreen() {
-  const { tokenAddress, selectedTokenAddress } = useLocalSearchParams<{
-    tokenAddress?: string;
-    selectedTokenAddress?: string;
-  }>();
   const router = useRouter();
-  const [selectedToken, setSelectedToken] = useState<TokenEntry | null>(null);
-  const [walletAddress, setWalletAddress] = useState('');
+  const walletAddress = useWalletPublicKey();
   const addressInputRef = useRef(null);
-
-  useEffect(() => {
-    setWalletAddress(UserData.walletAddress); // Uses wallet address from user data
-
-    let initialToken: TokenEntry | null = null;
-    if (typeof tokenAddress === 'string' && tokenAddress) {
-      initialToken = getTokenByAddress(tokenAddress);
-    }
-    
-    if (!initialToken) {
-      // If no tokenAddress is provided or token not found, use a default token
-      const allTokens = getAllTokenInfo();
-      if (allTokens.length > 0) {
-        initialToken = allTokens[0]; // Use the first token as a default
-      }
-    }
-
-    if (initialToken) {
-      setSelectedToken(initialToken);
-    }
-
-  }, [tokenAddress]);
-
-  // Handle token selection from the token selector page
-  useEffect(() => {
-    if (selectedTokenAddress) {
-      const token = getTokenByAddress(selectedTokenAddress);
-      setSelectedToken(token);
-      setWalletAddress(UserData.walletAddress);
-      
-      // Clear the param to prevent re-triggering
-      router.setParams({ selectedTokenAddress: undefined });
-    }
-  }, [selectedTokenAddress]);
-
-  if (Array.isArray(tokenAddress)) {
-    throw new Error('tokenAddress should not be an array');
-  }
 
   const handleCopyAddress = async () => {
     await setStringAsync(walletAddress || '');
   };
 
   const handleShare = async () => {
-    // try {
-    //   const result = await Share.share({
-    //     message: `My ${tokenAddress.name} address: ${walletAddress}`,
-    //   });
-    // } catch (error) {
-    //   alert(error.message);
-    // }
+    try {
+      const result = await Share.share({
+        message: `My wallet address: ${walletAddress}`,
+      });
+    } catch (error) {
+      console.error('Error sharing:', error);
+    }
   };
 
-  const handleDownload = () => {
-    alert('QR code saved to photos!');
+  const formatAddress = (address: string) => {
+    if (!address) return '';
+    return `${address.slice(0, 5)}...${address.slice(-5)}`;
   };
 
   return (
@@ -89,97 +44,53 @@ export default function ReceiveScreen() {
       </View>
 
       <View style={styles.content}>
-        {selectedToken && (
-          <>
-            <Animated.View entering={FadeIn} style={styles.tokenSelector}>
-              <TouchableOpacity
-                style={styles.tokenButton}
-                onPress={() => router.push({
-                  pathname: '/token/select',
-                  params: {
-                    selectedAddress: selectedToken?.address
-                  }
-                })}
-              >
-                <View style={styles.tokenInfo}>
-                  <View
-                    style={[
-                      styles.tokenIconContainer,
-                      { backgroundColor: selectedToken.color + '33' }
-                    ]}
-                  >
-                    <Text style={styles.tokenIconText}>{selectedToken.symbol.charAt(0)}</Text>
-                  </View>
-                  <Text style={styles.tokenName}>{selectedToken.name}</Text>
-                </View>
-                <Text style={styles.tokenNetwork}>Solana</Text>
-              </TouchableOpacity>
-            </Animated.View>
+        <View style={styles.qrSection}>
+          <Text style={styles.qrTitle}>
+            Scan QR code to receive crypto
+          </Text>
 
-            <View style={styles.qrSection}>
-              <Text style={styles.qrTitle}>
-                Scan QR code to receive {selectedToken.name}
-              </Text>
-
-              <View style={styles.qrContainer}>
-                <QRCode
-                  value={walletAddress}
-                  size={QR_SIZE}
-                  color={colors.textPrimary}
-                  backgroundColor={colors.white}
-                  logoUrl={selectedToken.logoURI}
-                />
-              </View>
-
-              <View style={styles.addressContainer}>
-                <Text style={styles.addressLabel}>
-                  {selectedToken.name} Address (Solana)
-                </Text>
-                <View style={styles.addressInputContainer}>
-                  <TextInput
-                    ref={addressInputRef}
-                    style={styles.addressInput}
-                    value={walletAddress}
-                    editable={false}
-                    multiline={Platform.OS === 'ios'}
-                    numberOfLines={1}
-                  />
-                  <TouchableOpacity
-                    style={styles.copyButton}
-                    onPress={handleCopyAddress}
-                  >
-                    <Copy size={20} color={colors.primary} />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
-
-            <View style={styles.warning}>
-              <Text style={styles.warningTitle}>Important!</Text>
-              <Text style={styles.warningText}>
-                Only send {selectedToken.name} ({selectedToken.symbol}) to this address.
-                Sending any other coins may result in permanent loss.
-              </Text>
-            </View>
-          </>
-        )}
+          <View style={styles.qrContainer}>
+            <QRCode
+              value={walletAddress || ''}
+              size={QR_SIZE}
+              logo={require('@/assets/images/solana-logo.png')}
+              logoSize={60}
+            />
+          </View>
+        </View>
       </View>
 
-      <View style={styles.actionButtons}>
+      <View style={styles.bottomSection}>
+        <View style={styles.addressContainer}>
+          <Text style={styles.addressLabel}>
+            Wallet Address (Solana)
+          </Text>
+          <View style={styles.addressInputContainer}>
+            <View style={styles.addressGroup}>
+              <TextInput
+                ref={addressInputRef}
+                style={styles.addressInput}
+                value={formatAddress(walletAddress || '')}
+                editable={false}
+                multiline={Platform.OS === 'ios'}
+                numberOfLines={1}
+              />
+              <TouchableOpacity
+                style={styles.copyButton}
+                onPress={handleCopyAddress}
+              >
+                <Copy size={20} color={colors.primary} />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+
         <TouchableOpacity
-          style={[styles.actionButton, styles.shareButton]}
+          style={styles.shareButton}
           onPress={handleShare}
         >
           <ShareIcon size={20} color={colors.white} />
           <Text style={styles.actionButtonText}>Share</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={handleDownload}
-        >
-          <DownloadSimple size={20} color={colors.white} />
-          <Text style={styles.actionButtonText}>Save QR</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -218,50 +129,9 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 16,
   },
-  tokenSelector: {
-    marginBottom: 24,
-  },
-  tokenButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: colors.backgroundMedium,
-    borderRadius: 16,
-    padding: 16,
-  },
-  tokenInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  tokenIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  tokenIconText: {
-    fontSize: 16,
-    fontFamily: 'Inter-Bold',
-    color: colors.textPrimary,
-  },
-  tokenName: {
-    fontSize: 16,
-    fontFamily: 'Inter-SemiBold',
-    color: colors.textPrimary,
-  },
-  tokenNetwork: {
-    fontSize: 14,
-    fontFamily: 'Inter-Regular',
-    color: colors.textSecondary,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    backgroundColor: colors.backgroundLight,
-    borderRadius: 8,
-  },
   qrSection: {
     alignItems: 'center',
+    marginTop: 80,
     marginBottom: 24,
   },
   qrTitle: {
@@ -288,57 +158,41 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   addressInputContainer: {
-    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: colors.backgroundMedium,
     borderRadius: 16,
     paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  addressGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   addressInput: {
-    flex: 1,
-    fontSize: 14,
-    fontFamily: 'Inter-Regular',
+    fontSize: 16,
+    fontFamily: 'Inter-SemiBold',
     color: colors.textPrimary,
-    paddingVertical: 16,
+    marginRight: 8,
   },
   copyButton: {
     padding: 8,
   },
-  warning: {
-    backgroundColor: colors.warningLight,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 24,
-  },
-  warningTitle: {
-    fontSize: 16,
-    fontFamily: 'Inter-SemiBold',
-    color: colors.warning,
-    marginBottom: 8,
-  },
-  warningText: {
-    fontSize: 14,
-    fontFamily: 'Inter-Regular',
-    color: colors.warningDark,
-    lineHeight: 20,
-  },
-  actionButtons: {
-    flexDirection: 'row',
+  bottomSection: {
     paddingHorizontal: 16,
     paddingBottom: 32,
   },
-  actionButton: {
-    flex: 1,
+  actionButtons: {
+    paddingHorizontal: 16,
+    paddingBottom: 32,
+  },
+  shareButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.backgroundLight,
+    backgroundColor: colors.primary,
     borderRadius: 16,
     paddingVertical: 16,
-    marginHorizontal: 8,
-  },
-  shareButton: {
-    backgroundColor: colors.primary,
   },
   actionButtonText: {
     color: colors.white,

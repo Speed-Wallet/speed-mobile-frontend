@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Animated, SafeAreaView, Platform, TextInput } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowRight, ShieldCheck, Eye, EyeOff, CheckCircle, AlertTriangle } from 'lucide-react-native';
+import { triggerShake } from '@/utils/animations';
 
 interface ConfirmPinStepProps {
   confirmPin: string;
@@ -29,16 +30,6 @@ const ConfirmPinStep: React.FC<ConfirmPinStepProps> = ({
   const translateY = useRef(new Animated.Value(20)).current;
   const shakeAnimationValue = useRef(new Animated.Value(0)).current;
 
-  function triggerShake() {
-    shakeAnimationValue.setValue(0);
-    Animated.sequence([
-      Animated.timing(shakeAnimationValue, { toValue: 10, duration: 50, useNativeDriver: true }),
-      Animated.timing(shakeAnimationValue, { toValue: -10, duration: 50, useNativeDriver: true }),
-      Animated.timing(shakeAnimationValue, { toValue: 10, duration: 50, useNativeDriver: true }),
-      Animated.timing(shakeAnimationValue, { toValue: 0, duration: 50, useNativeDriver: true }),
-    ]).start();
-  }
-
   useEffect(() => {
     Animated.parallel([
       Animated.timing(fadeAnim, {
@@ -62,7 +53,7 @@ const ConfirmPinStep: React.FC<ConfirmPinStepProps> = ({
   // Trigger shake animation when PIN error occurs
   useEffect(() => {
     if (pinError) {
-      triggerShake();
+      triggerShake(shakeAnimationValue);
     }
   }, [pinError]);
 
@@ -170,41 +161,33 @@ const ConfirmPinStep: React.FC<ConfirmPinStepProps> = ({
             
             <Text style={styles.pinInstruction}>
               {confirmPin.length === 0 ? 'Tap above and re-enter your PIN' : 
-               confirmPin.length < 4 ? `${4 - confirmPin.length} more digits` : 'PIN confirmed'}
+               confirmPin.length < 4 ? `${4 - confirmPin.length} more digits` : 'Confirm PIN'}
             </Text>
           </LinearGradient>
         </Animated.View>
 
-        {/* Security Note */}
-        <Animated.View
-          style={[
-            styles.securityNote,
-            {
-              opacity: fadeAnim,
-              transform: [{ scale: scaleAnim }],
-            },
-          ]}>
-          <LinearGradient
-            colors={pinError ? 
-              ['rgba(239, 68, 68, 0.1)', 'rgba(239, 68, 68, 0.05)'] : 
-              ['rgba(34, 197, 94, 0.1)', 'rgba(34, 197, 94, 0.05)']
-            }
-            style={styles.securityCard}>
-            <View style={styles.securityContent}>
-              {pinError ? (
+        {/* Security Note - Only show when there's an error */}
+        {pinError && (
+          <Animated.View
+            style={[
+              styles.securityNote,
+              {
+                opacity: fadeAnim,
+                transform: [{ scale: scaleAnim }],
+              },
+            ]}>
+            <LinearGradient
+              colors={['rgba(239, 68, 68, 0.1)', 'rgba(239, 68, 68, 0.05)']}
+              style={styles.securityCard}>
+              <View style={styles.securityContent}>
                 <AlertTriangle size={18} color="#ef4444" />
-              ) : (
-                <CheckCircle size={18} color="#22c55e" />
-              )}
-              <Text style={[
-                styles.securityText, 
-                pinError && styles.securityTextError
-              ]}>
-                {pinError || 'Almost done! Confirm your PIN to complete wallet setup.'}
-              </Text>
-            </View>
-          </LinearGradient>
-        </Animated.View>
+                <Text style={[styles.securityText, styles.securityTextError]}>
+                  {pinError}
+                </Text>
+              </View>
+            </LinearGradient>
+          </Animated.View>
+        )}
 
         {/* Action Buttons */}
         <View style={styles.buttonContainer}>
