@@ -195,6 +195,7 @@ export default function AccountScreen() {
   
   // Animation for shake effect
   const shakeAnimationValue = useRef(new RNAnimated.Value(0)).current;
+  const buttonShakeAnimationValue = useRef(new RNAnimated.Value(0)).current;
   
   // Input refs for focusing on errors
   const firstNameRef = useRef<TextInput>(null);
@@ -206,9 +207,6 @@ export default function AccountScreen() {
   
   const scrollX = useSharedValue(0);
   const scrollViewRef = useAnimatedRef<Animated.ScrollView>();
-  
-  // Add a ref to prevent multiple simultaneous saves
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Wrapper function for shake animation that can be called from worklet
   const handleShakeAnimation = () => {
@@ -322,35 +320,45 @@ export default function AccountScreen() {
 
   // Focus first invalid field
   const focusFirstInvalidField = () => {
-    if (firstNameError && firstNameRef.current) {
-      firstNameRef.current.focus();
-      return;
-    }
-    if (lastNameError && lastNameRef.current) {
-      lastNameRef.current.focus();
-      return;
-    }
-    if (emailError && emailRef.current) {
-      emailRef.current.focus();
-      return;
-    }
-    if (addressError && addressRef.current) {
-      addressRef.current.focus();
-      return;
-    }
-    if (streetNumberError && streetNumberRef.current) {
-      streetNumberRef.current.focus();
-      return;
-    }
-    if (phoneNumberError && phoneNumberRef.current) {
-      phoneNumberRef.current.focus();
-      return;
-    }
+    // First blur all inputs to ensure we can refocus properly
+    [firstNameRef, lastNameRef, emailRef, addressRef, streetNumberRef, phoneNumberRef].forEach(ref => {
+      if (ref.current) {
+        ref.current.blur();
+      }
+    });
+
+    // Use setTimeout to ensure blur completes before focusing
+    setTimeout(() => {
+      if (firstNameError && firstNameRef.current) {
+        firstNameRef.current.focus();
+        return;
+      }
+      if (lastNameError && lastNameRef.current) {
+        lastNameRef.current.focus();
+        return;
+      }
+      if (emailError && emailRef.current) {
+        emailRef.current.focus();
+        return;
+      }
+      if (addressError && addressRef.current) {
+        addressRef.current.focus();
+        return;
+      }
+      if (streetNumberError && streetNumberRef.current) {
+        streetNumberRef.current.focus();
+        return;
+      }
+      if (phoneNumberError && phoneNumberRef.current) {
+        phoneNumberRef.current.focus();
+        return;
+      }
+    }, 100);
   };
 
   const handleSaveButtonPress = async () => {
     if (!isFormValid()) {
-      handleShakeAnimation();
+      triggerShake(buttonShakeAnimationValue);
       focusFirstInvalidField();
       return;
     }
@@ -382,9 +390,7 @@ export default function AccountScreen() {
         selectedCountry,
         ...overrides, // Allow overriding specific fields
       };
-      console.log('Saving personal info:', personalInfo);
       await StorageService.savePersonalInfo(personalInfo);
-      console.log('Personal info saved successfully');
     } catch (error) {
       console.error('Error saving personal info:', error);
       throw error;
@@ -456,6 +462,35 @@ export default function AccountScreen() {
     router.push('/settings/date-picker');
   };
 
+  const handleBackPress = async () => {
+    // Save current form state before navigating back
+    // This ensures user doesn't lose their input even if they haven't pressed "Save Details"
+    try {
+      const personalInfo: PersonalInfo = {
+        name: `${firstName.trim()} ${lastName.trim()}`.trim(),
+        email: email.trim(),
+        phoneNumber: phoneNumber.trim(),
+        dateOfBirth: selectedDate?.toISOString() || '',
+        address: address.trim(),
+        streetNumber: streetNumber.trim(),
+        selectedCountry,
+      };
+      
+      // Only save if at least one field has content
+      const hasContent = firstName.trim() || lastName.trim() || email.trim() || 
+                        phoneNumber.trim() || address.trim() || streetNumber.trim() || selectedDate;
+      
+      if (hasContent) {
+        await StorageService.savePersonalInfo(personalInfo);
+      }
+    } catch (error) {
+      console.error('Error saving form state on back navigation:', error);
+    }
+    
+    // Navigate back to settings
+    router.push('/settings');
+  };
+
   const handlePhoneChange = (phone: string) => {
     // Only allow numbers and spaces
     const numericText = phone.replace(/[^0-9\s]/g, '');
@@ -512,7 +547,10 @@ export default function AccountScreen() {
     return (
       <View key={input.id} style={styles.inputContainer}>
         <Text style={styles.inputLabel}>{input.label}</Text>
-        <View style={styles.inputWrapper}>
+        <View style={[
+          styles.inputWrapper, 
+          input.type === 'phone' && phoneNumberError && styles.inputWrapperError
+        ]}>
           {input.type !== 'phone' && (
             <IconComponent size={20} color="#9ca3af" style={styles.inputIcon} />
           )}
@@ -537,6 +575,9 @@ export default function AccountScreen() {
                 onBlur={handlePhoneBlur}
                 keyboardType="phone-pad"
               />
+              {!phoneNumberError && phoneNumber.trim().length > 0 && validatePhoneNumber(phoneNumber) && (
+                <Check size={20} color="#10b981" style={styles.validIcon} />
+              )}
             </View>
           ) : input.type === 'email' ? (
             <TextInput
@@ -589,7 +630,7 @@ export default function AccountScreen() {
           )}
         </View>
         {/* Add error hint for phone input */}
-        {input.type === 'phone' && (
+        {input.type === 'phone' && (phoneNumberError || phoneNumber.trim().length === 0) && (
           <Text style={[
             styles.inputHint,
             phoneNumberError && styles.inputHintError
@@ -601,12 +642,14 @@ export default function AccountScreen() {
     );
   };
 
+
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
-          <BackButton onPress={() => router.push('/settings')} />
+          <BackButton onPress={handleBackPress} />
           <Text style={styles.headerTitle}>Account Info</Text>
           <TouchableOpacity style={styles.editButton}>
             <Edit2 size={20} color="#3b82f6" />
@@ -736,7 +779,9 @@ export default function AccountScreen() {
 
         {/* Dynamic Input Fields */}
         <View style={styles.section}>
-          {/* <Text style={styles.sectionLabel}>Required Information</Text> */}
+          <Text style={styles.sectionInfo}>
+            Complete Level 1 verification to unlock virtual card creation
+          </Text>
           <View style={styles.inputsContainer}>
             {/* Level 1 - Basic Personal Information */}
             {currentLevel === 0 && (
@@ -744,7 +789,7 @@ export default function AccountScreen() {
                 {/* First Name Field */}
                 <View style={styles.inputContainer}>
                   <Text style={styles.inputLabel}>First Name</Text>
-                  <View style={styles.inputWrapper}>
+                  <View style={[styles.inputWrapper, firstNameError && styles.inputWrapperError]}>
                     <TextInput
                       ref={firstNameRef}
                       style={styles.textInput}
@@ -752,16 +797,15 @@ export default function AccountScreen() {
                       placeholderTextColor="#6b7280"
                       value={firstName}
                       onChangeText={(text) => {
-                        // Only allow English letters and spaces
-                        const letterRegex = /^[a-zA-Z\s]*$/;
-                        const cleanedText = text.replace(/[^a-zA-Z\s]/g, '');
-                        const normalizedText = cleanedText.replace(/\s+/g, ' ').replace(/^\s+/, '');
+                        // Only allow English letters, no spaces
+                        const letterRegex = /^[a-zA-Z]*$/;
+                        const cleanedText = text.replace(/[^a-zA-Z]/g, '');
                         
-                        if (letterRegex.test(normalizedText)) {
-                          setFirstName(normalizedText);
+                        if (letterRegex.test(cleanedText)) {
+                          setFirstName(cleanedText);
                           // Only check error state on text change if already in error state
                           if (firstNameError) {
-                            setFirstNameError(!validateName(normalizedText));
+                            setFirstNameError(!validateName(cleanedText));
                           }
                         }
                       }}
@@ -774,19 +818,24 @@ export default function AccountScreen() {
                         }
                       }}
                     />
+                    {!firstNameError && firstName.trim().length > 0 && validateName(firstName) && (
+                      <Check size={20} color="#10b981" style={styles.validIcon} />
+                    )}
                   </View>
-                  <Text style={[
-                    styles.inputHint,
-                    firstNameError && styles.inputHintError
-                  ]}>
-                    {firstNameError ? '*' : ''}Minimum 4 characters{firstNameError ? ' *' : ''}
-                  </Text>
+                  {(firstNameError || firstName.trim().length === 0) && (
+                    <Text style={[
+                      styles.inputHint,
+                      firstNameError && styles.inputHintError
+                    ]}>
+                      {firstNameError ? '*' : ''}Minimum 4 characters{firstNameError ? ' *' : ''}
+                    </Text>
+                  )}
                 </View>
 
                 {/* Last Name Field */}
                 <View style={styles.inputContainer}>
                   <Text style={styles.inputLabel}>Last Name</Text>
-                  <View style={styles.inputWrapper}>
+                  <View style={[styles.inputWrapper, lastNameError && styles.inputWrapperError]}>
                     <TextInput
                       ref={lastNameRef}
                       style={styles.textInput}
@@ -794,16 +843,15 @@ export default function AccountScreen() {
                       placeholderTextColor="#6b7280"
                       value={lastName}
                       onChangeText={(text) => {
-                        // Only allow English letters and spaces
-                        const letterRegex = /^[a-zA-Z\s]*$/;
-                        const cleanedText = text.replace(/[^a-zA-Z\s]/g, '');
-                        const normalizedText = cleanedText.replace(/\s+/g, ' ').replace(/^\s+/, '');
+                        // Only allow English letters, no spaces
+                        const letterRegex = /^[a-zA-Z]*$/;
+                        const cleanedText = text.replace(/[^a-zA-Z]/g, '');
                         
-                        if (letterRegex.test(normalizedText)) {
-                          setLastName(normalizedText);
+                        if (letterRegex.test(cleanedText)) {
+                          setLastName(cleanedText);
                           // Only check error state on text change if already in error state
                           if (lastNameError) {
-                            setLastNameError(!validateName(normalizedText));
+                            setLastNameError(!validateName(cleanedText));
                           }
                         }
                       }}
@@ -816,19 +864,24 @@ export default function AccountScreen() {
                         }
                       }}
                     />
+                    {!lastNameError && lastName.trim().length > 0 && validateName(lastName) && (
+                      <Check size={20} color="#10b981" style={styles.validIcon} />
+                    )}
                   </View>
-                  <Text style={[
-                    styles.inputHint,
-                    lastNameError && styles.inputHintError
-                  ]}>
-                    {lastNameError ? '*' : ''}Minimum 4 characters{lastNameError ? ' *' : ''}
-                  </Text>
+                  {(lastNameError || lastName.trim().length === 0) && (
+                    <Text style={[
+                      styles.inputHint,
+                      lastNameError && styles.inputHintError
+                    ]}>
+                      {lastNameError ? '*' : ''}Minimum 4 characters{lastNameError ? ' *' : ''}
+                    </Text>
+                  )}
                 </View>
 
                 {/* Email Field */}
                 <View style={styles.inputContainer}>
                   <Text style={styles.inputLabel}>Email Address</Text>
-                  <View style={styles.inputWrapper}>
+                  <View style={[styles.inputWrapper, emailError && styles.inputWrapperError]}>
                     <Mail size={20} color="#9ca3af" style={styles.inputIcon} />
                     <TextInput
                       style={styles.textInput}
@@ -836,10 +889,12 @@ export default function AccountScreen() {
                       placeholderTextColor="#6b7280"
                       value={email}
                       onChangeText={(text) => {
-                        setEmail(text);
+                        // Remove all spaces from email
+                        const noSpaces = text.replace(/\s/g, '');
+                        setEmail(noSpaces);
                         // Only check error state on text change if already in error state
                         if (emailError) {
-                          setEmailError(!validateEmail(text));
+                          setEmailError(!validateEmail(noSpaces));
                         }
                       }}
                       onBlur={async () => {
@@ -853,48 +908,28 @@ export default function AccountScreen() {
                       keyboardType="email-address"
                       ref={emailRef}
                     />
+                    {!emailError && email.trim().length > 0 && validateEmail(email) && (
+                      <Check size={20} color="#10b981" style={styles.validIcon} />
+                    )}
                   </View>
+                  {(emailError || email.trim().length === 0) && (
+                    <Text style={[
+                      styles.inputHint,
+                      emailError && styles.inputHintError
+                    ]}>
+                      {emailError ? '*' : ''}Valid email required{emailError ? ' *' : ''}
+                    </Text>
+                  )}
                 </View>
 
-                {/* Home Street Number Field */}
+                {/* Address Field */}
                 <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>Home Street Number</Text>
-                  <View style={styles.inputWrapper}>
-                    <TextInput
-                      ref={streetNumberRef}
-                      style={styles.textInput}
-                      placeholder="Enter your street number"
-                      placeholderTextColor="#6b7280"
-                      value={streetNumber}
-                      onChangeText={(text) => {
-                        // Only allow digits 0-9
-                        const numericText = text.replace(/[^0-9]/g, '');
-                        setStreetNumber(numericText);
-                        // Only check error state on text change if already in error state
-                        if (streetNumberError) {
-                          setStreetNumberError(!validateStreetNumber(numericText));
-                        }
-                      }}
-                      onBlur={async () => {
-                        // Always check error state on blur
-                        setStreetNumberError(!validateStreetNumber(streetNumber));
-                        // Only save to storage on blur (slow operation)
-                        if (streetNumber.trim()) {
-                          await saveFieldToStorage({ streetNumber });
-                        }
-                      }}
-                      keyboardType="numeric"
-                    />
-                  </View>
-                </View>
-
-                {/* Home Address Field */}
-                <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>Home Address</Text>
-                  <View style={styles.inputWrapper}>
+                  <Text style={styles.inputLabel}>Address</Text>
+                  <View style={[styles.inputWrapper, addressError && styles.inputWrapperError]}>
+                    <MapPin size={20} color="#9ca3af" style={styles.inputIcon} />
                     <TextInput
                       style={styles.textInput}
-                      placeholder="Enter your home address"
+                      placeholder="Enter your address"
                       placeholderTextColor="#6b7280"
                       value={address}
                       onChangeText={(text) => {
@@ -914,13 +949,59 @@ export default function AccountScreen() {
                       }}
                       ref={addressRef}
                     />
+                    {!addressError && address.trim().length > 0 && validateAddress(address) && (
+                      <Check size={20} color="#10b981" style={styles.validIcon} />
+                    )}
                   </View>
-                  <Text style={[
-                    styles.inputHint,
-                    addressError && styles.inputHintError
-                  ]}>
-                    {addressError ? '*' : ''}Minimum 5 characters{addressError ? ' *' : ''}
-                  </Text>
+                  {(addressError || address.trim().length === 0) && (
+                    <Text style={[
+                      styles.inputHint,
+                      addressError && styles.inputHintError
+                    ]}>
+                      {addressError ? '*' : ''}Minimum 5 characters{addressError ? ' *' : ''}
+                    </Text>
+                  )}
+                </View>
+
+                {/* Street Number Field */}
+                <View style={styles.inputContainer}>
+                  <Text style={styles.inputLabel}>Street Number</Text>
+                  <View style={[styles.inputWrapper, streetNumberError && styles.inputWrapperError]}>
+                    <MapPin size={20} color="#9ca3af" style={styles.inputIcon} />
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder="Enter street number"
+                      placeholderTextColor="#6b7280"
+                      value={streetNumber}
+                      onChangeText={(text) => {
+                        setStreetNumber(text);
+                        // Only check error state on text change if already in error state
+                        if (streetNumberError) {
+                          setStreetNumberError(!validateStreetNumber(text));
+                        }
+                      }}
+                      onBlur={async () => {
+                        // Always check error state on blur
+                        setStreetNumberError(!validateStreetNumber(streetNumber));
+                        // Only save to storage on blur (slow operation)
+                        if (streetNumber.trim()) {
+                          await saveFieldToStorage({ streetNumber });
+                        }
+                      }}
+                      ref={streetNumberRef}
+                    />
+                    {!streetNumberError && streetNumber.trim().length > 0 && validateStreetNumber(streetNumber) && (
+                      <Check size={20} color="#10b981" style={styles.validIcon} />
+                    )}
+                  </View>
+                  {(streetNumberError || streetNumber.trim().length === 0) && (
+                    <Text style={[
+                      styles.inputHint,
+                      streetNumberError && styles.inputHintError
+                    ]}>
+                      {streetNumberError ? '*' : ''}Required field{streetNumberError ? ' *' : ''}
+                    </Text>
+                  )}
                 </View>
               </>
             )}
@@ -933,22 +1014,25 @@ export default function AccountScreen() {
 
       {/* Save Button */}
       <View style={styles.saveButtonContainer}>
-        <TouchableOpacity
+        <RNAnimated.View
           style={[
-            styles.saveButton,
-            (!isFormValid() || isSaving) && styles.saveButtonDisabled
+            { transform: [{ translateX: buttonShakeAnimationValue }] }
           ]}
-          onPress={handleSaveButtonPress}
-          disabled={isSaving}
         >
-          <Save size={20} color={isFormValid() && !isSaving ? "#ffffff" : "#9ca3af"} />
-          <Text style={[
-            styles.saveButtonText,
-            (!isFormValid() || isSaving) && styles.saveButtonTextDisabled
-          ]}>
-            {isSaving ? 'Saving...' : 'Save Details'}
-          </Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.saveButton,
+              (!isFormValid() || isSaving) && styles.saveButtonDisabled
+            ]}
+            onPress={handleSaveButtonPress}
+            disabled={isSaving}
+          >
+            <Save size={20} color="#ffffff" />
+            <Text style={styles.saveButtonText}>
+              {isSaving ? 'Saving...' : 'Save Details'}
+            </Text>
+          </TouchableOpacity>
+        </RNAnimated.View>
       </View>
 
       {/* Toast */}
@@ -996,6 +1080,18 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#9ca3af',
     marginBottom: 12,
+  },
+  sectionInfo: {
+    fontSize: 14,
+    color: '#9ca3af',
+    lineHeight: 20,
+    marginBottom: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: '#2a2a2a',
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: '#3b82f6',
   },
   infoCard: {
     backgroundColor: '#2a2a2a',
@@ -1096,8 +1192,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
   },
+  inputWrapperError: {
+    borderColor: '#ef4444',
+  },
   inputIcon: {
     marginRight: 12,
+  },
+  validIcon: {
+    marginLeft: 8,
   },
   textInput: {
     flex: 1,
@@ -1181,7 +1283,6 @@ const styles = StyleSheet.create({
     minHeight: 56,
   },
   saveButtonDisabled: {
-    backgroundColor: '#4a4a4a',
     opacity: 0.6,
   },
   saveButtonText: {
@@ -1190,64 +1291,4 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginLeft: 8,
   },
-  saveButtonTextDisabled: {
-    color: '#9ca3af',
-  },
 });
-
-// Export function to get current verification level status
-export const getCurrentVerificationLevel = async (): Promise<{
-  level: number;
-  status: 'completed' | 'pending' | 'not_started';
-  title: string;
-  color: string;
-}> => {
-  // Load personal info and verification documents
-  const personalInfo = await StorageService.loadPersonalInfo();
-  // const savedCards = await StorageService.loadCards();
-  
-  // Create verification levels for status checking
-  const isDevelopment = process.env.EXPO_PUBLIC_APP_ENV === 'development';
-  const verificationLevels = getVerificationLevels(isDevelopment);
-  
-  // Check Level 1 completion (basic personal info)
-  const level1Complete = personalInfo && 
-    personalInfo.name && 
-    personalInfo.email && 
-    personalInfo.phoneNumber && 
-    personalInfo.dateOfBirth && 
-    personalInfo.address && 
-    personalInfo.streetNumber;
-
-  // Check Level 2 completion (documents uploaded - simplified check)
-  // In a real app, you'd check if documents are uploaded and verified
-  const level2Complete = false; // This should check actual document upload status
-  
-  // Check Level 3 completion
-  const level3Complete = false; // This should check bank statements and video verification
-  
-  let currentLevel = 0;
-  let currentStatus: 'completed' | 'pending' | 'not_started' = 'not_started';
-  
-  if (level1Complete) {
-    currentLevel = 1;
-    currentStatus = 'completed';
-    
-    if (level2Complete) {
-      currentLevel = 2;
-      currentStatus = 'completed';
-      
-      if (level3Complete) {
-        currentLevel = 3;
-        currentStatus = 'completed';
-      }
-    }
-  }
-  
-  return {
-    level: currentLevel,
-    status: currentStatus,
-    title: currentLevel > 0 ? verificationLevels[currentLevel - 1].title : 'Not Started',
-    color: currentLevel > 0 ? verificationLevels[currentLevel - 1].color : '#6b7280'
-  };
-};

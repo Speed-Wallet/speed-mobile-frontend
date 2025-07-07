@@ -19,7 +19,7 @@ import { PaymentCard } from '@/data/types';
 import { sendUSDTToCashwyre } from '@/utils/sendTransaction';
 import { mockSendUSDTToCashwyre } from '@/utils/mockTransaction';
 import { setupNotificationListeners } from '@/services/notificationService';
-import { getCurrentVerificationLevel } from '@/app/settings/kyc';
+import { getCurrentVerificationLevel } from '@/utils/verification';
 import { simulateUSDTReceived, getWalletAddress, simulateCardCreated, simulateCardCreationFailed, getCards, convertApiCardToPaymentCard } from '@/services/apis';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
 import { SuccessfulPaymentCard, FailedPaymentCard } from '@/components/wallet/PaymentCard';
@@ -135,7 +135,7 @@ export default function CardsScreen() {
 
   const checkKYCLevel = async (minLevel: 1 | 2 | 3) => {
     const verificationLevel = await getCurrentVerificationLevel();
-    return verificationLevel.level >= minLevel && verificationLevel.status === 'completed';
+    return verificationLevel >= minLevel;
   };
 
   const handleAddCardPress = async () => {
