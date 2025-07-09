@@ -12,6 +12,7 @@ import {
   Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { ArrowLeft, Plus, CreditCard, DollarSign, User, Eye, EyeOff, X } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { StorageService } from '@/utils/storage';
@@ -68,33 +69,43 @@ export default function CardsScreen() {
   const devButton1ShakeAnim = useRef(new Animated.Value(0)).current;
   const devButton2ShakeAnim = useRef(new Animated.Value(0)).current;
 
-  useEffect(() => {
-    loadCards();
-
-    // Set up notification listeners with card refresh callback
-    const cleanupNotifications = setupNotificationListeners(() => {
-      // Refresh cards when notifications are received
+  useFocusEffect(
+    React.useCallback(() => {
+      let mounted = true;
+      
+      // Load cards when screen comes into focus
       loadCards();
-    });
 
-    // Set up periodic refresh to catch any missed updates
-    const refreshInterval = setInterval(() => {
-      loadCards(); // Reload cards from API every 30 seconds
-    }, 30000);
+      // Set up notification listeners with card refresh callback
+      const cleanupNotifications = setupNotificationListeners(() => {
+        // Only refresh if component is still mounted and focused
+        if (mounted) {
+          loadCards();
+        }
+      });
 
-    // Cleanup on unmount
-    return () => {
-      cleanupNotifications();
-      clearInterval(refreshInterval);
-    };
-  }, []);
+      // Set up periodic refresh to catch any missed updates
+      const refreshInterval = setInterval(() => {
+        // Only refresh if component is still mounted and focused
+        if (mounted) {
+          loadCards();
+        }
+      }, 10000);
+
+      // Cleanup function called when screen loses focus or unmounts
+      return () => {
+        mounted = false;
+        cleanupNotifications();
+        clearInterval(refreshInterval);
+      };
+    }, [])
+  );
 
   const loadCards = async () => {
     try {
       // Get personal info to get customer email
       const personalInfo = await StorageService.loadPersonalInfo();
       if (!personalInfo) {
-        console.log('No personal info found, showing empty cards list');
         setCards([]);
         return;
       }
@@ -110,7 +121,7 @@ export default function CardsScreen() {
             return;
           }
         } catch (error) {
-          console.log('Failed to fetch cards in dev mode, will show demo cards:', error);
+          // If no real cards or API call failed in dev mode, show demo cards
         }
         
         // If no real cards or API call failed in dev mode, show demo cards
@@ -124,11 +135,9 @@ export default function CardsScreen() {
         const paymentCards = cardsResponse.data.map(convertApiCardToPaymentCard);
         setCards(paymentCards);
       } else {
-        console.error('Failed to fetch cards:', cardsResponse.error);
         setCards([]);
       }
     } catch (error) {
-      console.error('Error loading cards:', error);
       setCards([]);
     }
   };
@@ -171,34 +180,27 @@ export default function CardsScreen() {
   };
 
   const simulateCardFailureFlow = async (userEmail: string, cardBalance: string) => {
-    console.log('🧪 DEV MODE: Running card creation failure simulation');
-
     try {
       const walletResponse = await getWalletAddress();
 
       if (walletResponse.success && walletResponse.data) {
         // First simulate USDT received
         setTimeout(async () => {
-          console.log('🎯 DEV: Simulating USDT received webhook...');
           await simulateUSDTReceived(walletResponse.data!.number, cardBalance);
 
           // Then simulate card creation failure using webhook
           setTimeout(async () => {
-            console.log('❌ DEV: Simulating card creation failure webhook...');
             await simulateCardCreationFailed(userEmail);
-            console.log('❌ DEV: Card creation failure webhook simulation completed');
           }, 1000);
 
         }, 2000);
       }
     } catch (error) {
-      console.error('Failed to simulate card creation failure:', error);
+      // Handle error silently
     }
   };
 
   const simulateCardSuccessFlow = async (userEmail: string, cardBalance: string) => {
-    console.log('🧪 DEV MODE: Running normal card creation simulation');
-
     try {
       const walletResponse = await getWalletAddress();
 
@@ -207,17 +209,15 @@ export default function CardsScreen() {
         setTimeout(async () => {
           // First simulate USDT received
           await simulateUSDTReceived(walletResponse.data!.number, cardBalance);
-          console.log('🎯 DEV: USDT received webhook simulation completed');
 
           setTimeout(async () => {
             // simulate card created
             await simulateCardCreated(userEmail);
-            console.log('✅ DEV: Card created webhook simulation completed');
           }, 2000); // 2 second delay to show loading skeleton briefly
         }, 2000);
       }
     } catch (error) {
-      console.error('Failed to simulate normal card creation:', error);
+      // Handle error silently
     }
   };
 
@@ -286,8 +286,6 @@ export default function CardsScreen() {
         return;
       }
 
-      console.log('USDT sent successfully:', sendResult.signature);
-
       // Close the modal and reset form
       setShowAddCard(false);
       setCardBalance('');
@@ -304,7 +302,6 @@ export default function CardsScreen() {
 
       // Handle different simulation types in development mode
       if (process.env.EXPO_PUBLIC_APP_ENV === 'development' && simulationType === 'simulate_card_failed') {
-        console.log(`🧪 DEV MODE: Running simulation type: ${simulationType}`);
         await simulateCardFailureFlow(userEmail, cardBalance);
         return;
       }
@@ -316,7 +313,6 @@ export default function CardsScreen() {
     } catch (error) {
       setIsLoading(false);
       Alert.alert('Error', error instanceof Error ? error.message : 'Failed to create card. Please try again.');
-      console.error('Card creation error:', error);
     }
   };
 
@@ -332,10 +328,8 @@ export default function CardsScreen() {
     if (process.env.EXPO_PUBLIC_APP_ENV === 'development') {
       const updatedCards = cards.filter(card => card.id !== cardId);
       setCards(updatedCards);
-      console.log('🗑️ DEV MODE: Card deleted:', cardId);
     } else {
       // In production, you might want to call an API to delete the card
-      console.log('� PROD MODE: Card deletion not implemented');
       Alert.alert('Info', 'Card deletion is not available in production mode');
     }
   };

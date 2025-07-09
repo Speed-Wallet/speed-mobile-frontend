@@ -206,7 +206,7 @@ const ConfirmPinStep: React.FC<ConfirmPinStepProps> = ({
                 justifyContent: 'center' 
               }}>
                 <Text style={[styles.buttonText, confirmPin.length < 4 && styles.buttonTextDisabled]}>
-                  {isLoading ? 'Creating Wallet...' : 'Confirm & Save Wallet'}
+                  {isLoading ? 'Creating Wallet...' : 'Confirm Pin'}
                 </Text>
                 <ArrowRight size={20} color={confirmPin.length === 4 ? "#fff" : "#9ca3af"} />
               </Animated.View>
