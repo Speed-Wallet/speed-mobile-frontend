@@ -4,6 +4,7 @@ import { generateInitialSolanaWallet, saveWalletToList, createAppPin, importWall
 import colors from '@/constants/colors';
 import CreateWalletIntroStep from '@/components/wallet/CreateWalletIntroStep';
 import ShowMnemonicStep from '@/components/wallet/ShowMnemonicStep';
+import SeedPhraseVerificationStep from '@/components/wallet/SeedPhraseVerificationStep';
 import CreatePinStep from '@/components/wallet/CreatePinStep';
 import ConfirmPinStep from '@/components/wallet/ConfirmPinStep';
 import { X } from 'lucide-react-native';
@@ -14,7 +15,7 @@ interface SetupWalletScreenProps {
 }
 
 const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComplete }) => {
-  const [step, setStep] = useState(1); // 1: Initial, 2: Show Mnemonic, 3: Create PIN, 4: Confirm PIN
+  const [step, setStep] = useState(1); // 1: Initial, 2: Show Mnemonic, 3: Verify Mnemonic, 4: Create PIN, 5: Confirm PIN
   const [mnemonic, setMnemonic] = useState<string | null>(null);
   const [publicKey, setPublicKey] = useState<string | null>(null);
   const [accountIndex, setAccountIndex] = useState<number | undefined>(undefined);
@@ -46,8 +47,13 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComp
   };
 
   const handleMnemonicSaved = () => {
-    // Since this is the first wallet, we need to create the app PIN
-    setStep(3); // Move to PIN creation
+    // Move to verification step
+    setStep(3); // Move to mnemonic verification
+  };
+
+  const handleVerificationSuccess = () => {
+    // Move to PIN creation after successful verification
+    setStep(4); // Move to PIN creation
   };
 
   const handleSetPin = () => {
@@ -55,7 +61,7 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComp
       Alert.alert("Invalid PIN", "PIN must be at least 4 digits.");
       return;
     }
-    setStep(4); // Move to PIN confirmation
+    setStep(5); // Move to PIN confirmation
   };
 
   const handleImportWallet = () => {
@@ -73,11 +79,11 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComp
       const cleanPhrase = importPhrase.trim().toLowerCase();
       const wallet = await importWalletFromMnemonic(cleanPhrase);
       
-      // Set the imported wallet data and proceed to PIN creation
+      // Set the imported wallet data and proceed to verification
       setMnemonic(wallet.mnemonic);
       setPublicKey(wallet.publicKey);
       setShowImportModal(false);
-      setStep(3); // Move to PIN creation
+      setStep(3); // Move to verification
     } catch (error) {
       Alert.alert('Error', 'Failed to import wallet. Please check your seed phrase and try again.');
       console.error('Error importing wallet:', error);
@@ -125,7 +131,7 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComp
     setPin('');
     setConfirmPin('');
     setPinError('');
-    setStep(3);
+    setStep(4);
   };
 
   return (
@@ -155,7 +161,16 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComp
         />
       )}
 
-      {step === 3 && (
+      {step === 3 && mnemonic && (
+        <SeedPhraseVerificationStep 
+          words={mnemonic.split(' ')}
+          onBack={() => setStep(2)}
+          onSuccess={handleVerificationSuccess}
+          isLoading={isLoading}
+        />
+      )}
+
+      {step === 4 && (
         <CreatePinStep 
           pin={pin}
           onPinChange={setPin}
@@ -164,7 +179,7 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComp
         />
       )}
 
-      {step === 4 && (
+      {step === 5 && (
         <ConfirmPinStep 
           confirmPin={confirmPin}
           onConfirmPinChange={handleConfirmPinChange}
