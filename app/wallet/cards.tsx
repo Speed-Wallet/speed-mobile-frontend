@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import { ArrowLeft, Plus, CreditCard, DollarSign, User, Eye, EyeOff, X } from 'lucide-react-native';
+import { ArrowLeft, Plus, CreditCard, DollarSign, X } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { StorageService } from '@/utils/storage';
 import { PaymentCard } from '@/data/types';
@@ -63,6 +63,7 @@ export default function CardsScreen() {
   const [visibleCards, setVisibleCards] = useState<{ [key: string]: boolean }>({});
   const [showValidationError, setShowValidationError] = useState(false);
   const [showNameValidationError, setShowNameValidationError] = useState(false);
+  const [showDevButtons, setShowDevButtons] = useState(true);
 
   // Animation refs for shake effects
   const createButtonShakeAnim = useRef(new Animated.Value(0)).current;
@@ -239,9 +240,9 @@ export default function CardsScreen() {
       return;
     }
 
-    if (balance < 10 || balance > 2500) {
+    if (balance < 15 || balance > 2500) {
       setShowValidationError(true);
-      Alert.alert('Error', 'Balance must be between $10.00 and $2,500.00');
+      Alert.alert('Error', 'Balance must be between $15.00 and $2,500.00');
       return;
     }
 
@@ -471,6 +472,7 @@ export default function CardsScreen() {
                 setShowAddCard(false);
                 setShowValidationError(false);
                 setShowNameValidationError(false);
+                setShowDevButtons(true); // Reset dev buttons visibility when closing modal
               }}
             >
               <X size={24} color="#ffffff" />
@@ -583,7 +585,7 @@ export default function CardsScreen() {
                       // Validate the numeric value
                       const balance = parseFloat(validText);
                       if (validText && !isNaN(balance) && balance > 0) {
-                        setShowValidationError(balance < 10 || balance > 2500);
+                        setShowValidationError(balance < 15 || balance > 2500);
                       } else {
                         setShowValidationError(false);
                       }
@@ -596,12 +598,58 @@ export default function CardsScreen() {
                 styles.inputHint,
                 showValidationError && styles.inputHintError
               ]}>
-                {showValidationError ? '*' : ''}Min: $10.00 • Max: $2,500.00{showValidationError ? ' *' : ''}
+                {showValidationError ? '*' : ''}Min: $15.00 • Max: $2,500.00{showValidationError ? ' *' : ''}
               </Text>
             </View>
 
-            {/* Card Preview */}
+            {/* Fee Breakdown */}
             <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Fee Breakdown</Text>
+              <View style={styles.feeBreakdownCard}>
+                <View style={styles.feeRow}>
+                  <Text style={styles.feeLabel}>Initial Balance</Text>
+                  <Text style={styles.feeValue}>
+                    {cardBalance ? formatBalance(parseFloat(cardBalance)) : '$0.00'}
+                  </Text>
+                </View>
+                <View style={styles.feeRow}>
+                  <Text style={styles.feeLabel}>Base Fee</Text>
+                  <Text style={styles.feeValue}>$4.00</Text>
+                </View>
+                <View style={styles.feeRow}>
+                  <Text style={styles.feeLabel}>Processing Fee (1%)</Text>
+                  <Text style={styles.feeValue}>
+                    {cardBalance ? formatBalance(parseFloat(cardBalance) * 0.01) : '$0.00'}
+                  </Text>
+                </View>
+                <View style={styles.feeDivider} />
+                <View style={styles.feeRow}>
+                  <Text style={styles.feeLabelTotal}>Total Fee</Text>
+                  <Text style={styles.feeValueTotal}>
+                    {cardBalance 
+                      ? formatBalance(4.00 + (parseFloat(cardBalance) * 0.01))
+                      : '$4.00'
+                    }
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Total to Pay */}
+            <View style={styles.section}>
+              <View style={styles.totalToPayCard}>
+                <Text style={styles.totalToPayLabel}>Total to Pay</Text>
+                <Text style={styles.totalToPayValue}>
+                  {cardBalance 
+                    ? formatBalance(parseFloat(cardBalance) + 4.00 + (parseFloat(cardBalance) * 0.01))
+                    : '$4.00'
+                  }
+                </Text>
+              </View>
+            </View>
+
+            {/* Card Preview - Commented out for now */}
+            {/* <View style={styles.section}>
               <Text style={styles.sectionTitle}>Card Preview</Text>
               <View style={styles.previewCard}>
                 <View style={styles.previewCardHeader}>
@@ -649,43 +697,54 @@ export default function CardsScreen() {
                   </View>
                 </View>
               </View>
-            </View>
+            </View> */}
           </ScrollView>
 
           {/* Sticky Button Container */}
           <View style={styles.modalStickyButtonContainer}>
-            {/* Development Mode: Simulation Buttons */}
-            {process.env.EXPO_PUBLIC_APP_ENV === 'development' && (
-              <View style={styles.devButtonsContainer}>
-                <Animated.View style={{ transform: [{ translateX: devButton1ShakeAnim }] }}>
-                  <TouchableOpacity
-                    style={[
-                      styles.devSimulateButton,
-                      (!cardName.trim() || cardName.trim().length < 4 || !cardBalance || parseFloat(cardBalance) <= 0 || isLoading || showValidationError || showNameValidationError) && styles.devSimulateButtonDisabled
-                    ]}
-                    onPress={handleDevButton1Attempt}
-                  >
-                    <Text style={[
-                      styles.devSimulateButtonText,
-                      (!cardName.trim() || cardName.trim().length < 4 || !cardBalance || parseFloat(cardBalance) <= 0 || isLoading || showValidationError || showNameValidationError) && styles.devSimulateButtonTextDisabled
-                    ]}>Simulate USDT Send Failed</Text>
-                  </TouchableOpacity>
-                </Animated.View>
+            {/* Development Mode: Toggle and Simulation Buttons */}
+            {process.env.EXPO_PUBLIC_APP_ENV === 'development' && showDevButtons && (
+              <View style={styles.devSection}>
+                <TouchableOpacity
+                  style={styles.devToggleButton}
+                  onPress={() => setShowDevButtons(false)}
+                >
+                  <Text style={styles.devToggleButtonText}>
+                    Hide Dev Buttons
+                  </Text>
+                </TouchableOpacity>
 
-                <Animated.View style={{ transform: [{ translateX: devButton2ShakeAnim }] }}>
-                  <TouchableOpacity
-                    style={[
-                      styles.devSimulateButton,
-                      (!cardName.trim() || cardName.trim().length < 4 || !cardBalance || parseFloat(cardBalance) <= 0 || isLoading || showValidationError || showNameValidationError) && styles.devSimulateButtonDisabled
-                    ]}
-                    onPress={handleDevButton2Attempt}
-                  >
-                    <Text style={[
-                      styles.devSimulateButtonText,
-                      (!cardName.trim() || cardName.trim().length < 4 || !cardBalance || parseFloat(cardBalance) <= 0 || isLoading || showValidationError || showNameValidationError) && styles.devSimulateButtonTextDisabled
-                    ]}>Simulate Card Creation Failed</Text>
-                  </TouchableOpacity>
-                </Animated.View>
+                <View style={styles.devButtonsContainer}>
+                  <Animated.View style={{ transform: [{ translateX: devButton1ShakeAnim }] }}>
+                    <TouchableOpacity
+                      style={[
+                        styles.devSimulateButton,
+                        (!cardName.trim() || cardName.trim().length < 4 || !cardBalance || parseFloat(cardBalance) <= 0 || isLoading || showValidationError || showNameValidationError) && styles.devSimulateButtonDisabled
+                      ]}
+                      onPress={handleDevButton1Attempt}
+                    >
+                      <Text style={[
+                        styles.devSimulateButtonText,
+                        (!cardName.trim() || cardName.trim().length < 4 || !cardBalance || parseFloat(cardBalance) <= 0 || isLoading || showValidationError || showNameValidationError) && styles.devSimulateButtonTextDisabled
+                      ]}>Simulate USDT Send Failed</Text>
+                    </TouchableOpacity>
+                  </Animated.View>
+
+                  <Animated.View style={{ transform: [{ translateX: devButton2ShakeAnim }] }}>
+                    <TouchableOpacity
+                      style={[
+                        styles.devSimulateButton,
+                        (!cardName.trim() || cardName.trim().length < 4 || !cardBalance || parseFloat(cardBalance) <= 0 || isLoading || showValidationError || showNameValidationError) && styles.devSimulateButtonDisabled
+                      ]}
+                      onPress={handleDevButton2Attempt}
+                    >
+                      <Text style={[
+                        styles.devSimulateButtonText,
+                        (!cardName.trim() || cardName.trim().length < 4 || !cardBalance || parseFloat(cardBalance) <= 0 || isLoading || showValidationError || showNameValidationError) && styles.devSimulateButtonTextDisabled
+                      ]}>Simulate Card Creation Failed</Text>
+                    </TouchableOpacity>
+                  </Animated.View>
+                </View>
               </View>
             )}
 
@@ -1183,5 +1242,80 @@ const styles = StyleSheet.create({
   },
   devNormalButtonText: {
     color: '#10b981',
+  },
+  devSection: {
+    marginBottom: 12,
+  },
+  devToggleButton: {
+    backgroundColor: '#374151',
+    borderRadius: 8,
+    padding: 12,
+    alignItems: 'center',
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#6b7280',
+  },
+  devToggleButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#9ca3af',
+  },
+  feeBreakdownCard: {
+    backgroundColor: '#1a1a1a',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#333333',
+  },
+  feeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 6,
+  },
+  feeLabel: {
+    fontSize: 14,
+    color: '#9ca3af',
+    fontWeight: '400',
+  },
+  feeValue: {
+    fontSize: 14,
+    color: '#ffffff',
+    fontWeight: '600',
+  },
+  feeLabelTotal: {
+    fontSize: 14,
+    color: '#9ca3af',
+    fontWeight: '600',
+  },
+  feeValueTotal: {
+    fontSize: 14,
+    color: '#f59e0b',
+    fontWeight: '700',
+  },
+  feeDivider: {
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    marginVertical: 6,
+  },
+  totalToPayCard: {
+    backgroundColor: '#1a1a1a',
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#333333',
+  },
+  totalToPayLabel: {
+    fontSize: 16,
+    color: '#ffffff',
+    fontWeight: '600',
+  },
+  totalToPayValue: {
+    fontSize: 18,
+    color: '#10b981',
+    fontWeight: '700',
   },
 });

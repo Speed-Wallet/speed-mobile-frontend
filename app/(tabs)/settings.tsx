@@ -163,13 +163,6 @@ export default function SettingsScreen() {
         color: '#ea580c',
         route: '/settings/wallets',
       },
-      {
-        id: 4,
-        title: 'Payment Methods',
-        icon: CreditCard,
-        color: '#8b5cf6',
-        route: '/wallet/cards',
-      },
     ];
   };
 

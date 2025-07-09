@@ -24,8 +24,12 @@ export default function HomeScreen() {
   };
 
   const handleBalanceCardAction = (actionType: string) => {
-    // actionType will be "send", "receive", "buy", "trade"
-    router.push(`/transaction/${actionType}` as any);
+    // actionType will be "send", "receive", "cards", "trade"
+    if (actionType === "cards") {
+      router.push("/wallet/cards");
+    } else {
+      router.push(`/transaction/${actionType}` as any);
+    }
   };
 
   return (
