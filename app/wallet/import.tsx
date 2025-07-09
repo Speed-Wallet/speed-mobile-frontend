@@ -22,11 +22,17 @@ export default function ImportPhraseScreen() {
       }
       setStep(2);
     } else if (step === 2) {
+      if (!walletName.trim()) {
+        Alert.alert('Invalid Name', 'Please enter a wallet name.');
+        return;
+      }
+      setStep(3);
+    } else if (step === 3) {
       if (pin.length < 4) {
         Alert.alert('Invalid PIN', 'PIN must be at least 4 digits.');
         return;
       }
-      setStep(3);
+      setStep(4);
     } else {
       await handleImport();
     }
@@ -45,7 +51,7 @@ export default function ImportPhraseScreen() {
       
       // Generate unique wallet ID and save to multi-wallet system
       const walletId = `wallet-${Date.now()}`;
-      await saveWalletToList(walletId, walletName || 'Imported Wallet', wallet.mnemonic, wallet.publicKey, pin);
+      await saveWalletToList(walletId, walletName, wallet.mnemonic, wallet.publicKey, pin);
       
       Alert.alert('Success', 'Wallet imported successfully!', [
         { text: 'OK', onPress: () => router.replace('/') }
@@ -88,6 +94,25 @@ export default function ImportPhraseScreen() {
         </>
       );
     } else if (step === 2) {
+      return (
+        <>
+          <Text style={styles.title}>Name Your Wallet</Text>
+          <Text style={styles.subtitle}>
+            Give your imported wallet a name to identify it easily
+          </Text>
+
+          <TextInput
+            style={styles.input}
+            placeholder="Enter wallet name"
+            placeholderTextColor={colors.textSecondary}
+            value={walletName}
+            onChangeText={setWalletName}
+            autoCapitalize="words"
+            maxLength={30}
+          />
+        </>
+      );
+    } else if (step === 3) {
       return (
         <>
           <Text style={styles.title}>Create PIN</Text>
@@ -147,7 +172,7 @@ export default function ImportPhraseScreen() {
           disabled={loading}
         >
           <Text style={styles.importButtonText}>
-            {step === 3 ? 'IMPORT' : 'NEXT'}
+            {step === 4 ? 'IMPORT' : 'NEXT'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -165,6 +190,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
+    paddingTop: 20,
     paddingBottom: 16,
   },
   headerTitle: {

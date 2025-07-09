@@ -8,6 +8,7 @@ import { View, ActivityIndicator, StyleSheet, Text } from 'react-native';
 import { checkStoredWallet, useWalletPublicKey } from '@/services/walletService';
 import SetupWalletScreen from '@/app/wallet/SetupWalletScreen';
 import EnterPinScreen from '@/app/wallet/EnterPinScreen';
+import DevStartupScreen from '@/components/DevStartupScreen';
 import colors from '@/constants/colors';
 import { useTokenBalanceStore } from '@/stores/tokenBalanceStore';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -28,14 +29,24 @@ export default function RootLayout() {
     'Inter-Bold': Inter_700Bold,
   });
 
-  const [walletState, setWalletState] = useState<'loading' | 'no_wallet' | 'locked' | 'unlocked'>('loading');
+  const [walletState, setWalletState] = useState<'loading' | 'dev_startup' | 'no_wallet' | 'locked' | 'unlocked'>('loading');
   const [storedPublicKey, setStoredPublicKey] = useState<string | null>(null);
+  const [hasExistingWallet, setHasExistingWallet] = useState<boolean>(false);
 
   useEffect(() => {
     async function checkWalletStatus() {
       try {
         const walletInfo = await checkStoredWallet();
-        if (walletInfo.isEncrypted && walletInfo.publicKey) {
+        const hasWallet = walletInfo.isEncrypted && walletInfo.publicKey;
+        setHasExistingWallet(!!hasWallet);
+        
+        // In development mode, show dev startup screen first
+        if (process.env.EXPO_PUBLIC_APP_ENV === 'development') {
+          setWalletState('dev_startup');
+          return;
+        }
+        
+        if (hasWallet) {
           setStoredPublicKey(walletInfo.publicKey);
           setWalletState('locked');
         } else {
@@ -43,7 +54,7 @@ export default function RootLayout() {
         }
       } catch (e) {
         console.error("Failed to check wallet status:", e);
-        setWalletState('no_wallet');
+        setWalletState(process.env.EXPO_PUBLIC_APP_ENV === 'development' ? 'dev_startup' : 'no_wallet');
       }
     }
     if (fontsLoaded || fontError) {
@@ -77,6 +88,24 @@ export default function RootLayout() {
           <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.loadingText}>Initializing...</Text>
         </View>
+      </GestureHandlerRootView>
+    );
+  }
+
+  if (walletState === 'dev_startup') {
+    return (
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <DevStartupScreen 
+          hasExistingWallet={hasExistingWallet}
+          onCreateWallet={() => setWalletState('no_wallet')}
+          onEnterApp={() => {
+            if (hasExistingWallet) {
+              setWalletState('locked');
+            } else {
+              setWalletState('no_wallet');
+            }
+          }}
+        />
       </GestureHandlerRootView>
     );
   }
