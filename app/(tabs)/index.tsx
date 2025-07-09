@@ -11,12 +11,14 @@ import BalanceCard from '@/components/BalanceCard';
 import { useWalletPublicKey } from '@/services/walletService';
 import { setStringAsync } from 'expo-clipboard';
 import ScreenContainer from '@/components/ScreenContainer';
+import TabSelector from '@/components/TabSelector';
 // import CryptoTest from '@/components/CryptoTest';
 
 
 export default function HomeScreen() {
   const router = useRouter();
   const [userData, setUserData] = useState(UserData);
+  const [activeTab, setActiveTab] = useState<'tokens' | 'activity'>('tokens');
   const walletAddress = useWalletPublicKey();
 
   const handleCopyAddress = async () => {
@@ -61,17 +63,26 @@ export default function HomeScreen() {
         // currencySymbol="$" // Optional: if you want to override default
         />
 
-        {/* Crypto assets list */}
-        <View style={styles.assetsSection}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>TOKEN</Text>
-            <Text style={styles.sectionTitle}>BALANCE</Text>
-          </View>
+        {/* Tab selector */}
+        <TabSelector
+          activeTab={activeTab}
+          onTabPress={setActiveTab}
+        />
 
-          <TokenList
-            onSelectToken={(token: EnrichedTokenEntry) => router.push(`/token/${token.address}`)}
-          />
-        </View>
+        {/* Content based on active tab */}
+        {activeTab === 'tokens' && (
+          <View style={styles.assetsSection}>
+            <TokenList
+              onSelectToken={(token: EnrichedTokenEntry) => router.push(`/token/${token.address}`)}
+            />
+          </View>
+        )}
+
+        {activeTab === 'activity' && (
+          <View style={styles.activitySection}>
+            <Text style={styles.placeholderText}>Activity content coming soon...</Text>
+          </View>
+        )}
       </ScrollView>
     </ScreenContainer>
   );
@@ -109,17 +120,15 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   assetsSection: {
-    // marginBottom: 24, // This might be handled by BalanceCard's marginBottom now
+    // Content section for tokens
   },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-    paddingHorizontal: 16,
+  activitySection: {
+    padding: 16,
+    alignItems: 'center',
   },
-  sectionTitle: {
+  placeholderText: {
     color: colors.textSecondary,
-    fontSize: 12,
-    fontFamily: 'Inter-Medium',
+    fontSize: 16,
+    fontFamily: 'Inter-Regular',
   },
 });
