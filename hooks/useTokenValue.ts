@@ -1,4 +1,4 @@
-import { useTokenPrice } from './useTokenPrice';
+import { useTokenPrice } from './useTokenPrices';
 import { useTokenBalance } from './useTokenBalance';
 
 export const useTokenValue = (address: string | undefined, coingeckoId: string | undefined) => {

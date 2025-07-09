@@ -13,7 +13,7 @@ import { PLATFORM_FEE_RATE, JupiterQuote, jupiterSwap } from '@/services/walletS
 import ScreenHeader from '@/components/ScreenHeader';
 import ScreenContainer from '@/components/ScreenContainer';
 import { useTokenValue } from '@/hooks/useTokenValue';
-import { useTokenPrice } from '@/hooks/useTokenPrice';
+import { useTokenPrice } from '@/hooks/useTokenPrices';
 import { triggerShake } from '@/utils/animations';
 import { useTokenBalance } from '@/hooks/useTokenBalance';
 
