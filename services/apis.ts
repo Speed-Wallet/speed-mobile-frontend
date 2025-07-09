@@ -153,7 +153,6 @@ export async function getCards(customerCode: string): Promise<{
   data?: any[];
   error?: string;
 }> {
-  console.log("customerCode", customerCode)
   try {
     const response = await fetch(`${BASE_BACKEND_URL}/api/cashwyre/cards`, {
       method: 'POST',
@@ -164,7 +163,6 @@ export async function getCards(customerCode: string): Promise<{
     });
 
     const data = await response.json();
-    console.log('📊 Cards response:', data);
     return data;
   } catch (error) {
     console.error('Error fetching cards:', error);
