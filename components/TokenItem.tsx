@@ -5,7 +5,7 @@ import colors from '@/constants/colors';
 import { formatCurrency, formatPercentage } from '@/utils/formatters';
 import GreyCard from './GreyCard';
 import { useTokenBalance } from '@/hooks/useTokenBalance';
-import { useTokenPrice } from '@/hooks/useTokenPrice';
+import { useTokenPrice } from '@/hooks/useTokenPrices';
 import { EnrichedTokenEntry } from '@/data/types';
 import TokenLogo from './TokenLogo';
 
@@ -18,18 +18,31 @@ type TokenItemProps = {
   showBalance?: boolean;
   priceFontSize?: number; // Optional prop for dollar value size
   showSelectorIcon?: boolean; // Optional prop for showing selector icon
+  preloadedPrice?: number; // For when price is fetched in batch
+  isPriceLoading?: boolean; // For when price loading state is managed externally
 };
 
-const TokenItem = ({ token, onPress, showBalance = true, priceFontSize = 14, showSelectorIcon }: TokenItemProps) => {
+const TokenItem = ({ 
+  token, 
+  onPress, 
+  showBalance = true, 
+  priceFontSize = 14, 
+  showSelectorIcon,
+  preloadedPrice,
+  isPriceLoading: externalIsPriceLoading
+}: TokenItemProps) => {
   const isPositiveChange = token.priceChangePercentage >= 0;
 
   const coingeckoId = token.extensions.coingeckoId;
   
-  // Add the price query
-  const { price: fetchedPrice, isLoading: isPriceLoading, error: priceError } = useTokenPrice(coingeckoId);
+  // Only use the hook if no preloaded price is provided
+  const { price: fetchedPrice, isLoading: hookIsPriceLoading, error: priceError } = useTokenPrice(
+    preloadedPrice !== undefined ? undefined : coingeckoId
+  );
   
-  // Use fetched price or fallback to token.price
-  const currentPrice = fetchedPrice ?? 0;
+  // Use preloaded price first, then fetched price, then fallback to 0
+  const currentPrice = preloadedPrice ?? fetchedPrice ?? 0;
+  const isPriceLoading = externalIsPriceLoading ?? hookIsPriceLoading;
 
   // const activeWalletPublicKey = useWalletPublicKey();
   const { balance: displayQuantity, loading: isLoading, error: _error, globalError, isConnectingOrFetchingOverall, decimalsShown } = useTokenBalance(token.address)
