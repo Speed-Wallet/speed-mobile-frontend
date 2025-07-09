@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import colors from '@/constants/colors';
-import BackButton from '@/components/BackButton';
+import ScreenHeader from '@/components/ScreenHeader';
+import ScreenContainer from '@/components/ScreenContainer';
 import { importWalletFromMnemonic, saveWalletToList } from '@/services/walletService';
 
 export default function ImportPhraseScreen() {
@@ -156,12 +157,11 @@ export default function ImportPhraseScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <BackButton onPress={handleBack} />
-        <Text style={styles.headerTitle}>Import Recovery Phrase</Text>
-        <View style={styles.placeholder} />
-      </View>
+    <ScreenContainer>
+      <ScreenHeader 
+        title="Import Recovery Phrase"
+        onBack={handleBack}
+      />
 
       <View style={styles.content}>
         {renderStep()}
@@ -176,31 +176,11 @@ export default function ImportPhraseScreen() {
           </Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.backgroundDark,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 20,
-    paddingBottom: 16,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontFamily: 'Inter-SemiBold',
-    color: colors.textPrimary,
-  },
-  placeholder: {
-    width: 40,
-  },
   content: {
     padding: 16,
     flex: 1,

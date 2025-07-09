@@ -4,7 +4,8 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Copy, Share as ShareIcon } from 'lucide-react-native';
 import QRCode from 'react-native-qrcode-svg';
 import colors from '@/constants/colors';
-import BackButton from '@/components/BackButton';
+import ScreenHeader from '@/components/ScreenHeader';
+import ScreenContainer from '@/components/ScreenContainer';
 import { setStringAsync } from 'expo-clipboard';
 import { useWalletPublicKey } from '@/services/walletService';
 
@@ -36,12 +37,11 @@ export default function ReceiveScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <BackButton style={styles.closeButton} onPress={() => router.push('/')} />
-        <Text style={styles.headerTitle}>Receive Crypto</Text>
-        <View style={styles.placeholder} />
-      </View>
+    <ScreenContainer>
+      <ScreenHeader 
+        title="Receive Crypto"
+        onBack={() => router.push('/' as any)}
+      />
 
       <View style={styles.content}>
         <View style={styles.qrSection}>
@@ -93,7 +93,7 @@ export default function ReceiveScreen() {
           <Text style={styles.actionButtonText}>Share</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </ScreenContainer>
   );
 }
 

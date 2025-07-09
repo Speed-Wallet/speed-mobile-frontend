@@ -1,8 +1,9 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Animated, SafeAreaView, Platform, TextInput } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, Animated, Platform, TextInput } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowRight, ShieldCheck, Eye, EyeOff, CheckCircle, AlertTriangle } from 'lucide-react-native';
 import { triggerShake } from '@/utils/animations';
+import ScreenContainer from '@/components/ScreenContainer';
 
 interface ConfirmPinStepProps {
   confirmPin: string;
@@ -78,7 +79,7 @@ const ConfirmPinStep: React.FC<ConfirmPinStepProps> = ({
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <ScreenContainer>
       <View style={styles.content}>
         {/* Header */}
         <Animated.View
@@ -218,7 +219,7 @@ const ConfirmPinStep: React.FC<ConfirmPinStepProps> = ({
           </TouchableOpacity>
         </View>
       </View>
-    </SafeAreaView>
+    </ScreenContainer>
   );
 };
 

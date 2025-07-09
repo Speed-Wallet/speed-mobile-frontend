@@ -7,7 +7,8 @@ import colors from '@/constants/colors';
 import { formatCurrency } from '@/utils/formatters';
 import { getAllTokenInfo, getTokenByAddress } from '@/data/tokens';
 import { EnrichedTokenEntry } from '@/data/types';
-import BackButton from '@/components/BackButton';
+import ScreenHeader from '@/components/ScreenHeader';
+import ScreenContainer from '@/components/ScreenContainer';
 
 const paymentMethods = [
   {
@@ -103,12 +104,11 @@ export default function BuyScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <BackButton style={styles.closeButton} onPress={() => router.push('/')} />
-        <Text style={styles.headerTitle}>Buy</Text>
-        <View style={styles.placeholder} />
-      </View>
+    <ScreenContainer>
+      <ScreenHeader 
+        title="Buy"
+        onBack={() => router.push('/' as any)}
+      />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -209,39 +209,11 @@ export default function BuyScreen() {
           <ArrowRight size={20} color={colors.white} />
         </TouchableOpacity>
       </View>
-    </View>
+    </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.backgroundDark,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontFamily: 'Inter-SemiBold',
-    color: colors.textPrimary,
-  },
-  closeButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.backgroundMedium,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  placeholder: {
-    width: 40,
-  },
   content: {
     padding: 16,
     paddingBottom: 120,

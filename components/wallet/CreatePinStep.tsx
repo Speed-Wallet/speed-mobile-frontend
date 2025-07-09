@@ -1,8 +1,9 @@
 import React, { useRef, useEffect } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Animated, SafeAreaView, Platform } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, Animated, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowRight, Lock, Shield } from 'lucide-react-native';
 import PinInputCard from './PinInputCard';
+import ScreenContainer from '@/components/ScreenContainer';
 
 interface CreatePinStepProps {
   pin: string;
@@ -42,7 +43,7 @@ const CreatePinStep: React.FC<CreatePinStepProps> = ({
   }, []);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <ScreenContainer>
       <View style={styles.content}>
         {/* Header */}
         <Animated.View
@@ -109,7 +110,7 @@ const CreatePinStep: React.FC<CreatePinStepProps> = ({
           </TouchableOpacity>
         </View>
       </View>
-    </SafeAreaView>
+    </ScreenContainer>
   );
 };
 

@@ -7,6 +7,7 @@ import colors from '@/constants/colors';
 import { getAllTokenInfo } from '@/data/tokens';
 import TokenItem from '@/components/TokenItem';
 import { EnrichedTokenEntry } from '@/data/types';
+import ScreenContainer from '@/components/ScreenContainer';
 
 type SortOption = 'price' | 'name' | 'change';
 type SortDirection = 'asc' | 'desc';
@@ -76,7 +77,7 @@ export default function MarketScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <ScreenContainer edges={['top', 'bottom']}>
       <View style={styles.header}>
         <Text style={styles.title}>Market</Text>
         <Text style={styles.subtitle}>Discover and track cryptocurrencies</Text>
@@ -144,15 +145,11 @@ export default function MarketScreen() {
         )}
         contentContainerStyle={styles.listContent}
       />
-    </View>
+    </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.backgroundDark,
-  },
   header: {
     paddingHorizontal: 16,
     marginBottom: 16,

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { 
   User, 
@@ -23,6 +22,7 @@ import {
 import { useRouter } from 'expo-router';
 import colors from '@/constants/colors';
 import { getCurrentVerificationLevel } from '@/utils/verification';
+import ScreenContainer from '@/components/ScreenContainer';
 
 const preferencesOptions = [
   {
@@ -215,7 +215,7 @@ export default function SettingsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <ScreenContainer edges={['top', 'bottom']}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
@@ -259,7 +259,7 @@ export default function SettingsScreen() {
           <Text style={styles.versionText}>Version 1.0.0</Text>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </ScreenContainer>
   );
 }
 
