@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import ActionButton from '@/components/ActionButton'; 
-import { ArrowUp, ArrowDown, ShoppingCart, ArrowRightLeft } from 'lucide-react-native';
+import { ArrowUp, ArrowDown, CreditCard, ArrowRightLeft } from 'lucide-react-native';
 import colors from '@/constants/colors'; 
 import GradientCard from './GradientCard';
 import { usePortfolioValue } from '@/hooks/usePortfolioValue';
@@ -25,7 +25,7 @@ const BalanceCard: React.FC<BalanceCardProps> = ({
   const actions = [
     { label: "SEND", icon: ArrowUp, bgColor: "#5B68F6", actionId: "send" },
     { label: "RECEIVE", icon: ArrowDown, bgColor: "#28C165", actionId: "receive" },
-    { label: "BUY", icon: ShoppingCart, bgColor: "#F5A623", actionId: "buy" },
+    { label: "CARDS", icon: CreditCard, bgColor: "#F5A623", actionId: "cards" },
     { label: "TRADE", icon: ArrowRightLeft, bgColor: "#A259FF", actionId: "trade" },
   ];
 
