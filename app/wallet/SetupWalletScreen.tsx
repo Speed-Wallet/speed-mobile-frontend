@@ -5,6 +5,7 @@ import colors from '@/constants/colors';
 import CreateWalletIntroStep from '@/components/wallet/CreateWalletIntroStep';
 import ShowMnemonicStep from '@/components/wallet/ShowMnemonicStep';
 import SeedPhraseVerificationStep from '@/components/wallet/SeedPhraseVerificationStep';
+import CreateUsernameStep from '@/components/wallet/CreateUsernameStep';
 import CreatePinStep from '@/components/wallet/CreatePinStep';
 import ConfirmPinStep from '@/components/wallet/ConfirmPinStep';
 import { X } from 'lucide-react-native';
@@ -15,11 +16,12 @@ interface SetupWalletScreenProps {
 }
 
 const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComplete }) => {
-  const [step, setStep] = useState(1); // 1: Initial, 2: Show Mnemonic, 3: Verify Mnemonic, 4: Create PIN, 5: Confirm PIN
+  const [step, setStep] = useState(1); // 1: Initial, 2: Show Mnemonic, 3: Verify Mnemonic, 4: Username, 5: Create PIN, 6: Confirm PIN
   const [mnemonic, setMnemonic] = useState<string | null>(null);
   const [publicKey, setPublicKey] = useState<string | null>(null);
   const [accountIndex, setAccountIndex] = useState<number | undefined>(undefined);
   const [derivationPath, setDerivationPath] = useState<string | undefined>(undefined);
+  const [username, setUsername] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [pin, setPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
@@ -52,8 +54,13 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComp
   };
 
   const handleVerificationSuccess = () => {
-    // Move to PIN creation after successful verification
-    setStep(4); // Move to PIN creation
+    // Move to username creation after successful verification
+    setStep(4); // Move to username creation
+  };
+
+  const handleUsernameNext = (selectedUsername: string) => {
+    setUsername(selectedUsername);
+    setStep(5); // Move to PIN creation
   };
 
   const handleSetPin = () => {
@@ -61,7 +68,7 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComp
       Alert.alert("Invalid PIN", "PIN must be at least 4 digits.");
       return;
     }
-    setStep(5); // Move to PIN confirmation
+    setStep(6); // Move to PIN confirmation
   };
 
   const handleImportWallet = () => {
@@ -117,7 +124,8 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComp
       
       // Generate unique wallet ID and save to multi-wallet system using app PIN
       const walletId = `wallet-${Date.now()}`;
-      await saveWalletToList(walletId, 'Main Wallet', mnemonic, publicKey, pin, accountIndex, derivationPath);
+      const walletName = username || 'Main Wallet';
+      await saveWalletToList(walletId, walletName, mnemonic, publicKey, pin, accountIndex, derivationPath);
       
       Alert.alert("Success", "Your wallet has been created and secured with a PIN. Keep your seed phrase and PIN safe!");
       onWalletSetupComplete();
@@ -131,7 +139,7 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComp
     setPin('');
     setConfirmPin('');
     setPinError('');
-    setStep(4);
+    setStep(5);
   };
 
   return (
@@ -171,6 +179,14 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComp
       )}
 
       {step === 4 && (
+        <CreateUsernameStep 
+          onNext={handleUsernameNext}
+          onBack={() => setStep(3)}
+          isLoading={isLoading}
+        />
+      )}
+
+      {step === 5 && (
         <CreatePinStep 
           pin={pin}
           onPinChange={setPin}
@@ -179,7 +195,7 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComp
         />
       )}
 
-      {step === 5 && (
+      {step === 6 && (
         <ConfirmPinStep 
           confirmPin={confirmPin}
           onConfirmPinChange={handleConfirmPinChange}

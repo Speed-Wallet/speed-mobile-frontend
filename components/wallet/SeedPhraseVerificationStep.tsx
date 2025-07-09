@@ -236,6 +236,19 @@ const SeedPhraseVerificationStep: React.FC<SeedPhraseVerificationStepProps> = ({
 
         {/* Action Button */}
         <View style={styles.actionButtonContainer}>
+          {/* Development Mode Skip Button */}
+          {process.env.EXPO_PUBLIC_APP_ENV === 'development' && (
+            <TouchableOpacity
+              style={styles.devSkipButton}
+              onPress={onSuccess}
+              disabled={isLoading}
+            >
+              <Text style={styles.devSkipButtonText}>
+                [DEV] Skip Verification
+              </Text>
+            </TouchableOpacity>
+          )}
+          
           <TouchableOpacity
             style={getButtonStyle()}
             onPress={handleButtonPress}
@@ -384,6 +397,19 @@ const styles = StyleSheet.create({
   },
   actionButtonContainer: {
     paddingBottom: 32,
+  },
+  devSkipButton: {
+    backgroundColor: colors.warning,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  devSkipButtonText: {
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
+    color: colors.backgroundDark,
   },
   actionButton: {
     paddingVertical: 16,
