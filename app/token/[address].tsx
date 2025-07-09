@@ -1,9 +1,10 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, Star, ArrowUpRight, ArrowRightLeft, ArrowDownLeft } from 'lucide-react-native';
 import { LineChart } from 'react-native-chart-kit';
 import { useState } from 'react';
-import BackButton from '@/components/BackButton';
+import ScreenHeader from '@/components/ScreenHeader';
+import ScreenContainer from '@/components/ScreenContainer';
+import { useRouter } from 'expo-router';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -65,26 +66,26 @@ const statsData = [
   },
 ];
 
-export default function HomeScreen() {
+export default function TokenDetailScreen() {
   const [selectedTimeframe, setSelectedTimeframe] = useState('1D');
+  const router = useRouter();
 
   const currentChange = timeframeChanges[selectedTimeframe];
   const isNegative = currentChange.startsWith('-');
 
   return (
-    <View style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollView}>
-        {/* Header */}
-        <View style={styles.header}>
-          <BackButton />
-          <View style={styles.headerCenter}>
-            <Text style={styles.headerTitle}>USDC</Text>
-            <Text style={styles.headerSubtitle}>USDC</Text>
-          </View>
+    <ScreenContainer>
+      <ScreenHeader 
+        title="USDC"
+        onBack={() => router.back()}
+        rightElement={
           <TouchableOpacity style={styles.headerButton}>
             <Star size={24} color="#fff" />
           </TouchableOpacity>
-        </View>
+        }
+      />
+      
+      <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollView}>
 
         {/* Price Section */}
         <View style={styles.priceSection}>
@@ -169,43 +170,19 @@ export default function HomeScreen() {
           <Text style={styles.actionButtonText}>Receive</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#1a1a1a',
-  },
   scrollView: {
     flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    paddingTop: 20,
   },
   headerButton: {
     width: 40,
     height: 40,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  headerCenter: {
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#fff',
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: '#9ca3af',
   },
   priceSection: {
     alignItems: 'center',

@@ -1,7 +1,9 @@
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
 import { useState } from 'react';
-import { User, ArrowRight, ArrowLeft } from 'lucide-react-native';
+import { User, ArrowRight } from 'lucide-react-native';
 import colors from '@/constants/colors';
+import ScreenHeader from '@/components/ScreenHeader';
+import ScreenContainer from '@/components/ScreenContainer';
 
 interface CreateUsernameStepProps {
   onNext: (username: string) => void;
@@ -48,22 +50,16 @@ export default function CreateUsernameStep({ onNext, onBack, isLoading = false }
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container} 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      {/* Header */}
-      <View style={styles.topHeader}>
-        <TouchableOpacity style={styles.topBackButton} onPress={onBack} disabled={isLoading}>
-          <ArrowLeft size={20} color={colors.textSecondary} />
-          <Text style={styles.topBackButtonText}>Back</Text>
-        </TouchableOpacity>
-        
-        <Text style={styles.topHeaderTitle}>Username</Text>
-        <View style={styles.placeholder} />
-      </View>
-
-      <View style={styles.content}>
+    <ScreenContainer>
+      <ScreenHeader 
+        title="Username"
+        onBack={onBack}
+      />
+      
+      <KeyboardAvoidingView 
+        style={styles.content} 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
         {/* Header Section */}
         <View style={styles.header}>
           <View style={styles.iconContainer}>
@@ -131,42 +127,12 @@ export default function CreateUsernameStep({ onNext, onBack, isLoading = false }
             strokeWidth={2}
           />
         </TouchableOpacity>
-      </View>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.backgroundDark,
-  },
-  topHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 60,
-    paddingBottom: 16,
-  },
-  topBackButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  topBackButtonText: {
-    fontSize: 16,
-    fontFamily: 'Inter-Medium',
-    color: colors.textSecondary,
-  },
-  topHeaderTitle: {
-    fontSize: 18,
-    fontFamily: 'Inter-SemiBold',
-    color: colors.textPrimary,
-  },
-  placeholder: {
-    width: 40,
-  },
   content: {
     flex: 1,
     paddingHorizontal: 24,

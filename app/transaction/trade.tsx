@@ -10,7 +10,8 @@ import AmountInput from '@/components/AmountInput'; // Added import
 import TokenLogo from '@/components/TokenLogo'; // Added import
 import { EnrichedTokenEntry } from '@/data/types';
 import { PLATFORM_FEE_RATE, JupiterQuote, jupiterSwap } from '@/services/walletService';
-import BackButton from '@/components/BackButton';
+import ScreenHeader from '@/components/ScreenHeader';
+import ScreenContainer from '@/components/ScreenContainer';
 import { useTokenValue } from '@/hooks/useTokenValue';
 import { useTokenPrice } from '@/hooks/useTokenPrice';
 import { triggerShake } from '@/utils/animations';
@@ -280,13 +281,11 @@ export default function TradeScreen() {
 
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" />
-      <View style={styles.header}>
-        <BackButton style={styles.backButton} onPress={() => router.push('/')} />
-        <Text style={styles.title}>Swap Tokens</Text>
-        <View style={{ width: (styles.backButton.padding * 2) + 20 }} />
-      </View>
+    <ScreenContainer>
+      <ScreenHeader 
+        title="Swap Tokens"
+        onBack={() => router.push('/' as any)}
+      />
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollViewContent}>
         {/* From Token */}
         <TokenSelectorDisplay
@@ -400,55 +399,17 @@ export default function TradeScreen() {
         )}
 
       </ScrollView>
-
-
-    </SafeAreaView>
+    </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.backgroundDark, // Dark background from example
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between', // Distribute space
-    paddingHorizontal: 16,
-    paddingTop: 10, // Adjust as needed for status bar
-    position: 'absolute', // To overlay on ScrollView if needed, or keep it static
-    top: StatusBar.currentHeight, // Position below status bar
-    left: 0,
-    right: 0,
-    zIndex: 10,
-    height: 50, // Give header a fixed height
-    backgroundColor: colors.backgroundDark, // Match the background color
-  },
-  backButton: {
-    // Style for back button, e.g., position if it's part of an overlay header
-    // For now, assuming it's a simple button at the start of the header flow
-    padding: 8, // Make it easier to press
-    borderRadius: 16,
-    backgroundColor: colors.backgroundMedium, // Or a color that fits the new theme
-    // Add a specific width if needed for the spacer, e.g., width: 30 + (padding * 2)
-  },
   scrollView: {
     flex: 1,
   },
   scrollViewContent: {
-    paddingTop: 70, // Adjusted space for the fixed header (header height + some margin)
     paddingHorizontal: 20,
     paddingBottom: 30, // Space for the trade button
-  },
-  title: {
-    fontSize: 20, // Slightly smaller to fit header
-    fontFamily: 'Inter-SemiBold', // Using existing font family
-    color: colors.white,
-    // marginBottom: 24, // Removed, no longer needed here
-    // textAlign: 'center', // Centering is handled by header's justifyContent or flex properties
-    flex: 1, // Allow title to take available space and center itself
-    textAlign: 'center', // Ensure text is centered within its flex container
   },
   label: {
     fontSize: 16,

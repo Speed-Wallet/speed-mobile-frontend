@@ -10,6 +10,7 @@ import { EnrichedTokenEntry } from '@/data/types';
 import BalanceCard from '@/components/BalanceCard';
 import { useWalletPublicKey } from '@/services/walletService';
 import { setStringAsync } from 'expo-clipboard';
+import ScreenContainer from '@/components/ScreenContainer';
 // import CryptoTest from '@/components/CryptoTest';
 
 
@@ -24,11 +25,11 @@ export default function HomeScreen() {
 
   const handleBalanceCardAction = (actionType: string) => {
     // actionType will be "send", "receive", "buy", "trade"
-    router.push(`/transaction/${actionType}`);
+    router.push(`/transaction/${actionType}` as any);
   };
 
   return (
-    <View style={styles.container}>
+    <ScreenContainer edges={['top', 'bottom']}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
@@ -68,16 +69,11 @@ export default function HomeScreen() {
           />
         </View>
       </ScrollView>
-    </View>
+    </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.backgroundDark,
-    // paddingTop: 10,
-  },
   scrollContent: {
     padding: 16,
   },

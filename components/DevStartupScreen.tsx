@@ -2,6 +2,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { Settings, Plus } from 'lucide-react-native';
 import colors from '@/constants/colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import ScreenContainer from '@/components/ScreenContainer';
 
 interface DevStartupScreenProps {
   onCreateWallet: () => void;
@@ -50,7 +51,8 @@ export default function DevStartupScreen({ onCreateWallet, onEnterApp, hasExisti
   };
 
   return (
-    <View style={styles.container}>
+    <ScreenContainer>
+      <View style={styles.content}>
       <View style={styles.header}>
         <View style={styles.iconContainer}>
           <Settings size={32} color={colors.warning} strokeWidth={2} />
@@ -100,14 +102,14 @@ export default function DevStartupScreen({ onCreateWallet, onEnterApp, hasExisti
       <Text style={styles.devWarning}>
         This screen only appears in development mode
       </Text>
-    </View>
+      </View>
+    </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  content: {
     flex: 1,
-    backgroundColor: colors.backgroundDark,
     paddingHorizontal: 24,
     paddingTop: 80,
     paddingBottom: 40,

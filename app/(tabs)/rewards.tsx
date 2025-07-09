@@ -4,6 +4,7 @@ import { Gift, Trophy, Star, Users, ArrowRight, Medal, Crown, Zap, X } from 'luc
 import { LinearGradient } from 'expo-linear-gradient';
 import colors from '@/constants/colors';
 import UserData from '@/data/user';
+import ScreenContainer from '@/components/ScreenContainer';
 
 const { width } = Dimensions.get('window');
 
@@ -252,7 +253,7 @@ export default function RewardsScreen() {
   );
 
   return (
-    <View style={styles.container}>
+    <ScreenContainer edges={['top', 'bottom']}>
       <View style={styles.header}>
         <Text style={styles.title}>Rewards</Text>
         <Text style={styles.subtitle}>Compete and earn rewards</Text>
@@ -322,7 +323,7 @@ export default function RewardsScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
-    </View>
+    </ScreenContainer>
   );
 }
 

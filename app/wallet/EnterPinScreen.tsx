@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, SafeAreaView, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Animated } from 'react-native';
 import { unlockApp } from '@/services/walletService';
 import PinInputCard from '@/components/wallet/PinInputCard';
 import { Lock } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { triggerShake } from '@/utils/animations';
+import ScreenContainer from '@/components/ScreenContainer';
 
 
 interface EnterPinScreenProps {
@@ -76,7 +77,7 @@ const EnterPinScreen: React.FC<EnterPinScreenProps> = ({ onWalletUnlocked, publi
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <ScreenContainer>
       <View style={styles.content}>
         {/* Header */}
         <View style={styles.header}>
@@ -132,7 +133,7 @@ const EnterPinScreen: React.FC<EnterPinScreenProps> = ({ onWalletUnlocked, publi
           )}
         </View>
       </View>
-    </SafeAreaView>
+    </ScreenContainer>
   );
 };
 

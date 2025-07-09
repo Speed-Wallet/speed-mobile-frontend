@@ -13,6 +13,7 @@ import colors from '@/constants/colors';
 import { useTokenBalanceStore } from '@/stores/tokenBalanceStore';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import 'react-native-get-random-values';
 
 
@@ -94,59 +95,67 @@ export default function RootLayout() {
 
   if (walletState === 'dev_startup') {
     return (
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <DevStartupScreen 
-          hasExistingWallet={hasExistingWallet}
-          onCreateWallet={() => setWalletState('no_wallet')}
-          onEnterApp={() => {
-            if (hasExistingWallet) {
-              setWalletState('locked');
-            } else {
-              setWalletState('no_wallet');
-            }
-          }}
-        />
-      </GestureHandlerRootView>
+      <SafeAreaProvider>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <DevStartupScreen 
+            hasExistingWallet={hasExistingWallet}
+            onCreateWallet={() => setWalletState('no_wallet')}
+            onEnterApp={() => {
+              if (hasExistingWallet) {
+                setWalletState('locked');
+              } else {
+                setWalletState('no_wallet');
+              }
+            }}
+          />
+        </GestureHandlerRootView>
+      </SafeAreaProvider>
     );
   }
 
   if (walletState === 'no_wallet') {
     return (
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <SetupWalletScreen onWalletSetupComplete={() => setWalletState('unlocked')} />
-      </GestureHandlerRootView>
+      <SafeAreaProvider>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <SetupWalletScreen onWalletSetupComplete={() => setWalletState('unlocked')} />
+        </GestureHandlerRootView>
+      </SafeAreaProvider>
     );
   }
 
   if (walletState === 'locked') {
     return (
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <EnterPinScreen onWalletUnlocked={() => setWalletState('unlocked')} publicKey={storedPublicKey} />
-      </GestureHandlerRootView>
+      <SafeAreaProvider>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <EnterPinScreen onWalletUnlocked={() => setWalletState('unlocked')} publicKey={storedPublicKey} />
+        </GestureHandlerRootView>
+      </SafeAreaProvider>
     );
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <QueryClientProvider client={queryClient}>
-        <Stack screenOptions={{ headerShown: false, contentStyle: { paddingTop: 10, backgroundColor: colors.backgroundDark } }}>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="+not-found" options={{ title: 'Oops!' }} />
-          <Stack.Screen name="transaction/send" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="transaction/receive" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="transaction/buy" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="transaction/trade" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="wallet/cards" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="wallet/manage" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="wallet/SetupWalletScreen" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="wallet/connect" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="wallet/import" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="settings/kyc" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="token/[address]" options={{ animation: 'slide_from_right' }} />
-        </Stack>
-        <StatusBar style="light" />
-      </QueryClientProvider>
-    </GestureHandlerRootView>
+    <SafeAreaProvider>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <QueryClientProvider client={queryClient}>
+          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.backgroundDark } }}>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="+not-found" options={{ title: 'Oops!' }} />
+            <Stack.Screen name="transaction/send" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="transaction/receive" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="transaction/buy" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="transaction/trade" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="wallet/cards" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="wallet/manage" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="wallet/SetupWalletScreen" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="wallet/connect" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="wallet/import" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="settings/kyc" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="token/[address]" options={{ animation: 'slide_from_right' }} />
+          </Stack>
+          <StatusBar style="light" />
+        </QueryClientProvider>
+      </GestureHandlerRootView>
+    </SafeAreaProvider>
   );
 }
 
