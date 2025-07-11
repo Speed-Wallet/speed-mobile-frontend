@@ -27,6 +27,10 @@ import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import { StorageService, PersonalInfo } from '@/utils/storage';
 import { triggerShake } from '@/utils/animations';
 import { countries, Country } from '@/constants/countries';
+import { sendOtp } from '@/services/otpService';
+import { useOtpTimer } from '@/hooks/useOtpTimer';
+import EmailBadge, { EmailStatus } from '@/components/EmailBadge';
+import EmailVerificationSheet from '@/components/EmailVerificationSheet';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -191,6 +195,12 @@ export default function AccountScreen() {
   // Save button state
   const [isSaving, setIsSaving] = useState(false);
   
+  // OTP verification state
+  const [emailStatus, setEmailStatus] = useState<EmailStatus>('unverified');
+  const [otpId, setOtpId] = useState<string | null>(null);
+  const [otpExpiresAt, setOtpExpiresAt] = useState<number | null>(null);
+  const [showSheet, setShowSheet] = useState(false);
+  
   // Animation for shake effect
   const shakeAnimationValue = useRef(new RNAnimated.Value(0)).current;
   const buttonShakeAnimationValue = useRef(new RNAnimated.Value(0)).current;
@@ -205,6 +215,13 @@ export default function AccountScreen() {
   
   const scrollX = useSharedValue(0);
   const scrollViewRef = useAnimatedRef<Animated.ScrollView>();
+
+  // OTP timer hook
+  const otpRemaining = useOtpTimer(otpExpiresAt, () => {
+    setEmailStatus('needs_verification');
+    setOtpExpiresAt(null);
+    setOtpId(null);
+  });
 
   // Wrapper function for shake animation that can be called from worklet
   const handleShakeAnimation = () => {
@@ -361,6 +378,34 @@ export default function AccountScreen() {
       return;
     }
 
+    // Handle OTP verification flow
+    if (emailStatus === 'needs_verification') {
+      setIsSaving(true);
+      try {
+        const response = await sendOtp(email);
+        setOtpId(response.otpId || null);
+        setOtpExpiresAt(response.expiresAt || null);
+        setEmailStatus('otp_pending');
+        setShowSheet(true);
+        setToastMessage('Verification code sent to your email');
+        setToastType('info');
+        setShowToast(true);
+      } catch (error) {
+        setToastMessage('Failed to send verification code');
+        setToastType('error');
+        setShowToast(true);
+      } finally {
+        setIsSaving(false);
+      }
+      return;
+    }
+
+    if (emailStatus === 'otp_pending') {
+      setShowSheet(true);
+      return;
+    }
+
+    // Default save behavior
     setIsSaving(true);
     try {
       await savePersonalInfo();
@@ -670,7 +715,12 @@ export default function AccountScreen() {
               >
                 <Save size={20} color="#ffffff" />
                 <Text style={styles.saveButtonText}>
-                  {isSaving ? 'Saving...' : 'Save Details'}
+                  {isSaving 
+                    ? 'Saving...' 
+                    : emailStatus === 'needs_verification' || emailStatus === 'otp_pending'
+                    ? 'Verify Email'
+                    : 'Save Details'
+                  }
                 </Text>
               </TouchableOpacity>
             </RNAnimated.View>
@@ -918,10 +968,19 @@ export default function AccountScreen() {
                       placeholder="Enter your email address"
                       placeholderTextColor="#6b7280"
                       value={email}
+                      editable={emailStatus === 'unverified' || emailStatus === 'needs_verification'}
                       onChangeText={(text) => {
                         // Remove all spaces from email
                         const noSpaces = text.replace(/\s/g, '');
                         setEmail(noSpaces);
+                        
+                        // Reset email status when email changes
+                        if (emailStatus === 'verified' || emailStatus === 'otp_pending') {
+                          setEmailStatus('needs_verification');
+                          setOtpId(null);
+                          setOtpExpiresAt(null);
+                        }
+                        
                         // Only check error state on text change if already in error state
                         if (emailError) {
                           setEmailError(!validateEmail(noSpaces));
@@ -930,6 +989,14 @@ export default function AccountScreen() {
                       onBlur={async () => {
                         // Always check error state on blur
                         setEmailError(!validateEmail(email));
+                        
+                        // Set status based on email validation
+                        if (validateEmail(email)) {
+                          if (emailStatus === 'unverified') {
+                            setEmailStatus('needs_verification');
+                          }
+                        }
+                        
                         // Only save to storage on blur (slow operation)
                         if (email.trim()) {
                           await saveFieldToStorage({ email });
@@ -938,10 +1005,28 @@ export default function AccountScreen() {
                       keyboardType="email-address"
                       ref={emailRef}
                     />
-                    {!emailError && email.trim().length > 0 && validateEmail(email) && (
-                      <Check size={20} color="#10b981" style={styles.validIcon} />
-                    )}
+                    <EmailBadge 
+                      status={emailStatus} 
+                      expiresAt={otpExpiresAt}
+                      onExpire={() => {
+                        setEmailStatus('needs_verification');
+                        setOtpExpiresAt(null);
+                        setOtpId(null);
+                      }}
+                    />
                   </View>
+                  {emailStatus === 'verified' && (
+                    <TouchableOpacity
+                      style={styles.changeEmailButton}
+                      onPress={() => {
+                        setEmailStatus('needs_verification');
+                        setOtpId(null);
+                        setOtpExpiresAt(null);
+                      }}
+                    >
+                      <Text style={styles.changeEmailText}>Change email</Text>
+                    </TouchableOpacity>
+                  )}
                   {(emailError || email.trim().length === 0) && (
                     <Text style={[
                       styles.inputHint,
@@ -1040,6 +1125,19 @@ export default function AccountScreen() {
             {verificationLevels[currentLevel]?.inputs.map(renderInputField)}
           </View>
         </View>
+        
+        {/* Email Verification Sheet */}
+        <EmailVerificationSheet
+          visible={showSheet}
+          onClose={() => setShowSheet(false)}
+          email={email}
+          onVerified={() => {
+            setEmailStatus('verified');
+            setOtpId(null);
+            setOtpExpiresAt(null);
+            setShowSheet(false);
+          }}
+        />
     </SettingsScreen>
   );
 }
@@ -1267,5 +1365,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 8,
+  },
+  changeEmailButton: {
+    alignSelf: 'flex-start',
+    marginTop: 8,
+  },
+  changeEmailText: {
+    color: '#3b82f6',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

@@ -1,8 +1,10 @@
-import { useState, useEffect, useRef, useMemo } from 'react'; // Added useMemo
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, SafeAreaView, StatusBar, ScrollView, Animated } from 'react-native'; // Removed Dimensions, Removed Image, Added Animated
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, SafeAreaView, StatusBar, ScrollView, Animated } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowDownUp, ArrowRightLeft, DollarSign, Lock, ChevronDown } from 'lucide-react-native'; // Changed ArrowUpDown to ArrowDownUp, Added Lock, Added ChevronDown
+import { ArrowDownUp, DollarSign, Lock, ChevronDown, Zap } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import BottomSheet, { BottomSheetView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import colors from '@/constants/colors';
 import { formatCurrency } from '@/utils/formatters';
 import { getAllTokenInfo, getTokenByAddress } from '@/data/tokens';
@@ -116,6 +118,9 @@ export default function TradeScreen() {
   const [toAmount, setToAmount] = useState('');
 
   const shakeAnimationValue = useRef(new Animated.Value(0)).current;
+  const bottomSheetRef = useRef<BottomSheet>(null);
+  const snapPoints = useMemo(() => ['40%'], []); // Back to 40%
+
   const { price: fromTokenPrice } = useTokenPrice(fromToken?.extensions.coingeckoId);
   const { balance: fromTokenBalance } = useTokenBalance(fromToken?.address);
 
@@ -283,6 +288,7 @@ export default function TradeScreen() {
       const sig = await jupiterSwap(quote, platformFee);
       console.log(`Trade Successful: ${sig}`);
       alert('Trade Successful!'); // Provide feedback
+      bottomSheetRef.current?.close();
     } catch (err: any) {
       console.error(err);
       alert(`Error trading tokens: ${err.message || 'Unknown error'}`);
@@ -321,22 +327,23 @@ export default function TradeScreen() {
 
   const isButtonDisabled = !fromAmount || parseFloat(fromAmount) <= 0 || !quote || !!quote.errorCode;
 
-  const handleTradeAttempt = () => {
+  const handlePreviewSwap = useCallback(() => {
     if (isButtonDisabled) {
       triggerShake(shakeAnimationValue);
     } else {
-      handleTrade();
+      bottomSheetRef.current?.expand();
     }
-  };
+  }, [isButtonDisabled, shakeAnimationValue]);
 
 
   return (
-    <ScreenContainer edges={['top', 'bottom']}>
-      <ScreenHeader 
-        title="Swap Tokens"
-        onBack={() => router.push('/' as any)}
-      />
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollViewContent}>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ScreenContainer edges={['top', 'bottom']}>
+        <ScreenHeader 
+          title="Swap Tokens"
+          onBack={() => router.push('/' as any)}
+        />
+        <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollViewContent}>
         {/* From Token Box */}
         <SwapBox
           labelText="From"
@@ -396,67 +403,105 @@ export default function TradeScreen() {
           </Text>
         )} */}
 
-        {/* Exchange Info - MOVED HERE and "You Receive" row removed */}
-        {fromToken && toToken && (
-          <View style={styles.exchangeInfoCard}>
-            <View style={styles.exchangeInfoRow}>
-              <Text style={styles.exchangeInfoLabel}>Rate:</Text>
-              <Text style={styles.exchangeInfoValue}>
-                {exchangeRate ? `1 ${fromToken.symbol} = ${exchangeRate.toFixed(toToken.decimalsShown)} ${toToken.symbol}` : 'N/A'}
-              </Text>
-            </View>
-            {/* "You Receive" row has been removed */}
-            <View style={styles.exchangeInfoRow}>
-              <Text style={styles.exchangeInfoLabel}>Total Value:</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <DollarSign size={14} color={'#4ade80'} style={{ marginRight: 2, opacity: 1 }} />
-                <Text style={[styles.exchangeInfoValue, { color: '#4ade80', opacity: 1 }]}>
-                  {totalValueDisplay.startsWith('$') ? totalValueDisplay.substring(1) : totalValueDisplay}
-                </Text>
-              </View>
-            </View>
-            <View style={styles.exchangeInfoRow}>
-              <Text style={styles.exchangeInfoLabel}>Fee %:</Text>
-              <Text style={styles.exchangeInfoValue}>0.2%</Text>
-            </View>
-            {quote && quote.marketInfos && (
-              <View style={styles.exchangeInfoRow}>
-                <Text style={styles.exchangeInfoLabel}>Route:</Text>
-                <Text style={styles.exchangeInfoValueMini}>
-                  {quote.marketInfos.map((mi: any) => mi.label).join(' → ')}
-                </Text>
-              </View>
-            )}
-          </View>
-        )}
+        {/* Exchange Info Card - REMOVED */}
 
       </ScrollView>
 
-      {/* Trade Button - Now sticky to bottom */}
+      {/* Preview Swap Button - Now sticky to bottom */}
       <View style={styles.stickyButtonContainer}>
         <TouchableOpacity
           style={[
-            styles.tradeExecuteButton, // Apply base styles here
+            styles.tradeExecuteButton,
             isButtonDisabled && styles.buttonOpacityDisabled,
           ]}
-          onPress={handleTradeAttempt} // Use the new handler
-        // disabled prop is removed to allow onPress to fire for shake animation
+          onPress={handlePreviewSwap}
         >
           <LinearGradient
             colors={isButtonDisabled ? ['#4a4a4a', '#3a3a3a'] : ['#3B82F6', '#2563EB']}
             style={styles.buttonGradient}>
-            <Animated.View style={{ transform: [{ translateX: shakeAnimationValue }], flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+            <Animated.View style={{ transform: [{ translateX: shakeAnimationValue }] }}>
               {isButtonDisabled ? (
-                <Lock size={20} color={colors.white} />
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Lock size={20} color={colors.white} />
+                  <Text style={styles.tradeExecuteButtonText}>Preview Swap</Text>
+                </View>
               ) : (
-                <ArrowRightLeft size={20} color={colors.white} />
+                <Text style={styles.tradeExecuteButtonText}>Preview Swap</Text>
               )}
-              <Text style={styles.tradeExecuteButtonText}>Swap Tokens</Text>
             </Animated.View>
           </LinearGradient>
         </TouchableOpacity>
       </View>
-    </ScreenContainer>
+
+      {/* Bottom Sheet for Swap Details */}
+      <BottomSheet
+        ref={bottomSheetRef}
+        snapPoints={snapPoints}
+        index={-1}
+        enablePanDownToClose={true}
+        backgroundStyle={styles.bottomSheetBackground}
+        handleIndicatorStyle={styles.bottomSheetHandle}
+        backdropComponent={(props) => (
+          <BottomSheetBackdrop
+            {...props}
+            appearsOnIndex={0}
+            disappearsOnIndex={-1}
+            opacity={0.4}
+          />
+        )}
+      >
+        <BottomSheetView style={styles.bottomSheetContent}>
+          <Text style={styles.bottomSheetTitle}>Swap Details</Text>
+          
+          {fromToken && toToken && (
+            <View style={styles.swapDetailsContainer}>
+              <View style={styles.swapDetailRow}>
+                <Text style={styles.swapDetailLabel}>Rate</Text>
+                <Text style={styles.swapDetailValue}>
+                  {exchangeRate ? `1 ${fromToken.symbol} = ${exchangeRate.toFixed(toToken.decimalsShown)} ${toToken.symbol}` : 'N/A'}
+                </Text>
+              </View>
+              
+              <View style={styles.swapDetailRow}>
+                <Text style={styles.swapDetailLabel}>Total Value</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <DollarSign size={14} color={'#4ade80'} style={{ marginRight: 2 }} />
+                  <Text style={[styles.swapDetailValue, { color: '#4ade80' }]}>
+                    {totalValueDisplay.startsWith('$') ? totalValueDisplay.substring(1) : totalValueDisplay}
+                  </Text>
+                </View>
+              </View>
+              
+              <View style={styles.swapDetailRow}>
+                <Text style={styles.swapDetailLabel}>Trade Fee</Text>
+                <Text style={styles.swapDetailValue}>0.2%</Text>
+              </View>
+              
+              <View style={styles.swapDetailRow}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Zap size={14} color={'#eab308'} style={{ marginRight: 4 }} />
+                  <Text style={styles.swapDetailLabel}>Network Fee</Text>
+                </View>
+                <Text style={styles.swapDetailValue}>$0.01</Text>
+              </View>
+            </View>
+          )}
+          
+          <TouchableOpacity
+            style={styles.confirmSwapButton}
+            onPress={handleTrade}
+          >
+            <LinearGradient
+              colors={['#3B82F6', '#2563EB']}
+              style={styles.buttonGradient}>
+              <Text style={styles.confirmSwapButtonText}>Confirm Swap</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </BottomSheetView>
+      </BottomSheet>
+      
+      </ScreenContainer>
+    </GestureHandlerRootView>
   );
 }
 
@@ -704,5 +749,65 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-SemiBold',
     color: colors.white,
     // Remove marginLeft since we're using gap in the gradient container
+  },
+  // Bottom Sheet Styles
+  bottomSheetBackground: {
+    backgroundColor: colors.bottomSheetBackground, // Custom dark color with full opacity
+  },
+  bottomSheetHandle: {
+    backgroundColor: colors.textSecondary,
+  },
+  bottomSheetContent: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 20, // Normal padding, not extra for absolute button
+  },
+  bottomSheetTitle: {
+    fontSize: 18, // Reduced from 20
+    fontFamily: 'Inter-Medium', // Reduced from Inter-SemiBold
+    color: colors.textSecondary, // Less primary color
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  swapDetailsContainer: {
+    backgroundColor: colors.backgroundMedium, // Use a more opaque background
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 42, // Increased space before the button to push it down
+  },
+  swapDetailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  swapDetailLabel: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    color: colors.textSecondary,
+  },
+  swapDetailValue: {
+    fontSize: 14,
+    fontFamily: 'Inter-Medium',
+    color: colors.white, // Changed back to white for better contrast
+    textAlign: 'right',
+  },
+  swapDetailValueSmall: {
+    fontSize: 12,
+    flexShrink: 1,
+  },
+  confirmSwapButton: {
+    height: 54, // Match the preview button height
+    borderRadius: 27, // Match the preview button border radius
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+    // Remove absolute positioning - let it flow naturally in the layout
+  },
+  confirmSwapButtonText: {
+    fontSize: 17,
+    fontFamily: 'Inter-SemiBold',
+    color: colors.white,
   },
 });
