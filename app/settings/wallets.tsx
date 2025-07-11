@@ -225,11 +225,7 @@ export default function WalletsScreen() {
       setLoading(true);
       const success = await switchToWalletUnlocked(walletId);
       if (success) {
-        Alert.alert('Success', 'Wallet switched successfully! No PIN required.', [
-          { text: 'OK', onPress: () => {
-            loadWallets();
-          }}
-        ]);
+        loadWallets();
       } else {
         Alert.alert('Error', 'Failed to switch wallet.');
       }
@@ -316,7 +312,7 @@ export default function WalletsScreen() {
                 key={wallet.id} 
                 style={styles.walletCard}
                 onPress={() => !wallet.isActive && handleSwitchWallet(wallet.id)}
-                activeOpacity={wallet.isActive ? 1 : 0.7}
+                activeOpacity={0.7}
               >
                 <View style={styles.walletInfo}>
                   <View style={styles.walletHeader}>
@@ -343,18 +339,6 @@ export default function WalletsScreen() {
                 </View>
                 
                 <View style={styles.walletActions}>
-                  {!wallet.isActive && (
-                    <TouchableOpacity 
-                      style={styles.switchButton}
-                      onPress={(e) => {
-                        e.stopPropagation();
-                        handleSwitchWallet(wallet.id);
-                      }}
-                    >
-                      <RefreshCw size={16} color={colors.primary} />
-                    </TouchableOpacity>
-                  )}
-                  
                   {!wallet.isMasterWallet && (
                     <TouchableOpacity 
                       style={styles.deleteButton}
@@ -525,10 +509,6 @@ const styles = StyleSheet.create({
   walletActions: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  switchButton: {
-    padding: 8,
-    marginRight: 8,
   },
   deleteButton: {
     padding: 8,
