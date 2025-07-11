@@ -1,8 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ViewStyle } from 'react-native';
+import { View, Text, StyleSheet, ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft } from 'lucide-react-native';
 import colors from '@/constants/colors';
+import BackButton from './BackButton';
 
 interface ScreenHeaderProps {
   title?: string;
@@ -23,10 +23,7 @@ export default function ScreenHeader({
     <SafeAreaView edges={['top']} style={styles.safeArea}>
       <View style={[styles.header, style]}>
         {showBackButton ? (
-          <TouchableOpacity style={styles.backButton} onPress={onBack}>
-            <ArrowLeft size={20} color={colors.textSecondary} />
-            <Text style={styles.backButtonText}>Back</Text>
-          </TouchableOpacity>
+          <BackButton onPress={onBack} />
         ) : (
           <View style={styles.placeholder} />
         )}
@@ -54,17 +51,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     minHeight: 56,
-  },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    minWidth: 60,
-  },
-  backButtonText: {
-    fontSize: 16,
-    fontFamily: 'Inter-Medium',
-    color: colors.textSecondary,
   },
   title: {
     fontSize: 18,

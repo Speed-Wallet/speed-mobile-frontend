@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ScrollView, ActivityIndicator } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import colors from '@/constants/colors';
 import BackButton from '@/components/BackButton';
@@ -56,7 +57,7 @@ export default function SecuritySettingsScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <BackButton />
         <Text style={styles.headerTitle}>Security</Text>
@@ -134,7 +135,7 @@ export default function SecuritySettingsScreen() {
         )}
 
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
