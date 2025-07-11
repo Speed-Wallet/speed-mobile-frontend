@@ -1,25 +1,58 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Copy } from 'lucide-react-native';
 import colors from '@/constants/colors';
 import Avatar from '@/components/Avatar';
 import TokenList from '@/components/TokenList';
-import UserData from '@/data/user';
 import { EnrichedTokenEntry } from '@/data/types';
 import BalanceCard from '@/components/BalanceCard';
-import { useWalletPublicKey } from '@/services/walletService';
+import { useWalletPublicKey, getAllStoredWallets, getActiveWalletId } from '@/services/walletService';
 import { setStringAsync } from 'expo-clipboard';
 import ScreenContainer from '@/components/ScreenContainer';
 import TabSelector from '@/components/TabSelector';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 // import CryptoTest from '@/components/CryptoTest';
 
 
 export default function HomeScreen() {
   const router = useRouter();
-  const [userData, setUserData] = useState(UserData);
+  const [username, setUsername] = useState<string>('');
+  const [walletName, setWalletName] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'tokens' | 'activity'>('tokens');
   const walletAddress = useWalletPublicKey();
+
+  // Generic user object for avatar
+  const genericUser = {
+    name: username || 'User',
+    avatar: undefined,
+  };
+
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        const storedUsername = await AsyncStorage.getItem('username');
+        if (storedUsername) {
+          setUsername(storedUsername);
+        }
+        
+        // Load active wallet name from wallet service
+        const storedWallets = await getAllStoredWallets();
+        const activeWalletId = await getActiveWalletId();
+        
+        if (activeWalletId && storedWallets.length > 0) {
+          const activeWallet = storedWallets.find(wallet => wallet.id === activeWalletId);
+          if (activeWallet) {
+            setWalletName(activeWallet.name);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading user data from storage:', error);
+      }
+    };
+
+    loadUserData();
+  }, []);
 
   const handleCopyAddress = async () => {
     await setStringAsync(walletAddress || '');
@@ -46,10 +79,10 @@ export default function HomeScreen() {
         {/* Header section */}
         <View style={styles.header}>
           <View style={styles.userSection}>
-            <Avatar size={40} user={userData} />
+            <Avatar size={40} user={genericUser} />
             <View style={styles.userInfo}>
-              <Text style={styles.welcomeText}>WELCOME {userData.name.toUpperCase()}</Text>
-              <Text style={styles.usernameText}>@{userData.username}</Text>
+              <Text style={styles.usernameText}>{walletName}</Text>
+              <Text style={styles.walletNameText}>@{username}</Text>
             </View>
           </View>
           <TouchableOpacity onPress={handleCopyAddress} style={styles.copyButton}>
@@ -106,12 +139,12 @@ const styles = StyleSheet.create({
   userInfo: {
     marginLeft: 12,
   },
-  welcomeText: {
+  usernameText: {
     color: colors.textPrimary,
-    fontSize: 12,
+    fontSize: 16,
     fontFamily: 'Inter-Medium',
   },
-  usernameText: {
+  walletNameText: {
     color: colors.textSecondary,
     fontSize: 12,
     fontFamily: 'Inter-Regular',
