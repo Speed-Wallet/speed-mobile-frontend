@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
+import { useCallback } from 'react';
 import { Copy } from 'lucide-react-native';
 import colors from '@/constants/colors';
 import Avatar from '@/components/Avatar';
@@ -29,30 +30,37 @@ export default function HomeScreen() {
   };
 
   useEffect(() => {
-    const loadUserData = async () => {
-      try {
-        const storedUsername = await AsyncStorage.getItem('username');
-        if (storedUsername) {
-          setUsername(storedUsername);
-        }
-        
-        // Load active wallet name from wallet service
-        const storedWallets = await getAllStoredWallets();
-        const activeWalletId = await getActiveWalletId();
-        
-        if (activeWalletId && storedWallets.length > 0) {
-          const activeWallet = storedWallets.find(wallet => wallet.id === activeWalletId);
-          if (activeWallet) {
-            setWalletName(activeWallet.name);
-          }
-        }
-      } catch (error) {
-        console.error('Error loading user data from storage:', error);
-      }
-    };
-
     loadUserData();
   }, []);
+
+  // Reload wallet data when screen comes into focus (e.g., after switching wallets)
+  useFocusEffect(
+    useCallback(() => {
+      loadUserData();
+    }, [])
+  );
+
+  const loadUserData = async () => {
+    try {
+      const storedUsername = await AsyncStorage.getItem('username');
+      if (storedUsername) {
+        setUsername(storedUsername);
+      }
+      
+      // Load active wallet name from wallet service
+      const storedWallets = await getAllStoredWallets();
+      const activeWalletId = await getActiveWalletId();
+      
+      if (activeWalletId && storedWallets.length > 0) {
+        const activeWallet = storedWallets.find(wallet => wallet.id === activeWalletId);
+        if (activeWallet) {
+          setWalletName(activeWallet.name);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading user data from storage:', error);
+    }
+  };
 
   const handleCopyAddress = async () => {
     await setStringAsync(walletAddress || '');
