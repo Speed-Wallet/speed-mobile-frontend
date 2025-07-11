@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowRight, ShieldCheck, Eye, EyeOff, CheckCircle, AlertTriangle } from 'lucide-react-native';
 import { triggerShake } from '@/utils/animations';
 import ScreenContainer from '@/components/ScreenContainer';
+import BackButton from '@/components/BackButton';
 
 interface ConfirmPinStepProps {
   confirmPin: string;
@@ -80,6 +81,11 @@ const ConfirmPinStep: React.FC<ConfirmPinStepProps> = ({
 
   return (
     <ScreenContainer>
+      {/* Development Back Button */}
+      {process.env.EXPO_PUBLIC_APP_ENV === 'development' && (
+        <BackButton onPress={onBack} />
+      )}
+      
       <View style={styles.content}>
         {/* Header */}
         <Animated.View
