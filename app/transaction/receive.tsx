@@ -24,7 +24,7 @@ export default function ReceiveScreen() {
   const handleShare = async () => {
     try {
       const result = await Share.share({
-        message: `My wallet address: ${walletAddress}`,
+        message: `My Solana wallet address: ${walletAddress}`,
       });
     } catch (error) {
       console.error('Error sharing:', error);

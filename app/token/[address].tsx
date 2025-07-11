@@ -74,7 +74,7 @@ export default function TokenDetailScreen() {
   const isNegative = currentChange.startsWith('-');
 
   return (
-    <ScreenContainer>
+    <ScreenContainer edges={['top', 'bottom']}>
       <ScreenHeader 
         title="USDC"
         onBack={() => router.back()}
