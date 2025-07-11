@@ -23,6 +23,7 @@ import { useRouter } from 'expo-router';
 import colors from '@/constants/colors';
 import { getCurrentVerificationLevel } from '@/utils/verification';
 import ScreenContainer from '@/components/ScreenContainer';
+import TabScreenHeader from '@/components/TabScreenHeader';
 
 const preferencesOptions = [
   {
@@ -209,14 +210,15 @@ export default function SettingsScreen() {
 
   return (
     <ScreenContainer edges={['top', 'bottom']}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Settings</Text>
-        </View>
+      <TabScreenHeader 
+        title="Settings" 
+        subtitle="Manage your account and preferences" 
+      />
+
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
 
         {/* Account Section */}
-        <View style={styles.section}>
+        <View style={[styles.section, styles.firstSection]}>
           <Text style={styles.sectionTitle}>Account</Text>
           <View style={styles.sectionContent}>
             {getAccountOptions().map((option, index, array) => renderSettingItem(option, index, array))}
@@ -264,26 +266,21 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  header: {
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.backgroundLight,
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontFamily: 'Inter-Bold',
-    color: colors.textPrimary,
+  content: {
+    flex: 1,
+    paddingHorizontal: 16,
   },
   section: {
-    paddingHorizontal: 20,
     paddingTop: 16, // Reduced from 24
   },
+  firstSection: {
+    paddingTop: 8, // Tighter spacing for the first section to match Market tab
+  },
   sectionTitle: {
-    fontSize: 18,
-    fontFamily: 'Inter-Bold',
+    fontSize: 16,
+    fontFamily: 'Inter-Medium',
     color: '#a1a1aa', // Updated to specific hex color
-    marginBottom: 10, // Reduced from 16
+    marginBottom: 6, // Reduced from 10
   },
   sectionContent: {
     // Remove gap to make items touch

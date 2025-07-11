@@ -5,6 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import colors from '@/constants/colors';
 import UserData from '@/data/user';
 import ScreenContainer from '@/components/ScreenContainer';
+import TabScreenHeader from '@/components/TabScreenHeader';
 
 const { width } = Dimensions.get('window');
 
@@ -254,10 +255,10 @@ export default function RewardsScreen() {
 
   return (
     <ScreenContainer edges={['top', 'bottom']}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Rewards</Text>
-        <Text style={styles.subtitle}>Compete and earn rewards</Text>
-      </View>
+      <TabScreenHeader 
+        title="Rewards" 
+        subtitle="Compete and earn rewards" 
+      />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {renderTierCard()}
@@ -331,21 +332,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.backgroundDark,
-  },
-  header: {
-    paddingHorizontal: 16,
-    marginBottom: 24,
-  },
-  title: {
-    fontSize: 28,
-    fontFamily: 'Inter-Bold',
-    color: colors.textPrimary,
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 16,
-    fontFamily: 'Inter-Regular',
-    color: colors.textSecondary,
   },
   content: {
     flex: 1,
