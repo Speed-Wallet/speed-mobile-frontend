@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated, Platform } from 'react-native';
 import { Eye, EyeOff, RotateCcw, ArrowRight } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import colors from '@/constants/colors';
@@ -26,10 +26,33 @@ const SeedPhraseVerificationStep: React.FC<SeedPhraseVerificationStepProps> = ({
   const [isVisible, setIsVisible] = useState(false);
   const [buttonState, setButtonState] = useState<'disabled' | 'try-again' | 'continue'>('disabled');
   const shakeAnimationValue = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.95)).current;
+  const translateY = useRef(new Animated.Value(20)).current;
 
   useEffect(() => {
     shuffleWords();
   }, [words]);
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.timing(translateY, {
+        toValue: 0,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
 
   useEffect(() => {
     if (selectedWords.length === words.length) {
@@ -163,32 +186,45 @@ const SeedPhraseVerificationStep: React.FC<SeedPhraseVerificationStepProps> = ({
 
   return (
     <ScreenContainer>
+      {/* Development Back Button */}
+      <BackButton onPress={onBack} style={styles.devBackButton} />
+      
+      {/* Dev Mode Skip Button */}
+      {process.env.EXPO_PUBLIC_APP_ENV === 'development' && (
+        <TouchableOpacity 
+          style={styles.skipButton} 
+          onPress={handleContinue}
+        >
+          <Text style={styles.skipButtonText}>Skip</Text>
+        </TouchableOpacity>
+      )}
+      
       <View style={styles.content}>
-        {/* Header with Back Button */}
-        <View style={styles.header}>
-          <BackButton onPress={onBack} />
-          {/* Dev Mode Skip Button */}
-          {process.env.EXPO_PUBLIC_APP_ENV === 'development' && (
-            <TouchableOpacity 
-              style={styles.skipButton} 
-              onPress={handleContinue}
-            >
-              <Text style={styles.skipButtonText}>Skip</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-        
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           {/* Title and Description */}
-          <View style={styles.titleSection}>
+          <Animated.View
+            style={[
+              styles.titleSection,
+              {
+                opacity: fadeAnim,
+                transform: [{ translateY }],
+              },
+            ]}>
             <Text style={styles.title}>Verify Your Seed Phrase</Text>
             <Text style={styles.description}>
               Tap the words in the correct order to verify you've saved your seed phrase.
             </Text>
-          </View>
+          </Animated.View>
           
           {/* Seed Phrase Box */}
-          <View style={styles.seedPhraseContainer}>
+          <Animated.View
+            style={[
+              styles.seedPhraseContainer,
+              {
+                opacity: fadeAnim,
+                transform: [{ scale: scaleAnim }],
+              },
+            ]}>
             <LinearGradient
               colors={['#1a1a1a', '#1f1f1f']}
               style={styles.seedPhraseBox}>
@@ -233,7 +269,7 @@ const SeedPhraseVerificationStep: React.FC<SeedPhraseVerificationStepProps> = ({
                 {selectedWords.length}/{words.length} words
               </Text>
             </View>
-          </View>
+          </Animated.View>
         </ScrollView>
 
         {/* Sticky Action Button */}
@@ -273,6 +309,12 @@ const SeedPhraseVerificationStep: React.FC<SeedPhraseVerificationStepProps> = ({
 };
 
 const styles = StyleSheet.create({
+  devBackButton: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 50 : 20,
+    left: 20,
+    zIndex: 1000,
+  },
   container: {
     flex: 1,
     backgroundColor: colors.backgroundDark,
@@ -282,19 +324,12 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: 10,
-    paddingBottom: 10,
-  },
   scrollView: {
     flex: 1,
   },
   titleSection: {
-    paddingTop: 20,
-    marginBottom: 32,
+    paddingTop: Platform.OS === 'ios' ? 20 : 40,
+    marginBottom: 24,
   },
   title: {
     fontSize: 28,
@@ -331,6 +366,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 12,
+    height: 44, // Fixed height to prevent expansion
   },
   controlsRow: {
     flexDirection: 'row',
@@ -357,12 +393,15 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   skipButton: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 50 : 20,
+    right: 20,
+    zIndex: 1000,
     backgroundColor: colors.warning,
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 8,
     alignItems: 'center',
-    marginBottom: 16,
   },
   skipButtonText: {
     fontSize: 14,

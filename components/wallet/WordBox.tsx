@@ -52,9 +52,11 @@ const WordBox: React.FC<WordBoxProps> = ({
       ]}>
         {isVisible ? word : '••••'}
       </Text>
-      {isSelected && displayNumber && (
-        <Text style={styles.verificationWordNumber}>{displayNumber}</Text>
-      )}
+      <View style={styles.verificationWordNumberContainer}>
+        {isSelected && displayNumber && (
+          <Text style={styles.verificationWordNumber}>{displayNumber}</Text>
+        )}
+      </View>
     </TouchableOpacity>
   );
 };
@@ -95,6 +97,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.05)',
+    minHeight: 44, // Fixed height to prevent expansion
   },
   verificationWordItemSelected: {
     backgroundColor: colors.primary + '20',
@@ -105,9 +108,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     color: '#ffffff',
+    flex: 1, // Take up available space
   },
   verificationWordTextSelected: {
     color: colors.primary,
+  },
+  verificationWordNumberContainer: {
+    width: 24, // Fixed width to prevent layout shifts
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   verificationWordNumber: {
     fontSize: 12,

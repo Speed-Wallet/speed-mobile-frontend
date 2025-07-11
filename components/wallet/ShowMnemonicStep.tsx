@@ -52,6 +52,16 @@ const ShowMnemonicStep: React.FC<ShowMnemonicStepProps> = ({
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Dev Mode Skip Button */}
+      {process.env.EXPO_PUBLIC_APP_ENV === 'development' && (
+        <TouchableOpacity 
+          style={styles.skipButton} 
+          onPress={onNext}
+        >
+          <Text style={styles.skipButtonText}>Skip</Text>
+        </TouchableOpacity>
+      )}
+      
       <View style={styles.content}>
         {/* Header */}
         <Animated.View
@@ -301,6 +311,22 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#ffffff',
     marginRight: 8,
+  },
+  skipButton: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 50 : 20,
+    right: 20,
+    zIndex: 1000,
+    backgroundColor: '#FFB800',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  skipButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#121212',
   },
 });
 
