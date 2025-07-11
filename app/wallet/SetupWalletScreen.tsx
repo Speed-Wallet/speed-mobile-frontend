@@ -73,12 +73,9 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComp
       
       if (!result.success) {
         // Handle specific error cases
-        if (result.error?.includes('User already exists')) {
-          Alert.alert(
-            "Username Taken", 
-            "This username is already taken. Please choose a different one.",
-            [{ text: 'OK' }]
-          );
+        if (result.error?.includes('User already exists') || result.statusCode === 409) {
+          // Throw error to let the child component handle the visual feedback
+          throw new Error('Username already exists');
         } else {
           Alert.alert("Error", result.error || "Failed to create user. Please try again.");
         }
@@ -91,7 +88,14 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComp
       setStep(5); // Move to PIN creation
     } catch (error) {
       console.error('Error in handleUsernameNext:', error);
-      Alert.alert("Error", "Failed to create user. Please check your connection and try again.");
+      
+      // Only show alert for unknown errors, not for username taken
+      if (error instanceof Error && error.message !== 'Username already exists') {
+        Alert.alert("Error", "Failed to create user. Please check your connection and try again.");
+      }
+      
+      // Re-throw the error so the child component can handle the visual feedback
+      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -225,6 +229,7 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComp
           pin={pin}
           onPinChange={setPin}
           onNext={handleSetPin}
+          onBack={() => setStep(4)}
           isLoading={isLoading}
         />
       )}

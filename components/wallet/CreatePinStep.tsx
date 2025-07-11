@@ -4,11 +4,13 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowRight, Lock, Shield } from 'lucide-react-native';
 import PinInputCard from './PinInputCard';
 import ScreenContainer from '@/components/ScreenContainer';
+import BackButton from '@/components/BackButton';
 
 interface CreatePinStepProps {
   pin: string;
   onPinChange: (pin: string) => void;
   onNext: () => void;
+  onBack?: () => void;
   isLoading: boolean;
 }
 
@@ -16,6 +18,7 @@ const CreatePinStep: React.FC<CreatePinStepProps> = ({
   pin, 
   onPinChange, 
   onNext, 
+  onBack,
   isLoading 
 }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -44,6 +47,11 @@ const CreatePinStep: React.FC<CreatePinStepProps> = ({
 
   return (
     <ScreenContainer>
+      {/* Development Back Button */}
+      {process.env.EXPO_PUBLIC_APP_ENV === 'development' && onBack && (
+        <BackButton onPress={onBack} />
+      )}
+      
       <View style={styles.content}>
         {/* Header */}
         <Animated.View

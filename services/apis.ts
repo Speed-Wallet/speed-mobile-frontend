@@ -241,6 +241,7 @@ export async function createUser(username: string, publicKey: string): Promise<{
   success: boolean;
   data?: any;
   error?: string;
+  statusCode?: number;
 }> {
   try {
     const response = await fetch(`${BASE_BACKEND_URL}/addUser`, {
@@ -259,7 +260,8 @@ export async function createUser(username: string, publicKey: string): Promise<{
       const errorData = await response.json().catch(() => ({}));
       return {
         success: false,
-        error: errorData.message || `HTTP ${response.status}: ${response.statusText}`
+        error: errorData.message || `HTTP ${response.status}: ${response.statusText}`,
+        statusCode: response.status
       };
     }
 
