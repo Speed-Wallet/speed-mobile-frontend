@@ -3,17 +3,15 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   Dimensions,
   TouchableOpacity,
   TextInput,
   Animated as RNAnimated,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { CreditCard as Edit2, Check, Clock, CircleAlert as AlertCircle, Mail, MapPin, CreditCard, FileText, Video, Shield, ChevronDown, Calendar, Save, Lock } from 'lucide-react-native';
-import BackButton from '@/components/BackButton';
+import SettingsScreen from '@/components/SettingsScreen';
 import Toast from '@/components/Toast';
 import Animated, {
   useSharedValue,
@@ -645,19 +643,51 @@ export default function AccountScreen() {
 
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View style={styles.header}>
-          <BackButton onPress={handleBackPress} />
-          <Text style={styles.headerTitle}>Account Info</Text>
-          <TouchableOpacity style={styles.editButton}>
-            <Edit2 size={20} color="#3b82f6" />
-          </TouchableOpacity>
-        </View>
+    <SettingsScreen 
+      title="Account Info" 
+      onBack={handleBackPress}
+      rightElement={
+        <TouchableOpacity style={styles.editButton}>
+          <Edit2 size={20} color="#3b82f6" />
+        </TouchableOpacity>
+      }
+      bottomElement={
+        <>
+          {/* Save Button */}
+          <View style={styles.saveButtonContainer}>
+            <RNAnimated.View
+              style={[
+                { transform: [{ translateX: buttonShakeAnimationValue }] }
+              ]}
+            >
+              <TouchableOpacity
+                style={[
+                  styles.saveButton,
+                  (!isFormValid() || isSaving) && styles.saveButtonDisabled
+                ]}
+                onPress={handleSaveButtonPress}
+                disabled={isSaving}
+              >
+                <Save size={20} color="#ffffff" />
+                <Text style={styles.saveButtonText}>
+                  {isSaving ? 'Saving...' : 'Save Details'}
+                </Text>
+              </TouchableOpacity>
+            </RNAnimated.View>
+          </View>
 
-        {/* Verification Level Section */}
-        <View style={styles.section}>
+          {/* Toast */}
+          <Toast
+            message={toastMessage}
+            visible={showToast}
+            onHide={() => setShowToast(false)}
+            type={toastType}
+          />
+        </>
+      }
+    >
+      {/* Verification Level Section */}
+      <View style={styles.section}>
           <Text style={styles.sectionLabel}>Verification Level</Text>
           
           <GestureDetector gesture={panGesture}>
@@ -1010,64 +1040,11 @@ export default function AccountScreen() {
             {verificationLevels[currentLevel]?.inputs.map(renderInputField)}
           </View>
         </View>
-      </ScrollView>
-
-      {/* Save Button */}
-      <View style={styles.saveButtonContainer}>
-        <RNAnimated.View
-          style={[
-            { transform: [{ translateX: buttonShakeAnimationValue }] }
-          ]}
-        >
-          <TouchableOpacity
-            style={[
-              styles.saveButton,
-              (!isFormValid() || isSaving) && styles.saveButtonDisabled
-            ]}
-            onPress={handleSaveButtonPress}
-            disabled={isSaving}
-          >
-            <Save size={20} color="#ffffff" />
-            <Text style={styles.saveButtonText}>
-              {isSaving ? 'Saving...' : 'Save Details'}
-            </Text>
-          </TouchableOpacity>
-        </RNAnimated.View>
-      </View>
-
-      {/* Toast */}
-      <Toast
-        message={toastMessage}
-        visible={showToast}
-        onHide={() => setShowToast(false)}
-        type={toastType}
-      />
-    </SafeAreaView>
+    </SettingsScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#1a1a1a',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#404040',
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#ffffff',
-  },
   editButton: {
     padding: 8,
   },
