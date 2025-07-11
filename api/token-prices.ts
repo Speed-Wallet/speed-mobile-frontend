@@ -3,13 +3,19 @@
 
 export default async function handler(req: any, res: any) {
   try {
-    // Call your backend token prices Lambda
-    const backendUrl = process.env.TOKEN_PRICES_LAMBDA_URL || 'https://your-api-gateway-url/dev/token-prices';
+    // Get the backend URL from environment variables
+    const backendUrl = process.env.EXPO_PUBLIC_BASE_BACKEND_URL;
     
-    const response = await fetch(backendUrl, {
+    if (!backendUrl) {
+      throw new Error('Backend URL not configured - please set EXPO_PUBLIC_BASE_BACKEND_URL');
+    }
+    
+    const response = await fetch(`${backendUrl}/api/prices/tokens`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        // Add Authorization header if needed
+        ...(req.headers.authorization && { 'Authorization': req.headers.authorization })
       },
     });
 

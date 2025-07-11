@@ -1,6 +1,7 @@
 // Import PersonalInfo type from storage
 import type { PersonalInfo } from '@/utils/storage';
 import type { GetCardData, PaymentCard, CardStatus } from '@/data/types';
+import { AuthService } from './authService';
 
 // Backend API service functions
 const BASE_BACKEND_URL = process.env.EXPO_PUBLIC_BASE_BACKEND_URL;
@@ -48,10 +49,13 @@ export async function getWalletAddress(): Promise<GetWalletAddressResponse> {
     console.log('🌐 Calling URL:', url);
     console.log('🔧 BASE_BACKEND_URL:', BASE_BACKEND_URL);
     
+    const authHeaders = await AuthService.getAuthHeader();
+    
     const response = await fetch(url, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        ...authHeaders,
       },
     });
 
@@ -72,10 +76,13 @@ export async function getWalletAddress(): Promise<GetWalletAddressResponse> {
  */
 export async function registerUSDTTransaction(transactionData: USDTTransactionRequest): Promise<RegisterTransactionResponse> {
   try {
+    const authHeaders = await AuthService.getAuthHeader();
+    
     const response = await fetch(`${BASE_BACKEND_URL}/api/cashwyre/register-usdt-transaction`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...authHeaders,
       },
       body: JSON.stringify(transactionData),
     });
@@ -125,10 +132,13 @@ export async function getCard(cardCode: string): Promise<{
 }> {
   console.log("cardCode", cardCode)
   try {
+    const authHeaders = await AuthService.getAuthHeader();
+    
     const response = await fetch(`${BASE_BACKEND_URL}/api/cashwyre/card-details`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...authHeaders,
       },
       body: JSON.stringify({ cardCode }),
     });
@@ -154,10 +164,13 @@ export async function getCards(customerCode: string): Promise<{
   error?: string;
 }> {
   try {
+    const authHeaders = await AuthService.getAuthHeader();
+    
     const response = await fetch(`${BASE_BACKEND_URL}/api/cashwyre/cards`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...authHeaders,
       },
       body: JSON.stringify({ customerCode }),
     });
@@ -221,7 +234,48 @@ export async function simulateCardCreated(email: string, cardCode?: string): Pro
   }
 }
 
+/**
+ * Create a new user in the backend
+ */
+export async function createUser(username: string, publicKey: string): Promise<{
+  success: boolean;
+  data?: any;
+  error?: string;
+}> {
+  try {
+    const response = await fetch(`${BASE_BACKEND_URL}/addUser`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        username,
+        publicKey,
+        balance: 0
+      }),
+    });
 
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      return {
+        success: false,
+        error: errorData.message || `HTTP ${response.status}: ${response.statusText}`
+      };
+    }
+
+    const data = await response.json();
+    return {
+      success: true,
+      data
+    };
+  } catch (error) {
+    console.error('Error creating user:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to create user'
+    };
+  }
+}
 
 // Backend API Calls
 export async function registerUser(name: string, username: string) {
@@ -246,25 +300,6 @@ export async function registerDebit(
         },
         body: JSON.stringify({ txSignature, blockhash, lastValidBlockHeight })
     });
-}
-
-export async function registerSwap(
-    signature: string,
-    blockHash: string, 
-    lastValidBlockHeight: number
-) {
-    try {
-        await fetch(`${BASE_BACKEND_URL}registerSwap`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ signature, blockHash, lastValidBlockHeight })
-        });
-    } catch (err) {
-        // todo 
-        // retry logic
-    }
 }
 
 /**

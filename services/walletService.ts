@@ -30,9 +30,10 @@ import {
 } from '@solana/spl-token';
 import CryptoJS from 'crypto-js';
 import { useEffect, useState } from 'react';
-import { registerSwap } from './apis';
+import { registerSwap } from './transactionApi';
 import { generateMnemonic, mnemonicToSeed, validateMnemonic } from '@/utils/bip39';
 import { createKeypairFromMnemonic, getSolanaDerivationPath, getNextAccountIndex } from '@/utils/derivation';
+import { AuthService } from './authService';
 
 export const CONNECTION = new Connection(`https://mainnet.helius-rpc.com/?api-key=${process.env.EXPO_PUBLIC_HELIUS_API_KEY}`);
 const JUPITER_API_URL = 'https://lite-api.jup.ag/swap/v1/';
@@ -52,6 +53,14 @@ export let WALLET: Keypair | null = null; // Initialize WALLET to null
 // Store the app PIN temporarily in memory for seamless wallet switching
 // This is cleared when the app is closed or locked
 let TEMP_APP_PIN: string | null = null;
+
+// Helper function to set up AuthService with current wallet
+const setupAuthService = () => {
+  AuthService.setWalletProvider(() => WALLET);
+};
+
+// Initialize AuthService wallet provider
+setupAuthService();
 
 interface SolanaWallet {
   mnemonic: string;

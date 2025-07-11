@@ -14,6 +14,7 @@ import { useTokenBalanceStore } from '@/stores/tokenBalanceStore';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { AuthService } from '@/services/authService';
 import 'react-native-get-random-values';
 
 
@@ -37,6 +38,9 @@ export default function RootLayout() {
   useEffect(() => {
     async function checkWalletStatus() {
       try {
+        // Initialize auth service
+        await AuthService.initialize();
+        
         const walletInfo = await checkStoredWallet();
         const hasWallet = walletInfo.isEncrypted && walletInfo.publicKey;
         setHasExistingWallet(!!hasWallet);
@@ -117,7 +121,15 @@ export default function RootLayout() {
     return (
       <SafeAreaProvider>
         <GestureHandlerRootView style={{ flex: 1 }}>
-          <SetupWalletScreen onWalletSetupComplete={() => setWalletState('unlocked')} />
+          <SetupWalletScreen onWalletSetupComplete={async () => {
+            setWalletState('unlocked');
+            // Trigger authentication after wallet setup
+            try {
+              await AuthService.authenticate();
+            } catch (error) {
+              console.error('Authentication failed after wallet setup:', error);
+            }
+          }} />
         </GestureHandlerRootView>
       </SafeAreaProvider>
     );
@@ -127,7 +139,15 @@ export default function RootLayout() {
     return (
       <SafeAreaProvider>
         <GestureHandlerRootView style={{ flex: 1 }}>
-          <EnterPinScreen onWalletUnlocked={() => setWalletState('unlocked')} publicKey={storedPublicKey} />
+          <EnterPinScreen onWalletUnlocked={async () => {
+            setWalletState('unlocked');
+            // Trigger authentication after wallet unlock
+            try {
+              await AuthService.authenticate();
+            } catch (error) {
+              console.error('Authentication failed after wallet unlock:', error);
+            }
+          }} publicKey={storedPublicKey} />
         </GestureHandlerRootView>
       </SafeAreaProvider>
     );

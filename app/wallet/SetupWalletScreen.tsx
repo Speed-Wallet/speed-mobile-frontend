@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { View, ActivityIndicator, Alert, Modal, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { generateInitialSolanaWallet, saveWalletToList, createAppPin, importWalletFromMnemonic } from '@/services/walletService';
+import { createUser } from '@/services/apis';
+import { AuthService } from '@/services/authService';
 import colors from '@/constants/colors';
 import CreateWalletIntroStep from '@/components/wallet/CreateWalletIntroStep';
 import ShowMnemonicStep from '@/components/wallet/ShowMnemonicStep';
@@ -58,9 +60,41 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComp
     setStep(4); // Move to username creation
   };
 
-  const handleUsernameNext = (selectedUsername: string) => {
-    setUsername(selectedUsername);
-    setStep(5); // Move to PIN creation
+  const handleUsernameNext = async (selectedUsername: string) => {
+    if (!publicKey) {
+      Alert.alert("Error", "Public key not available. Please try again.");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Create user in backend
+      const result = await createUser(selectedUsername, publicKey);
+      
+      if (!result.success) {
+        // Handle specific error cases
+        if (result.error?.includes('User already exists')) {
+          Alert.alert(
+            "Username Taken", 
+            "This username is already taken. Please choose a different one.",
+            [{ text: 'OK' }]
+          );
+        } else {
+          Alert.alert("Error", result.error || "Failed to create user. Please try again.");
+        }
+        return;
+      }
+
+      // If successful, store username locally and proceed
+      await AuthService.storeUsername(selectedUsername);
+      setUsername(selectedUsername);
+      setStep(5); // Move to PIN creation
+    } catch (error) {
+      console.error('Error in handleUsernameNext:', error);
+      Alert.alert("Error", "Failed to create user. Please check your connection and try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSetPin = () => {

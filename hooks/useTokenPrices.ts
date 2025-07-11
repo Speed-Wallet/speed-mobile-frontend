@@ -1,24 +1,17 @@
 import { useQuery } from '@tanstack/react-query';
+import { AuthService } from '@/services/authService';
 
 export interface TokenPrice {
   id: string;
   price: number;
 }
 
-// Batch fetch prices for multiple tokens - more efficient and prevents hooks in loops
-export const useTokenPrices = (coingeckoIds: string[] = []): {
-  prices: Record<string, number>;
-  isLoading: boolean;
-  error: Error | null;
-} => {
-  // Filter out any undefined or empty IDs
-  const validIds = coingeckoIds.filter(Boolean);
-  
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['tokenPrices', validIds.sort().join(',')],
+// Global query that fetches ALL token prices once
+const useAllTokenPrices = () => {
+  return useQuery({
+    queryKey: ['allTokenPrices'], // Single cache key for all tokens
     queryFn: async () => {
-      if (!validIds.length) return {};
-      
+      console.log("Fetching all token prices from backend");
       try {
         // Use your backend endpoint which batches all token prices
         const baseUrl = process.env.EXPO_PUBLIC_BASE_BACKEND_URL;
@@ -26,7 +19,17 @@ export const useTokenPrices = (coingeckoIds: string[] = []): {
           throw new Error('Backend URL not configured');
         }
         
-        const response = await fetch(`${baseUrl}/token-prices`);
+        // Get authentication headers
+        const authHeaders = await AuthService.getAuthHeader();
+        console.log('Using auth headers:', authHeaders);
+        
+        const response = await fetch(`${baseUrl}/api/prices/tokens`, {
+          headers: {
+            'Content-Type': 'application/json',
+            ...authHeaders,
+          },
+        });
+        
         if (!response.ok) {
           throw new Error(`API returned ${response.status}`);
         }
@@ -45,36 +48,38 @@ export const useTokenPrices = (coingeckoIds: string[] = []): {
         
         return prices;
       } catch (apiError) {
-        console.warn('Backend API not available, falling back to CoinGecko direct:', apiError);
-        
-        // Fallback to CoinGecko direct (for development)
-        const ids = validIds.join(',');
-        const url = `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`;
-        
-        const response = await fetch(url);
-        if (!response.ok) {
-          throw new Error('Failed to fetch token prices from CoinGecko');
-        }
-        
-        const data = await response.json();
-        
-        // Transform CoinGecko response to our format
-        const prices: Record<string, number> = {};
-        Object.entries(data).forEach(([id, priceData]: [string, any]) => {
-          if (priceData?.usd) {
-            prices[id] = priceData.usd;
-          }
-        });
-        
-        return prices;
+        console.error('Backend API error:', apiError);
+        throw apiError;
       }
     },
-    enabled: validIds.length > 0,
     refetchInterval: 30 * 60 * 1000, // 30 minutes
   });
+};
+
+// Batch fetch prices for multiple tokens - now just filters from global cache
+export const useTokenPrices = (coingeckoIds: string[] = []): {
+  prices: Record<string, number>;
+  isLoading: boolean;
+  error: Error | null;
+} => {
+  // Filter out any undefined or empty IDs
+  const validIds = coingeckoIds.filter(Boolean);
+  
+  // Use the global query that fetches all prices
+  const { data: allPrices, isLoading, error } = useAllTokenPrices();
+  
+  // Filter the results to only include requested tokens
+  const filteredPrices: Record<string, number> = {};
+  if (allPrices && validIds.length > 0) {
+    validIds.forEach(id => {
+      if (allPrices[id] !== undefined) {
+        filteredPrices[id] = allPrices[id];
+      }
+    });
+  }
 
   return {
-    prices: data || {},
+    prices: validIds.length > 0 ? filteredPrices : (allPrices || {}),
     isLoading,
     error
   };
