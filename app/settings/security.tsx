@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ScrollView, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import colors from '@/constants/colors';
-import BackButton from '@/components/BackButton';
+import SettingsScreen from '@/components/SettingsScreen';
 import { unlockWalletWithPin } from '@/services/walletService';
 import { Eye, EyeOff, Copy } from 'lucide-react-native';
 import { setStringAsync } from 'expo-clipboard';
@@ -57,14 +56,8 @@ export default function SecuritySettingsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <BackButton />
-        <Text style={styles.headerTitle}>Security</Text>
-        <View style={{ width: 40 }} />{/* Spacer */}
-      </View>
-
-      <ScrollView contentContainerStyle={styles.content}>
+    <SettingsScreen title="Security">
+      <View style={styles.content}>
         <Text style={styles.sectionTitle}>General Security</Text>
         <TouchableOpacity style={styles.menuItem} onPress={() => Alert.alert("Navigate", "Navigate to 2FA settings")}>
           <Text style={styles.menuItemText}>Two-Factor Authentication (2FA)</Text>
@@ -133,30 +126,12 @@ export default function SecuritySettingsScreen() {
             </View>
           </View>
         )}
-
-      </ScrollView>
-    </SafeAreaView>
+      </View>
+    </SettingsScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.backgroundDark,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 10, // Adjusted for status bar
-    paddingBottom: 16,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontFamily: 'Inter-SemiBold',
-    color: colors.textPrimary,
-  },
   content: {
     paddingHorizontal: 16,
     paddingBottom: 30,

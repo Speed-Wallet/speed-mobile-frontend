@@ -1,6 +1,5 @@
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import colors from '@/constants/colors';
 import BackButton from './BackButton';
 
@@ -20,30 +19,25 @@ export default function ScreenHeader({
   style 
 }: ScreenHeaderProps) {
   return (
-    <SafeAreaView edges={['top']} style={styles.safeArea}>
-      <View style={[styles.header, style]}>
-        {showBackButton ? (
-          <BackButton onPress={onBack} />
-        ) : (
-          <View style={styles.placeholder} />
-        )}
-        
-        {title && <Text style={styles.title}>{title}</Text>}
-        
-        {rightElement ? (
-          <View style={styles.rightElement}>{rightElement}</View>
-        ) : (
-          <View style={styles.placeholder} />
-        )}
-      </View>
-    </SafeAreaView>
+    <View style={[styles.header, style]}>
+      {showBackButton ? (
+        <BackButton onPress={onBack} />
+      ) : (
+        <View style={styles.placeholder} />
+      )}
+      
+      {title && <Text style={styles.title}>{title}</Text>}
+      
+      {rightElement ? (
+        <View style={styles.rightElement}>{rightElement}</View>
+      ) : (
+        <View style={styles.placeholder} />
+      )}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    backgroundColor: colors.backgroundDark,
-  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',

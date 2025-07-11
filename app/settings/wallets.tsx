@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, TextInput } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Modal, TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Plus, Key, Check, Copy, RefreshCw, Trash2, X } from 'lucide-react-native';
 import colors from '@/constants/colors';
-import BackButton from '@/components/BackButton';
+import SettingsScreen from '@/components/SettingsScreen';
 import { 
   generateSolanaWalletFromMaster,
   getAllStoredWallets,
@@ -300,14 +299,8 @@ export default function WalletsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <BackButton />
-        <Text style={styles.headerTitle}>Wallets</Text>
-        <View style={{ width: 40 }} />
-      </View>
-
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+    <SettingsScreen title="Wallets">
+      <View style={styles.content}>
         {/* Current Wallets */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Your Wallets</Text>
@@ -406,7 +399,7 @@ export default function WalletsScreen() {
             </View>
           </TouchableOpacity>
         </View>
-      </ScrollView>
+      </View>
 
       {/* Create/Import Modal */}
       <Modal
@@ -449,27 +442,11 @@ export default function WalletsScreen() {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </SettingsScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.backgroundDark,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontFamily: 'Inter-SemiBold',
-    color: colors.textPrimary,
-  },
   content: {
     flex: 1,
     paddingHorizontal: 16,
