@@ -83,7 +83,7 @@ const ConfirmPinStep: React.FC<ConfirmPinStepProps> = ({
     <ScreenContainer>
       {/* Development Back Button */}
       {process.env.EXPO_PUBLIC_APP_ENV === 'development' && (
-        <BackButton onPress={onBack} />
+        <BackButton onPress={onBack} style={styles.devBackButton} />
       )}
       
       <View style={styles.content}>
@@ -230,6 +230,12 @@ const ConfirmPinStep: React.FC<ConfirmPinStepProps> = ({
 };
 
 const styles = StyleSheet.create({
+  devBackButton: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 50 : 20,
+    left: 20,
+    zIndex: 1000,
+  },
   container: {
     flex: 1,
     backgroundColor: '#121212',
