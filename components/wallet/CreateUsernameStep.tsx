@@ -178,6 +178,8 @@ const styles = StyleSheet.create({
     top: Platform.OS === 'ios' ? 50 : 20,
     left: 20,
     zIndex: 1000,
+    backgroundColor: '#FFB800',
+    borderRadius: 20,
   },
   content: {
     flex: 1,
