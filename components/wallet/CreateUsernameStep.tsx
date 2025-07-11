@@ -7,11 +7,10 @@ import ScreenContainer from '@/components/ScreenContainer';
 
 interface CreateUsernameStepProps {
   onNext: (username: string) => void;
-  onBack: () => void;
   isLoading?: boolean;
 }
 
-export default function CreateUsernameStep({ onNext, onBack, isLoading = false }: CreateUsernameStepProps) {
+export default function CreateUsernameStep({ onNext, isLoading = false }: CreateUsernameStepProps) {
   const [username, setUsername] = useState('');
   const [isValid, setIsValid] = useState(false);
   const [error, setError] = useState('');
@@ -51,11 +50,6 @@ export default function CreateUsernameStep({ onNext, onBack, isLoading = false }
 
   return (
     <ScreenContainer>
-      <ScreenHeader 
-        title="Username"
-        onBack={onBack}
-      />
-      
       <KeyboardAvoidingView 
         style={styles.content} 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

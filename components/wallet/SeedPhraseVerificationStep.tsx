@@ -1,9 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import { Eye, EyeOff, RotateCcw } from 'lucide-react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated } from 'react-native';
+import { Eye, EyeOff, RotateCcw, ArrowRight } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import colors from '@/constants/colors';
-import ScreenHeader from '@/components/ScreenHeader';
 import ScreenContainer from '@/components/ScreenContainer';
+import BackButton from '@/components/BackButton';
+import WordBox from '@/components/wallet/WordBox';
+import { triggerShake } from '@/utils/animations';
 
 interface SeedPhraseVerificationStepProps {
   words: string[];
@@ -22,6 +25,7 @@ const SeedPhraseVerificationStep: React.FC<SeedPhraseVerificationStepProps> = ({
   const [selectedWords, setSelectedWords] = useState<string[]>([]);
   const [isVisible, setIsVisible] = useState(false);
   const [buttonState, setButtonState] = useState<'disabled' | 'try-again' | 'continue'>('disabled');
+  const shakeAnimationValue = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     shuffleWords();
@@ -33,7 +37,13 @@ const SeedPhraseVerificationStep: React.FC<SeedPhraseVerificationStepProps> = ({
       const correct = selectedWords.every((selectedWord, index) => 
         selectedWord === words[index]
       );
-      setButtonState(correct ? 'continue' : 'try-again');
+      if (correct) {
+        setButtonState('continue');
+      } else {
+        setButtonState('try-again');
+        // Trigger shake animation when user completes all words but gets them wrong
+        triggerShake(shakeAnimationValue);
+      }
     } else {
       setButtonState('disabled');
     }
@@ -92,24 +102,16 @@ const SeedPhraseVerificationStep: React.FC<SeedPhraseVerificationStepProps> = ({
             const displayNumber = getWordDisplayNumber(word);
             
             return (
-              <TouchableOpacity
+              <WordBox
                 key={`${word}-${i + index}`}
-                style={[
-                  styles.wordItem,
-                  isSelected && styles.wordItemSelected
-                ]}
-                onPress={() => handleWordClick(word)}
-              >
-                <Text style={[
-                  styles.wordText,
-                  isSelected && styles.wordTextSelected
-                ]}>
-                  {isVisible ? word : '●●●●●'}
-                </Text>
-                {isSelected && displayNumber && (
-                  <Text style={styles.wordNumber}>{displayNumber}</Text>
-                )}
-              </TouchableOpacity>
+                word={word}
+                index={i + index}
+                isVisible={isVisible}
+                isSelected={isSelected}
+                displayNumber={displayNumber}
+                onPress={handleWordClick}
+                variant="verification"
+              />
             );
           })}
         </View>
@@ -159,117 +161,113 @@ const SeedPhraseVerificationStep: React.FC<SeedPhraseVerificationStepProps> = ({
     }
   };
 
-  const headerRightElement = (
-    <View style={styles.headerActions}>
-      <TouchableOpacity 
-        style={styles.iconButton} 
-        onPress={() => setIsVisible(!isVisible)}
-      >
-        {isVisible ? (
-          <EyeOff size={20} color={colors.textSecondary} />
-        ) : (
-          <Eye size={20} color={colors.textSecondary} />
-        )}
-      </TouchableOpacity>
-      
-      <TouchableOpacity style={styles.iconButton} onPress={shuffleWords}>
-        <RotateCcw size={20} color={colors.textSecondary} />
-      </TouchableOpacity>
-      
-      {/* Dev Mode Skip Button */}
-      {process.env.EXPO_PUBLIC_APP_ENV === 'development' && (
-        <TouchableOpacity 
-          style={styles.skipButton} 
-          onPress={handleContinue}
-        >
-          <Text style={styles.skipButtonText}>Skip</Text>
-        </TouchableOpacity>
-      )}
-    </View>
-  );
-
   return (
     <ScreenContainer>
-      <ScreenHeader 
-        title="Verify Seed Phrase"
-        onBack={onBack}
-        rightElement={headerRightElement}
-      />
-      
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Title and Description */}
-        <View style={styles.titleSection}>
-          <Text style={styles.title}>Verify Your Seed Phrase</Text>
-          <Text style={styles.description}>
-            Tap the words in the correct order to verify you've saved your seed phrase.
-          </Text>
+      <View style={styles.content}>
+        {/* Header with Back Button */}
+        <View style={styles.header}>
+          <BackButton onPress={onBack} />
+          {/* Dev Mode Skip Button */}
+          {process.env.EXPO_PUBLIC_APP_ENV === 'development' && (
+            <TouchableOpacity 
+              style={styles.skipButton} 
+              onPress={handleContinue}
+            >
+              <Text style={styles.skipButtonText}>Skip</Text>
+            </TouchableOpacity>
+          )}
         </View>
-
-        {/* Seed Phrase Box */}
-        <View style={styles.seedPhraseContainer}>
-          <Text style={styles.seedPhraseTitle}>Your Seed Phrase</Text>
-          <View style={styles.seedPhraseBox}>
-            {renderWordGrid()}
+        
+        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+          {/* Title and Description */}
+          <View style={styles.titleSection}>
+            <Text style={styles.title}>Verify Your Seed Phrase</Text>
+            <Text style={styles.description}>
+              Tap the words in the correct order to verify you've saved your seed phrase.
+            </Text>
           </View>
           
-          {/* Controls Row */}
-          <View style={styles.controlsRow}>
-            <TouchableOpacity
-              style={[
-                styles.backspaceButton,
-                selectedWords.length === 0 && styles.backspaceButtonDisabled
-              ]}
-              onPress={handleBackspace}
-              disabled={selectedWords.length === 0}
-            >
-              <Text style={[
-                styles.backspaceButtonText,
-                selectedWords.length === 0 && styles.backspaceButtonTextDisabled
-              ]}>
-                ← Backspace
-              </Text>
-            </TouchableOpacity>
+          {/* Seed Phrase Box */}
+          <View style={styles.seedPhraseContainer}>
+            <LinearGradient
+              colors={['#1a1a1a', '#1f1f1f']}
+              style={styles.seedPhraseBox}>
+              <View style={styles.seedPhraseHeader}>
+                <TouchableOpacity style={styles.iconButton} onPress={shuffleWords}>
+                  <RotateCcw size={20} color="#9ca3af" />
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={styles.iconButton} 
+                  onPress={() => setIsVisible(!isVisible)}
+                >
+                  {isVisible ? (
+                    <EyeOff size={20} color="#9ca3af" />
+                  ) : (
+                    <Eye size={20} color="#9ca3af" />
+                  )}
+                </TouchableOpacity>
+              </View>
+              {renderWordGrid()}
+            </LinearGradient>
             
-            <Text style={styles.wordCounter}>
-              {selectedWords.length}/{words.length} words
-            </Text>
-          </View>
-        </View>
-
-        {/* Word Bank */}
-        <View style={styles.wordBankContainer}>
-          <Text style={styles.wordBankTitle}>Tap words in correct order</Text>
-          <View style={styles.wordBank}>
-            {shuffledWords.map((word, index) => (
+            {/* Controls Row */}
+            <View style={styles.controlsRow}>
               <TouchableOpacity
-                key={word}
                 style={[
-                  styles.wordBankItem,
-                  isWordSelected(word) && styles.wordBankItemSelected
+                  styles.backspaceButton,
+                  selectedWords.length === 0 && styles.backspaceButtonDisabled
                 ]}
-                onPress={() => handleWordClick(word)}
+                onPress={handleBackspace}
+                disabled={selectedWords.length === 0}
               >
-                <Text style={styles.wordBankItemText}>
-                  {isVisible ? word : '●●●●●'}
+                <Text style={[
+                  styles.backspaceButtonText,
+                  selectedWords.length === 0 && styles.backspaceButtonTextDisabled
+                ]}>
+                  ← Backspace
                 </Text>
               </TouchableOpacity>
-            ))}
+              
+              <Text style={styles.wordCounter}>
+                {selectedWords.length}/{words.length} words
+              </Text>
+            </View>
           </View>
-        </View>
+        </ScrollView>
 
-        {/* Action Button */}
+        {/* Sticky Action Button */}
         <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={getButtonStyle()}
-            onPress={handleButtonPress}
-            disabled={isLoading || buttonState === 'disabled'}
-            activeOpacity={0.8}>
-            <Text style={getButtonTextStyle()}>
-              {getButtonText()}
-            </Text>
-          </TouchableOpacity>
+          <Animated.View
+            style={[
+              styles.animatedButtonWrapper,
+              {
+                transform: [{ translateX: shakeAnimationValue }],
+              },
+            ]}>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={handleButtonPress}
+              disabled={isLoading || buttonState === 'disabled'}
+              activeOpacity={0.8}>
+              <LinearGradient
+                colors={
+                  buttonState === 'disabled' 
+                    ? [colors.backgroundMedium, colors.backgroundMedium]
+                    : buttonState === 'try-again'
+                    ? ['#ff5252', '#e53e3e']
+                    : ['#7c5cff', '#6446fe']
+                }
+                style={styles.buttonGradient}>
+                <Text style={getButtonTextStyle()}>
+                  {getButtonText()}
+                </Text>
+                {buttonState === 'continue' && <ArrowRight size={20} color="#fff" />}
+              </LinearGradient>
+            </TouchableOpacity>
+          </Animated.View>
         </View>
-      </ScrollView>
+      </View>
     </ScreenContainer>
   );
 };
@@ -280,7 +278,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.backgroundDark,
     minHeight: '100%',
   },
-  scrollView: {
+  content: {
     flex: 1,
     paddingHorizontal: 20,
   },
@@ -288,98 +286,51 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 16,
+    paddingTop: 10,
+    paddingBottom: 10,
   },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  backButtonText: {
-    fontSize: 16,
-    fontFamily: 'Inter-Medium',
-    color: colors.textSecondary,
-  },
-  headerActions: {
-    flexDirection: 'row',
-    gap: 16,
-  },
-  iconButton: {
-    padding: 8,
+  scrollView: {
+    flex: 1,
   },
   titleSection: {
+    paddingTop: 20,
     marginBottom: 32,
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontFamily: 'Inter-Bold',
     color: colors.textPrimary,
-    marginBottom: 8,
+    marginBottom: 22,
+    textAlign: 'left',
   },
   description: {
     fontSize: 16,
     fontFamily: 'Inter-Regular',
     color: colors.textSecondary,
-    lineHeight: 24,
+    lineHeight: 22,
+    textAlign: 'left',
   },
   seedPhraseContainer: {
     marginBottom: 32,
   },
-  seedPhraseTitle: {
-    fontSize: 16,
-    fontFamily: 'Inter-SemiBold',
-    color: colors.textPrimary,
+  seedPhraseBox: {
+    borderRadius: 12,
+    padding: 12,
     marginBottom: 16,
   },
-  seedPhraseBox: {
-    backgroundColor: colors.backgroundMedium,
-    borderRadius: 12,
-    padding: 20,
+  seedPhraseHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 16,
-    borderWidth: 1,
-    borderColor: colors.backgroundLight,
+  },
+  iconButton: {
+    padding: 8,
   },
   wordRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 12,
-  },
-  wordItem: {
-    flex: 1,
-    backgroundColor: colors.backgroundLight,
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    marginHorizontal: 4,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderWidth: 1,
-    borderColor: colors.backgroundLight,
-  },
-  wordItemSelected: {
-    backgroundColor: colors.primary + '20',
-    borderColor: colors.primary,
-    borderStyle: 'dashed',
-  },
-  wordText: {
-    fontSize: 14,
-    fontFamily: 'Inter-Medium',
-    color: colors.textPrimary,
-  },
-  wordTextSelected: {
-    color: colors.primary,
-  },
-  wordNumber: {
-    fontSize: 12,
-    fontFamily: 'Inter-SemiBold',
-    color: colors.primary,
-    backgroundColor: colors.primary + '20',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-    minWidth: 20,
-    textAlign: 'center',
   },
   controlsRow: {
     flexDirection: 'row',
@@ -405,45 +356,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Medium',
     color: colors.textSecondary,
   },
-  wordBankContainer: {
-    marginBottom: 32,
-  },
-  wordBankTitle: {
-    fontSize: 16,
-    fontFamily: 'Inter-SemiBold',
-    color: colors.textPrimary,
-    marginBottom: 16,
-  },
-  wordBank: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  wordBankItem: {
-    flexBasis: '30%',
-    backgroundColor: colors.backgroundLight,
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    margin: 4,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.backgroundLight,
-  },
-  wordBankItemSelected: {
-    backgroundColor: colors.primary + '20',
-    borderColor: colors.primary,
-    borderStyle: 'dashed',
-  },
-  wordBankItemText: {
-    fontSize: 14,
-    fontFamily: 'Inter-Medium',
-    color: colors.textPrimary,
-  },
-  buttonContainer: {
-    paddingBottom: 32,
-  },
   skipButton: {
     backgroundColor: colors.warning,
     paddingVertical: 12,
@@ -457,11 +369,27 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-SemiBold',
     color: colors.backgroundDark,
   },
+  buttonContainer: {
+    paddingBottom: 34,
+  },
+  animatedButtonWrapper: {
+    width: '100%',
+  },
   actionButton: {
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 12,
+    height: 54,
+    borderRadius: 27,
     alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  buttonGradient: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    height: '100%',
+    gap: 8,
   },
   actionButtonSuccess: {
     backgroundColor: colors.primary,
@@ -473,7 +401,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.backgroundMedium,
   },
   actionButtonText: {
-    fontSize: 16,
+    fontSize: 17,
     fontFamily: 'Inter-SemiBold',
     color: colors.white,
   },

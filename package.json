@@ -16,6 +16,7 @@
     "@expo-google-fonts/inter": "^0.2.3",
     "@expo/vector-icons": "^14.0.2",
     "@gorhom/bottom-sheet": "^5.1.6",
+    "@noble/ed25519": "^2.3.0",
     "@noble/hashes": "^1.8.0",
     "@react-native-async-storage/async-storage": "^1.23.1",
     "@react-navigation/bottom-tabs": "^7.2.0",

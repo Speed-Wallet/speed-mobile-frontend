@@ -427,7 +427,7 @@ export default function CardsScreen() {
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
-          onPress={() => router.push('/settings')}
+          onPress={() => router.push('/')}
         >
           <ArrowLeft size={24} color="#ffffff" />
         </TouchableOpacity>

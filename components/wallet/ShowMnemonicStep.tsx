@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Animated, SafeAreaView, Platform, Clipboard } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowRight, Copy, Eye, EyeOff, ShieldCheck, AlertTriangle } from 'lucide-react-native';
+import WordBox from './WordBox';
 
 interface ShowMnemonicStepProps {
   mnemonic: string;
@@ -89,6 +90,14 @@ const ShowMnemonicStep: React.FC<ShowMnemonicStepProps> = ({
             style={styles.seedPhraseCard}>
             <View style={styles.seedPhraseHeader}>
               <TouchableOpacity
+                style={[styles.copyButton, copied && styles.copyButtonActive]}
+                onPress={handleCopy}>
+                <Copy size={20} color={copied ? '#7c5cff' : '#9ca3af'} />
+                <Text style={[styles.copyText, copied && styles.copyTextActive]}>
+                  {copied ? 'Copied!' : 'Copy'}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
                 style={styles.visibilityButton}
                 onPress={() => setIsVisible(!isVisible)}>
                 {isVisible ? (
@@ -97,24 +106,17 @@ const ShowMnemonicStep: React.FC<ShowMnemonicStepProps> = ({
                   <Eye size={20} color="#9ca3af" />
                 )}
               </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.copyButton, copied && styles.copyButtonActive]}
-                onPress={handleCopy}>
-                <Copy size={20} color={copied ? '#7c5cff' : '#9ca3af'} />
-                <Text style={[styles.copyText, copied && styles.copyTextActive]}>
-                  {copied ? 'Copied!' : 'Copy'}
-                </Text>
-              </TouchableOpacity>
             </View>
             
             <View style={styles.phraseGrid}>
               {mnemonic.split(' ').map((word, index) => (
-                <View key={index} style={styles.wordContainer}>
-                  <Text style={styles.wordNumber}>{index + 1}</Text>
-                  <Text style={styles.word}>
-                    {isVisible ? word : '•••'}
-                  </Text>
-                </View>
+                <WordBox
+                  key={index}
+                  word={word}
+                  index={index}
+                  isVisible={isVisible}
+                  variant="display"
+                />
               ))}
             </View>
           </LinearGradient>
@@ -246,26 +248,6 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     paddingHorizontal: 2,
-  },
-  wordContainer: {
-    width: '30%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 12,
-  },
-  wordNumber: {
-    color: '#9ca3af',
-    fontSize: 12,
-    marginRight: 8,
-    opacity: 0.7,
-  },
-  word: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '500',
   },
   warningContainer: {
     marginBottom: 24,
