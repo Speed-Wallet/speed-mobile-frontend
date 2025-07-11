@@ -6,7 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import colors from '@/constants/colors';
 import { formatCurrency } from '@/utils/formatters';
 import { getAllTokenInfo, getTokenByAddress } from '@/data/tokens';
-import AmountInput from '@/components/AmountInput'; // Added import
+// import AmountInput from '@/components/AmountInput'; // Commented out since we're using SwapBox now
 import TokenLogo from '@/components/TokenLogo'; // Added import
 import { EnrichedTokenEntry } from '@/data/types';
 import { PLATFORM_FEE_RATE, JupiterQuote, jupiterSwap } from '@/services/walletService';
@@ -26,29 +26,79 @@ let intervalID: NodeJS.Timeout | undefined;
 let platformFee: number;
 let quote: any;
 
-// New TokenSelectorDisplay component
-interface TokenSelectorDisplayProps {
+// New SwapBox component that combines label, token selector, and amount
+interface SwapBoxProps {
   token: EnrichedTokenEntry | null;
-  onPress: () => void;
-  labelText: string; // To differentiate "From" / "To" or pass specific label style if needed
+  onTokenPress: () => void;
+  labelText: string;
+  amount: string;
+  onAmountChange?: (amount: string) => void;
+  isInput?: boolean; // true for input, false for output
+  showBalance?: boolean;
 }
 
-const TokenSelectorDisplay: React.FC<TokenSelectorDisplayProps> = ({ token, onPress, labelText }) => {
+const SwapBox: React.FC<SwapBoxProps> = ({ 
+  token, 
+  onTokenPress, 
+  labelText, 
+  amount, 
+  onAmountChange, 
+  isInput = false,
+  showBalance = false 
+}) => {
+  const { balance: tokenBalance } = useTokenBalance(token?.address);
+  const { price: tokenPrice } = useTokenPrice(token?.extensions.coingeckoId);
+  
+  const usdValue = token && amount && parseFloat(amount) > 0 
+    ? formatCurrency(parseFloat(amount) * (tokenPrice || 0))
+    : '$0';
+
   return (
-    <>
-      <Text style={styles.label}>{labelText}</Text>
-      <TouchableOpacity onPress={onPress} style={styles.tokenSelectorContainer}>
-        {token ? (
-          <View style={styles.tokenDisplay}>
-            <TokenLogo logoURI={token.logoURI} size={24} style={styles.tokenLogo} />
-            <Text style={styles.tokenNameText}>{token.name}</Text>
-          </View>
-        ) : (
-          <Text style={styles.tokenPlaceholderText}>Select Token</Text>
+    <View style={styles.swapBoxContainer}>
+      <View style={styles.swapBoxHeader}>
+        <Text style={styles.swapBoxLabel}>{labelText}</Text>
+        {showBalance && token && (
+          <Text style={styles.balanceText}>
+            {tokenBalance.toFixed(token.decimalsShown)} {token.symbol}
+          </Text>
         )}
-        <ChevronDown color={colors.textSecondary} size={20} />
-      </TouchableOpacity>
-    </>
+      </View>
+      
+      <View style={styles.swapBoxContent}>
+        {/* Left side - Token selector */}
+        <TouchableOpacity onPress={onTokenPress} style={styles.tokenSelectorInBox}>
+          {token ? (
+            <View style={styles.tokenDisplay}>
+              <TokenLogo logoURI={token.logoURI} size={24} style={styles.tokenLogo} />
+              <Text style={styles.tokenSymbolText}>{token.symbol}</Text>
+            </View>
+          ) : (
+            <Text style={styles.tokenPlaceholderText}>Select</Text>
+          )}
+          <ChevronDown color={colors.textSecondary} size={16} />
+        </TouchableOpacity>
+        
+        {/* Right side - Amount input/output */}
+        <View style={styles.amountSection}>
+          {isInput ? (
+            <TextInput
+              style={styles.amountInput}
+              value={amount}
+              onChangeText={onAmountChange}
+              placeholder="0"
+              placeholderTextColor={colors.textSecondary}
+              keyboardType="numeric"
+              textAlign="right"
+            />
+          ) : (
+            <Text style={styles.amountOutput}>
+              {amount || '0'}
+            </Text>
+          )}
+          <Text style={styles.usdValue}>{usdValue}</Text>
+        </View>
+      </View>
+    </View>
   );
 };
 
@@ -287,11 +337,11 @@ export default function TradeScreen() {
         onBack={() => router.push('/' as any)}
       />
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollViewContent}>
-        {/* From Token */}
-        <TokenSelectorDisplay
+        {/* From Token Box */}
+        <SwapBox
           labelText="From"
           token={fromToken}
-          onPress={() => router.push({
+          onTokenPress={() => router.push({
             pathname: '/token/select',
             params: {
               excludeAddress: toToken?.address,
@@ -299,20 +349,24 @@ export default function TradeScreen() {
               returnParam: 'fromToken'
             }
           })}
+          amount={fromAmount}
+          onAmountChange={setFromAmount}
+          isInput={true}
+          showBalance={true}
         />
 
         {/* Swap Button */}
         <View style={styles.swapButtonContainer}>
           <TouchableOpacity style={styles.swapButton} onPress={handleSwapTokens}>
-            <ArrowDownUp color={colors.white} size={20} />
+            <ArrowDownUp color={colors.white} size={16} />
           </TouchableOpacity>
         </View>
 
-        {/* To Token */}
-        <TokenSelectorDisplay
+        {/* To Token Box */}
+        <SwapBox
           labelText="To"
           token={toToken}
-          onPress={() => router.push({
+          onTokenPress={() => router.push({
             pathname: '/token/select',
             params: {
               excludeAddress: fromToken?.address,
@@ -320,49 +374,27 @@ export default function TradeScreen() {
               returnParam: 'toToken'
             }
           })}
+          amount={toAmount}
+          isInput={false}
+          showBalance={false}
         />
 
-        {/* Amount Input */}
-        <AmountInput
+        {/* Comment out the original AmountInput component */}
+        {/* <AmountInput
           address={fromToken?.address}
           amount={fromAmount}
           setAmount={setFromAmount}
-        // selectedPercentage={selectedPercentage} // Pass if using percentage selection
-        // handlePercentageSelect={handlePercentageSelect} // Pass if using percentage selection
-        />
+        /> */}
 
-        {/* You Receive Text - MOVED HERE */}
-        {toToken && (
+        {/* Comment out the "You Receive" text since it's now in the To box */}
+        {/* {toToken && (
           <Text style={[
             styles.receiveAmountText,
-            effectiveToAmountIsZero && { opacity: styles.label.opacity } // Apply label's opacity if zero
+            effectiveToAmountIsZero && { opacity: styles.label.opacity }
           ]}>
             Receive: {receiveAmountDisplay} {toToken.symbol}
           </Text>
-        )}
-
-        {/* Trade Button - Exchange Info Card will be MOVED AFTER this */}
-        <TouchableOpacity
-          style={[
-            styles.tradeExecuteButton, // Apply base styles here
-            isButtonDisabled && styles.buttonOpacityDisabled,
-          ]}
-          onPress={handleTradeAttempt} // Use the new handler
-        // disabled prop is removed to allow onPress to fire for shake animation
-        >
-          <LinearGradient
-            colors={isButtonDisabled ? ['#4a4a4a', '#3a3a3a'] : ['#3B82F6', '#2563EB']}
-            style={styles.buttonGradient}>
-            <Animated.View style={{ transform: [{ translateX: shakeAnimationValue }], flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-              {isButtonDisabled ? (
-                <Lock size={20} color={colors.white} />
-              ) : (
-                <ArrowRightLeft size={20} color={colors.white} />
-              )}
-              <Text style={styles.tradeExecuteButtonText}>Swap Tokens</Text>
-            </Animated.View>
-          </LinearGradient>
-        </TouchableOpacity>
+        )} */}
 
         {/* Exchange Info - MOVED HERE and "You Receive" row removed */}
         {fromToken && toToken && (
@@ -399,6 +431,31 @@ export default function TradeScreen() {
         )}
 
       </ScrollView>
+
+      {/* Trade Button - Now sticky to bottom */}
+      <View style={styles.stickyButtonContainer}>
+        <TouchableOpacity
+          style={[
+            styles.tradeExecuteButton, // Apply base styles here
+            isButtonDisabled && styles.buttonOpacityDisabled,
+          ]}
+          onPress={handleTradeAttempt} // Use the new handler
+        // disabled prop is removed to allow onPress to fire for shake animation
+        >
+          <LinearGradient
+            colors={isButtonDisabled ? ['#4a4a4a', '#3a3a3a'] : ['#3B82F6', '#2563EB']}
+            style={styles.buttonGradient}>
+            <Animated.View style={{ transform: [{ translateX: shakeAnimationValue }], flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+              {isButtonDisabled ? (
+                <Lock size={20} color={colors.white} />
+              ) : (
+                <ArrowRightLeft size={20} color={colors.white} />
+              )}
+              <Text style={styles.tradeExecuteButtonText}>Swap Tokens</Text>
+            </Animated.View>
+          </LinearGradient>
+        </TouchableOpacity>
+      </View>
     </ScreenContainer>
   );
 }
@@ -409,8 +466,77 @@ const styles = StyleSheet.create({
   },
   scrollViewContent: {
     paddingHorizontal: 20,
-    paddingBottom: 30, // Space for the trade button
+    paddingBottom: 100, // Add space for the sticky button
   },
+  // Sticky button container
+  stickyButtonContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: colors.backgroundDark,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    paddingBottom: 34, // Match the SeedPhraseVerificationStep padding
+  },
+  // New SwapBox styles
+  swapBoxContainer: {
+    backgroundColor: colors.backgroundMedium,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 4, // Reduced from 8 to make boxes almost touching
+  },
+  swapBoxHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  swapBoxLabel: {
+    fontSize: 14,
+    fontFamily: 'Inter-Medium',
+    color: colors.textSecondary,
+  },
+  swapBoxContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  tokenSelectorInBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.backgroundLight,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    minWidth: 100,
+  },
+  amountSection: {
+    flex: 1,
+    alignItems: 'flex-end',
+    marginLeft: 12,
+  },
+  amountInput: {
+    fontSize: 24,
+    fontFamily: 'Inter-SemiBold',
+    color: colors.white,
+    textAlign: 'right',
+    minWidth: 80,
+  },
+  amountOutput: {
+    fontSize: 24,
+    fontFamily: 'Inter-SemiBold',
+    color: colors.white,
+    textAlign: 'right',
+    minWidth: 80,
+  },
+  usdValue: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    color: colors.textSecondary,
+    marginTop: 4,
+  },
+  // Keep existing styles
   label: {
     fontSize: 16,
     fontFamily: 'Inter-Medium',
@@ -439,7 +565,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   tokenSymbolText: {
-    fontSize: 18,
+    fontSize: 16,
     fontFamily: 'Inter-SemiBold',
     color: colors.white,
     marginRight: 8,
@@ -450,30 +576,36 @@ const styles = StyleSheet.create({
     color: colors.white, // Changed from colors.textSecondary
   },
   tokenPlaceholderText: {
-    fontSize: 18,
+    fontSize: 16,
     fontFamily: 'Inter-Regular',
     color: colors.textSecondary,
   },
   swapButtonContainer: {
     alignItems: 'center',
-    // marginVertical: 1, // Reduced margin
+    marginVertical: -18, // Increased negative margin to overlap more
+    zIndex: 1, // Ensure button appears above the boxes
   },
-  swapButton: { // Style for LinearGradient
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: colors.backgroundLight, // Slightly lighter than card, or primary color
+  swapButton: {
+    width: 36, // Reduced from 48
+    height: 36, // Reduced from 48
+    borderRadius: 18, // Half of width/height
+    backgroundColor: colors.backgroundLight,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.backgroundMedium,
+    borderWidth: 2, // Increased border width
+    borderColor: colors.backgroundDark, // Use a darker border to make it stand out
+    // Add shadow for better visibility
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5, // Android shadow
   },
   balanceText: {
-    fontSize: 14,
+    fontSize: 12,
     fontFamily: 'Inter-Regular',
     color: colors.textSecondary,
-    textAlign: 'left',
-    marginTop: 4,
+    textAlign: 'right',
   },
   // New style for "You Receive" text
   receiveAmountText: {
@@ -511,7 +643,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginTop: 16, // Adjusted marginTop to bring it closer to the trade button
-    marginBottom: 24,
+    marginBottom: 24, // Space for sticky button
   },
   exchangeInfoRow: {
     flexDirection: 'row',
@@ -541,11 +673,11 @@ const styles = StyleSheet.create({
     opacity: 0.9, // Added or adjust opacity if needed for further greying out
   },
   tradeExecuteButton: {
-    height: 56,
-    borderRadius: 16,
+    height: 54, // Match SeedPhraseVerificationStep height
+    borderRadius: 27, // Match SeedPhraseVerificationStep border radius (fully rounded)
     overflow: 'hidden',
-    // marginBottom: 24, // Removed or adjust if exchangeInfoCard is below
-
+    alignItems: 'center',
+    justifyContent: 'center',
     // iOS Shadow (kept commented as per last file state)
     // shadowColor: '#000',
     // shadowOffset: { width: 0, height: 2 },
@@ -563,11 +695,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 16,
+    width: '100%', // Match SeedPhraseVerificationStep width
+    height: '100%', // Match SeedPhraseVerificationStep height
+    gap: 8, // Match SeedPhraseVerificationStep gap
   },
   tradeExecuteButtonText: {
-    fontSize: 18,
+    fontSize: 17, // Match SeedPhraseVerificationStep font size
     fontFamily: 'Inter-SemiBold',
     color: colors.white,
-    marginLeft: 10,
+    // Remove marginLeft since we're using gap in the gradient container
   },
 });
