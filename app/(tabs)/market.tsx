@@ -8,6 +8,7 @@ import { getAllTokenInfo } from '@/data/tokens';
 import TokenItem from '@/components/TokenItem';
 import { EnrichedTokenEntry } from '@/data/types';
 import ScreenContainer from '@/components/ScreenContainer';
+import TabScreenHeader from '@/components/TabScreenHeader';
 import { useTokenPrices } from '@/hooks/useTokenPrices';
 
 type SortOption = 'price' | 'name' | 'change';
@@ -86,10 +87,10 @@ export default function MarketScreen() {
 
   return (
     <ScreenContainer edges={['top', 'bottom']}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Market</Text>
-        <Text style={styles.subtitle}>Discover and track cryptocurrencies</Text>
-      </View>
+      <TabScreenHeader 
+        title="Market" 
+        subtitle="Discover and track cryptocurrencies" 
+      />
       
       {/* Search Bar */}
       <View style={styles.searchContainer}>
@@ -160,28 +161,14 @@ export default function MarketScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: {
-    paddingHorizontal: 16,
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: 28,
-    fontFamily: 'Inter-Bold',
-    color: colors.textPrimary,
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 16,
-    fontFamily: 'Inter-Regular',
-    color: colors.textSecondary,
-  },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.backgroundMedium,
     borderRadius: 12,
     marginHorizontal: 16,
-    marginVertical: 16,
+    marginTop: 8,
+    marginBottom: 16,
     paddingHorizontal: 12,
     height: 48,
   },
