@@ -198,6 +198,10 @@ const ConfirmPinStep: React.FC<ConfirmPinStepProps> = ({
 
         {/* Action Buttons */}
         <View style={styles.buttonContainer}>
+          <TouchableOpacity style={styles.backTextButton} onPress={onBack}>
+            <Text style={styles.backTextButtonText}>Back to Create PIN</Text>
+          </TouchableOpacity>
+          
           <TouchableOpacity
             style={[styles.continueButton, confirmPin.length < 4 && styles.continueButtonDisabled]}
             activeOpacity={0.8}
@@ -219,10 +223,6 @@ const ConfirmPinStep: React.FC<ConfirmPinStepProps> = ({
               </Animated.View>
             </LinearGradient>
           </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.backButton} onPress={onBack}>
-            <Text style={styles.backButtonText}>Back to Create PIN</Text>
-          </TouchableOpacity>
         </View>
       </View>
     </ScreenContainer>
@@ -235,6 +235,8 @@ const styles = StyleSheet.create({
     top: Platform.OS === 'ios' ? 50 : 20,
     left: 20,
     zIndex: 1000,
+    backgroundColor: '#FFB800',
+    borderRadius: 20,
   },
   container: {
     flex: 1,
@@ -417,11 +419,12 @@ const styles = StyleSheet.create({
   buttonTextDisabled: {
     color: '#9ca3af',
   },
-  backButton: {
+  backTextButton: {
     alignItems: 'center',
     paddingVertical: 12,
+    marginBottom: 16,
   },
-  backButtonText: {
+  backTextButtonText: {
     color: '#7c5cff',
     fontSize: 16,
     fontWeight: '500',
