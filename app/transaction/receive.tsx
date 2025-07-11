@@ -37,7 +37,7 @@ export default function ReceiveScreen() {
   };
 
   return (
-    <ScreenContainer>
+    <ScreenContainer edges={['top', 'bottom']}>
       <ScreenHeader 
         title="Receive Crypto"
         onBack={() => router.push('/' as any)}

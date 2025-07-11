@@ -102,7 +102,7 @@ export default function SendScreen() {
   };
 
   return (
-    <ScreenContainer>
+    <ScreenContainer edges={['top', 'bottom']}>
       <ScreenHeader 
         title="Send Crypto"
         onBack={() => router.push('/' as any)}
