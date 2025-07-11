@@ -3,6 +3,7 @@ export default {
   backgroundDark: '#121212',
   backgroundMedium: '#2A2A2A99',
   backgroundLight: '#2C2C2C',
+  bottomSheetBackground: '#1a1a1a', // Custom dark color for bottom sheet with full opacity
   
   // Text colors
   textPrimary: '#FFFFFF',
