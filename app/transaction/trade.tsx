@@ -281,7 +281,7 @@ export default function TradeScreen() {
 
 
   return (
-    <ScreenContainer>
+    <ScreenContainer edges={['top', 'bottom']}>
       <ScreenHeader 
         title="Swap Tokens"
         onBack={() => router.push('/' as any)}

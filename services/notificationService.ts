@@ -140,7 +140,7 @@ async function handleCardCreationFailedNotification(error: string, eventData?: a
         [
           {
             text: 'Try Again',
-            onPress: () => router.push('/wallet/cards'),
+            onPress: () => router.push('/transaction/cards'),
           },
           {
             text: 'OK',
@@ -201,7 +201,7 @@ export function setupNotificationListeners(onCardsUpdated?: () => void) {
     if (data?.type === 'usdt_received') {
       console.log('💰 USDT received notification tapped');
       // Navigate to cards screen
-      router.push('/wallet/cards');
+      router.push('/transaction/cards');
     } else if (data?.type === 'card_created') {
       console.log('💳 Card created notification tapped');
       // If we haven't handled it yet, handle it now
@@ -211,7 +211,7 @@ export function setupNotificationListeners(onCardsUpdated?: () => void) {
         onCardsUpdated?.();
       }
       // Navigate to cards screen to show new card
-      router.push('/wallet/cards');
+      router.push('/transaction/cards');
     } else if (data?.type === 'card_creation_failed') {
       console.log('❌ Card creation failed notification tapped');
       // Handle the failed notification if not already handled
@@ -221,7 +221,7 @@ export function setupNotificationListeners(onCardsUpdated?: () => void) {
         onCardsUpdated?.();
       }
       // Navigate to cards screen where user can try again
-      router.push('/wallet/cards');
+      router.push('/transaction/cards');
     }
   });
 

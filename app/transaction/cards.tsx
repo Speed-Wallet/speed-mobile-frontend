@@ -15,6 +15,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { ArrowLeft, Plus, CreditCard, DollarSign, X } from 'lucide-react-native';
 import { router } from 'expo-router';
+import ScreenContainer from '@/components/ScreenContainer';
+import ScreenHeader from '@/components/ScreenHeader';
 import { StorageService } from '@/utils/storage';
 import { PaymentCard } from '@/data/types';
 import { sendUSDTToCashwyre } from '@/utils/sendTransaction';
@@ -423,17 +425,11 @@ export default function CardsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.push('/')}
-        >
-          <ArrowLeft size={24} color="#ffffff" />
-        </TouchableOpacity>
-        <Text style={styles.title}>Virtual Cards</Text>
-        <View style={styles.placeholder} />
-      </View>
+    <ScreenContainer edges={['top', 'bottom']}>
+      <ScreenHeader 
+        title="Virtual Cards"
+        onBack={() => router.push('/' as any)}
+      />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {/* Existing Cards */}
@@ -766,7 +762,7 @@ export default function CardsScreen() {
           </View>
         </SafeAreaView>
       </Modal>
-    </SafeAreaView>
+    </ScreenContainer>
   );
 }
 
@@ -781,14 +777,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingBottom: 16,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#1a1a1a',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   closeButton: {
     width: 40,
@@ -807,8 +795,7 @@ const styles = StyleSheet.create({
     width: 40,
   },
   content: {
-    flex: 1,
-    paddingHorizontal: 16,
+    padding: 16,
   },
   cardsContainer: {
     marginBottom: 24,
