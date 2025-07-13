@@ -45,9 +45,9 @@ const APP_SALT_KEY = 'appSalt'; // Key for storing app-level salt
 const APP_IV_KEY = 'appIV'; // Key for storing app-level IV
 const MASTER_MNEMONIC_KEY = 'masterMnemonic'; // Key for storing encrypted master mnemonic
 
-export const PLATFORM_FEE_RATE = 0.001;
+export const PLATFORM_FEE_ACCOUNT = new PublicKey(process.env.EXPO_PUBLIC_FEE_ACCOUNT!);
+export const PLATFORM_FEE_RATE = parseFloat(process.env.EXPO_PUBLIC_SWAP_FEE_RATE!);
 export const WSOL_MINT = 'So11111111111111111111111111111111111111112';
-const PLATFORM_FEE_ACCOUNT = new PublicKey('7o3QNaG84hrWhCLoAEXuiiyNfKvpGvMAyTwDb3reBram');
 export let WALLET: Keypair | null = null; // Initialize WALLET to null
 
 // Store the app PIN temporarily in memory for seamless wallet switching
