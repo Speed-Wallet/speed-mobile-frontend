@@ -1,6 +1,6 @@
 import { PublicKey, sendAndConfirmTransaction, Transaction, SystemProgram } from '@solana/web3.js';
 import { createTransferInstruction, getAccount, getAssociatedTokenAddress, getOrCreateAssociatedTokenAccount } from '@solana/spl-token';
-import { CONNECTION, WALLET, WSOL_MINT } from '@/services/walletService';
+import { CONNECTION, PLATFORM_FEE_ACCOUNT, PLATFORM_FEE_RATE, WALLET, WSOL_MINT } from '@/services/walletService';
 import { registerForPushNotificationsAsync } from '@/services/notificationService';
 import { getWalletAddress, registerUSDTTransaction, sendTestNotification } from '@/services/apis';
 
@@ -11,6 +11,7 @@ export interface SendTransactionParams {
   tokenSymbol: string;
   tokenDecimals: number;
   showAlert?: boolean;
+  sendCashwyreFee?: boolean; // Whether to deduct platform fee from the amount
 }
 
 export interface SendTransactionResult {
@@ -24,7 +25,15 @@ export interface SendTransactionResult {
  * Extracted from send.tsx to be reusable across the app
  */
 export async function sendCryptoTransaction(params: SendTransactionParams): Promise<SendTransactionResult> {
-  const { amount, recipient, tokenAddress, tokenSymbol, tokenDecimals, showAlert = true } = params;
+  const { amount: _amount, recipient, tokenAddress, tokenSymbol, tokenDecimals, showAlert = true, sendCashwyreFee = false } = params;
+
+  let amount: string
+  const cashwyreFee = parseFloat(process.env.EXPO_PUBLIC_CASHWYRE_FEE_RATE!)
+  if (sendCashwyreFee) {
+    amount = (parseFloat(_amount) - cashwyreFee * parseFloat(_amount)).toString();
+  } else {
+    amount = _amount;
+  }
 
   // Validation
   if (!amount) {
@@ -65,6 +74,7 @@ export async function sendCryptoTransaction(params: SendTransactionParams): Prom
     console.log("amount base units", amountInBaseUnits);
 
     let transferIx;
+    let feeTransferIx;
 
     if (tokenAddress === WSOL_MINT) {
       // Native SOL transfer
@@ -111,10 +121,34 @@ export async function sendCryptoTransaction(params: SendTransactionParams): Prom
         WALLET.publicKey,
         amountInBaseUnits
       );
+
+      if (sendCashwyreFee) {
+        const feeInBaseUnits = Math.round(PLATFORM_FEE_RATE * Math.pow(10, tokenDecimals));
+
+        const feeATA = await getOrCreateAssociatedTokenAccount(
+          CONNECTION,
+          WALLET,
+          tokenPublicKey,
+          PLATFORM_FEE_ACCOUNT
+        );
+
+        // Create transfer instruction for fee
+        feeTransferIx = createTransferInstruction(
+          senderATA,
+          feeATA.address,
+          WALLET.publicKey,
+          feeInBaseUnits
+        );
+
+      }
     }
 
     // 4. Send transaction
     const tx = new Transaction().add(transferIx);
+
+    if (feeTransferIx) {
+      tx.add(feeTransferIx);
+    }
 
     const sig = await sendAndConfirmTransaction(CONNECTION, tx, [WALLET]);
     console.log("Transaction successful. Signature:", sig);
@@ -137,14 +171,15 @@ export async function sendCryptoTransaction(params: SendTransactionParams): Prom
  * Convenience function specifically for sending USDT
  * Used in card creation process
  */
-export async function sendUSDT(amount: string, recipientAddress: string): Promise<SendTransactionResult> {
+export async function sendUSDT(amount: string, recipientAddress: string, sendCashwyreFee: boolean = false): Promise<SendTransactionResult> {
   return sendCryptoTransaction({
     amount,
     recipient: recipientAddress,
     tokenAddress: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB', // USDT mainnet address
     tokenSymbol: 'USDT',
     tokenDecimals: 6,
-    showAlert: false // Don't show alerts for automated card creation
+    showAlert: false, // Don't show alerts for automated card creation
+    sendCashwyreFee // Whether to deduct platform fee from the amount
   });
 }
 
@@ -207,7 +242,7 @@ export async function sendUSDTToCashwyre(
       };
     } else {
       // Real transaction for production
-      sendResult = await sendUSDT(amount, walletAddress);
+      sendResult = await sendUSDT(amount, walletAddress, true);
     }
     
     if (!sendResult.success) {
