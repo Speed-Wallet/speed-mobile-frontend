@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -36,25 +36,63 @@ const EmailVerificationSheet: React.FC<EmailVerificationSheetProps> = ({
 
   const bottomSheetRef = useRef<BottomSheet>(null);
   const inputRefs = useRef<TextInput[]>([]);
+  const cooldownIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const hasClosed = useRef(false);
+
+  // Memoize snapPoints to prevent infinite re-renders
+  const snapPoints = useMemo(() => {
+    return ['70%'];
+  }, []);
+  
+  // Memoize styles to prevent re-creation on every render
+  const bottomSheetStyle = useMemo(() => {
+    return { backgroundColor: '#1a1a1a' };
+  }, []);
+  const indicatorStyle = useMemo(() => {
+    return { backgroundColor: '#404040' };
+  }, []);
 
   // Handle sheet visibility
   useEffect(() => {
     if (visible) {
+      hasClosed.current = false; // Reset closed flag when opening
       bottomSheetRef.current?.expand();
     } else {
       bottomSheetRef.current?.close();
     }
   }, [visible]);
 
-  // Handle resend cooldown
-  useEffect(() => {
-    if (resendCooldown > 0) {
-      const timer = setTimeout(() => {
-        setResendCooldown(resendCooldown - 1);
-      }, 1000);
-      return () => clearTimeout(timer);
+  // Start cooldown countdown
+  const startCooldown = (seconds: number) => {
+    setResendCooldown(seconds);
+    
+    if (cooldownIntervalRef.current) {
+      clearInterval(cooldownIntervalRef.current);
     }
-  }, [resendCooldown]);
+    
+    cooldownIntervalRef.current = setInterval(() => {
+      setResendCooldown(prev => {
+        if (prev <= 1) {
+          if (cooldownIntervalRef.current) {
+            clearInterval(cooldownIntervalRef.current);
+            cooldownIntervalRef.current = null;
+          }
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (cooldownIntervalRef.current) {
+        clearInterval(cooldownIntervalRef.current);
+        cooldownIntervalRef.current = null;
+      }
+    };
+  }, []);
 
   const handleOtpChange = (value: string, index: number) => {
     // Only allow numeric input
@@ -135,7 +173,7 @@ const EmailVerificationSheet: React.FC<EmailVerificationSheetProps> = ({
 
     try {
       await sendOtp(email);
-      setResendCooldown(60);
+      startCooldown(60);
       setAttemptsLeft(5);
       setOtp(['', '', '', '', '', '']);
       inputRefs.current[0]?.focus();
@@ -148,9 +186,20 @@ const EmailVerificationSheet: React.FC<EmailVerificationSheetProps> = ({
   };
 
   const handleClose = () => {
+    if (hasClosed.current) return;
+    hasClosed.current = true;
+    
     setOtp(['', '', '', '', '', '']);
     setError('');
     setAttemptsLeft(5);
+    setResendCooldown(0);
+    
+    // Clear any running cooldown
+    if (cooldownIntervalRef.current) {
+      clearInterval(cooldownIntervalRef.current);
+      cooldownIntervalRef.current = null;
+    }
+    
     onClose();
   };
 
@@ -158,11 +207,11 @@ const EmailVerificationSheet: React.FC<EmailVerificationSheetProps> = ({
     <BottomSheet
       ref={bottomSheetRef}
       index={-1}
-      snapPoints={['70%']}
+      snapPoints={snapPoints}
       enablePanDownToClose={true}
       onClose={handleClose}
-      backgroundStyle={styles.bottomSheet}
-      handleIndicatorStyle={styles.indicator}
+      backgroundStyle={bottomSheetStyle}
+      handleIndicatorStyle={indicatorStyle}
     >
       <BottomSheetView style={styles.container}>
         <View style={styles.header}>

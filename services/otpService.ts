@@ -19,6 +19,14 @@ export interface VerifyOtpResponse {
   attemptsRemaining?: number;
 }
 
+export interface CheckEmailStatusResponse {
+  success: boolean;
+  email: string;
+  isVerified: boolean;
+  message: string;
+  error?: string;
+}
+
 export async function sendOtp(email: string): Promise<SendOtpResponse> {
   try {
     const authHeaders = await AuthService.getAuthHeader();
@@ -34,6 +42,7 @@ export async function sendOtp(email: string): Promise<SendOtpResponse> {
     console.log('response', response)
     const data = await response.json();
     console.log('data', data)
+    
     if (!response.ok) {
       console.log("response not ok", response)
       throw new Error(data.error || 'Failed to request OTP');
@@ -93,6 +102,43 @@ export async function verifyOtp(email: string, code: string): Promise<VerifyOtpR
     };
   } catch (error) {
     console.error('Error verifying OTP:', error);
+    throw error;
+  }
+}
+
+export async function checkEmailStatus(email: string): Promise<CheckEmailStatusResponse> {
+  try {
+    const authHeaders = await AuthService.getAuthHeader();
+    
+    const response = await fetch(`${BASE_BACKEND_URL}/email/check-status`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...authHeaders,
+      },
+      body: JSON.stringify({ email }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return {
+        success: false,
+        email,
+        isVerified: false,
+        message: data.error || 'Failed to check email status',
+        error: data.error,
+      };
+    }
+
+    return {
+      success: true,
+      email: data.email,
+      isVerified: data.isVerified,
+      message: data.message,
+    };
+  } catch (error) {
+    console.error('Error checking email status:', error);
     throw error;
   }
 }
