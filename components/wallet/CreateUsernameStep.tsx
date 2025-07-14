@@ -189,8 +189,8 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: 60,
-    marginTop: 40,
+    marginBottom: 32,
+    marginTop: 20,
   },
   iconContainer: {
     width: 80,
@@ -199,13 +199,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary + '20',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 32,
+    marginBottom: 24,
   },
   title: {
     fontSize: 32,
     fontFamily: 'Inter-Bold',
     color: colors.textPrimary,
-    marginBottom: 16,
+    marginBottom: 12,
     textAlign: 'center',
   },
   usernameText: {
@@ -221,8 +221,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   form: {
-    marginTop: 40,
-    marginBottom: 60,
+    marginTop: 20,
+    marginBottom: 32,
   },
   label: {
     fontSize: 16,

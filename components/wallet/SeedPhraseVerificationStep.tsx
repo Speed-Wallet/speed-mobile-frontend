@@ -270,39 +270,43 @@ const SeedPhraseVerificationStep: React.FC<SeedPhraseVerificationStepProps> = ({
               </Text>
             </View>
           </Animated.View>
-        </ScrollView>
 
-        {/* Sticky Action Button */}
-        <View style={styles.buttonContainer}>
-          <Animated.View
-            style={[
-              styles.animatedButtonWrapper,
-              {
-                transform: [{ translateX: shakeAnimationValue }],
-              },
-            ]}>
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={handleButtonPress}
-              disabled={isLoading || buttonState === 'disabled'}
-              activeOpacity={0.8}>
-              <LinearGradient
-                colors={
-                  buttonState === 'disabled' 
-                    ? [colors.backgroundMedium, colors.backgroundMedium]
-                    : buttonState === 'try-again'
-                    ? ['#ff5252', '#e53e3e']
-                    : ['#7c5cff', '#6446fe']
-                }
-                style={styles.buttonGradient}>
-                <Text style={getButtonTextStyle()}>
-                  {getButtonText()}
-                </Text>
-                {buttonState === 'continue' && <ArrowRight size={20} color="#fff" />}
-              </LinearGradient>
+          {/* Action Buttons */}
+          <View style={styles.buttonContainer}>
+            <Animated.View
+              style={[
+                styles.animatedButtonWrapper,
+                {
+                  transform: [{ translateX: shakeAnimationValue }],
+                },
+              ]}>
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={handleButtonPress}
+                disabled={isLoading || buttonState === 'disabled'}
+                activeOpacity={0.8}>
+                <LinearGradient
+                  colors={
+                    buttonState === 'disabled' 
+                      ? [colors.backgroundMedium, colors.backgroundMedium]
+                      : buttonState === 'try-again'
+                      ? ['#ff5252', '#e53e3e']
+                      : ['#7c5cff', '#6446fe']
+                  }
+                  style={styles.buttonGradient}>
+                  <Text style={getButtonTextStyle()}>
+                    {getButtonText()}
+                  </Text>
+                  {buttonState === 'continue' && <ArrowRight size={20} color="#fff" />}
+                </LinearGradient>
+              </TouchableOpacity>
+            </Animated.View>
+            
+            <TouchableOpacity style={styles.backTextButton} onPress={onBack}>
+              <Text style={styles.backTextButtonText}>Back to Seed Phrase</Text>
             </TouchableOpacity>
-          </Animated.View>
-        </View>
+          </View>
+        </ScrollView>
       </View>
     </ScreenContainer>
   );
@@ -454,6 +458,16 @@ const styles = StyleSheet.create({
   },
   actionButtonTextDisabled: {
     color: colors.textSecondary,
+  },
+  backTextButton: {
+    alignItems: 'center',
+    paddingVertical: 8,
+    marginTop: 12,
+  },
+  backTextButtonText: {
+    color: '#7c5cff',
+    fontSize: 16,
+    fontWeight: '500',
   },
 });
 
