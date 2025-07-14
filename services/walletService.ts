@@ -668,7 +668,7 @@ export const jupiterSwap = async (quoteResponse: any, platformFee: number): Prom
     const outputMintPubKey = new PublicKey(outputMint);
     const outputATAPromise = getAssociatedTokenAddress(outputMintPubKey, WALLET.publicKey)
     .then(async ata => {
-      const ataInfo = await CONNECTION.getAccountInfo(ata, 'finalized');
+      const ataInfo = await CONNECTION.getAccountInfo(ata, 'processed');
       if (!ataInfo) {
         console.log(`Creating output mint ATA`);
     
@@ -756,7 +756,7 @@ export const jupiterSwap = async (quoteResponse: any, platformFee: number): Prom
   const txSendPromise = CONNECTION.sendRawTransaction(swapTx.serialize(), { 
     maxRetries: 2, 
     skipPreflight: false, 
-    preflightCommitment: 'finalized' 
+    preflightCommitment: 'processed' 
   });
   const registerSwapPromise = registerSwap(signature, blockhash, lastValidBlockHeight);
 
@@ -768,7 +768,7 @@ export const jupiterSwap = async (quoteResponse: any, platformFee: number): Prom
 
   const res = await CONNECTION.confirmTransaction({
     signature, blockhash, lastValidBlockHeight
-  }, 'finalized');
+  }, 'confirmed');
 
   if (res.value.err) {
     console.error(res.value.err);
@@ -807,7 +807,7 @@ async function composeAndSignTransaction(
   wallet: Keypair,
   lutAccounts?: AddressLookupTableAccount[]
 ): Promise<[VersionedTransaction, string, number]> {
-  const { blockhash, lastValidBlockHeight } = await CONNECTION.getLatestBlockhash('finalized');
+  const { blockhash, lastValidBlockHeight } = await CONNECTION.getLatestBlockhash('confirmed');
   const messageV0 = new TransactionMessage({
     payerKey: wallet.publicKey,
     recentBlockhash: blockhash,

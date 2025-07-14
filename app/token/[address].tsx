@@ -1,23 +1,22 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
 import { ArrowLeft, Star, ArrowUpRight, ArrowRightLeft, ArrowDownLeft } from 'lucide-react-native';
 import { LineChart } from 'react-native-chart-kit';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ScreenHeader from '@/components/ScreenHeader';
 import ScreenContainer from '@/components/ScreenContainer';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { getHistoricalPrices, getTokenPrices, TokenMetadata } from '@/services/apis';
+import { 
+  formatHistoricalDataForChart, 
+  formatPriceChangeString, 
+  formatPrice, 
+  formatLargeNumber, 
+  formatSupply,
+  calculatePriceChange,
+  timeframeConfigs
+} from '@/utils/chartUtils';
 
 const screenWidth = Dimensions.get('window').width;
-
-const chartData = {
-  labels: ['0:00', '1:00', '2:00'],
-  datasets: [
-    {
-      data: [19.43, 24.77, 30.11, 35.46, 40.80],
-      color: (opacity = 1) => `rgba(99, 102, 241, ${opacity})`,
-      strokeWidth: 2,
-    },
-  ],
-};
 
 const chartConfig = {
   backgroundColor: '#2a2a2a',
@@ -38,45 +37,163 @@ const chartConfig = {
 
 const timeframes = ['1D', '1W', '1M', '3M', '1Y', 'ALL'];
 
-const timeframeChanges: { [key: string]: string } = {
-  '1D': '-3.1%',
-  '1W': '+1.2%',
-  '1M': '-0.8%',
-  '3M': '+4.5%',
-  '1Y': '+12.3%',
-  'ALL': '+156.7%',
-};
-
-const statsData = [
-  {
-    label: 'Market Cap',
-    value: '$164,164.76',
-  },
-  {
-    label: 'Volume (24h)',
-    value: '$23,049.91',
-  },
-  {
-    label: 'Circulating Supply',
-    value: '641,264.285 USDC',
-  },
-  {
-    label: 'Max Supply',
-    value: '401,051.089 USDC',
-  },
-];
-
 export default function TokenDetailScreen() {
   const [selectedTimeframe, setSelectedTimeframe] = useState('1D');
+  const [tokenData, setTokenData] = useState<TokenMetadata | null>(null);
+  const [historicalData, setHistoricalData] = useState<any>(null);
+  const [chartData, setChartData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [priceChange, setPriceChange] = useState({ change: 0, changePercentage: 0 });
+  
   const router = useRouter();
+  const { address } = useLocalSearchParams<{ address: string }>();
 
-  const currentChange = timeframeChanges[selectedTimeframe];
-  const isNegative = currentChange.startsWith('-');
+  // Load token data on component mount
+  useEffect(() => {
+    loadTokenData();
+  }, [address]);
+
+  // Load historical data when timeframe changes
+  useEffect(() => {
+    if (tokenData?.coingeckoId) {
+      loadHistoricalData(selectedTimeframe);
+    }
+  }, [selectedTimeframe, tokenData]);
+
+  const loadTokenData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await getTokenPrices();
+      
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to load token data');
+      }
+
+      // Find the token by address
+      const token = response.data.find(t => t.address === address);
+      
+      if (!token) {
+        throw new Error('Token not found');
+      }
+
+      setTokenData(token);
+    } catch (err) {
+      console.error('Error loading token data:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load token data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadHistoricalData = async (timeframe: string) => {
+    if (!tokenData?.coingeckoId) return;
+    
+    try {
+      setLoading(true);
+      const config = timeframeConfigs[timeframe];
+      
+      const response = await getHistoricalPrices(tokenData.coingeckoId, config.days);
+      
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to load historical data');
+      }
+
+      setHistoricalData(response);
+      
+      // Format data for chart
+      const formattedChart = formatHistoricalDataForChart(response, timeframe);
+      setChartData(formattedChart);
+      
+      // Calculate price change
+      const change = calculatePriceChange(response, timeframe);
+      setPriceChange(change);
+      
+    } catch (err) {
+      console.error('Error loading historical data:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load historical data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTimeframeChange = (timeframe: string) => {
+    setSelectedTimeframe(timeframe);
+  };
+
+  // Show loading state
+  if (loading && !tokenData) {
+    return (
+      <ScreenContainer edges={['top', 'bottom']}>
+        <ScreenHeader 
+          title="Loading..."
+          onBack={() => router.back()}
+        />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#6366f1" />
+          <Text style={styles.loadingText}>Loading token data...</Text>
+        </View>
+      </ScreenContainer>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <ScreenContainer edges={['top', 'bottom']}>
+        <ScreenHeader 
+          title="Error"
+          onBack={() => router.back()}
+        />
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity 
+            style={styles.retryButton}
+            onPress={() => loadTokenData()}
+          >
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      </ScreenContainer>
+    );
+  }
+
+  // Show main content
+  if (!tokenData) {
+    return null;
+  }
+
+  const currentPrice = tokenData.priceData?.current_price || 0;
+  const currentChange = formatPriceChangeString(priceChange.changePercentage);
+  const isNegative = priceChange.changePercentage < 0;
+
+  const statsData = [
+    {
+      label: 'Market Cap',
+      value: formatLargeNumber(tokenData.priceData?.market_cap || 0),
+    },
+    {
+      label: 'Volume (24h)',
+      value: formatLargeNumber(tokenData.priceData?.total_volume || 0),
+    },
+    {
+      label: 'Circulating Supply',
+      value: formatSupply(tokenData.priceData?.circulating_supply || 0, tokenData.symbol),
+    },
+    {
+      label: 'Max Supply',
+      value: tokenData.priceData?.max_supply ? 
+        formatSupply(tokenData.priceData.max_supply, tokenData.symbol) : 
+        'N/A',
+    },
+  ];
 
   return (
     <ScreenContainer edges={['top', 'bottom']}>
       <ScreenHeader 
-        title="USDC"
+        title={tokenData.symbol}
         onBack={() => router.back()}
         rightElement={
           <TouchableOpacity style={styles.headerButton}>
@@ -89,7 +206,7 @@ export default function TokenDetailScreen() {
 
         {/* Price Section */}
         <View style={styles.priceSection}>
-          <Text style={styles.price}>$440.73</Text>
+          <Text style={styles.price}>{formatPrice(currentPrice)}</Text>
           <Text style={[styles.priceChange, { color: isNegative ? '#ef4444' : '#10b981' }]}>
             {currentChange}
           </Text>
@@ -97,19 +214,30 @@ export default function TokenDetailScreen() {
 
         {/* Chart */}
         <View style={styles.chartContainer}>
-          <LineChart
-            data={chartData}
-            width={screenWidth - 32}
-            height={200}
-            chartConfig={chartConfig}
-            bezier
-            style={styles.chart}
-            withInnerLines={false}
-            withOuterLines={false}
-            withVerticalLabels={true}
-            withHorizontalLabels={true}
-            fromZero={false}
-          />
+          {loading ? (
+            <View style={styles.chartLoadingContainer}>
+              <ActivityIndicator size="large" color="#6366f1" />
+              <Text style={styles.chartLoadingText}>Loading chart...</Text>
+            </View>
+          ) : chartData && chartData.datasets[0].data.length > 0 ? (
+            <LineChart
+              data={chartData}
+              width={screenWidth - 32}
+              height={200}
+              chartConfig={chartConfig}
+              bezier
+              style={styles.chart}
+              withInnerLines={false}
+              withOuterLines={false}
+              withVerticalLabels={true}
+              withHorizontalLabels={true}
+              fromZero={false}
+            />
+          ) : (
+            <View style={styles.chartErrorContainer}>
+              <Text style={styles.chartErrorText}>Chart data unavailable</Text>
+            </View>
+          )}
         </View>
 
         {/* Timeframe Selector */}
@@ -121,7 +249,7 @@ export default function TokenDetailScreen() {
                 styles.timeframeButton,
                 selectedTimeframe === timeframe && styles.timeframeButtonActive,
               ]}
-              onPress={() => setSelectedTimeframe(timeframe)}>
+              onPress={() => handleTimeframeChange(timeframe)}>
               <Text
                 style={[
                   styles.timeframeText,
@@ -146,11 +274,12 @@ export default function TokenDetailScreen() {
           </View>
         </View>
 
-        {/* About USDC */}
+        {/* About Token */}
         <View style={styles.aboutSection}>
-          <Text style={styles.sectionTitle}>About USDC</Text>
+          <Text style={styles.sectionTitle}>About {tokenData.name}</Text>
           <Text style={styles.description}>
-            USD Coin (USDC) is a fully-backed dollar stablecoin. USDC is issued by regulated and licensed financial institutions that maintain full reserves of the equivalent fiat currency.
+            {tokenData.name} ({tokenData.symbol}) is a cryptocurrency token. 
+            Current price data and market information are provided by CoinGecko.
           </Text>
         </View>
       </ScrollView>
@@ -184,6 +313,40 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#9ca3af',
+    marginTop: 12,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#ef4444',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  retryButton: {
+    backgroundColor: '#6366f1',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
   priceSection: {
     alignItems: 'center',
     paddingVertical: 20,
@@ -203,6 +366,29 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 20,
     paddingVertical: 10,
+  },
+  chartLoadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 200,
+    width: screenWidth - 32,
+  },
+  chartLoadingText: {
+    fontSize: 14,
+    color: '#9ca3af',
+    marginTop: 8,
+  },
+  chartErrorContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 200,
+    width: screenWidth - 32,
+    backgroundColor: '#2a2a2a',
+    borderRadius: 16,
+  },
+  chartErrorText: {
+    fontSize: 14,
+    color: '#ef4444',
   },
   chart: {
     borderRadius: 16,

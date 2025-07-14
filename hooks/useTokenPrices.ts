@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { AuthService } from '@/services/authService';
+import { getTokenPrices } from '@/services/apis';
 
 export interface TokenPrice {
   id: string;
@@ -13,33 +13,12 @@ const useAllTokenPrices = () => {
     queryFn: async () => {
       console.log("Fetching all token prices from backend");
       try {
-        // Use your backend endpoint which batches all token prices
-        const baseUrl = process.env.EXPO_PUBLIC_BASE_BACKEND_URL;
-        if (!baseUrl) {
-          throw new Error('Backend URL not configured');
-        }
-        
-        // Get authentication headers
-        const authHeaders = await AuthService.getAuthHeader();
-        console.log('Using auth headers:', authHeaders);
-        
-        const response = await fetch(`${baseUrl}/api/prices/tokens`, {
-          headers: {
-            'Content-Type': 'application/json',
-            ...authHeaders,
-          },
-        });
-        
-        if (!response.ok) {
-          throw new Error(`API returned ${response.status}`);
-        }
-        
-        const result = await response.json();
+        const result = await getTokenPrices();
         
         // Transform the response to a simple coingeckoId -> price mapping
         const prices: Record<string, number> = {};
         if (result.success && result.data) {
-          result.data.forEach((token: any) => {
+          result.data.forEach((token) => {
             if (token.coingeckoId && token.priceData?.current_price) {
               prices[token.coingeckoId] = token.priceData.current_price;
             }

@@ -477,13 +477,13 @@ export default function TradeScreen() {
                 <Text style={styles.swapDetailValue}>0.2%</Text>
               </View>
               
-              <View style={styles.swapDetailRow}>
+              {/* <View style={styles.swapDetailRow}>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <Zap size={14} color={'#eab308'} style={{ marginRight: 4 }} />
                   <Text style={styles.swapDetailLabel}>Network Fee</Text>
                 </View>
                 <Text style={styles.swapDetailValue}>$0.01</Text>
-              </View>
+              </View> */}
             </View>
           )}
           
