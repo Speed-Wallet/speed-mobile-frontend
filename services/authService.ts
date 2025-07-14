@@ -99,7 +99,6 @@ export class AuthService {
    */
   static async getToken(): Promise<string | null> {
     const isAuth = await this.isAuthenticated();
-    console.log(`🔑 Is user authenticated? ${isAuth}`);
     if (!isAuth) {
       await this.authenticate();
     }

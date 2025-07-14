@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -27,8 +27,7 @@ import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import { StorageService, PersonalInfo } from '@/utils/storage';
 import { triggerShake } from '@/utils/animations';
 import { countries, Country } from '@/constants/countries';
-import { sendOtp } from '@/services/otpService';
-import { useOtpTimer } from '@/hooks/useOtpTimer';
+import { sendOtp, checkEmailStatus } from '@/services/otpService';
 import EmailBadge, { EmailStatus } from '@/components/EmailBadge';
 import EmailVerificationSheet from '@/components/EmailVerificationSheet';
 
@@ -169,7 +168,12 @@ export default function AccountScreen() {
   
   // Set default values only in development mode
   const isDevelopment = process.env.EXPO_PUBLIC_APP_ENV === 'development';
-  const verificationLevels = getVerificationLevels(isDevelopment);
+  const verificationLevels = useMemo(
+    () => {
+      return getVerificationLevels(isDevelopment);
+    },
+    [isDevelopment]
+  );
   const [selectedDate, setSelectedDate] = useState<Date | null>(isDevelopment ? new Date(1990, 0, 15) : null);
   const [phoneNumber, setPhoneNumber] = useState(isDevelopment ? developmentInfo.phoneNumber : '');
   const [firstName, setFirstName] = useState(isDevelopment ? developmentInfo.firstName : '');
@@ -216,13 +220,6 @@ export default function AccountScreen() {
   const scrollX = useSharedValue(0);
   const scrollViewRef = useAnimatedRef<Animated.ScrollView>();
 
-  // OTP timer hook
-  const otpRemaining = useOtpTimer(otpExpiresAt, () => {
-    setEmailStatus('needs_verification');
-    setOtpExpiresAt(null);
-    setOtpId(null);
-  });
-
   // Wrapper function for shake animation that can be called from worklet
   const handleShakeAnimation = () => {
     triggerShake(shakeAnimationValue);
@@ -245,6 +242,11 @@ export default function AccountScreen() {
       const threshold = 50;
       let targetIndex = currentLevel;
       let attemptedLockedLevel = false;
+
+      // Guard against undefined verificationLevels
+      if (!verificationLevels || verificationLevels.length === 0) {
+        return;
+      }
 
       if (event.translationX > threshold && currentLevel > 0) {
         // Find the previous accessible level
@@ -382,6 +384,7 @@ export default function AccountScreen() {
     if (emailStatus === 'needs_verification') {
       setIsSaving(true);
       try {
+        // Send OTP directly since we already checked verification status on mount
         const response = await sendOtp(email);
         setOtpId(response.otpId || null);
         setOtpExpiresAt(response.expiresAt || null);
@@ -458,6 +461,21 @@ export default function AccountScreen() {
       setEmail(savedInfo.email);
       setEmailError(!validateEmail(savedInfo.email));
       
+      // Check if email is already verified when loading
+      if (savedInfo.email && validateEmail(savedInfo.email)) {
+        try {
+          const statusResponse = await checkEmailStatus(savedInfo.email);
+          if (statusResponse.isVerified) {
+            setEmailStatus('verified');
+          } else {
+            setEmailStatus('needs_verification');
+          }
+        } catch (error) {
+          console.error('Error checking email status on load:', error);
+          setEmailStatus('needs_verification');
+        }
+      }
+      
       setPhoneNumber(savedInfo.phoneNumber);
       setPhoneNumberError(!validatePhoneNumber(savedInfo.phoneNumber));
       
@@ -480,6 +498,22 @@ export default function AccountScreen() {
       const country = countries.find(c => c.code === savedInfo.selectedCountry.code);
       if (country) {
         setSelectedCountry(country);
+      }
+    } else if (isDevelopment) {
+      // In development mode, also check the default email
+      const defaultEmail = developmentInfo.email;
+      if (defaultEmail && validateEmail(defaultEmail)) {
+        try {
+          const statusResponse = await checkEmailStatus(defaultEmail);
+          if (statusResponse.isVerified) {
+            setEmailStatus('verified');
+          } else {
+            setEmailStatus('needs_verification');
+          }
+        } catch (error) {
+          console.error('Error checking default email status:', error);
+          setEmailStatus('needs_verification');
+        }
       }
     }
   };
@@ -990,10 +1024,21 @@ export default function AccountScreen() {
                         // Always check error state on blur
                         setEmailError(!validateEmail(email));
                         
-                        // Set status based on email validation
+                        // Check if email is already verified on blur
                         if (validateEmail(email)) {
-                          if (emailStatus === 'unverified') {
-                            setEmailStatus('needs_verification');
+                          try {
+                            const statusResponse = await checkEmailStatus(email);
+                            if (statusResponse.isVerified) {
+                              setEmailStatus('verified');
+                            } else if (emailStatus === 'unverified') {
+                              setEmailStatus('needs_verification');
+                            }
+                          } catch (error) {
+                            console.error('Error checking email status on blur:', error);
+                            // If check fails, set to needs_verification if email is valid
+                            if (emailStatus === 'unverified') {
+                              setEmailStatus('needs_verification');
+                            }
                           }
                         }
                         

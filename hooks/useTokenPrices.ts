@@ -11,7 +11,6 @@ const useAllTokenPrices = () => {
   return useQuery({
     queryKey: ['allTokenPrices'], // Single cache key for all tokens
     queryFn: async () => {
-      console.log("Fetching all token prices from backend");
       try {
         const result = await getTokenPrices();
         
