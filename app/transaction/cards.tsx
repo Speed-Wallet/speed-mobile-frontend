@@ -1004,7 +1004,8 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     color: '#ffffff',
-    paddingVertical: 16,
+    height: 48,
+    paddingVertical: 0,
   },
   inputHint: {
     fontSize: 14,

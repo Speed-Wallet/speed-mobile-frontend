@@ -187,7 +187,9 @@ const SeedPhraseVerificationStep: React.FC<SeedPhraseVerificationStepProps> = ({
   return (
     <ScreenContainer>
       {/* Development Back Button */}
-      <BackButton onPress={onBack} style={styles.devBackButton} />
+      {process.env.EXPO_PUBLIC_APP_ENV === 'development' && (
+        <BackButton onPress={onBack} style={styles.devBackButton} />
+      )}
       
       {/* Dev Mode Skip Button */}
       {process.env.EXPO_PUBLIC_APP_ENV === 'development' && (
