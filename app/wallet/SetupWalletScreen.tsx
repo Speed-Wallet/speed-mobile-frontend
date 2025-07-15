@@ -162,7 +162,7 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComp
       
       // Generate unique wallet ID and save to multi-wallet system using app PIN
       const walletId = `wallet-${Date.now()}`;
-      const walletName = username || 'Main Wallet';
+      const walletName = 'Main';
       await saveWalletToList(walletId, walletName, mnemonic, publicKey, pin, accountIndex, derivationPath);
       
       Alert.alert("Success", "Your wallet has been created and secured with a PIN. Keep your seed phrase and PIN safe!");

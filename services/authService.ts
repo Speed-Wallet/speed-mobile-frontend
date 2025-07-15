@@ -277,7 +277,6 @@ export class AuthService {
    */
   static async authenticate(): Promise<void> {
     const wallet = this.getWallet();
-
     try {
       // Get wallet info and stored username
       const publicKey = wallet.publicKey.toBase58();

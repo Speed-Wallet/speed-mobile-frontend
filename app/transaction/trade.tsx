@@ -182,7 +182,7 @@ export default function TradeScreen() {
     }
   }
 
-  useEffect(updateAmounts, [fromAmount]);
+  useEffect(updateAmounts, [fromAmount, fromToken, toToken]);
 
   // Handle token selection from the token selector page
   useEffect(() => {

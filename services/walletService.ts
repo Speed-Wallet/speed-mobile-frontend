@@ -1,16 +1,4 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-// Ensure crypto is available before importing bip39
-// const ensureCryptoReady = () => {
-//   if (!global.crypto || !global.crypto.getRandomValues) {
-//     throw new Error('Crypto polyfill not ready. Make sure react-native-quick-crypto is properly installed.');
-//   }
-//   if (!global.Buffer) {
-//     throw new Error('Buffer polyfill not ready. Make sure @craftzdog/react-native-buffer is properly set up.');
-//   }
-// };
-// ensureCryptoReady();
-
 import bs58 from 'bs58';
 import {
   Keypair,
@@ -35,7 +23,7 @@ import { generateMnemonic, mnemonicToSeed, validateMnemonic } from '@/utils/bip3
 import { createKeypairFromMnemonic, getSolanaDerivationPath, getNextAccountIndex } from '@/utils/derivation';
 import { AuthService } from './authService';
 
-export const CONNECTION = new Connection(`https://mainnet.helius-rpc.com/?api-key=${process.env.EXPO_PUBLIC_HELIUS_API_KEY}`);
+export const CONNECTION = new Connection(`https://mainnet.helius-rpc.com/?api-key=${process.env.EXPO_PUBLIC_HELIUS_API_KEY}`, 'confirmed');
 const JUPITER_API_URL = 'https://lite-api.jup.ag/swap/v1/';
 
 const WALLETS_LIST_KEY = 'solanaWalletsList'; // Key for storing wallet list
@@ -668,7 +656,7 @@ export const jupiterSwap = async (quoteResponse: any, platformFee: number): Prom
     const outputMintPubKey = new PublicKey(outputMint);
     const outputATAPromise = getAssociatedTokenAddress(outputMintPubKey, WALLET.publicKey)
     .then(async ata => {
-      const ataInfo = await CONNECTION.getAccountInfo(ata, 'processed');
+      const ataInfo = await CONNECTION.getAccountInfo(ata, 'confirmed');
       if (!ataInfo) {
         console.log(`Creating output mint ATA`);
     
@@ -756,7 +744,7 @@ export const jupiterSwap = async (quoteResponse: any, platformFee: number): Prom
   const txSendPromise = CONNECTION.sendRawTransaction(swapTx.serialize(), { 
     maxRetries: 2, 
     skipPreflight: false, 
-    preflightCommitment: 'processed' 
+    preflightCommitment: 'confirmed' 
   });
   const registerSwapPromise = registerSwap(signature, blockhash, lastValidBlockHeight);
 
