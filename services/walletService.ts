@@ -635,7 +635,11 @@ export const jupiterSwap = async (quoteResponse: any, platformFee: number): Prom
     const inputMintPubKey = new PublicKey(inputMint);
     const walletFeeIxPromise = Promise.all([
       getAssociatedTokenAddress(inputMintPubKey, WALLET.publicKey),
-      getAssociatedTokenAddress(inputMintPubKey, PLATFORM_FEE_ACCOUNT)
+      getAssociatedTokenAddress(
+        inputMintPubKey, 
+        PLATFORM_FEE_ACCOUNT,
+        true
+      )
     ])
     .then(([walletATA, platformFeeATA]) => instructions.push(
       createTransferInstruction(
@@ -648,7 +652,6 @@ export const jupiterSwap = async (quoteResponse: any, platformFee: number): Prom
 
     AddIxPromises.push(walletFeeIxPromise);
   }
-
   // Create output mint ata for the user if it's not available.
   // The only exception is when the ouput mint is WSOL. This is
   // because we assume WSOL means native SOL.
@@ -668,12 +671,12 @@ export const jupiterSwap = async (quoteResponse: any, platformFee: number): Prom
         ));
       }
     });
-  
+    
     AddIxPromises.push(outputATAPromise);
   }
-
+  
   await Promise.all(AddIxPromises);
-
+  
   const [CUsForPrimaryProcessing, jupiterInstructionsResponse] = await Promise.all([
     getCUsForTransaction(instructions, WALLET),
     fetch(`${JUPITER_API_URL}swap-instructions?dynamicSlippage=true`, {
