@@ -635,7 +635,7 @@ export const jupiterSwap = async (quoteResponse: any, platformFee: number): Prom
     const inputMintPubKey = new PublicKey(inputMint);
     const walletFeeIxPromise = Promise.all([
       getAssociatedTokenAddress(inputMintPubKey, WALLET.publicKey),
-      getAssociatedTokenAddress(
+       getAssociatedTokenAddress(
         inputMintPubKey, 
         PLATFORM_FEE_ACCOUNT,
         true
@@ -1343,5 +1343,71 @@ export const unlockApp = async (pin: string): Promise<boolean> => {
   } catch (error) {
     console.error('Failed to unlock app:', error);
     return false;
+  }
+};
+
+/**
+ * Get the master wallet's public key
+ * This is used for authentication to ensure consistency across wallet switches
+ */
+export const getMasterWalletPublicKey = async (): Promise<string> => {
+  try {
+    const wallets = await getAllStoredWallets();
+    const masterWallet = wallets.find(wallet => wallet.isMasterWallet);
+    
+    if (!masterWallet) {
+      throw new Error('Master wallet not found');
+    }
+    
+    return masterWallet.publicKey;
+  } catch (error) {
+    console.error('Failed to get master wallet public key:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get the master wallet's keypair for authentication
+ * This requires the app to be unlocked (TEMP_APP_PIN to be set)
+ */
+export const getMasterWalletKeypair = async (): Promise<Keypair> => {
+  try {
+    if (!TEMP_APP_PIN) {
+      throw new Error('App must be unlocked to get master wallet keypair');
+    }
+
+    const wallets = await getAllStoredWallets();
+    const masterWallet = wallets.find(wallet => wallet.isMasterWallet);
+    
+    if (!masterWallet) {
+      throw new Error('Master wallet not found');
+    }
+
+    const appCrypto = await getAppCrypto();
+    if (!appCrypto) {
+      throw new Error('App crypto not found');
+    }
+
+    // Decrypt the master wallet's mnemonic
+    const mnemonic = decryptMnemonic(
+      masterWallet.encryptedMnemonic,
+      TEMP_APP_PIN,
+      appCrypto.salt,
+      appCrypto.iv
+    );
+
+    if (!mnemonic || !await validateMnemonic(mnemonic)) {
+      throw new Error('Failed to decrypt master wallet mnemonic');
+    }
+
+    // Create keypair using derivation path if available, otherwise use legacy seed method
+    const keypair = masterWallet.accountIndex !== undefined 
+      ? await createKeypairFromMnemonic(mnemonic, masterWallet.accountIndex)
+      : Keypair.fromSeed(Uint8Array.from((await mnemonicToSeed(mnemonic)).subarray(0, 32)));
+    
+    return keypair;
+  } catch (error) {
+    console.error('Failed to get master wallet keypair:', error);
+    throw error;
   }
 };
