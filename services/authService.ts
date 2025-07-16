@@ -218,7 +218,6 @@ export class AuthService {
 
       const now = Date.now();
       const timeToExpiry = expiry - now;
-      console.log(`💾 JWT token stored - expires in ${Math.round(timeToExpiry / 1000)}s`);
 
       await AsyncStorage.setItem(STORAGE_KEYS.JWT_TOKEN, token);
       await AsyncStorage.setItem(STORAGE_KEYS.JWT_EXPIRY, expiry.toString());
@@ -281,14 +280,11 @@ export class AuthService {
       // Get master wallet keypair and derive public key from it
       const masterWalletKeypair = await getMasterWalletKeypair();
       const publicKey = masterWalletKeypair.publicKey.toBase58();
-      console.log('master public key: ', publicKey);
       const storedUsername = await this.getStoredUsername();
       
       if (!storedUsername) {
         throw new Error('No username found. Please complete wallet setup first.');
       }
-
-      console.log('🔐 Authenticating user...');
 
       // Step 1: Request login message
       const { authMessage } = await this.requestLoginMessage(storedUsername, publicKey);
