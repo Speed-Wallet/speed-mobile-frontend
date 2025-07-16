@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Keypair } from '@solana/web3.js';
 import { signAsync } from '@noble/ed25519';
+import { getMasterWalletKeypair } from './walletService';
 
 const BASE_BACKEND_URL = process.env.EXPO_PUBLIC_BASE_BACKEND_URL;
 
@@ -121,9 +122,9 @@ export class AuthService {
    */
   private static async signMessageForAuth(
     message: Uint8Array, 
-    solanaKeypair: Keypair
+    masterSolanaKeypair: Keypair
   ): Promise<Uint8Array> {
-    const privateKey = solanaKeypair.secretKey.subarray(0, 32);
+    const privateKey = masterSolanaKeypair.secretKey.subarray(0, 32);
     return signAsync(message, privateKey);
   }
 
@@ -276,10 +277,11 @@ export class AuthService {
    * Perform full authentication flow
    */
   static async authenticate(): Promise<void> {
-    const wallet = this.getWallet();
     try {
-      // Get wallet info and stored username
-      const publicKey = wallet.publicKey.toBase58();
+      // Get master wallet keypair and derive public key from it
+      const masterWalletKeypair = await getMasterWalletKeypair();
+      const publicKey = masterWalletKeypair.publicKey.toBase58();
+      console.log('master public key: ', publicKey);
       const storedUsername = await this.getStoredUsername();
       
       if (!storedUsername) {
@@ -291,9 +293,9 @@ export class AuthService {
       // Step 1: Request login message
       const { authMessage } = await this.requestLoginMessage(storedUsername, publicKey);
 
-      // Step 2: Sign the message
+      // Step 2: Sign the message with master wallet
       const messageBytes = new TextEncoder().encode(authMessage);
-      const signatureBytes = await this.signMessageForAuth(messageBytes, wallet);
+      const signatureBytes = await this.signMessageForAuth(messageBytes, masterWalletKeypair);
       const signature = Buffer.from(signatureBytes).toString('base64');
 
       // Step 3: Submit signed message and get JWT
