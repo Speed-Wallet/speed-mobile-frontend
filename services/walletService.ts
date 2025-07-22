@@ -1,4 +1,4 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { SecureMMKVStorage } from '../utils/mmkvStorage';
 import bs58 from 'bs58';
 import {
   Keypair,
@@ -191,9 +191,9 @@ export const createAppPin = async (pin: string): Promise<void> => {
   // Store the PIN hash, salt, and IV for app-level authentication
   const pinHash = CryptoJS.SHA256(pin + salt).toString();
   
-  await AsyncStorage.setItem(APP_PIN_KEY, pinHash);
-  await AsyncStorage.setItem(APP_SALT_KEY, salt);
-  await AsyncStorage.setItem(APP_IV_KEY, iv);
+  SecureMMKVStorage.setItem(APP_PIN_KEY, pinHash);
+  SecureMMKVStorage.setItem(APP_SALT_KEY, salt);
+  SecureMMKVStorage.setItem(APP_IV_KEY, iv);
   
   // Store temporarily for immediate use
   TEMP_APP_PIN = pin;
@@ -203,8 +203,8 @@ export const createAppPin = async (pin: string): Promise<void> => {
 
 export const verifyAppPin = async (pin: string): Promise<boolean> => {
   try {
-    const storedHash = await AsyncStorage.getItem(APP_PIN_KEY);
-    const salt = await AsyncStorage.getItem(APP_SALT_KEY);
+    const storedHash = SecureMMKVStorage.getItem(APP_PIN_KEY);
+    const salt = SecureMMKVStorage.getItem(APP_SALT_KEY);
     
     if (!storedHash || !salt) {
       console.log('No app PIN set up');
@@ -228,7 +228,7 @@ export const verifyAppPin = async (pin: string): Promise<boolean> => {
 
 export const hasAppPin = async (): Promise<boolean> => {
   try {
-    const pinHash = await AsyncStorage.getItem(APP_PIN_KEY);
+    const pinHash = SecureMMKVStorage.getItem(APP_PIN_KEY);
     return !!pinHash;
   } catch (error) {
     return false;
@@ -237,8 +237,8 @@ export const hasAppPin = async (): Promise<boolean> => {
 
 export const getAppCrypto = async (): Promise<{ salt: string, iv: string } | null> => {
   try {
-    const salt = await AsyncStorage.getItem(APP_SALT_KEY);
-    const iv = await AsyncStorage.getItem(APP_IV_KEY);
+    const salt = SecureMMKVStorage.getItem(APP_SALT_KEY);
+    const iv = SecureMMKVStorage.getItem(APP_IV_KEY);
     
     if (!salt || !iv) {
       return null;
@@ -253,9 +253,9 @@ export const getAppCrypto = async (): Promise<{ salt: string, iv: string } | nul
 
 export const clearAppPin = async (): Promise<void> => {
   try {
-    await AsyncStorage.removeItem(APP_PIN_KEY);
-    await AsyncStorage.removeItem(APP_SALT_KEY);
-    await AsyncStorage.removeItem(APP_IV_KEY);
+    SecureMMKVStorage.removeItem(APP_PIN_KEY);
+    SecureMMKVStorage.removeItem(APP_SALT_KEY);
+    SecureMMKVStorage.removeItem(APP_IV_KEY);
     TEMP_APP_PIN = null;
     console.log('App PIN cleared');
   } catch (error) {
@@ -304,7 +304,7 @@ export const storeMasterMnemonic = async (mnemonic: string): Promise<void> => {
   }
 
   const encryption = encryptMnemonic(mnemonic, TEMP_APP_PIN, appCrypto.salt, appCrypto.iv);
-  await AsyncStorage.setItem(MASTER_MNEMONIC_KEY, encryption.encryptedMnemonic);
+  SecureMMKVStorage.setItem(MASTER_MNEMONIC_KEY, encryption.encryptedMnemonic);
 };
 
 /**
@@ -320,7 +320,7 @@ export const getMasterMnemonic = async (): Promise<string | null> => {
     return null;
   }
 
-  const encryptedMnemonic = await AsyncStorage.getItem(MASTER_MNEMONIC_KEY);
+  const encryptedMnemonic = SecureMMKVStorage.getItem(MASTER_MNEMONIC_KEY);
   if (!encryptedMnemonic) {
     return null;
   }
@@ -332,7 +332,7 @@ export const getMasterMnemonic = async (): Promise<string | null> => {
  * Check if master mnemonic exists
  */
 export const hasMasterMnemonic = async (): Promise<boolean> => {
-  const encryptedMnemonic = await AsyncStorage.getItem(MASTER_MNEMONIC_KEY);
+  const encryptedMnemonic = SecureMMKVStorage.getItem(MASTER_MNEMONIC_KEY);
   return !!encryptedMnemonic;
 };
 
@@ -392,7 +392,7 @@ export const generateInitialSolanaWallet = async (): Promise<SolanaWallet & { ac
   if (hasMaster) {
     console.log('Master mnemonic exists but no wallets found. Clearing master mnemonic for fresh start.');
     // Clear the master mnemonic so we can start fresh
-    await AsyncStorage.removeItem(MASTER_MNEMONIC_KEY);
+    SecureMMKVStorage.removeItem(MASTER_MNEMONIC_KEY);
   }
   
   // Generate new master mnemonic for the first wallet
@@ -421,7 +421,7 @@ export const clearIncompleteSetup = async (): Promise<void> => {
     // If no wallets exist but we have a master mnemonic or app PIN, clear them
     if (wallets.length === 0) {
       if (await hasMasterMnemonic()) {
-        await AsyncStorage.removeItem(MASTER_MNEMONIC_KEY);
+        SecureMMKVStorage.removeItem(MASTER_MNEMONIC_KEY);
         console.log('Cleared orphaned master mnemonic');
       }
       
@@ -554,17 +554,17 @@ export const unlockWalletWithPin = async (pin: string): Promise<SolanaWallet | n
 
 export const clearWallet = async (): Promise<void> => {
   try {
-    await AsyncStorage.removeItem(WALLETS_LIST_KEY);
-    await AsyncStorage.removeItem(ACTIVE_WALLET_KEY);
-    await AsyncStorage.removeItem(APP_PIN_KEY);
-    await AsyncStorage.removeItem(APP_SALT_KEY);
-    await AsyncStorage.removeItem(APP_IV_KEY);
+    SecureMMKVStorage.removeItem(WALLETS_LIST_KEY);
+    SecureMMKVStorage.removeItem(ACTIVE_WALLET_KEY);
+    SecureMMKVStorage.removeItem(APP_PIN_KEY);
+    SecureMMKVStorage.removeItem(APP_SALT_KEY);
+    SecureMMKVStorage.removeItem(APP_IV_KEY);
     
     // Also remove any legacy keys (just in case)
-    await AsyncStorage.removeItem('encryptedMnemonic');
-    await AsyncStorage.removeItem('salt');
-    await AsyncStorage.removeItem('iv');
-    await AsyncStorage.removeItem('publicKey');
+    SecureMMKVStorage.removeItem('encryptedMnemonic');
+    SecureMMKVStorage.removeItem('salt');
+    SecureMMKVStorage.removeItem('iv');
+    SecureMMKVStorage.removeItem('publicKey');
     
     if (WALLET) {
       WALLET = null;
@@ -944,7 +944,7 @@ export const importWalletFromMnemonic = async (mnemonic: string): Promise<Solana
 
 export const getAllStoredWallets = async (): Promise<StoredWalletItem[]> => {
   try {
-    const walletsJson = await AsyncStorage.getItem(WALLETS_LIST_KEY);
+    const walletsJson = SecureMMKVStorage.getItem(WALLETS_LIST_KEY);
     if (walletsJson) {
       return JSON.parse(walletsJson);
     }
@@ -989,7 +989,7 @@ export const saveWalletToList = async (
     if (isMasterWallet && !await hasMasterMnemonic()) {
       // Store the master mnemonic encrypted with the app PIN
       const masterEncryption = encryptMnemonic(mnemonic, pin, appCrypto.salt, appCrypto.iv);
-      await AsyncStorage.setItem(MASTER_MNEMONIC_KEY, masterEncryption.encryptedMnemonic);
+      SecureMMKVStorage.setItem(MASTER_MNEMONIC_KEY, masterEncryption.encryptedMnemonic);
       console.log('Master mnemonic stored during initial wallet creation');
     }
 
@@ -1008,7 +1008,7 @@ export const saveWalletToList = async (
 
     const updatedWallets = [...existingWallets, walletItem];
     
-    await AsyncStorage.setItem(WALLETS_LIST_KEY, JSON.stringify(updatedWallets));
+    SecureMMKVStorage.setItem(WALLETS_LIST_KEY, JSON.stringify(updatedWallets));
     
     // Set as active wallet
     await setActiveWallet(id);
@@ -1029,7 +1029,7 @@ export const removeWalletFromList = async (walletId: string): Promise<void> => {
   try {
     const wallets = await getAllStoredWallets();
     const updatedWallets = wallets.filter(w => w.id !== walletId);
-    await AsyncStorage.setItem(WALLETS_LIST_KEY, JSON.stringify(updatedWallets));
+    SecureMMKVStorage.setItem(WALLETS_LIST_KEY, JSON.stringify(updatedWallets));
     
     const activeWalletId = await getActiveWalletId();
     if (activeWalletId === walletId) {
@@ -1043,7 +1043,7 @@ export const removeWalletFromList = async (walletId: string): Promise<void> => {
         await setActiveWallet(updatedWallets[0].id);
       } else {
         // No wallets left, clear the active wallet key
-        await AsyncStorage.removeItem(ACTIVE_WALLET_KEY);
+        SecureMMKVStorage.removeItem(ACTIVE_WALLET_KEY);
       }
     }
   } catch (error) {
@@ -1054,7 +1054,7 @@ export const removeWalletFromList = async (walletId: string): Promise<void> => {
 
 export const getActiveWalletId = async (): Promise<string | null> => {
   try {
-    return await AsyncStorage.getItem(ACTIVE_WALLET_KEY);
+    return SecureMMKVStorage.getItem(ACTIVE_WALLET_KEY);
   } catch (error) {
     console.error('Failed to get active wallet ID:', error);
     return null;
@@ -1063,7 +1063,7 @@ export const getActiveWalletId = async (): Promise<string | null> => {
 
 export const setActiveWallet = async (walletId: string): Promise<void> => {
   try {
-    await AsyncStorage.setItem(ACTIVE_WALLET_KEY, walletId);
+    SecureMMKVStorage.setItem(ACTIVE_WALLET_KEY, walletId);
   } catch (error) {
     console.error('Failed to set active wallet:', error);
     throw error;
@@ -1270,7 +1270,7 @@ export const saveWalletWithAppPin = async (
 
     const updatedWallets = [...existingWallets, walletItem];
     
-    await AsyncStorage.setItem(WALLETS_LIST_KEY, JSON.stringify(updatedWallets));
+    SecureMMKVStorage.setItem(WALLETS_LIST_KEY, JSON.stringify(updatedWallets));
     
     // Set as active wallet
     await setActiveWallet(id);

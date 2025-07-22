@@ -1,4 +1,4 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { MMKVStorage } from './mmkvStorage';
 
 export interface PaymentCard {
   id: string;
@@ -36,38 +36,36 @@ const STORAGE_KEYS = {
 };
 
 export const StorageService = {
-  // Card operations
-  async saveCards(cards: PaymentCard[]): Promise<void> {
+  // Card operations - now synchronous with MMKV!
+  saveCards(cards: PaymentCard[]): void {
     try {
-      await AsyncStorage.setItem(STORAGE_KEYS.CARDS, JSON.stringify(cards));
+      MMKVStorage.setObject(STORAGE_KEYS.CARDS, cards);
     } catch (error) {
       console.error('Error saving cards:', error);
     }
   },
 
-  async loadCards(): Promise<PaymentCard[]> {
+  loadCards(): PaymentCard[] {
     try {
-      const cardsJson = await AsyncStorage.getItem(STORAGE_KEYS.CARDS);
-      return cardsJson ? JSON.parse(cardsJson) : [];
+      return MMKVStorage.getObject<PaymentCard[]>(STORAGE_KEYS.CARDS) || [];
     } catch (error) {
       console.error('Error loading cards:', error);
       return [];
     }
   },
 
-  // Personal info operations
-  async savePersonalInfo(info: PersonalInfo): Promise<void> {
+  // Personal info operations - now synchronous with MMKV!
+  savePersonalInfo(info: PersonalInfo): void {
     try {
-      await AsyncStorage.setItem(STORAGE_KEYS.PERSONAL_INFO, JSON.stringify(info));
+      MMKVStorage.setObject(STORAGE_KEYS.PERSONAL_INFO, info);
     } catch (error) {
       console.error('Error saving personal info:', error);
     }
   },
 
-  async loadPersonalInfo(): Promise<PersonalInfo | null> {
+  loadPersonalInfo(): PersonalInfo | null {
     try {
-      const infoJson = await AsyncStorage.getItem(STORAGE_KEYS.PERSONAL_INFO);
-      return infoJson ? JSON.parse(infoJson) : null;
+      return MMKVStorage.getObject<PersonalInfo>(STORAGE_KEYS.PERSONAL_INFO);
     } catch (error) {
       console.error('Error loading personal info:', error);
       return null;
