@@ -1,7 +1,7 @@
 // Wallet Debug Utilities
 // This file helps debug and recover wallet issues
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { SecureMMKVStorage } from './mmkvStorage';
 
 // Keys used for wallet storage
 const WALLETS_LIST_KEY = 'solanaWalletsList';
@@ -34,26 +34,26 @@ export interface WalletDebugInfo {
 export const getWalletDebugInfo = async (): Promise<WalletDebugInfo> => {
   try {
     // Get all AsyncStorage keys
-    const allKeys = await AsyncStorage.getAllKeys();
+    const allKeys = SecureMMKVStorage.getAllKeys();
     
     // Check wallets list
-    const walletsJson = await AsyncStorage.getItem(WALLETS_LIST_KEY);
+    const walletsJson = SecureMMKVStorage.getItem(WALLETS_LIST_KEY);
     const walletsList = walletsJson ? JSON.parse(walletsJson) : [];
     
     // Check active wallet
-    const activeWalletId = await AsyncStorage.getItem(ACTIVE_WALLET_KEY);
+    const activeWalletId = SecureMMKVStorage.getItem(ACTIVE_WALLET_KEY);
     
     // Check app PIN
-    const appPin = await AsyncStorage.getItem(APP_PIN_KEY);
+    const appPin = SecureMMKVStorage.getItem(APP_PIN_KEY);
     
     // Check app crypto settings
-    const appSalt = await AsyncStorage.getItem(APP_SALT_KEY);
-    const appIV = await AsyncStorage.getItem(APP_IV_KEY);
+    const appSalt = SecureMMKVStorage.getItem(APP_SALT_KEY);
+    const appIV = SecureMMKVStorage.getItem(APP_IV_KEY);
     
     // Check legacy data
     const legacyDataExists: string[] = [];
     for (const key of LEGACY_KEYS) {
-      const value = await AsyncStorage.getItem(key);
+      const value = SecureMMKVStorage.getItem(key);
       if (value) {
         legacyDataExists.push(key);
       }
@@ -108,7 +108,7 @@ export const logWalletDebugInfo = async (): Promise<void> => {
  */
 export const getRawWalletData = async (): Promise<any> => {
   try {
-    const walletsJson = await AsyncStorage.getItem(WALLETS_LIST_KEY);
+    const walletsJson = SecureMMKVStorage.getItem(WALLETS_LIST_KEY);
     if (!walletsJson) {
       return null;
     }
@@ -184,7 +184,7 @@ export const attemptWalletRecovery = async (): Promise<{
     
     // If no active wallet is set, set the first one
     if (!info.activeWalletId && validWallets.length > 0) {
-      await AsyncStorage.setItem(ACTIVE_WALLET_KEY, validWallets[0].id);
+      SecureMMKVStorage.setItem(ACTIVE_WALLET_KEY, validWallets[0].id);
     }
     
     return {
@@ -210,11 +210,11 @@ export const backupWalletDataToConsole = async (): Promise<void> => {
   try {
     console.log('=== WALLET BACKUP DATA ===');
     
-    const walletsData = await AsyncStorage.getItem(WALLETS_LIST_KEY);
-    const activeWallet = await AsyncStorage.getItem(ACTIVE_WALLET_KEY);
-    const appPin = await AsyncStorage.getItem(APP_PIN_KEY);
-    const appSalt = await AsyncStorage.getItem(APP_SALT_KEY);
-    const appIV = await AsyncStorage.getItem(APP_IV_KEY);
+    const walletsData = SecureMMKVStorage.getItem(WALLETS_LIST_KEY);
+    const activeWallet = SecureMMKVStorage.getItem(ACTIVE_WALLET_KEY);
+    const appPin = SecureMMKVStorage.getItem(APP_PIN_KEY);
+    const appSalt = SecureMMKVStorage.getItem(APP_SALT_KEY);
+    const appIV = SecureMMKVStorage.getItem(APP_IV_KEY);
     
     console.log('WALLETS_LIST:', walletsData);
     console.log('ACTIVE_WALLET:', activeWallet);
@@ -224,7 +224,7 @@ export const backupWalletDataToConsole = async (): Promise<void> => {
     
     // Check legacy data
     for (const key of LEGACY_KEYS) {
-      const value = await AsyncStorage.getItem(key);
+      const value = SecureMMKVStorage.getItem(key);
       if (value) {
         console.log(`LEGACY_${key.toUpperCase()}:`, value);
       }

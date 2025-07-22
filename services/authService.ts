@@ -1,4 +1,4 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { SecureMMKVStorage } from '../utils/mmkvStorage';
 import { Keypair } from '@solana/web3.js';
 import { signAsync } from '@noble/ed25519';
 import { getMasterWalletKeypair } from './walletService';
@@ -48,10 +48,10 @@ export class AuthService {
   /**
    * Initialize the auth service by loading stored JWT token
    */
-  static async initialize(): Promise<void> {
+  static initialize(): void {
     try {
-      const token = await AsyncStorage.getItem(STORAGE_KEYS.JWT_TOKEN);
-      const expiry = await AsyncStorage.getItem(STORAGE_KEYS.JWT_EXPIRY);
+      const token = SecureMMKVStorage.getItem(STORAGE_KEYS.JWT_TOKEN);
+      const expiry = SecureMMKVStorage.getItem(STORAGE_KEYS.JWT_EXPIRY);
       
       if (token && expiry) {
         this.jwtToken = token;
@@ -65,8 +65,8 @@ export class AuthService {
   /**
    * Check if user is authenticated and token is valid
    */
-  static async isAuthenticated(): Promise<boolean> {
-    await this.initialize();
+  static isAuthenticated(): boolean {
+    this.initialize();
     
     if (!this.jwtToken) {
       return false;
@@ -83,14 +83,14 @@ export class AuthService {
       
       if (now >= expiryWithBuffer) {
         console.log('🔄 JWT token expired - refreshing auth');
-        await this.clearStoredAuth();
+        this.clearStoredAuth();
         return false;
       }
 
       return true;
     } catch (error) {
       console.error('Error validating JWT token:', error);
-      await this.clearStoredAuth();
+      this.clearStoredAuth();
       return false;
     }
   }
@@ -99,7 +99,7 @@ export class AuthService {
    * Get the current JWT token for API requests
    */
   static async getToken(): Promise<string | null> {
-    const isAuth = await this.isAuthenticated();
+    const isAuth = this.isAuthenticated();
     if (!isAuth) {
       await this.authenticate();
     }
@@ -179,7 +179,7 @@ export class AuthService {
     }
 
     const token = authHeader.substring(7); // Remove 'Bearer ' prefix
-    await this.storeToken(token);
+    this.storeToken(token);
   }
 
   /**
@@ -209,7 +209,7 @@ export class AuthService {
   /**
    * Store JWT token and calculate expiry
    */
-  private static async storeToken(token: string): Promise<void> {
+  private static storeToken(token: string): void {
     try {
       const expiry = this.extractTokenExpiry(token);
 
@@ -219,8 +219,8 @@ export class AuthService {
       const now = Date.now();
       const timeToExpiry = expiry - now;
 
-      await AsyncStorage.setItem(STORAGE_KEYS.JWT_TOKEN, token);
-      await AsyncStorage.setItem(STORAGE_KEYS.JWT_EXPIRY, expiry.toString());
+      SecureMMKVStorage.setItem(STORAGE_KEYS.JWT_TOKEN, token);
+      SecureMMKVStorage.setItem(STORAGE_KEYS.JWT_EXPIRY, expiry.toString());
     } catch (error) {
       console.error('Error storing JWT token:', error);
       throw new Error('Failed to store authentication token');
@@ -230,9 +230,9 @@ export class AuthService {
   /**
    * Store username in local storage
    */
-  static async storeUsername(username: string): Promise<void> {
+  static storeUsername(username: string): void {
     try {
-      await AsyncStorage.setItem(STORAGE_KEYS.USERNAME, username);
+      SecureMMKVStorage.setItem(STORAGE_KEYS.USERNAME, username);
     } catch (error) {
       console.error('Error storing username:', error);
       throw new Error('Failed to store username');
@@ -242,9 +242,9 @@ export class AuthService {
   /**
    * Get stored username
    */
-  static async getStoredUsername(): Promise<string | null> {
+  static getStoredUsername(): string | null {
     try {
-      return await AsyncStorage.getItem(STORAGE_KEYS.USERNAME);
+      return SecureMMKVStorage.getItem(STORAGE_KEYS.USERNAME);
     } catch (error) {
       console.error('Error retrieving username:', error);
       return null;
@@ -254,18 +254,18 @@ export class AuthService {
   /**
    * Get current user's username
    */
-  static async getCurrentUsername(): Promise<string | null> {
-    return await this.getStoredUsername();
+  static getCurrentUsername(): string | null {
+    return this.getStoredUsername();
   }
 
   /**
    * Clear stored authentication data
    */
-  private static async clearStoredAuth(): Promise<void> {
+  private static clearStoredAuth(): void {
     this.jwtToken = null;
     this.jwtExpiry = null;
     
-    await AsyncStorage.multiRemove([
+    SecureMMKVStorage.multiRemove([
       STORAGE_KEYS.JWT_TOKEN,
       STORAGE_KEYS.JWT_EXPIRY
     ]);
@@ -280,7 +280,7 @@ export class AuthService {
       // Get master wallet keypair and derive public key from it
       const masterWalletKeypair = await getMasterWalletKeypair();
       const publicKey = masterWalletKeypair.publicKey.toBase58();
-      const storedUsername = await this.getStoredUsername();
+      const storedUsername = this.getStoredUsername();
       
       if (!storedUsername) {
         throw new Error('No username found. Please complete wallet setup first.');

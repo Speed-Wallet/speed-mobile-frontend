@@ -12,7 +12,7 @@ import { useWalletPublicKey, getAllStoredWallets, getActiveWalletId } from '@/se
 import { setStringAsync } from 'expo-clipboard';
 import ScreenContainer from '@/components/ScreenContainer';
 import TabSelector from '@/components/TabSelector';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AuthService } from '@/services/authService';
 // import CryptoTest from '@/components/CryptoTest';
 
 
@@ -42,7 +42,7 @@ export default function HomeScreen() {
 
   const loadUserData = async () => {
     try {
-      const storedUsername = await AsyncStorage.getItem('username');
+      const storedUsername = AuthService.getStoredUsername();
       if (storedUsername) {
         setUsername(storedUsername);
       }

@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { Settings, Plus } from 'lucide-react-native';
 import colors from '@/constants/colors';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { SecureMMKVStorage } from '@/utils/mmkvStorage';
 import ScreenContainer from '@/components/ScreenContainer';
 
 interface DevStartupScreenProps {
@@ -23,7 +23,7 @@ export default function DevStartupScreen({ onCreateWallet, onEnterApp, hasExisti
           onPress: async () => {
             try {
               // Clear all wallet-related data
-              await AsyncStorage.multiRemove([
+              SecureMMKVStorage.multiRemove([
                 'solanaWalletsList',
                 'solanaActiveWallet', 
                 'appPin',
