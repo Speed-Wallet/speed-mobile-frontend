@@ -129,7 +129,8 @@ export async function sendCryptoTransaction(params: SendTransactionParams): Prom
           CONNECTION,
           WALLET,
           tokenPublicKey,
-          PLATFORM_FEE_ACCOUNT
+          PLATFORM_FEE_ACCOUNT,
+          true,
         );
 
         // Create transfer instruction for fee

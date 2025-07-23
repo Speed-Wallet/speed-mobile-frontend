@@ -1,7 +1,7 @@
+import { CONNECTION } from "@/services/walletService";
 import { getAccount, getAssociatedTokenAddressSync } from "@solana/spl-token";
-import { Connection, PublicKey } from "@solana/web3.js";
+import { PublicKey } from "@solana/web3.js";
 
-export const CONNECTION = new Connection('https://solana-rpc.publicnode.com');
 
 const fetchTokenBalance = async (
     token: { address: string; symbol: string; decimals: number },
