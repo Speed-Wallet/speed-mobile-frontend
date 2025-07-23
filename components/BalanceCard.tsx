@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import ActionButton from '@/components/ActionButton'; 
-import { ArrowUp, ArrowDown, CreditCard, ArrowRightLeft } from 'lucide-react-native';
+import { ArrowUp, ArrowDown, CreditCard, ArrowRightLeft, ShoppingCart } from 'lucide-react-native';
 import colors from '@/constants/colors'; 
 import GradientCard from './GradientCard';
 import { usePortfolioValue } from '@/hooks/usePortfolioValue';
@@ -27,12 +27,13 @@ const BalanceCard: React.FC<BalanceCardProps> = ({
     { label: "RECEIVE", icon: ArrowDown, bgColor: "#28C165", actionId: "receive" },
     { label: "CARDS", icon: CreditCard, bgColor: "#F5A623", actionId: "cards" },
     { label: "TRADE", icon: ArrowRightLeft, bgColor: "#A259FF", actionId: "trade" },
+    // { label: "BUY", icon: ShoppingCart, bgColor: "#FF6B35", actionId: "buy" },
   ];
 
   return (
     <GradientCard style={styles.balanceCardSpecificContainer}>
       <View style={styles.upperContent}>
-        <Text style={styles.balanceLabel}>TOTAL BALANCE</Text>
+        {/* <Text style={styles.balanceLabel}>TOTAL BALANCE</Text> */}
         <Text style={styles.balanceAmount}>
           {currencySymbol}{formattedBalance}
         </Text>
@@ -80,8 +81,10 @@ const styles = StyleSheet.create({
   },
   actionButtonsContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
     alignItems: 'center',
+    rowGap: 16,
   },
 });
 

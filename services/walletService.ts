@@ -18,13 +18,12 @@ import {
 } from '@solana/spl-token';
 import CryptoJS from 'crypto-js';
 import { useEffect, useState } from 'react';
-import { registerSwap } from './transactionApi';
+import { getJupiterQuote, prepareJupiterSwap, submitSignedTransaction, type JupiterQuoteResponse } from './jupiterApi';
 import { generateMnemonic, mnemonicToSeed, validateMnemonic } from '@/utils/bip39';
 import { createKeypairFromMnemonic, getSolanaDerivationPath, getNextAccountIndex } from '@/utils/derivation';
 import { AuthService } from './authService';
 
 export const CONNECTION = new Connection(`https://mainnet.helius-rpc.com/?api-key=${process.env.EXPO_PUBLIC_HELIUS_API_KEY}`, 'confirmed');
-const JUPITER_API_URL = 'https://lite-api.jup.ag/swap/v1/';
 
 const WALLETS_LIST_KEY = 'solanaWalletsList'; // Key for storing wallet list
 const ACTIVE_WALLET_KEY = 'solanaActiveWallet'; // Key for active wallet ID
@@ -594,335 +593,50 @@ export const lockWallet = (): void => {
   console.log("Temporary PIN cleared from memory.");
 };
 
-export const JupiterQuote = async (
-  fromMint: string,
-  toMint: string,
-  amount: number
-): Promise<any> => {
-  const quoteQueries = [
-    `inputMint=${fromMint}`,
-    `outputMint=${toMint}`,
-    `amount=${amount}`,
-    'restrictIntermediateTokens=true',
-    'dynamicSlippage=true'
-  ];
+// Re-export Jupiter functions from the new API service
+export { getJupiterQuote as JupiterQuote, type JupiterQuoteResponse } from './jupiterApi';
 
-  return (await fetch(`${JUPITER_API_URL}quote?${quoteQueries.join('&')}`)).json();
+/**
+ * New jupiterSwap function that uses the backend API
+ * This maintains the same interface as the old function for compatibility
+ */
+export const jupiterSwap = async (quoteResponse: JupiterQuoteResponse, platformFee: number): Promise<string> => {
+  if (!WALLET) {
+    throw new Error('No wallet found');
+  }
+
+  try {
+    // Step 1: Prepare the swap transaction on the backend
+    const { transaction, blockhash, lastValidBlockHeight } = await prepareJupiterSwap(
+      quoteResponse,
+      platformFee,
+      WALLET.publicKey.toBase58()
+    );
+
+    // Step 2: Deserialize and sign the transaction locally
+    const transactionBuffer = Buffer.from(transaction, 'base64');
+    const versionedTransaction = VersionedTransaction.deserialize(transactionBuffer);
+    
+    // Sign the transaction with the user's wallet
+    versionedTransaction.sign([WALLET]);
+    
+    // Step 3: Submit the signed transaction to the backend
+    const signedTransactionBuffer = Buffer.from(versionedTransaction.serialize());
+    const signedTransaction = signedTransactionBuffer.toString('base64');
+    
+    const { signature } = await submitSignedTransaction(
+      signedTransaction,
+      blockhash,
+      lastValidBlockHeight,
+      WALLET.publicKey.toBase58()
+    );
+
+    return signature;
+  } catch (error) {
+    console.error('Jupiter swap error:', error);
+    throw error;
+  }
 };
-
-export const jupiterSwap = async (quoteResponse: any, platformFee: number): Promise<string> => {
-  if (!WALLET) throw 'No wallet found';
-
-  const inAmount = parseInt(quoteResponse.inAmount);
-
-  if (isNaN(inAmount)) {
-    throw new Error(`Invalid inAmount`);
-  }
-
-  const { inputMint, outputMint } = quoteResponse;
-  const instructions: TransactionInstruction[] = [];
-  const AddIxPromises: Promise<any>[] = [];
-  const walletPubkey = WALLET.publicKey;
-
-  // Wallet fee instruction
-  if (inputMint === WSOL_MINT) {
-    instructions.push(SystemProgram.transfer({
-      fromPubkey: WALLET.publicKey,
-      toPubkey: PLATFORM_FEE_ACCOUNT,
-      lamports: platformFee
-    }));
-  } else {
-    const inputMintPubKey = new PublicKey(inputMint);
-    const walletFeeIxPromise = Promise.all([
-      getAssociatedTokenAddress(inputMintPubKey, WALLET.publicKey),
-       getAssociatedTokenAddress(
-        inputMintPubKey, 
-        PLATFORM_FEE_ACCOUNT,
-        true
-      )
-    ])
-    .then(([walletATA, platformFeeATA]) => instructions.push(
-      createTransferInstruction(
-        walletATA,
-        platformFeeATA,
-        walletPubkey,
-        platformFee
-      )
-    ));
-
-    AddIxPromises.push(walletFeeIxPromise);
-  }
-  // Create output mint ata for the user if it's not available.
-  // The only exception is when the ouput mint is WSOL. This is
-  // because we assume WSOL means native SOL.
-  if (outputMint !== WSOL_MINT) {
-    const outputMintPubKey = new PublicKey(outputMint);
-    const outputATAPromise = getAssociatedTokenAddress(outputMintPubKey, WALLET.publicKey)
-    .then(async ata => {
-      const ataInfo = await CONNECTION.getAccountInfo(ata, 'confirmed');
-      if (!ataInfo) {
-        console.log(`Creating output mint ATA`);
-    
-        instructions.push(createAssociatedTokenAccountInstruction(
-          walletPubkey,
-          ata,
-          walletPubkey,
-          outputMintPubKey
-        ));
-      }
-    });
-    
-    AddIxPromises.push(outputATAPromise);
-  }
-  
-  await Promise.all(AddIxPromises);
-  
-  const [CUsForPrimaryProcessing, jupiterInstructionsResponse] = await Promise.all([
-    getCUsForTransaction(instructions, WALLET),
-    fetch(`${JUPITER_API_URL}swap-instructions?dynamicSlippage=true`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        quoteResponse,
-        userPublicKey: WALLET.publicKey.toBase58(),
-        dynamicComputeUnitLimit: true,
-        dynamicSlippage: true,
-        wrapUnwrapSOL: true,
-        prioritizationFeeLamports: 'auto'
-      })
-    }).then(res => res.json())
-  ]);
-
-  const {
-      setupInstructions,
-      swapInstruction,
-      cleanupInstruction,
-      tokenLedgerInstruction,
-      addressLookupTableAddresses,
-      prioritizationFeeLamports,
-      computeUnitLimit
-  } = jupiterInstructionsResponse;
-
-  // Add token ledger instruction if present
-  if (tokenLedgerInstruction) {
-    instructions.push(deserializeInstruction(tokenLedgerInstruction));
-  }
-
-  // Add setup instructions (e.g., create ATAs)
-  if (setupInstructions) {
-    instructions.push(...setupInstructions.map(deserializeInstruction));
-  }
-
-  // Add the main swap instruction
-  instructions.push(deserializeInstruction(swapInstruction));
-
-  // Add cleanup instructions (e.g., close ATAs)
-  if (cleanupInstruction) {
-    instructions.push(deserializeInstruction(cleanupInstruction));
-  }
-
-  // Deserialize Address Lookup Table Accounts
-  const deserializedAddressLookupTableAccounts: AddressLookupTableAccount[] = await Promise.all(
-    addressLookupTableAddresses.map(
-      (address: string) => CONNECTION
-        .getAddressLookupTable(new PublicKey(address))
-        .then(res => res.value)
-    )
-  );
-
-  const computeUnitPrice = Math.round(prioritizationFeeLamports * 1e6 / computeUnitLimit);
-  const totalComputeUnits = CUsForPrimaryProcessing + computeUnitLimit;
-
-  instructions.unshift(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: computeUnitPrice }));
-  instructions.unshift(ComputeBudgetProgram.setComputeUnitLimit({ units: totalComputeUnits }));
-
-  const [swapTx, blockhash, lastValidBlockHeight] = await composeAndSignTransaction(
-    instructions,
-    WALLET,
-    deserializedAddressLookupTableAccounts
-  );
-
-  // Transaction signature is the first signature in the "signatures" list.
-  const signature = bs58.encode(swapTx.signatures[0]);
-  const txSendPromise = CONNECTION.sendRawTransaction(swapTx.serialize(), { 
-    maxRetries: 2, 
-    skipPreflight: false, 
-    preflightCommitment: 'confirmed' 
-  });
-  const registerSwapPromise = registerSwap(signature, blockhash, lastValidBlockHeight);
-
-  try {
-    await Promise.all([txSendPromise, registerSwapPromise]);
-  } catch (err) {
-    throw parseError(err);
-  }
-
-  const res = await CONNECTION.confirmTransaction({
-    signature, blockhash, lastValidBlockHeight
-  }, 'confirmed');
-
-  if (res.value.err) {
-    console.error(res.value.err);
-    throw new Error('Swap failed');
-  }
-  
-  return signature;
-}
-
-async function getCUsForTransaction(instructions: TransactionInstruction[], wallet: Keypair)
-: Promise<number> {
-  const tx = (await composeAndSignTransaction(instructions, wallet))[0];
-
-  try {
-    console.log('Simulating tranaction');
-    const simResult = await CONNECTION.simulateTransaction(tx);
-
-    if (simResult.value.err) {
-      throw parseSimulationError(simResult);
-    }
-
-    if (simResult.value.unitsConsumed === undefined) {
-      throw new Error('Simulated compute units is "undefined"');
-    }
-
-    // Return with extra 10% for error tolerance.
-    return Math.ceil(simResult.value.unitsConsumed * 1.1);
-  } catch (err) {
-    // This catch block would handle network errors or malformed transaction errors
-    throw new Error(`Transaction simulation error: ${err}`)
-  }
-}
-
-async function composeAndSignTransaction(
-  instructions: TransactionInstruction[],
-  wallet: Keypair,
-  lutAccounts?: AddressLookupTableAccount[]
-): Promise<[VersionedTransaction, string, number]> {
-  const { blockhash, lastValidBlockHeight } = await CONNECTION.getLatestBlockhash('confirmed');
-  const messageV0 = new TransactionMessage({
-    payerKey: wallet.publicKey,
-    recentBlockhash: blockhash,
-    instructions: instructions
-  }).compileToV0Message(lutAccounts);
-
-  const transaction = new VersionedTransaction(messageV0);
-  transaction.sign([wallet]);
-  return [transaction, blockhash, lastValidBlockHeight];
-}
-
-function deserializeInstruction(instructionPayload: any): TransactionInstruction {
-  return new TransactionInstruction({
-    programId: new PublicKey(instructionPayload.programId),
-    keys: instructionPayload.accounts.map((acc: any) => ({
-        pubkey: new PublicKey(acc.pubkey),
-        isSigner: acc.isSigner,
-        isWritable: acc.isWritable,
-    })),
-    data: Buffer.from(instructionPayload.data, 'base64'),
-  });
-}
-
-function parseError(error: any): ErrorType {
-  if (error.message.includes('Transaction simulation failed:')) {
-    const rentError = { code: 1, text: 'INSUFFICIENT_SOL_FOR_RENT' };
-    const feeError = { code: 2, text: 'INSUFFICIENT_SOL_FOR_FEES' };
-    const tokenBalanceError = { code: 3, text: 'INSUFFICIENT_TOKEN_BALANCE' };
-
-    if (error.message.includes('InsufficientFundsForFee')) {
-      console.error('ERROR: Your wallet has insufficient SOL balance to pay for transaction fees.');
-      console.error('Action: Please deposit more SOL into your wallet.');
-      return feeError
-    }
-    
-    if (error.message.includes('insufficient funds for rent')) {
-      // This usually means creating a new ATA would make SOL balance go below rent exemption
-      console.error('ERROR: Insufficient SOL balance for rent exemption for a new token account.');
-      console.error('Action: Ensure you have enough SOL to cover transaction fees AND rent for new token accounts.');
-      return rentError;
-    }
-    
-    if (error.message.includes('custom program error: 0x1') || error.message.includes('InsufficientFunds')) {
-      // This is the tricky part - if preflight *does* run instructions
-      // or if the error is from the *on-chain* execution (if skipPreflight was true)
-      console.error('ERROR: Insufficient balance of the TOKEN you are trying to swap FROM.');
-      console.error('Action: Ensure you have enough of the input token (e.g., USDC if swapping USDC for SOL).');
-      return tokenBalanceError;
-    }
-    
-    // Other simulation failures (e.g., invalid arguments, compute budget exceeded)
-    console.error('Transaction simulation failed for another reason:', error.message);
-    return { code: 4, text: 'TRANSACTION_SIMULATION_FAILED' };
-  }
-  
-  // Errors not from simulation (e.g., network issues, RPC node errors)
-  console.error('An unexpected error occurred during transaction sending:', error.message);
-  return { code: 4, text: 'NETWORK_OR_RPC_ERROR' };
-}
-
-function parseSimulationError(simulationResult: any): ErrorType {
-  const rentError = { code: 1, text: 'INSUFFICIENT_SOL_FOR_RENT' };
-  const feeError = { code: 2, text: 'INSUFFICIENT_SOL_FOR_FEES' };
-  const tokenBalanceError = { code: 3, text: 'INSUFFICIENT_TOKEN_BALANCE' };
-
-  console.error('Transaction simulation failed:');
-  console.error(JSON.stringify(simulationResult.value.err, null, 2));
-
-  const error = simulationResult.value.err;
-  const logs = simulationResult.value.logs || [];
-
-  // Check for general 'insufficient funds' in logs
-  if (logs.some((log: any) => log.includes('insufficient funds') || log.includes('insufficient lamports'))) {
-    console.error('Identified: General insufficient funds/lamports error in logs.');
-    return feeError;
-  }
-
-  // Specific program errors
-  if (typeof error === 'object' && 'InstructionError' in error) {
-    const instructionError = error.InstructionError;
-    const instructionIndex = instructionError[0];
-    const programError = instructionError[1];
-
-    console.error(`Error occurred in instruction at index ${instructionIndex}.`);
-
-    if (typeof programError === 'object' && 'Custom' in programError) {
-      // Custom program error (e.g., from SystemProgram for insufficient SOL)
-      // The System Program's insufficient funds error is typically 0x1
-      if (programError.Custom === 1) {
-        console.error('Identified: Custom program error 0x1 (often insufficient SOL).');
-        return tokenBalanceError;
-      }
-      
-      return { code: 4, text: `Identified: Custom program error code: ${programError.Custom}` };
-    }
-    
-    if (typeof programError === 'string' && programError.includes('insufficient funds for rent')) {
-      // Rent exemption error
-      console.error('Identified: Insufficient funds for rent exemption.');
-      return rentError;
-    }
-    
-    if (typeof programError === 'string' && programError.includes('insufficient lamports')) {
-      // Direct lamports error
-      console.error('Identified: Insufficient lamports for transfer.');
-      return feeError
-    }
-    
-    return { code: 4, text: 'GENERIC ERROR' };
-  }
-  
-  if (typeof error === 'string' && error.includes('insufficient funds for fee')) {
-    console.error('Identified: Insufficient SOL for transaction fees.');
-    return feeError;
-  }
-
-  // Add more generic checks if the error structure is different
-  if (JSON.stringify(error).includes('insufficient funds') || JSON.stringify(error).includes('lack of balance')) {
-    console.error('Identified: Generic insufficient funds/lack of balance in error object.');
-    return feeError;
-  }
-
-  return { code: 4, text: 'GENERIC ERROR' };
-}
 
 export const importWalletFromMnemonic = async (mnemonic: string): Promise<SolanaWallet> => {
   // Validate the mnemonic first

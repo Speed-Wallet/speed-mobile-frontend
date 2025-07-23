@@ -1,6 +1,5 @@
-import { Connection, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
-
-export const CONNECTION = new Connection('https://solana-rpc.publicnode.com');
+import { CONNECTION } from "@/services/walletService";
+import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 
 
 async function getNativeSolBalance(walletPublicKey: PublicKey): Promise<number> {
