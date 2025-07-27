@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: 'transparent',
+    borderColor: '#7c5cff',
   },
   pinInputAreaFocused: {
     borderColor: 'rgba(124, 92, 255, 0.3)',
@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     marginHorizontal: 10,
     borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderColor: '#7c5cff',
     alignItems: 'center',
     justifyContent: 'center',
   },

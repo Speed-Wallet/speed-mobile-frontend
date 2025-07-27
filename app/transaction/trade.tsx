@@ -135,7 +135,7 @@ export default function TradeScreen() {
   const [swapTxSignature, setSwapTxSignature] = useState<string>('');
 
   // Custom keyboard state
-  const [showCustomKeyboard, setShowCustomKeyboard] = useState(false);
+  const [showCustomKeyboard, setShowCustomKeyboard] = useState(true);
   const [activeInput, setActiveInput] = useState<'from' | null>(null);
 
   function updateAmounts() {
@@ -417,11 +417,9 @@ export default function TradeScreen() {
 
   const handleInputFocus = useCallback(() => {
     setActiveInput('from');
-    setShowCustomKeyboard(true);
   }, []);
 
   const handleCloseKeyboard = useCallback(() => {
-    setShowCustomKeyboard(false);
     setActiveInput(null);
   }, []);
 
@@ -487,50 +485,98 @@ export default function TradeScreen() {
               <View style={styles.inlineKeyboard}>
                 <View style={styles.keyboardGrid}>
                   <View style={styles.keyboardRow}>
-                    <TouchableOpacity style={styles.keyboardKey} onPress={() => handleKeyPress('1')}>
-                      <Text style={styles.keyboardKeyText}>1</Text>
+                    <TouchableOpacity 
+                      style={[styles.keyboardKey, !activeInput && styles.keyboardKeyDisabled]} 
+                      onPress={() => handleKeyPress('1')}
+                      disabled={!activeInput}
+                    >
+                      <Text style={[styles.keyboardKeyText, !activeInput && styles.keyboardKeyTextDisabled]}>1</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.keyboardKey} onPress={() => handleKeyPress('2')}>
-                      <Text style={styles.keyboardKeyText}>2</Text>
+                    <TouchableOpacity 
+                      style={[styles.keyboardKey, !activeInput && styles.keyboardKeyDisabled]} 
+                      onPress={() => handleKeyPress('2')}
+                      disabled={!activeInput}
+                    >
+                      <Text style={[styles.keyboardKeyText, !activeInput && styles.keyboardKeyTextDisabled]}>2</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.keyboardKey} onPress={() => handleKeyPress('3')}>
-                      <Text style={styles.keyboardKeyText}>3</Text>
-                    </TouchableOpacity>
-                  </View>
-                  
-                  <View style={styles.keyboardRow}>
-                    <TouchableOpacity style={styles.keyboardKey} onPress={() => handleKeyPress('4')}>
-                      <Text style={styles.keyboardKeyText}>4</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.keyboardKey} onPress={() => handleKeyPress('5')}>
-                      <Text style={styles.keyboardKeyText}>5</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.keyboardKey} onPress={() => handleKeyPress('6')}>
-                      <Text style={styles.keyboardKeyText}>6</Text>
-                    </TouchableOpacity>
-                  </View>
-                  
-                  <View style={styles.keyboardRow}>
-                    <TouchableOpacity style={styles.keyboardKey} onPress={() => handleKeyPress('7')}>
-                      <Text style={styles.keyboardKeyText}>7</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.keyboardKey} onPress={() => handleKeyPress('8')}>
-                      <Text style={styles.keyboardKeyText}>8</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.keyboardKey} onPress={() => handleKeyPress('9')}>
-                      <Text style={styles.keyboardKeyText}>9</Text>
+                    <TouchableOpacity 
+                      style={[styles.keyboardKey, !activeInput && styles.keyboardKeyDisabled]} 
+                      onPress={() => handleKeyPress('3')}
+                      disabled={!activeInput}
+                    >
+                      <Text style={[styles.keyboardKeyText, !activeInput && styles.keyboardKeyTextDisabled]}>3</Text>
                     </TouchableOpacity>
                   </View>
                   
                   <View style={styles.keyboardRow}>
-                    <TouchableOpacity style={styles.keyboardKey} onPress={() => handleKeyPress('.')}>
-                      <Text style={styles.keyboardKeyText}>.</Text>
+                    <TouchableOpacity 
+                      style={[styles.keyboardKey, !activeInput && styles.keyboardKeyDisabled]} 
+                      onPress={() => handleKeyPress('4')}
+                      disabled={!activeInput}
+                    >
+                      <Text style={[styles.keyboardKeyText, !activeInput && styles.keyboardKeyTextDisabled]}>4</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.keyboardKey} onPress={() => handleKeyPress('0')}>
-                      <Text style={styles.keyboardKeyText}>0</Text>
+                    <TouchableOpacity 
+                      style={[styles.keyboardKey, !activeInput && styles.keyboardKeyDisabled]} 
+                      onPress={() => handleKeyPress('5')}
+                      disabled={!activeInput}
+                    >
+                      <Text style={[styles.keyboardKeyText, !activeInput && styles.keyboardKeyTextDisabled]}>5</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.keyboardKey} onPress={() => handleKeyPress('backspace')}>
-                      <Text style={styles.keyboardKeyText}>⌫</Text>
+                    <TouchableOpacity 
+                      style={[styles.keyboardKey, !activeInput && styles.keyboardKeyDisabled]} 
+                      onPress={() => handleKeyPress('6')}
+                      disabled={!activeInput}
+                    >
+                      <Text style={[styles.keyboardKeyText, !activeInput && styles.keyboardKeyTextDisabled]}>6</Text>
+                    </TouchableOpacity>
+                  </View>
+                  
+                  <View style={styles.keyboardRow}>
+                    <TouchableOpacity 
+                      style={[styles.keyboardKey, !activeInput && styles.keyboardKeyDisabled]} 
+                      onPress={() => handleKeyPress('7')}
+                      disabled={!activeInput}
+                    >
+                      <Text style={[styles.keyboardKeyText, !activeInput && styles.keyboardKeyTextDisabled]}>7</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={[styles.keyboardKey, !activeInput && styles.keyboardKeyDisabled]} 
+                      onPress={() => handleKeyPress('8')}
+                      disabled={!activeInput}
+                    >
+                      <Text style={[styles.keyboardKeyText, !activeInput && styles.keyboardKeyTextDisabled]}>8</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={[styles.keyboardKey, !activeInput && styles.keyboardKeyDisabled]} 
+                      onPress={() => handleKeyPress('9')}
+                      disabled={!activeInput}
+                    >
+                      <Text style={[styles.keyboardKeyText, !activeInput && styles.keyboardKeyTextDisabled]}>9</Text>
+                    </TouchableOpacity>
+                  </View>
+                  
+                  <View style={styles.keyboardRow}>
+                    <TouchableOpacity 
+                      style={[styles.keyboardKey, !activeInput && styles.keyboardKeyDisabled]} 
+                      onPress={() => handleKeyPress('.')}
+                      disabled={!activeInput}
+                    >
+                      <Text style={[styles.keyboardKeyText, !activeInput && styles.keyboardKeyTextDisabled]}>.</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={[styles.keyboardKey, !activeInput && styles.keyboardKeyDisabled]} 
+                      onPress={() => handleKeyPress('0')}
+                      disabled={!activeInput}
+                    >
+                      <Text style={[styles.keyboardKeyText, !activeInput && styles.keyboardKeyTextDisabled]}>0</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={[styles.keyboardKey, !activeInput && styles.keyboardKeyDisabled]} 
+                      onPress={() => handleKeyPress('backspace')}
+                      disabled={!activeInput}
+                    >
+                      <Text style={[styles.keyboardKeyText, !activeInput && styles.keyboardKeyTextDisabled]}>⌫</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -1115,5 +1161,13 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontFamily: 'Inter-SemiBold',
     color: colors.textPrimary,
+  },
+  keyboardKeyDisabled: {
+    backgroundColor: colors.backgroundMedium,
+    opacity: 0.5,
+  },
+  keyboardKeyTextDisabled: {
+    color: colors.textSecondary,
+    opacity: 0.5,
   },
 });
