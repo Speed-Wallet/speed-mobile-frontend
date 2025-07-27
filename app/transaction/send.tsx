@@ -1,8 +1,12 @@
-import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Image } from 'react-native';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Image, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Search, ArrowRight } from 'lucide-react-native';
+import { Search, ArrowRight, Check, DollarSign } from 'lucide-react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import BottomSheet, { BottomSheetView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { LinearGradient } from 'expo-linear-gradient';
+import Toast from '@/components/Toast';
 import colors from '@/constants/colors';
 import { getAllTokenInfo, getTokenByAddress } from '@/data/tokens';
 
@@ -28,6 +32,27 @@ export default function SendScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedContact, setSelectedContact] = useState<any>(null);
   const [filteredContacts, setFilteredContacts] = useState(RecentContacts);
+  
+  // Bottom sheet states
+  const previewBottomSheetRef = useRef<BottomSheet>(null);
+  const statusBottomSheetRef = useRef<BottomSheet>(null);
+  const [isPreviewSheetOpen, setIsPreviewSheetOpen] = useState(false);
+  const [isStatusSheetOpen, setIsStatusSheetOpen] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [sendResult, setSendResult] = useState<{ success: boolean; signature?: string; error?: string } | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  
+  const renderBackdrop = useCallback(
+    (props: any) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        opacity={0.5}
+      />
+    ),
+    []
+  );
 
   useEffect(() => {
     const loadData = async () => {
@@ -74,11 +99,37 @@ export default function SendScreen() {
     throw new Error('tokenAddress should not be an array');
   }
 
-  const handleSend = async () => {
+  const handleSend = () => {
     if (!selectedToken) {
-      alert("Please select a token to send.");
+      setToast({ message: "Please select a token to send.", type: "error" });
       return;
     }
+    if (!amount) {
+      setToast({ message: "Please enter an amount.", type: "error" });
+      return;
+    }
+    if (!recipient && !selectedContact) {
+      setToast({ message: "Please enter a recipient.", type: "error" });
+      return;
+    }
+    
+    setIsPreviewSheetOpen(true);
+    previewBottomSheetRef.current?.expand();
+  };
+
+  const handleConfirmSend = async () => {
+    if (!selectedToken) {
+      return;
+    }
+
+    setIsSending(true);
+    previewBottomSheetRef.current?.close();
+    setIsPreviewSheetOpen(false);
+    
+    setTimeout(() => {
+      statusBottomSheetRef.current?.expand();
+      setIsStatusSheetOpen(true);
+    }, 300);
 
     const result = await sendCryptoTransaction({
       amount: amount || '',
@@ -86,11 +137,19 @@ export default function SendScreen() {
       tokenAddress: selectedToken.address,
       tokenSymbol: selectedToken.symbol,
       tokenDecimals: selectedToken.decimals,
-      showAlert: true
+      showAlert: false
     });
+
+    setSendResult(result);
+    setIsSending(false);
 
     if (result.success) {
       console.log("Transaction successful. Signature:", result.signature);
+      // Clear inputs after successful send
+      setAmount('');
+      setRecipient('');
+      setNote('');
+      setSelectedContact(null);
     } else {
       console.error("Transaction failed:", result.error);
     }
@@ -102,162 +161,289 @@ export default function SendScreen() {
   };
 
   return (
-    <ScreenContainer edges={['top', 'bottom']}>
-      <ScreenHeader 
-        title="Send Crypto"
-        onBack={() => router.push('/' as any)}
-      />
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ScreenContainer edges={['top', 'bottom']}>
+        <ScreenHeader 
+          title="Send Crypto"
+          onBack={() => router.push('/' as any)}
+        />
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.content}
-      >
-        {selectedToken && (
-          <>
-            <Text style={styles.inputLabel}>Token</Text>
-            <TokenItem 
-              token={selectedToken} 
-              onPress={() => router.push({
-                pathname: '/token/select',
-                params: {
-                  selectedAddress: selectedToken?.address
-                }
-              })} 
-              showSelectorIcon={true} 
-            />
-            <Text style={styles.inputLabel}>Amount</Text>
-            <AmountInputWithValue
-              address={selectedToken.address}
-              amount={amount || ''}
-              setAmount={setAmount}
-            />
-
-            {/* Recipient Section */}
-            <Animated.View entering={FadeIn.delay(200)} style={styles.recipientSection}>
-              <Text style={styles.inputLabel}>Send To</Text>
-
-              {selectedContact ? (
-                <View style={styles.selectedContactContainer}>
-                  <Image
-                    source={{ uri: selectedContact.avatar }}
-                    style={styles.contactAvatar}
-                  />
-                  <View style={styles.contactInfo}>
-                    <Text style={styles.contactName}>{selectedContact.name}</Text>
-                    <Text style={styles.contactUsername}>@{selectedContact.username}</Text>
-                  </View>
-                  <TouchableOpacity
-                    style={styles.changeButton}
-                    onPress={() => setSelectedContact(null)}
-                  >
-                    <Text style={styles.changeButtonText}>Change</Text>
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                <>
-                  <View style={styles.searchContainer}>
-                    <Search size={20} color={colors.textSecondary} />
-                    <TextInput
-                      style={styles.searchInput}
-                      placeholder="Search contacts or paste recipient"
-                      placeholderTextColor={colors.textSecondary}
-                      value={searchQuery}
-                      onChangeText={(value) => {
-                        setSearchQuery(value);
-                        setRecipient(value)
-                      }}
-                    />
-                  </View>
-
-                  {/* <View style={styles.optionsRow}>
-                    <TouchableOpacity style={styles.optionButton}>
-                      <View style={styles.optionIconContainer}>
-                        <User size={20} color={colors.textPrimary} />
-                      </View>
-                      <Text style={styles.optionText}>Address Book</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.optionButton}>
-                      <View style={styles.optionIconContainer}>
-                        <Send size={20} color={colors.textPrimary} />
-                      </View>
-                      <Text style={styles.optionText}>Recent</Text>
-                    </TouchableOpacity>
-                  </View>
-
-                  {filteredContacts.length > 0 ? (
-                    <ScrollView
-                      horizontal
-                      showsHorizontalScrollIndicator={false}
-                      contentContainerStyle={styles.contactsContainer}
-                    >
-                      {filteredContacts.map((contact) => (
-                        <TouchableOpacity
-                          key={contact.id}
-                          style={styles.contactItem}
-                          onPress={() => handleSelectContact(contact)}
-                        >
-                          <Image
-                            source={{ uri: contact.avatar }}
-                            style={styles.contactImage}
-                          />
-                          <Text style={styles.contactItemName}>{contact.name}</Text>
-                        </TouchableOpacity>
-                      ))}
-                    </ScrollView>
-                  ) : (
-                    searchQuery ? (
-                      <Text style={styles.noResults}>No contacts found</Text>
-                    ) : null
-                  )} */}
-
-                  {/* <AddressInput
-                    recipient={recipient}
-                    onChangeAddress={setRecipient}
-                    selectedToken={selectedToken}
-                  /> */}
-                </>
-              )}
-            </Animated.View>
-
-            {/* Note Input */}
-            <Animated.View entering={FadeIn.delay(300)} style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Note (Optional)</Text>
-              <TextInput
-                style={styles.noteInput}
-                placeholder="Add a note"
-                placeholderTextColor={colors.textSecondary}
-                value={note}
-                onChangeText={setNote}
-                multiline
-              />
-            </Animated.View>
-
-            {/* Network Fee info */}
-            {/* <Animated.View entering={FadeIn.delay(400)} style={styles.feeContainer}>
-              <Text style={styles.feeLabel}>Network Fee</Text>
-              <Text style={styles.feeValue}>
-                0.00005 {selectedToken.symbol} (~{formatCurrency(0.00005 * selectedToken.price)})
-              </Text>
-            </Animated.View> */}
-          </>
-        )}
-      </ScrollView>
-
-      {/* Send Button */}
-      <Animated.View entering={FadeInDown.duration(300)} style={styles.bottomContainer}>
-        <TouchableOpacity
-          style={[
-            styles.sendButton,
-            (!amount || !recipient && !selectedContact) && styles.sendButtonDisabled
-          ]}
-          disabled={!amount || (!recipient && !selectedContact)}
-          onPress={handleSend}
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.content}
         >
-          <Text style={styles.sendButtonText}>Preview Transaction</Text>
-          <ArrowRight size={20} color={colors.white} />
-        </TouchableOpacity>
-      </Animated.View>
-    </ScreenContainer>
+          {selectedToken && (
+            <>
+              <Text style={styles.inputLabel}>Token</Text>
+              <TokenItem 
+                token={selectedToken} 
+                onPress={() => router.push({
+                  pathname: '/token/select',
+                  params: {
+                    selectedAddress: selectedToken?.address
+                  }
+                })} 
+                showSelectorIcon={true} 
+              />
+              <Text style={styles.inputLabel}>Amount</Text>
+              <AmountInputWithValue
+                address={selectedToken.address}
+                amount={amount || ''}
+                setAmount={setAmount}
+              />
+
+              {/* Recipient Section */}
+              <Animated.View entering={FadeIn.delay(200)} style={styles.recipientSection}>
+                <Text style={styles.inputLabel}>Send To</Text>
+
+                {selectedContact ? (
+                  <View style={styles.selectedContactContainer}>
+                    <Image
+                      source={{ uri: selectedContact.avatar }}
+                      style={styles.contactAvatar}
+                    />
+                    <View style={styles.contactInfo}>
+                      <Text style={styles.contactName}>{selectedContact.name}</Text>
+                      <Text style={styles.contactUsername}>@{selectedContact.username}</Text>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.changeButton}
+                      onPress={() => setSelectedContact(null)}
+                    >
+                      <Text style={styles.changeButtonText}>Change</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <>
+                    <View style={styles.searchContainer}>
+                      <Search size={20} color={colors.textSecondary} />
+                      <TextInput
+                        style={styles.searchInput}
+                        placeholder="Search contacts or paste recipient"
+                        placeholderTextColor={colors.textSecondary}
+                        value={searchQuery}
+                        onChangeText={(value) => {
+                          setSearchQuery(value);
+                          setRecipient(value)
+                        }}
+                      />
+                    </View>
+
+                    {/* <View style={styles.optionsRow}>
+                      <TouchableOpacity style={styles.optionButton}>
+                        <View style={styles.optionIconContainer}>
+                          <User size={20} color={colors.textPrimary} />
+                        </View>
+                        <Text style={styles.optionText}>Address Book</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity style={styles.optionButton}>
+                        <View style={styles.optionIconContainer}>
+                          <Send size={20} color={colors.textPrimary} />
+                        </View>
+                        <Text style={styles.optionText}>Recent</Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    {filteredContacts.length > 0 ? (
+                      <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.contactsContainer}
+                      >
+                        {filteredContacts.map((contact) => (
+                          <TouchableOpacity
+                            key={contact.id}
+                            style={styles.contactItem}
+                            onPress={() => handleSelectContact(contact)}
+                          >
+                            <Image
+                              source={{ uri: contact.avatar }}
+                              style={styles.contactImage}
+                            />
+                            <Text style={styles.contactItemName}>{contact.name}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    ) : (
+                      searchQuery ? (
+                        <Text style={styles.noResults}>No contacts found</Text>
+                      ) : null
+                    )} */}
+
+                    {/* <AddressInput
+                      recipient={recipient}
+                      onChangeAddress={setRecipient}
+                      selectedToken={selectedToken}
+                    /> */}
+                  </>
+                )}
+              </Animated.View>
+
+              {/* Note Input */}
+              <Animated.View entering={FadeIn.delay(300)} style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Note (Optional)</Text>
+                <TextInput
+                  style={styles.noteInput}
+                  placeholder="Add a note"
+                  placeholderTextColor={colors.textSecondary}
+                  value={note}
+                  onChangeText={setNote}
+                  multiline
+                />
+              </Animated.View>
+
+              {/* Network Fee info */}
+              {/* <Animated.View entering={FadeIn.delay(400)} style={styles.feeContainer}>
+                <Text style={styles.feeLabel}>Network Fee</Text>
+                <Text style={styles.feeValue}>
+                  0.00005 {selectedToken.symbol} (~{formatCurrency(0.00005 * selectedToken.price)})
+                </Text>
+              </Animated.View> */}
+            </>
+          )}
+        </ScrollView>
+
+        {/* Send Button */}
+        <Animated.View entering={FadeInDown.duration(300)} style={styles.bottomContainer}>
+          <TouchableOpacity
+            style={[
+              styles.sendButton,
+              (!amount || !recipient && !selectedContact) && styles.sendButtonDisabled
+            ]}
+            disabled={!amount || (!recipient && !selectedContact)}
+            onPress={handleSend}
+          >
+            <Text style={styles.sendButtonText}>Preview Send</Text>
+            <ArrowRight size={20} color={colors.white} />
+          </TouchableOpacity>
+        </Animated.View>
+
+        {/* Preview Bottom Sheet */}
+        <BottomSheet
+          ref={previewBottomSheetRef}
+          index={-1}
+          backdropComponent={renderBackdrop}
+          enablePanDownToClose={true}
+          onClose={() => setIsPreviewSheetOpen(false)}
+          backgroundStyle={styles.bottomSheetBackground}
+          handleIndicatorStyle={styles.bottomSheetHandle}
+        >
+          <BottomSheetView style={styles.bottomSheetContent}>
+            <Text style={styles.bottomSheetTitle}>Preview Send</Text>
+            
+            {selectedToken && (
+              <View style={styles.previewContainer}>
+                <View style={styles.previewRow}>
+                  <Text style={styles.previewLabel}>Amount</Text>
+                  <Text style={styles.previewValue}>{amount} {selectedToken.symbol}</Text>
+                </View>
+                
+                <View style={styles.previewRow}>
+                  <Text style={styles.previewLabel}>To</Text>
+                  <Text style={styles.previewValue} numberOfLines={1}>
+                    {selectedContact ? selectedContact.name : (recipient?.slice(0, 6) + '...' + recipient?.slice(-4))}
+                  </Text>
+                </View>
+                
+                <View style={styles.previewRow}>
+                  <Text style={styles.previewLabel}>Network Fee</Text>
+                  <Text style={styles.previewValue}>~0.000005 SOL</Text>
+                </View>
+                
+                {note && (
+                  <View style={styles.previewRow}>
+                    <Text style={styles.previewLabel}>Note</Text>
+                    <Text style={styles.previewValue}>{note}</Text>
+                  </View>
+                )}
+              </View>
+            )}
+            
+            <TouchableOpacity
+              style={styles.confirmButton}
+              onPress={handleConfirmSend}
+            >
+              <Text style={styles.confirmButtonText}>Confirm Send</Text>
+            </TouchableOpacity>
+          </BottomSheetView>
+        </BottomSheet>
+
+        {/* Status Bottom Sheet */}
+        <BottomSheet
+          ref={statusBottomSheetRef}
+          index={-1}
+          backdropComponent={renderBackdrop}
+          enablePanDownToClose={!isSending}
+          onClose={() => setIsStatusSheetOpen(false)}
+          backgroundStyle={styles.bottomSheetBackground}
+          handleIndicatorStyle={styles.bottomSheetHandle}
+        >
+          <BottomSheetView style={[styles.bottomSheetContent, { alignItems: 'center' }]}>
+            {isSending ? (
+              <>
+                <ActivityIndicator size="large" color={colors.primary} style={styles.loadingIndicator} />
+                <Text style={styles.loadingText}>Processing Transaction...</Text>
+                <Text style={styles.loadingSubtext}>Please wait while we process your transaction</Text>
+              </>
+            ) : sendResult ? (
+              <>
+                {sendResult.success ? (
+                  <>
+                    <LinearGradient
+                      colors={['#4CAF50', '#45a049']}
+                      style={styles.successIcon}
+                    >
+                      <Check size={32} color={colors.white} />
+                    </LinearGradient>
+                    <Text style={styles.successTitle}>Send Successful!</Text>
+                    <Text style={styles.successSubtitle}>Your transaction has been sent successfully</Text>
+                    {sendResult.signature && (
+                      <Text style={styles.transactionId} numberOfLines={1}>
+                        Transaction ID: {sendResult.signature.slice(0, 8)}...{sendResult.signature.slice(-8)}
+                      </Text>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <View style={styles.errorIcon}>
+                      <Text style={styles.errorIconText}>✕</Text>
+                    </View>
+                    <Text style={styles.errorTitle}>Send Failed</Text>
+                    <Text style={styles.errorSubtitle}>
+                      {sendResult.error || 'Something went wrong. Please try again.'}
+                    </Text>
+                  </>
+                )}
+                
+                <TouchableOpacity
+                  style={styles.doneButton}
+                  onPress={() => {
+                    statusBottomSheetRef.current?.close();
+                    if (sendResult.success) {
+                      router.push('/' as any);
+                    }
+                  }}
+                >
+                  <Text style={styles.doneButtonText}>
+                    {sendResult.success ? 'Done' : 'Try Again'}
+                  </Text>
+                </TouchableOpacity>
+              </>
+            ) : null}
+          </BottomSheetView>
+        </BottomSheet>
+
+        {/* Toast */}
+        {toast && (
+          <Toast
+            message={toast.message}
+            type={toast.type}
+            visible={!!toast}
+            onHide={() => setToast(null)}
+          />
+        )}
+      </ScreenContainer>
+    </GestureHandlerRootView>
   );
 }
 
@@ -505,5 +691,147 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-SemiBold',
     color: colors.white,
     marginRight: 8,
+  },
+  // Bottom sheet styles
+  bottomSheetBackground: {
+    backgroundColor: colors.bottomSheetBackground,
+  },
+  bottomSheetHandle: {
+    backgroundColor: colors.textSecondary,
+  },
+  bottomSheetContent: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 24,
+  },
+  bottomSheetTitle: {
+    fontSize: 18,
+    fontFamily: 'Inter-Medium',
+    color: colors.textSecondary,
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  previewContainer: {
+    width: '100%',
+    backgroundColor: colors.backgroundMedium,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+  },
+  previewRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  previewLabel: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    color: colors.textSecondary,
+  },
+  previewValue: {
+    fontSize: 14,
+    fontFamily: 'Inter-Medium',
+    color: colors.textPrimary,
+    flex: 1,
+    textAlign: 'right',
+  },
+  confirmButton: {
+    width: '100%',
+    backgroundColor: colors.primary,
+    borderRadius: 12,
+    height: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  confirmButtonText: {
+    fontSize: 16,
+    fontFamily: 'Inter-SemiBold',
+    color: colors.white,
+  },
+  loadingIndicator: {
+    marginBottom: 16,
+  },
+  loadingText: {
+    fontSize: 18,
+    fontFamily: 'Inter-SemiBold',
+    color: colors.textPrimary,
+    marginBottom: 8,
+  },
+  loadingSubtext: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  successIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  successTitle: {
+    fontSize: 18,
+    fontFamily: 'Inter-SemiBold',
+    color: colors.textPrimary,
+    marginBottom: 8,
+  },
+  successSubtitle: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  transactionId: {
+    fontSize: 12,
+    fontFamily: 'Inter-Regular',
+    color: colors.textSecondary,
+    backgroundColor: colors.backgroundLight,
+    padding: 8,
+    borderRadius: 8,
+    marginBottom: 24,
+  },
+  errorIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: colors.error,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  errorIconText: {
+    fontSize: 32,
+    color: colors.white,
+    fontFamily: 'Inter-Bold',
+  },
+  errorTitle: {
+    fontSize: 18,
+    fontFamily: 'Inter-SemiBold',
+    color: colors.textPrimary,
+    marginBottom: 8,
+  },
+  errorSubtitle: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  doneButton: {
+    width: '100%',
+    backgroundColor: colors.primary,
+    borderRadius: 12,
+    height: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  doneButtonText: {
+    fontSize: 16,
+    fontFamily: 'Inter-SemiBold',
+    color: colors.white,
   },
 });

@@ -1,8 +1,10 @@
 import { PublicKey, sendAndConfirmTransaction, Transaction, SystemProgram } from '@solana/web3.js';
 import { createTransferInstruction, getAccount, getAssociatedTokenAddress, getOrCreateAssociatedTokenAccount } from '@solana/spl-token';
-import { CONNECTION, PLATFORM_FEE_ACCOUNT, PLATFORM_FEE_RATE, WALLET, WSOL_MINT } from '@/services/walletService';
+import { CONNECTION, PLATFORM_FEE_ACCOUNT, WALLET, WSOL_MINT } from '@/services/walletService';
 import { registerForPushNotificationsAsync } from '@/services/notificationService';
-import { getWalletAddress, registerUSDTTransaction, sendTestNotification } from '@/services/apis';
+import { getWalletAddress, registerUSDTTransaction } from '@/services/apis';
+
+const CASHWYRE_FEE_RATE = parseFloat(process.env.EXPO_PUBLIC_CASHWYRE_FEE_RATE!)
 
 export interface SendTransactionParams {
   amount: string;
@@ -123,7 +125,7 @@ export async function sendCryptoTransaction(params: SendTransactionParams): Prom
       );
 
       if (sendCashwyreFee) {
-        const feeInBaseUnits = Math.round(PLATFORM_FEE_RATE * Math.pow(10, tokenDecimals));
+        const feeInBaseUnits = Math.round(CASHWYRE_FEE_RATE * Math.pow(10, tokenDecimals));
 
         const feeATA = await getOrCreateAssociatedTokenAccount(
           CONNECTION,
