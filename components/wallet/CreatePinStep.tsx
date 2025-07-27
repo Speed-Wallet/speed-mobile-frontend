@@ -1,10 +1,11 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useCallback } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Animated, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowRight, Lock, Shield } from 'lucide-react-native';
 import PinInputCard from './PinInputCard';
 import ScreenContainer from '@/components/ScreenContainer';
 import BackButton from '@/components/BackButton';
+import NumericKeyboard from '@/components/NumericKeyboard';
 
 interface CreatePinStepProps {
   pin: string;
@@ -24,6 +25,15 @@ const CreatePinStep: React.FC<CreatePinStepProps> = ({
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.95)).current;
   const translateY = useRef(new Animated.Value(20)).current;
+
+  // Handle keyboard input
+  const handleKeyPress = useCallback((key: string) => {
+    if (key === 'backspace') {
+      onPinChange(pin.slice(0, -1));
+    } else if (key >= '0' && key <= '9' && pin.length < 4) {
+      onPinChange(pin + key);
+    }
+  }, [pin, onPinChange]);
 
   useEffect(() => {
     Animated.parallel([
@@ -92,30 +102,35 @@ const CreatePinStep: React.FC<CreatePinStepProps> = ({
             headerIcon={<Shield size={20} color="#7c5cff" />}
             headerText="Security PIN"
             instruction={{
-              empty: 'Tap above and use your keypad to enter PIN',
+              empty: 'Use the keypad below to enter PIN',
               incomplete: '{count} more digits',
               complete: 'PIN complete'
             }}
-            autoFocus
           />
         </Animated.View>
 
-        {/* Action Button */}
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={[styles.continueButton, pin.length < 4 && styles.continueButtonDisabled]}
-            activeOpacity={0.8}
-            onPress={onNext}
-            disabled={isLoading || pin.length < 4}>
-            <LinearGradient
-              colors={pin.length === 4 ? ['#7c5cff', '#6446fe'] : ['#4a4a4a', '#3a3a3a']}
-              style={styles.buttonGradient}>
-              <Text style={[styles.buttonText, pin.length < 4 && styles.buttonTextDisabled]}>
-                {isLoading ? 'Creating...' : 'Continue'}
-              </Text>
-              <ArrowRight size={20} color={pin.length === 4 ? "#fff" : "#9ca3af"} />
-            </LinearGradient>
-          </TouchableOpacity>
+        {/* Bottom Section - Keyboard and Button */}
+        <View style={styles.bottomSection}>
+          {/* Numeric Keyboard */}
+          <NumericKeyboard onKeyPress={handleKeyPress} />
+
+          {/* Action Button */}
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              style={[styles.continueButton, pin.length < 4 && styles.continueButtonDisabled]}
+              activeOpacity={0.8}
+              onPress={onNext}
+              disabled={isLoading || pin.length < 4}>
+              <LinearGradient
+                colors={pin.length === 4 ? ['#7c5cff', '#6446fe'] : ['#4a4a4a', '#3a3a3a']}
+                style={styles.buttonGradient}>
+                <Text style={[styles.buttonText, pin.length < 4 && styles.buttonTextDisabled]}>
+                  {isLoading ? 'Creating...' : 'Continue'}
+                </Text>
+                <ArrowRight size={20} color={pin.length === 4 ? "#fff" : "#9ca3af"} />
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </ScreenContainer>
@@ -270,8 +285,10 @@ const styles = StyleSheet.create({
     marginLeft: 12,
     opacity: 0.9,
   },
-  buttonContainer: {
+  bottomSection: {
     marginTop: 'auto',
+  },
+  buttonContainer: {
     paddingBottom: Platform.OS === 'ios' ? 34 : 24,
   },
   continueButton: {

@@ -15,6 +15,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthService } from '@/services/authService';
+import { AlertProvider } from '@/providers/AlertProvider';
 import 'react-native-get-random-values';
 
 
@@ -101,17 +102,19 @@ export default function RootLayout() {
     return (
       <SafeAreaProvider>
         <GestureHandlerRootView style={{ flex: 1 }}>
-          <DevStartupScreen 
-            hasExistingWallet={hasExistingWallet}
-            onCreateWallet={() => setWalletState('no_wallet')}
-            onEnterApp={() => {
-              if (hasExistingWallet) {
-                setWalletState('locked');
-              } else {
-                setWalletState('no_wallet');
-              }
-            }}
-          />
+          <AlertProvider>
+            <DevStartupScreen 
+              hasExistingWallet={hasExistingWallet}
+              onCreateWallet={() => setWalletState('no_wallet')}
+              onEnterApp={() => {
+                if (hasExistingWallet) {
+                  setWalletState('locked');
+                } else {
+                  setWalletState('no_wallet');
+                }
+              }}
+            />
+          </AlertProvider>
         </GestureHandlerRootView>
       </SafeAreaProvider>
     );
@@ -121,15 +124,17 @@ export default function RootLayout() {
     return (
       <SafeAreaProvider>
         <GestureHandlerRootView style={{ flex: 1 }}>
-          <SetupWalletScreen onWalletSetupComplete={async () => {
-            setWalletState('unlocked');
-            // Trigger authentication after wallet setup
-            try {
-              await AuthService.authenticate();
-            } catch (error) {
-              console.error('Authentication failed after wallet setup:', error);
-            }
-          }} />
+          <AlertProvider>
+            <SetupWalletScreen onWalletSetupComplete={async () => {
+              setWalletState('unlocked');
+              // Trigger authentication after wallet setup
+              try {
+                await AuthService.authenticate();
+              } catch (error) {
+                console.error('Authentication failed after wallet setup:', error);
+              }
+            }} />
+          </AlertProvider>
         </GestureHandlerRootView>
       </SafeAreaProvider>
     );
@@ -139,15 +144,17 @@ export default function RootLayout() {
     return (
       <SafeAreaProvider>
         <GestureHandlerRootView style={{ flex: 1 }}>
-          <EnterPinScreen onWalletUnlocked={async () => {
-            setWalletState('unlocked');
-            // Trigger authentication after wallet unlock
-            try {
-              await AuthService.authenticate();
-            } catch (error) {
-              console.error('Authentication failed after wallet unlock:', error);
-            }
-          }} publicKey={storedPublicKey} />
+          <AlertProvider>
+            <EnterPinScreen onWalletUnlocked={async () => {
+              setWalletState('unlocked');
+              // Trigger authentication after wallet unlock
+              try {
+                await AuthService.authenticate();
+              } catch (error) {
+                console.error('Authentication failed after wallet unlock:', error);
+              }
+            }} publicKey={storedPublicKey} />
+          </AlertProvider>
         </GestureHandlerRootView>
       </SafeAreaProvider>
     );
@@ -156,24 +163,26 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <QueryClientProvider client={queryClient}>
-          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.backgroundDark } }}>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="+not-found" options={{ title: 'Oops!' }} />
-            <Stack.Screen name="transaction/send" options={{ presentation: 'modal' }} />
-            <Stack.Screen name="transaction/receive" options={{ presentation: 'modal' }} />
-            <Stack.Screen name="transaction/buy" options={{ presentation: 'modal' }} />
-            <Stack.Screen name="transaction/trade" options={{ presentation: 'modal' }} />
-            <Stack.Screen name="transaction/cards" options={{ presentation: 'modal' }} />
-            <Stack.Screen name="wallet/manage" options={{ presentation: 'modal' }} />
-            <Stack.Screen name="wallet/SetupWalletScreen" options={{ presentation: 'modal' }} />
-            <Stack.Screen name="wallet/connect" options={{ presentation: 'modal' }} />
-            <Stack.Screen name="wallet/import" options={{ presentation: 'modal' }} />
-            <Stack.Screen name="settings/kyc" options={{ presentation: 'modal' }} />
-            <Stack.Screen name="token/[address]" options={{ animation: 'slide_from_right' }} />
-          </Stack>
-          <StatusBar style="light" />
-        </QueryClientProvider>
+        <AlertProvider>
+          <QueryClientProvider client={queryClient}>
+            <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.backgroundDark } }}>
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen name="+not-found" options={{ title: 'Oops!' }} />
+              <Stack.Screen name="transaction/send" options={{ presentation: 'modal' }} />
+              <Stack.Screen name="transaction/receive" options={{ presentation: 'modal' }} />
+              <Stack.Screen name="transaction/buy" options={{ presentation: 'modal' }} />
+              <Stack.Screen name="transaction/trade" options={{ presentation: 'modal' }} />
+              <Stack.Screen name="transaction/cards" options={{ presentation: 'modal' }} />
+              <Stack.Screen name="wallet/manage" options={{ presentation: 'modal' }} />
+              <Stack.Screen name="wallet/SetupWalletScreen" options={{ presentation: 'modal' }} />
+              <Stack.Screen name="wallet/connect" options={{ presentation: 'modal' }} />
+              <Stack.Screen name="wallet/import" options={{ presentation: 'modal' }} />
+              <Stack.Screen name="settings/kyc" options={{ presentation: 'modal' }} />
+              <Stack.Screen name="token/[address]" options={{ animation: 'slide_from_right' }} />
+            </Stack>
+            <StatusBar style="light" />
+          </QueryClientProvider>
+        </AlertProvider>
       </GestureHandlerRootView>
     </SafeAreaProvider>
   );

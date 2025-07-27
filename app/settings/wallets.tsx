@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Modal, TextInput } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Plus, Key, Check, Copy, RefreshCw, Trash2, X } from 'lucide-react-native';
+import { useAlert } from '@/providers/AlertProvider';
 import colors from '@/constants/colors';
 import SettingsScreen from '@/components/SettingsScreen';
 import { 
@@ -25,6 +26,7 @@ interface WalletInfo {
 
 export default function WalletsScreen() {
   const router = useRouter();
+  const { alert, error: showError, success, confirm } = useAlert();
   const [wallets, setWallets] = useState<WalletInfo[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
@@ -147,14 +149,14 @@ export default function WalletsScreen() {
         wallet.derivationPath
       );
       
-      Alert.alert('Success', 'Wallet created successfully!', [
+      success('Success', 'Wallet created successfully!', [
         { text: 'OK', onPress: () => {
           setShowCreateModal(false);
           loadWallets();
         }}
       ]);
     } catch (error) {
-      Alert.alert('Error', 'Failed to create wallet. Please try again.');
+      showError('Error', 'Failed to create wallet. Please try again.');
       console.error('Error creating wallet:', error);
     }
     setLoading(false);
@@ -177,14 +179,14 @@ export default function WalletsScreen() {
       const walletId = `wallet_${Date.now()}`;
       await saveWalletWithAppPin(walletId, walletName.trim(), wallet.mnemonic, wallet.publicKey);
       
-      Alert.alert('Success', 'Wallet imported successfully!', [
+      success('Success', 'Wallet imported successfully!', [
         { text: 'OK', onPress: () => {
           setShowImportModal(false);
           loadWallets();
         }}
       ]);
     } catch (error) {
-      Alert.alert('Error', 'Failed to import wallet. Please try again.');
+      showError('Error', 'Failed to import wallet. Please try again.');
       console.error('Error importing wallet:', error);
     }
     setLoading(false);
@@ -192,21 +194,19 @@ export default function WalletsScreen() {
 
   const handleDeleteWallet = (walletId: string, isMasterWallet?: boolean) => {
     if (isMasterWallet) {
-      Alert.alert(
+      alert(
         'Cannot Delete Main Wallet',
         'The main wallet cannot be deleted as it contains the master seed phrase for your account.',
-        [{ text: 'OK', style: 'default' }]
+        [{ text: 'OK', style: 'default' }],
+        'warning'
       );
       return;
     }
 
-    Alert.alert(
+    confirm(
       'Delete Wallet',
       'Are you sure you want to delete this wallet? This action cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: () => deleteWallet(walletId) }
-      ]
+      () => deleteWallet(walletId)
     );
   };
 
@@ -214,9 +214,9 @@ export default function WalletsScreen() {
     try {
       await removeWalletFromList(walletId);
       await loadWallets();
-      Alert.alert('Success', 'Wallet deleted successfully.');
+      success('Success', 'Wallet deleted successfully.');
     } catch (error) {
-      Alert.alert('Error', 'Failed to delete wallet.');
+      showError('Error', 'Failed to delete wallet.');
       console.error('Error deleting wallet:', error);
     }
   };
@@ -224,14 +224,14 @@ export default function WalletsScreen() {
   const handleSwitchWallet = async (walletId: string) => {
     try {
       setLoading(true);
-      const success = await switchToWalletUnlocked(walletId);
-      if (success) {
+      const isSuccess = await switchToWalletUnlocked(walletId);
+      if (isSuccess) {
         loadWallets();
       } else {
-        Alert.alert('Error', 'Failed to switch wallet.');
+        showError('Error', 'Failed to switch wallet.');
       }
     } catch (error) {
-      Alert.alert('Error', 'Failed to switch wallet. Please try again.');
+      showError('Error', 'Failed to switch wallet. Please try again.');
       console.error('Error switching wallet:', error);
     } finally {
       setLoading(false);
@@ -277,20 +277,31 @@ export default function WalletsScreen() {
         {showImportModal && (
           <>
             <Text style={styles.inputLabel}>Seed Phrase</Text>
-            <TextInput
-              style={[styles.input, styles.textArea, seedPhraseError && styles.inputError]}
-              placeholder="Enter your 12 or 24 word seed phrase"
-              placeholderTextColor={colors.textSecondary}
-              value={importPhrase}
-              onChangeText={(text) => {
-                setImportPhrase(text);
-                if (seedPhraseError) setSeedPhraseError('');
-              }}
-              onBlur={handleSeedPhraseBlur}
-              multiline
-              numberOfLines={4}
-              textAlignVertical="top"
-            />
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={[styles.input, styles.textArea, seedPhraseError && styles.inputError]}
+                placeholder="Enter your 12 or 24 word seed phrase"
+                placeholderTextColor={colors.textSecondary}
+                value={importPhrase}
+                onChangeText={(text) => {
+                  setImportPhrase(text);
+                  if (seedPhraseError) setSeedPhraseError('');
+                }}
+                onBlur={handleSeedPhraseBlur}
+                multiline
+                numberOfLines={4}
+                textAlignVertical="top"
+              />
+              {/* Dev Button */}
+              {process.env.EXPO_PUBLIC_APP_ENV === 'development' && (
+                <TouchableOpacity 
+                  style={styles.devButton}
+                  onPress={() => setImportPhrase(process.env.EXPO_PUBLIC_DEV_SEED_PHRASE || '')}
+                >
+                  <Text style={styles.devButtonText}>DEV</Text>
+                </TouchableOpacity>
+              )}
+            </View>
             {seedPhraseError && (
               <Text style={styles.errorText}>* {seedPhraseError}</Text>
             )}
@@ -643,5 +654,23 @@ const styles = StyleSheet.create({
   },
   disabledText: {
     color: colors.textSecondary,
+  },
+  inputContainer: {
+    position: 'relative',
+  },
+  devButton: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    backgroundColor: colors.primary,
+    borderRadius: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    zIndex: 1,
+  },
+  devButtonText: {
+    fontSize: 10,
+    fontFamily: 'Inter-Bold',
+    color: colors.white,
   },
 });

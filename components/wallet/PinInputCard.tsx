@@ -1,5 +1,5 @@
-import React, { useRef, useState } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, TextInput } from 'react-native';
+import React, { useState } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Eye, EyeOff } from 'lucide-react-native';
 
@@ -13,7 +13,6 @@ interface PinInputCardProps {
     incomplete: string;
     complete: string;
   };
-  autoFocus?: boolean;
 }
 
 const PinInputCard: React.FC<PinInputCardProps> = ({
@@ -22,11 +21,8 @@ const PinInputCard: React.FC<PinInputCardProps> = ({
   headerIcon,
   headerText,
   instruction,
-  autoFocus = false,
 }) => {
-  const [isFocused, setIsFocused] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
-  const pinInputRef = useRef<TextInput>(null);
 
   const renderPinDots = () => {
     return (
@@ -73,32 +69,9 @@ const PinInputCard: React.FC<PinInputCardProps> = ({
       </View>
       
       <TouchableOpacity 
-        style={[styles.pinInputArea, isFocused && styles.pinInputAreaFocused]}
-        onPress={() => {
-          // Focus the hidden input when tapping the PIN area
-          const input = pinInputRef.current;
-          if (input) {
-            input.focus();
-          }
-        }}
+        style={styles.pinInputArea}
         activeOpacity={1}>
         {renderPinDots()}
-        <TextInput
-          ref={pinInputRef}
-          style={styles.hiddenInput}
-          keyboardType="number-pad"
-          maxLength={4}
-          secureTextEntry={false}
-          value={pin}
-          onChangeText={(text) => {
-            // Only allow numeric input
-            const numericText = text.replace(/[^0-9]/g, '');
-            onPinChange(numericText);
-          }}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
-          autoFocus={autoFocus}
-        />
       </TouchableOpacity>
       
       <Text style={styles.pinInstruction}>
