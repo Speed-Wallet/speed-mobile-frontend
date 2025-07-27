@@ -33,6 +33,7 @@ export default function WalletsScreen() {
   const [loading, setLoading] = useState(false);
   const [walletNameError, setWalletNameError] = useState('');
   const [seedPhraseError, setSeedPhraseError] = useState('');
+  const [copiedAddressId, setCopiedAddressId] = useState<string | null>(null);
 
   useEffect(() => {
     loadWallets();
@@ -237,9 +238,14 @@ export default function WalletsScreen() {
     }
   };
 
-  const copyAddress = async (publicKey: string) => {
+  const copyAddress = async (publicKey: string, walletId: string) => {
     await setStringAsync(publicKey);
-    Alert.alert('Copied', 'Wallet address copied to clipboard');
+    setCopiedAddressId(walletId);
+    
+    // Reset the copied state after 2 seconds
+    setTimeout(() => {
+      setCopiedAddressId(null);
+    }, 2000);
   };
 
   const renderModalContent = () => {
@@ -328,13 +334,17 @@ export default function WalletsScreen() {
                     style={styles.addressContainer}
                     onPress={(e) => {
                       e.stopPropagation();
-                      copyAddress(wallet.publicKey);
+                      copyAddress(wallet.publicKey, wallet.id);
                     }}
                   >
                     <Text style={styles.walletAddress}>
                       {wallet.publicKey.slice(0, 8)}...{wallet.publicKey.slice(-8)}
                     </Text>
-                    <Copy size={14} color={colors.textSecondary} />
+                    {copiedAddressId === wallet.id ? (
+                      <Check size={14} color={colors.success} />
+                    ) : (
+                      <Copy size={14} color={colors.textSecondary} />
+                    )}
                   </TouchableOpacity>
                 </View>
                 
