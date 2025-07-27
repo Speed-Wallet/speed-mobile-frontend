@@ -1,10 +1,11 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Animated, Platform, TextInput } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowRight, ShieldCheck, Eye, EyeOff, CheckCircle, AlertTriangle } from 'lucide-react-native';
 import { triggerShake } from '@/utils/animations';
 import ScreenContainer from '@/components/ScreenContainer';
 import BackButton from '@/components/BackButton';
+import NumericKeyboard from '@/components/NumericKeyboard';
 
 interface ConfirmPinStepProps {
   confirmPin: string;
@@ -51,6 +52,15 @@ const ConfirmPinStep: React.FC<ConfirmPinStepProps> = ({
       }),
     ]).start();
   }, []);
+
+  // Handle keyboard input
+  const handleKeyPress = useCallback((key: string) => {
+    if (key === 'backspace') {
+      onConfirmPinChange(confirmPin.slice(0, -1));
+    } else if (key >= '0' && key <= '9' && confirmPin.length < 4) {
+      onConfirmPinChange(confirmPin + key);
+    }
+  }, [confirmPin, onConfirmPinChange]);
 
   // Trigger shake animation when PIN error occurs
   useEffect(() => {
@@ -139,35 +149,12 @@ const ConfirmPinStep: React.FC<ConfirmPinStepProps> = ({
             
             <TouchableOpacity 
               style={[styles.pinInputArea, isFocused && styles.pinInputAreaFocused]}
-              onPress={() => {
-                // Focus the hidden input when tapping the PIN area
-                const input = pinInputRef.current;
-                if (input) {
-                  input.focus();
-                }
-              }}
               activeOpacity={1}>
               {renderPinDots()}
-              <TextInput
-                ref={pinInputRef}
-                style={styles.hiddenInput}
-                keyboardType="number-pad"
-                maxLength={4}
-                secureTextEntry={false}
-                value={confirmPin}
-                onChangeText={(text) => {
-                  // Only allow numeric input
-                  const numericText = text.replace(/[^0-9]/g, '');
-                  onConfirmPinChange(numericText);
-                }}
-                onFocus={() => setIsFocused(true)}
-                onBlur={() => setIsFocused(false)}
-                autoFocus
-              />
             </TouchableOpacity>
             
             <Text style={styles.pinInstruction}>
-              {confirmPin.length === 0 ? 'Tap above and re-enter your PIN' : 
+              {confirmPin.length === 0 ? 'Use the keypad below to re-enter your PIN' : 
                confirmPin.length < 4 ? `${4 - confirmPin.length} more digits` : 'Confirm PIN'}
             </Text>
           </LinearGradient>
@@ -196,33 +183,39 @@ const ConfirmPinStep: React.FC<ConfirmPinStepProps> = ({
           </Animated.View>
         )}
 
-        {/* Action Buttons */}
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.backTextButton} onPress={onBack}>
-            <Text style={styles.backTextButtonText}>Back to Create PIN</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={[styles.continueButton, confirmPin.length < 4 && styles.continueButtonDisabled]}
-            activeOpacity={0.8}
-            onPress={onConfirm}
-            disabled={isLoading || confirmPin.length < 4}>
-            <LinearGradient
-              colors={confirmPin.length === 4 ? ['#7c5cff', '#6446fe'] : ['#4a4a4a', '#3a3a3a']}
-              style={styles.buttonGradient}>
-              <Animated.View style={{ 
-                transform: [{ translateX: shakeAnimationValue }], 
-                flexDirection: 'row', 
-                alignItems: 'center', 
-                justifyContent: 'center' 
-              }}>
-                <Text style={[styles.buttonText, confirmPin.length < 4 && styles.buttonTextDisabled]}>
-                  {isLoading ? 'Creating Wallet...' : 'Confirm Pin'}
-                </Text>
-                <ArrowRight size={20} color={confirmPin.length === 4 ? "#fff" : "#9ca3af"} />
-              </Animated.View>
-            </LinearGradient>
-          </TouchableOpacity>
+        {/* Bottom Section - Keyboard and Button */}
+        <View style={styles.bottomSection}>
+          {/* Numeric Keyboard */}
+          <NumericKeyboard onKeyPress={handleKeyPress} />
+
+          {/* Action Buttons */}
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity style={styles.backTextButton} onPress={onBack}>
+              <Text style={styles.backTextButtonText}>Back to Create PIN</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[styles.continueButton, confirmPin.length < 4 && styles.continueButtonDisabled]}
+              activeOpacity={0.8}
+              onPress={onConfirm}
+              disabled={isLoading || confirmPin.length < 4}>
+              <LinearGradient
+                colors={confirmPin.length === 4 ? ['#7c5cff', '#6446fe'] : ['#4a4a4a', '#3a3a3a']}
+                style={styles.buttonGradient}>
+                <Animated.View style={{ 
+                  transform: [{ translateX: shakeAnimationValue }], 
+                  flexDirection: 'row', 
+                  alignItems: 'center', 
+                  justifyContent: 'center' 
+                }}>
+                  <Text style={[styles.buttonText, confirmPin.length < 4 && styles.buttonTextDisabled]}>
+                    {isLoading ? 'Creating Wallet...' : 'Confirm Pin'}
+                  </Text>
+                  <ArrowRight size={20} color={confirmPin.length === 4 ? "#fff" : "#9ca3af"} />
+                </Animated.View>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </ScreenContainer>
@@ -391,8 +384,10 @@ const styles = StyleSheet.create({
   securityTextError: {
     color: '#ef4444',
   },
-  buttonContainer: {
+  bottomSection: {
     marginTop: 'auto',
+  },
+  buttonContainer: {
     paddingBottom: Platform.OS === 'ios' ? 34 : 24,
   },
   continueButton: {

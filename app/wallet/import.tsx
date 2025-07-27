@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useAlert } from '@/providers/AlertProvider';
 import colors from '@/constants/colors';
 import ScreenHeader from '@/components/ScreenHeader';
 import ScreenContainer from '@/components/ScreenContainer';
@@ -8,6 +9,7 @@ import { importWalletFromMnemonic, saveWalletToList } from '@/services/walletSer
 
 export default function ImportPhraseScreen() {
   const router = useRouter();
+  const { alert, error: showError, success } = useAlert();
   const [phrase, setPhrase] = useState('');
   const [walletName, setWalletName] = useState('');
   const [pin, setPin] = useState('');
@@ -18,19 +20,19 @@ export default function ImportPhraseScreen() {
   const handleNextStep = async () => {
     if (step === 1) {
       if (!phrase.trim()) {
-        Alert.alert('Invalid Phrase', 'Please enter a valid seed phrase.');
+        showError('Invalid Phrase', 'Please enter a valid seed phrase.');
         return;
       }
       setStep(2);
     } else if (step === 2) {
       if (!walletName.trim()) {
-        Alert.alert('Invalid Name', 'Please enter a wallet name.');
+        showError('Invalid Name', 'Please enter a wallet name.');
         return;
       }
       setStep(3);
     } else if (step === 3) {
       if (pin.length < 4) {
-        Alert.alert('Invalid PIN', 'PIN must be at least 4 digits.');
+        showError('Invalid PIN', 'PIN must be at least 4 digits.');
         return;
       }
       setStep(4);
@@ -41,7 +43,7 @@ export default function ImportPhraseScreen() {
 
   const handleImport = async () => {
     if (pin !== confirmPin) {
-      Alert.alert('PIN Mismatch', 'PINs do not match. Please try again.');
+      showError('PIN Mismatch', 'PINs do not match. Please try again.');
       return;
     }
 
@@ -54,11 +56,11 @@ export default function ImportPhraseScreen() {
       const walletId = `wallet-${Date.now()}`;
       await saveWalletToList(walletId, walletName, wallet.mnemonic, wallet.publicKey, pin);
       
-      Alert.alert('Success', 'Wallet imported successfully!', [
+      success('Success', 'Wallet imported successfully!', [
         { text: 'OK', onPress: () => router.replace('/') }
       ]);
     } catch (error) {
-      Alert.alert('Error', 'Failed to import wallet. Please check your seed phrase and try again.');
+      showError('Error', 'Failed to import wallet. Please check your seed phrase and try again.');
       console.error('Import error:', error);
     }
     setLoading(false);

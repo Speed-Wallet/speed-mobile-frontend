@@ -3,6 +3,7 @@ import { createTransferInstruction, getAccount, getAssociatedTokenAddress, getOr
 import { CONNECTION, PLATFORM_FEE_ACCOUNT, WALLET, WSOL_MINT } from '@/services/walletService';
 import { registerForPushNotificationsAsync } from '@/services/notificationService';
 import { getWalletAddress, registerUSDTTransaction } from '@/services/apis';
+import { showAlert, showError, showSuccess } from '@/utils/globalAlert';
 
 const CASHWYRE_FEE_RATE = parseFloat(process.env.EXPO_PUBLIC_CASHWYRE_FEE_RATE!)
 
@@ -27,7 +28,7 @@ export interface SendTransactionResult {
  * Extracted from send.tsx to be reusable across the app
  */
 export async function sendCryptoTransaction(params: SendTransactionParams): Promise<SendTransactionResult> {
-  const { amount: _amount, recipient, tokenAddress, tokenSymbol, tokenDecimals, showAlert = true, sendCashwyreFee = false } = params;
+  const { amount: _amount, recipient, tokenAddress, tokenSymbol, tokenDecimals, showAlert: shouldShowAlert = true, sendCashwyreFee = false } = params;
 
   let amount: string
   const cashwyreFee = parseFloat(process.env.EXPO_PUBLIC_CASHWYRE_FEE_RATE!)
@@ -37,28 +38,28 @@ export async function sendCryptoTransaction(params: SendTransactionParams): Prom
     amount = _amount;
   }
 
-  // Validation
+    // Validation
   if (!amount) {
     const error = "Please enter an amount to send.";
-    if (showAlert) alert(error);
+    if (shouldShowAlert) showError("Error", error);
     return { success: false, error };
   }
 
   if (!recipient) {
     const error = "Please enter a recipient address.";
-    if (showAlert) alert(error);
+    if (shouldShowAlert) showError("Error", error);
     return { success: false, error };
   }
 
   if (!tokenAddress) {
     const error = "Please select a token to send.";
-    if (showAlert) alert(error);
+    if (shouldShowAlert) showError("Error", error);
     return { success: false, error };
   }
 
   if (!WALLET) {
     const error = "Wallet is not unlocked. Cannot perform action";
-    if (showAlert) alert(error);
+    if (shouldShowAlert) showError("Error", error);
     console.error("Wallet is not unlocked. Cannot perform action.");
     return { success: false, error };
   }
@@ -66,8 +67,8 @@ export async function sendCryptoTransaction(params: SendTransactionParams): Prom
   console.log('your wallet address: ', WALLET.publicKey.toBase58());
 
   try {
-    if (showAlert) {
-      alert(`Sending ${amount} ${tokenSymbol} to ${recipient}`);
+    if (shouldShowAlert) {
+      showAlert("Sending", `Sending ${amount} ${tokenSymbol} to ${recipient}`, undefined, 'info');
     }
 
     const recipientPublicKey = new PublicKey(recipient);
@@ -101,7 +102,7 @@ export async function sendCryptoTransaction(params: SendTransactionParams): Prom
         await getAccount(CONNECTION, senderATA); // throws if doesn't exist
       } catch (e) {
         const error = "You do not have balance of this token in your wallet.";
-        if (showAlert) alert(error);
+        if (shouldShowAlert) showError("Error", error);
         console.error("Error fetching sender's ATA:", e);
         return { success: false, error };
       }
@@ -156,8 +157,8 @@ export async function sendCryptoTransaction(params: SendTransactionParams): Prom
     const sig = await sendAndConfirmTransaction(CONNECTION, tx, [WALLET]);
     console.log("Transaction successful. Signature:", sig);
     
-    if (showAlert) {
-      alert(`✅ Transfer complete. Signature: ${sig}`);
+    if (shouldShowAlert) {
+      showSuccess("Success", `✅ Transfer complete. Signature: ${sig}`);
     }
 
     return { success: true, signature: sig };
@@ -165,7 +166,7 @@ export async function sendCryptoTransaction(params: SendTransactionParams): Prom
   } catch (error) {
     console.error("Transaction failed:", error);
     const errorMessage = "Transaction failed. Please try again.";
-    if (showAlert) alert(errorMessage);
+    if (shouldShowAlert) showError("Error", errorMessage);
     return { success: false, error: errorMessage };
   }
 }

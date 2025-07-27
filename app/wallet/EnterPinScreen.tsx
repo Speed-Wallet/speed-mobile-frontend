@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Animated } from 'react-native';
 import { unlockApp } from '@/services/walletService';
 import PinInputCard from '@/components/wallet/PinInputCard';
+import NumericKeyboard from '@/components/NumericKeyboard';
 import { Lock } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { triggerShake } from '@/utils/animations';
@@ -49,6 +50,17 @@ const EnterPinScreen: React.FC<EnterPinScreenProps> = ({ onWalletUnlocked, publi
 
     autoUnlockDev();
   }, [onWalletUnlocked]);
+
+  // Handle keyboard input
+  const handleKeyPress = useCallback((key: string) => {
+    if (key === 'backspace') {
+      setPin(prev => prev.slice(0, -1));
+      if (error) setError(null);
+    } else if (key >= '0' && key <= '9' && pin.length < 4) {
+      setPin(prev => prev + key);
+      if (error) setError(null);
+    }
+  }, [pin, error]);
 
   const handleUnlockWallet = async () => {
     if (pin.length < 4) {
@@ -102,27 +114,12 @@ const EnterPinScreen: React.FC<EnterPinScreenProps> = ({ onWalletUnlocked, publi
             headerIcon={<Lock size={20} color="#7c5cff" />}
             headerText="Enter PIN"
             instruction={{
-              empty: 'Tap above and use your keypad to enter PIN',
+              empty: 'Use the keypad below to enter PIN',
               incomplete: '{count} more digits',
               complete: 'PIN complete'
             }}
-            autoFocus
           />
         </View>
-
-        {/* Unlock Button */}
-        <Animated.View style={{ transform: [{ translateX: shakeAnimationValue }] }}>
-          <TouchableOpacity
-            style={[styles.unlockButton, (isLoading || pin.length < 4) && styles.unlockButtonDisabled]}
-            onPress={handleUnlockWallet}
-            disabled={isLoading || pin.length < 4}>
-            {isLoading ? (
-              <ActivityIndicator size={20} color="#ffffff" />
-            ) : (
-              <Text style={styles.buttonText}>Unlock Wallet</Text>
-            )}
-          </TouchableOpacity>
-        </Animated.View>
 
         {/* Error Message - Fixed height container to prevent layout shift */}
         <View style={styles.errorContainer}>
@@ -131,6 +128,28 @@ const EnterPinScreen: React.FC<EnterPinScreenProps> = ({ onWalletUnlocked, publi
           ) : (
             <Text style={styles.errorTextPlaceholder}> </Text>
           )}
+        </View>
+
+        {/* Bottom Section - Keyboard and Button */}
+        <View style={styles.bottomSection}>
+          {/* Numeric Keyboard */}
+          <NumericKeyboard onKeyPress={handleKeyPress} />
+
+          {/* Unlock Button */}
+          <View style={styles.buttonContainer}>
+            <Animated.View style={{ transform: [{ translateX: shakeAnimationValue }] }}>
+              <TouchableOpacity
+                style={[styles.unlockButton, (isLoading || pin.length < 4) && styles.unlockButtonDisabled]}
+                onPress={handleUnlockWallet}
+                disabled={isLoading || pin.length < 4}>
+                {isLoading ? (
+                  <ActivityIndicator size={20} color="#ffffff" />
+                ) : (
+                  <Text style={styles.buttonText}>Unlock Wallet</Text>
+                )}
+              </TouchableOpacity>
+            </Animated.View>
+          </View>
         </View>
       </View>
     </ScreenContainer>
@@ -169,6 +188,12 @@ const styles = StyleSheet.create({
   },
   pinContainer: {
     marginBottom: 32,
+  },
+  bottomSection: {
+    marginTop: 'auto',
+  },
+  buttonContainer: {
+    paddingBottom: 24,
   },
   errorContainer: {
     marginTop: 16,

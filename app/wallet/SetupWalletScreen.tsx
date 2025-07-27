@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, ActivityIndicator, Alert, Modal, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, ActivityIndicator, Modal, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { generateInitialSolanaWallet, saveWalletToList, createAppPin, importWalletFromMnemonic } from '@/services/walletService';
 import { createUser } from '@/services/apis';
 import { AuthService } from '@/services/authService';
+import { useAlert } from '@/providers/AlertProvider';
 import colors from '@/constants/colors';
 import CreateWalletIntroStep from '@/components/wallet/CreateWalletIntroStep';
 import ShowMnemonicStep from '@/components/wallet/ShowMnemonicStep';
@@ -18,6 +19,7 @@ interface SetupWalletScreenProps {
 }
 
 const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComplete }) => {
+  const { alert, error: showError, success } = useAlert();
   const [step, setStep] = useState(1); // 1: Initial, 2: Show Mnemonic, 3: Verify Mnemonic, 4: Username, 5: Create PIN, 6: Confirm PIN
   const [mnemonic, setMnemonic] = useState<string | null>(null);
   const [publicKey, setPublicKey] = useState<string | null>(null);
@@ -44,7 +46,7 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComp
       setDerivationPath(wallet.derivationPath);
       setStep(2);
     } catch (error) {
-      Alert.alert("Error", "Could not generate wallet. Please try again.");
+      showError("Error", "Could not generate wallet. Please try again.");
       console.error(error);
     }
     setIsLoading(false);
@@ -62,7 +64,7 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComp
 
   const handleUsernameNext = async (selectedUsername: string) => {
     if (!publicKey) {
-      Alert.alert("Error", "Public key not available. Please try again.");
+      showError("Error", "Public key not available. Please try again.");
       return;
     }
 
@@ -77,7 +79,7 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComp
           // Throw error to let the child component handle the visual feedback
           throw new Error('Username already exists');
         } else {
-          Alert.alert("Error", result.error || "Failed to create user. Please try again.");
+          showError("Error", result.error || "Failed to create user. Please try again.");
         }
         return;
       }
@@ -91,7 +93,7 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComp
       
       // Only show alert for unknown errors, not for username taken
       if (error instanceof Error && error.message !== 'Username already exists') {
-        Alert.alert("Error", "Failed to create user. Please check your connection and try again.");
+        showError("Error", "Failed to create user. Please check your connection and try again.");
       }
       
       // Re-throw the error so the child component can handle the visual feedback
@@ -103,7 +105,7 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComp
 
   const handleSetPin = () => {
     if (pin.length < 4) { // Basic PIN validation
-      Alert.alert("Invalid PIN", "PIN must be at least 4 digits.");
+      showError("Invalid PIN", "PIN must be at least 4 digits.");
       return;
     }
     setStep(6); // Move to PIN confirmation
@@ -115,7 +117,7 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComp
 
   const processImportWallet = async () => {
     if (!importPhrase.trim()) {
-      Alert.alert('Invalid Phrase', 'Please enter a valid seed phrase.');
+      showError('Invalid Phrase', 'Please enter a valid seed phrase.');
       return;
     }
 
@@ -130,7 +132,7 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComp
       setShowImportModal(false);
       setStep(3); // Move to verification
     } catch (error) {
-      Alert.alert('Error', 'Failed to import wallet. Please check your seed phrase and try again.');
+      showError('Error', 'Failed to import wallet. Please check your seed phrase and try again.');
       console.error('Error importing wallet:', error);
     }
     setIsImporting(false);
@@ -165,10 +167,10 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComp
       const walletName = 'Main';
       await saveWalletToList(walletId, walletName, mnemonic, publicKey, pin, accountIndex, derivationPath);
       
-      Alert.alert("Success", "Your wallet has been created and secured with a PIN. Keep your seed phrase and PIN safe!");
+      success("Success", "Your wallet has been created and secured with a PIN. Keep your seed phrase and PIN safe!");
       onWalletSetupComplete();
     } catch (error) {
-      Alert.alert("Error", "Could not save wallet. Please try again.");
+      showError("Error", "Could not save wallet. Please try again.");
     }
     setIsLoading(false);
   };
@@ -279,6 +281,16 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComp
               autoFocus
             />
             
+            {/* Dev Button */}
+            {process.env.EXPO_PUBLIC_APP_ENV === 'development' && (
+              <TouchableOpacity 
+                style={styles.devButton}
+                onPress={() => setImportPhrase(process.env.EXPO_PUBLIC_DEV_SEED_PHRASE || '')}
+              >
+                <Text style={styles.devButtonText}>DEV</Text>
+              </TouchableOpacity>
+            )}
+            
             <View style={styles.modalActions}>
               <TouchableOpacity 
                 style={[styles.primaryButton, isImporting && styles.buttonDisabled]}
@@ -370,6 +382,21 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: {
     opacity: 0.5,
+  },
+  devButton: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    backgroundColor: colors.primary,
+    borderRadius: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    zIndex: 1,
+  },
+  devButtonText: {
+    fontSize: 10,
+    fontFamily: 'Inter-Bold',
+    color: colors.white,
   },
 });
 

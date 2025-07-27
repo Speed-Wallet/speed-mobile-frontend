@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useAlert } from '@/providers/AlertProvider';
 import colors from '@/constants/colors';
 import SettingsScreen from '@/components/SettingsScreen';
 import { unlockWalletWithPin } from '@/services/walletService';
@@ -9,6 +10,7 @@ import { setStringAsync } from 'expo-clipboard';
 
 export default function SecuritySettingsScreen() {
   const router = useRouter();
+  const { alert, success } = useAlert();
   const [pin, setPin] = useState('');
   const [showPin, setShowPin] = useState(false);
   const [seedPhrase, setSeedPhrase] = useState<string | null>(null);
@@ -51,7 +53,7 @@ export default function SecuritySettingsScreen() {
   const copySeedPhrase = async () => {
     if (seedPhrase) {
       await setStringAsync(seedPhrase);
-      Alert.alert('Copied', 'Seed phrase copied to clipboard');
+      success('Copied', 'Seed phrase copied to clipboard');
     }
   };
 
@@ -59,11 +61,11 @@ export default function SecuritySettingsScreen() {
     <SettingsScreen title="Security">
       <View style={styles.content}>
         <Text style={styles.sectionTitle}>General Security</Text>
-        <TouchableOpacity style={styles.menuItem} onPress={() => Alert.alert("Navigate", "Navigate to 2FA settings")}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => alert("Navigate", "Navigate to 2FA settings")}>
           <Text style={styles.menuItemText}>Two-Factor Authentication (2FA)</Text>
           <Text style={styles.menuItemValue}>Off {'>'}</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem} onPress={() => Alert.alert("Navigate", "Navigate to Change Password")}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => alert("Navigate", "Navigate to Change Password")}>
           <Text style={styles.menuItemText}>Change PIN</Text>
           <Text style={styles.menuItemValue}>{'>'}</Text>
         </TouchableOpacity>
