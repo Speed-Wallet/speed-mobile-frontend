@@ -16,7 +16,7 @@ import ScreenHeader from '@/components/ScreenHeader';
 import ScreenContainer from '@/components/ScreenContainer';
 import AmountInputWithValue from '@/components/AmountInputWithValue';
 import TokenItem from '@/components/TokenItem';
-import { sendCryptoTransaction } from '@/utils/sendTransaction';
+import { sendTokenTransaction } from '@/utils/sendTransaction';
 
 
 export default function SendScreen() {
@@ -131,13 +131,12 @@ export default function SendScreen() {
       setIsStatusSheetOpen(true);
     }, 300);
 
-    const result = await sendCryptoTransaction({
+    const result = await sendTokenTransaction({
       amount: amount || '',
       recipient: recipient || '',
       tokenAddress: selectedToken.address,
       tokenSymbol: selectedToken.symbol,
-      tokenDecimals: selectedToken.decimals,
-      showAlert: false
+      tokenDecimals: selectedToken.decimals
     });
 
     setSendResult(result);

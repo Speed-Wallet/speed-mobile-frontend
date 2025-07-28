@@ -1,9 +1,8 @@
-import { PublicKey, sendAndConfirmTransaction, Transaction, SystemProgram } from '@solana/web3.js';
-import { createTransferInstruction, getAccount, getAssociatedTokenAddress, getOrCreateAssociatedTokenAccount } from '@solana/spl-token';
-import { CONNECTION, PLATFORM_FEE_ACCOUNT, WALLET, WSOL_MINT } from '@/services/walletService';
+import { Transaction } from '@solana/web3.js';
+import { WALLET, WSOL_MINT } from '@/services/walletService';
 import { registerForPushNotificationsAsync } from '@/services/notificationService';
-import { getWalletAddress, registerUSDTTransaction } from '@/services/apis';
-import { showAlert, showError, showSuccess } from '@/utils/globalAlert';
+import { getWalletAddress, registerUSDTTransaction, prepareTokenTransaction, submitSignedTransaction } from '@/services/apis';
+import { Buffer } from 'buffer';
 
 const CASHWYRE_FEE_RATE = parseFloat(process.env.EXPO_PUBLIC_CASHWYRE_FEE_RATE!)
 
@@ -13,7 +12,6 @@ export interface SendTransactionParams {
   tokenAddress: string;
   tokenSymbol: string;
   tokenDecimals: number;
-  showAlert?: boolean;
   sendCashwyreFee?: boolean; // Whether to deduct platform fee from the amount
 }
 
@@ -25,148 +23,50 @@ export interface SendTransactionResult {
 
 /**
  * Generic function to send tokens (SOL or SPL tokens) to a recipient
- * Extracted from send.tsx to be reusable across the app
+ * Now uses secure two-step process: prepare transaction on backend, sign on frontend, submit on backend
  */
-export async function sendCryptoTransaction(params: SendTransactionParams): Promise<SendTransactionResult> {
-  const { amount: _amount, recipient, tokenAddress, tokenSymbol, tokenDecimals, showAlert: shouldShowAlert = true, sendCashwyreFee = false } = params;
-
-  let amount: string
-  const cashwyreFee = parseFloat(process.env.EXPO_PUBLIC_CASHWYRE_FEE_RATE!)
-  if (sendCashwyreFee) {
-    amount = (parseFloat(_amount) - cashwyreFee * parseFloat(_amount)).toString();
-  } else {
-    amount = _amount;
-  }
-
-    // Validation
-  if (!amount) {
-    const error = "Please enter an amount to send.";
-    if (shouldShowAlert) showError("Error", error);
-    return { success: false, error };
-  }
-
-  if (!recipient) {
-    const error = "Please enter a recipient address.";
-    if (shouldShowAlert) showError("Error", error);
-    return { success: false, error };
-  }
-
-  if (!tokenAddress) {
-    const error = "Please select a token to send.";
-    if (shouldShowAlert) showError("Error", error);
-    return { success: false, error };
-  }
-
-  if (!WALLET) {
-    const error = "Wallet is not unlocked. Cannot perform action";
-    if (shouldShowAlert) showError("Error", error);
-    console.error("Wallet is not unlocked. Cannot perform action.");
-    return { success: false, error };
-  }
-
-  console.log('your wallet address: ', WALLET.publicKey.toBase58());
+export async function sendTokenTransaction(params: SendTransactionParams): Promise<SendTransactionResult> {
+  const { amount, recipient, tokenAddress, tokenSymbol, tokenDecimals, sendCashwyreFee = false } = params;
 
   try {
-    if (shouldShowAlert) {
-      showAlert("Sending", `Sending ${amount} ${tokenSymbol} to ${recipient}`, undefined, 'info');
+    if (!WALLET) {
+      return { success: false, error: "Wallet is not unlocked" };
     }
 
-    const recipientPublicKey = new PublicKey(recipient);
-    const amountInBaseUnits = Math.floor(parseFloat(amount) * Math.pow(10, tokenDecimals));
+    // Step 1: Prepare transaction on backend
+    const prepareResult = await prepareTokenTransaction({
+      amount,
+      recipient,
+      tokenAddress,
+      tokenSymbol,
+      tokenDecimals,
+      sendCashwyreFee,
+      senderPublicKey: WALLET.publicKey.toBase58()
+    });
 
-    console.log("amount base units", amountInBaseUnits);
-
-    let transferIx;
-    let feeTransferIx;
-
-    if (tokenAddress === WSOL_MINT) {
-      // Native SOL transfer
-      transferIx = SystemProgram.transfer({
-        fromPubkey: WALLET.publicKey,
-        toPubkey: recipientPublicKey,
-        lamports: amountInBaseUnits,
-      });
-    } else {
-      // SPL Token transfer
-      const senderPublicKeyStr = WALLET.publicKey.toBase58();
-      const senderPublicKey = new PublicKey(senderPublicKeyStr);
-
-      // 1. Get sender's ATA (must exist)
-      const senderATA = await getAssociatedTokenAddress(
-        new PublicKey(tokenAddress),
-        senderPublicKey
-      );
-      console.log("senderATA", senderATA.toBase58());
-      
-      try {
-        await getAccount(CONNECTION, senderATA); // throws if doesn't exist
-      } catch (e) {
-        const error = "You do not have balance of this token in your wallet.";
-        if (shouldShowAlert) showError("Error", error);
-        console.error("Error fetching sender's ATA:", e);
-        return { success: false, error };
-      }
-
-      const tokenPublicKey = new PublicKey(tokenAddress);
-
-      // 2. Get or create recipient's ATA (creates if missing)
-      const recipientATA = await getOrCreateAssociatedTokenAccount(
-        CONNECTION,
-        WALLET,
-        tokenPublicKey,
-        recipientPublicKey
-      );
-
-      // 3. Create transfer instruction for SPL token
-      transferIx = createTransferInstruction(
-        senderATA,
-        recipientATA.address,
-        WALLET.publicKey,
-        amountInBaseUnits
-      );
-
-      if (sendCashwyreFee) {
-        const feeInBaseUnits = Math.round(CASHWYRE_FEE_RATE * Math.pow(10, tokenDecimals));
-
-        const feeATA = await getOrCreateAssociatedTokenAccount(
-          CONNECTION,
-          WALLET,
-          tokenPublicKey,
-          PLATFORM_FEE_ACCOUNT,
-          true,
-        );
-
-        // Create transfer instruction for fee
-        feeTransferIx = createTransferInstruction(
-          senderATA,
-          feeATA.address,
-          WALLET.publicKey,
-          feeInBaseUnits
-        );
-
-      }
+    if (!prepareResult.success || !prepareResult.transaction) {
+      return { success: false, error: prepareResult.error || "Failed to prepare transaction" };
     }
 
-    // 4. Send transaction
-    const tx = new Transaction().add(transferIx);
-
-    if (feeTransferIx) {
-      tx.add(feeTransferIx);
-    }
-
-    const sig = await sendAndConfirmTransaction(CONNECTION, tx, [WALLET]);
-    console.log("Transaction successful. Signature:", sig);
+    // Step 2: Sign transaction on frontend
+    const transactionBuffer = Buffer.from(prepareResult.transaction, 'base64');
+    const transaction = Transaction.from(transactionBuffer);
     
-    if (shouldShowAlert) {
-      showSuccess("Success", `✅ Transfer complete. Signature: ${sig}`);
-    }
+    // Sign the transaction with the wallet
+    transaction.sign(WALLET);
 
-    return { success: true, signature: sig };
+    // Step 3: Submit signed transaction to backend
+    const submitResult = await submitSignedTransaction({
+      signedTransaction: transaction.serialize().toString('base64'),
+      blockhash: prepareResult.blockhash!,
+      lastValidBlockHeight: prepareResult.lastValidBlockHeight!
+    });
+
+    return submitResult;
 
   } catch (error) {
     console.error("Transaction failed:", error);
-    const errorMessage = "Transaction failed. Please try again.";
-    if (shouldShowAlert) showError("Error", errorMessage);
+    const errorMessage = error instanceof Error ? error.message : "Transaction failed. Please try again.";
     return { success: false, error: errorMessage };
   }
 }
@@ -176,13 +76,12 @@ export async function sendCryptoTransaction(params: SendTransactionParams): Prom
  * Used in card creation process
  */
 export async function sendUSDT(amount: string, recipientAddress: string, sendCashwyreFee: boolean = false): Promise<SendTransactionResult> {
-  return sendCryptoTransaction({
+  return sendTokenTransaction({
     amount,
     recipient: recipientAddress,
     tokenAddress: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB', // USDT mainnet address
     tokenSymbol: 'USDT',
     tokenDecimals: 6,
-    showAlert: false, // Don't show alerts for automated card creation
     sendCashwyreFee // Whether to deduct platform fee from the amount
   });
 }
