@@ -817,7 +817,7 @@ export const switchToWallet = async (walletId: string, pin: string): Promise<boo
       throw new Error('Invalid mnemonic in stored wallet');
     }
 
-    // Create keypair using derivation path if available, otherwise use legacy seed method
+    // Create keypair using BIP44 derivation path (m/44'/501'/accountIndex'/0')
     const walletAccountIndex = targetWallet.accountIndex !== undefined ? targetWallet.accountIndex : 0;
     const keypair = await createKeypairFromMnemonic(mnemonic, walletAccountIndex);
 
@@ -876,7 +876,7 @@ export const switchToWalletWithAppPin = async (walletId: string, appPin: string)
       throw new Error('Invalid mnemonic in stored wallet');
     }
 
-    // Create keypair using derivation path if available, otherwise use legacy seed method
+    // Create keypair using BIP44 derivation path (m/44'/501'/accountIndex'/0')
     const walletAccountIndex = targetWallet.accountIndex !== undefined ? targetWallet.accountIndex : 0;
     const keypair = await createKeypairFromMnemonic(mnemonic, walletAccountIndex);
 
@@ -1037,7 +1037,7 @@ export const unlockApp = async (pin: string): Promise<boolean> => {
       return false;
     }
 
-    // Create keypair using derivation path if available, otherwise use legacy seed method
+    // Create keypair using BIP44 derivation path (m/44'/501'/accountIndex'/0')
     const accountIndexToUse = activeWallet.accountIndex !== undefined ? activeWallet.accountIndex : 0;
     const keypair = await createKeypairFromMnemonic(mnemonic, accountIndexToUse);
     
@@ -1107,7 +1107,7 @@ export const getMasterWalletKeypair = async (): Promise<Keypair> => {
       throw new Error('Failed to decrypt master wallet mnemonic');
     }
 
-    // Create keypair using derivation path if available, otherwise use legacy seed method
+    // Create keypair using BIP44 derivation path (m/44'/501'/accountIndex'/0')
     const accountIndexToUse = masterWallet.accountIndex !== undefined ? masterWallet.accountIndex : 0;
     const keypair = await createKeypairFromMnemonic(mnemonic, accountIndexToUse);
     
