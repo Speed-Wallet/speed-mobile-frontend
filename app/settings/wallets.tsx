@@ -177,7 +177,9 @@ export default function WalletsScreen() {
       const cleanPhrase = importPhrase.trim().toLowerCase();
       const wallet = await importWalletFromMnemonic(cleanPhrase);
       const walletId = `wallet_${Date.now()}`;
-      await saveWalletWithAppPin(walletId, walletName.trim(), wallet.mnemonic, wallet.publicKey);
+      const accountIndex = 0; // Imported wallets use the first derivation (m/44'/501'/0'/0')
+      const derivationPath = "m/44'/501'/0'/0'";
+      await saveWalletWithAppPin(walletId, walletName.trim(), wallet.mnemonic, wallet.publicKey, accountIndex, derivationPath);
       
       success('Success', 'Wallet imported successfully!', [
         { text: 'OK', onPress: () => {

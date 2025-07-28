@@ -52,9 +52,11 @@ export default function ImportPhraseScreen() {
       const cleanPhrase = phrase.trim().toLowerCase();
       const wallet = await importWalletFromMnemonic(cleanPhrase);
       
-      // Generate unique wallet ID and save to multi-wallet system
+      // Generate unique wallet ID and save to multi-wallet system with proper derivation info
       const walletId = `wallet-${Date.now()}`;
-      await saveWalletToList(walletId, walletName, wallet.mnemonic, wallet.publicKey, pin);
+      const accountIndex = 0; // Imported wallets use the first derivation (m/44'/501'/0'/0')
+      const derivationPath = "m/44'/501'/0'/0'";
+      await saveWalletToList(walletId, walletName, wallet.mnemonic, wallet.publicKey, pin, accountIndex, derivationPath);
       
       success('Success', 'Wallet imported successfully!', [
         { text: 'OK', onPress: () => router.replace('/') }
