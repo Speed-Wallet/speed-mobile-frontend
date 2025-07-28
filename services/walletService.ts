@@ -278,8 +278,7 @@ export const isAppUnlocked = (): boolean => {
 
 export const generateSolanaWallet = async (): Promise<SolanaWallet> => {
   const mnemonic = await generateMnemonic();
-  const seed = await mnemonicToSeed(mnemonic);
-  const keypair = Keypair.fromSeed(Uint8Array.from(seed.subarray(0, 32)));
+  const keypair = await createKeypairFromMnemonic(mnemonic, 0);
 
   return {
     mnemonic,
@@ -513,10 +512,9 @@ export const unlockWalletWithPin = async (pin: string): Promise<SolanaWallet | n
         return null;
       }
 
-      // Create keypair using derivation path if available, otherwise use legacy seed method
-      const keypair = activeWallet.accountIndex !== undefined 
-        ? await createKeypairFromMnemonic(mnemonic, activeWallet.accountIndex)
-        : Keypair.fromSeed(Uint8Array.from((await mnemonicToSeed(mnemonic)).subarray(0, 32)));
+      // Create keypair using derivation path (default to accountIndex 0 for legacy wallets)
+      const accountIndex = activeWallet.accountIndex !== undefined ? activeWallet.accountIndex : 0;
+      const keypair = await createKeypairFromMnemonic(mnemonic, accountIndex);
       
       if (keypair.publicKey.toBase58() !== activeWallet.publicKey) {
           console.warn("Decrypted wallet's public key does not match stored public key. PIN might be incorrect or data corrupted.");
@@ -645,8 +643,8 @@ export const importWalletFromMnemonic = async (mnemonic: string): Promise<Solana
     throw new Error('Invalid mnemonic phrase');
   }
 
-  const seed = await mnemonicToSeed(mnemonic);
-  const keypair = Keypair.fromSeed(Uint8Array.from(seed.subarray(0, 32)));
+  // Use the same BIP44 derivation as wallet generation (m/44'/501'/0'/0')
+  const keypair = await createKeypairFromMnemonic(mnemonic, 0);
 
   return {
     mnemonic,
@@ -727,10 +725,9 @@ export const saveWalletToList = async (
     // Set as active wallet
     await setActiveWallet(id);
     
-    // Load wallet into memory immediately
-    const keypair = accountIndex !== undefined 
-      ? await createKeypairFromMnemonic(mnemonic, accountIndex)
-      : Keypair.fromSeed(Uint8Array.from((await mnemonicToSeed(mnemonic)).subarray(0, 32)));
+    // Load wallet into memory immediately (default to accountIndex 0 for legacy wallets)
+    const walletAccountIndex = accountIndex !== undefined ? accountIndex : 0;
+    const keypair = await createKeypairFromMnemonic(mnemonic, walletAccountIndex);
     WALLET = keypair;
     notifyWalletStateChange();
   } catch (error) {
@@ -821,9 +818,8 @@ export const switchToWallet = async (walletId: string, pin: string): Promise<boo
     }
 
     // Create keypair using derivation path if available, otherwise use legacy seed method
-    const keypair = targetWallet.accountIndex !== undefined 
-      ? await createKeypairFromMnemonic(mnemonic, targetWallet.accountIndex)
-      : Keypair.fromSeed(Uint8Array.from((await mnemonicToSeed(mnemonic)).subarray(0, 32)));
+    const walletAccountIndex = targetWallet.accountIndex !== undefined ? targetWallet.accountIndex : 0;
+    const keypair = await createKeypairFromMnemonic(mnemonic, walletAccountIndex);
 
     if (keypair.publicKey.toBase58() !== targetWallet.publicKey) {
       throw new Error('Public key mismatch');
@@ -881,9 +877,8 @@ export const switchToWalletWithAppPin = async (walletId: string, appPin: string)
     }
 
     // Create keypair using derivation path if available, otherwise use legacy seed method
-    const keypair = targetWallet.accountIndex !== undefined 
-      ? await createKeypairFromMnemonic(mnemonic, targetWallet.accountIndex)
-      : Keypair.fromSeed(Uint8Array.from((await mnemonicToSeed(mnemonic)).subarray(0, 32)));
+    const walletAccountIndex = targetWallet.accountIndex !== undefined ? targetWallet.accountIndex : 0;
+    const keypair = await createKeypairFromMnemonic(mnemonic, walletAccountIndex);
 
     if (keypair.publicKey.toBase58() !== targetWallet.publicKey) {
       throw new Error('Public key mismatch');
@@ -990,9 +985,8 @@ export const saveWalletWithAppPin = async (
     await setActiveWallet(id);
     
     // Load wallet into memory immediately
-    const keypair = accountIndex !== undefined 
-      ? await createKeypairFromMnemonic(mnemonic, accountIndex)
-      : Keypair.fromSeed(Uint8Array.from((await mnemonicToSeed(mnemonic)).subarray(0, 32)));
+    const accountIndexToUse = accountIndex !== undefined ? accountIndex : 0;
+    const keypair = await createKeypairFromMnemonic(mnemonic, accountIndexToUse);
     
     WALLET = keypair;
     notifyWalletStateChange();
@@ -1044,9 +1038,8 @@ export const unlockApp = async (pin: string): Promise<boolean> => {
     }
 
     // Create keypair using derivation path if available, otherwise use legacy seed method
-    const keypair = activeWallet.accountIndex !== undefined 
-      ? await createKeypairFromMnemonic(mnemonic, activeWallet.accountIndex)
-      : Keypair.fromSeed(Uint8Array.from((await mnemonicToSeed(mnemonic)).subarray(0, 32)));
+    const accountIndexToUse = activeWallet.accountIndex !== undefined ? activeWallet.accountIndex : 0;
+    const keypair = await createKeypairFromMnemonic(mnemonic, accountIndexToUse);
     
     // Load wallet into memory
     WALLET = keypair;
@@ -1115,9 +1108,8 @@ export const getMasterWalletKeypair = async (): Promise<Keypair> => {
     }
 
     // Create keypair using derivation path if available, otherwise use legacy seed method
-    const keypair = masterWallet.accountIndex !== undefined 
-      ? await createKeypairFromMnemonic(mnemonic, masterWallet.accountIndex)
-      : Keypair.fromSeed(Uint8Array.from((await mnemonicToSeed(mnemonic)).subarray(0, 32)));
+    const accountIndexToUse = masterWallet.accountIndex !== undefined ? masterWallet.accountIndex : 0;
+    const keypair = await createKeypairFromMnemonic(mnemonic, accountIndexToUse);
     
     return keypair;
   } catch (error) {
