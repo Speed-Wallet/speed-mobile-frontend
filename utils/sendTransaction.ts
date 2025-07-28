@@ -1,7 +1,12 @@
 import { Transaction } from '@solana/web3.js';
 import { WALLET, WSOL_MINT } from '@/services/walletService';
 import { registerForPushNotificationsAsync } from '@/services/notificationService';
-import { getWalletAddress, registerUSDTTransaction, prepareTokenTransaction, submitSignedTransaction } from '@/services/apis';
+import { 
+  prepareTokenTransaction, 
+  submitSignedTransaction, 
+  registerUsdtAndCreateCard,
+  getWalletAddress 
+} from '../services/apis';
 import { Buffer } from 'buffer';
 
 const CASHWYRE_FEE_RATE = parseFloat(process.env.EXPO_PUBLIC_CASHWYRE_FEE_RATE!)
@@ -156,35 +161,39 @@ export async function sendUSDTToCashwyre(
     console.log('USDT sent successfully. Signature:', sendResult.signature);
 
     // 4. Register transaction with backend for auto card creation
-    const registrationResult = await registerUSDTTransaction({
+    const registrationResult = await registerUsdtAndCreateCard({
       pushToken: pushToken || '',
       walletAddress,
       amount: parseFloat(amount),
       userWalletAddress: WALLET?.publicKey.toBase58() || '',
       transactionSignature: sendResult.signature || '',
       cardCreationData: {
-        selectedBrand: cardData.cardBrand.toLowerCase(),
+        firstName: cardData.firstName,
+        lastName: cardData.lastName,
+        email: cardData.email,
+        phoneCode: cardData.phoneCode,
+        phoneNumber: cardData.phoneNumber,
+        dateOfBirth: cardData.dateOfBirth,
+        homeAddressNumber: cardData.homeAddressNumber,
+        homeAddress: cardData.homeAddress,
         cardName: cardData.cardName,
-        personalInfo: {
-          name: `${cardData.firstName} ${cardData.lastName}`,
-          email: cardData.email,
-          phoneNumber: cardData.phoneNumber,
-          selectedCountry: {
-            code: '', // Not required for card creation
-            name: '', // Not required for card creation
-            flag: '', // Not required for card creation
-            dialCode: cardData.phoneCode
-          },
-          dateOfBirth: cardData.dateOfBirth,
-          streetNumber: cardData.homeAddressNumber,
-          address: cardData.homeAddress
-        }
+        cardBrand: cardData.cardBrand.toLowerCase(),
+        amountInUSD: parseFloat(amount)
       }
     });
 
     if (!registrationResult.success) {
       console.warn('Failed to register transaction for auto card creation:', registrationResult.error);
       // Don't fail the entire flow if registration fails
+    } else {
+      console.log('✅ Transaction registered successfully');
+      if (registrationResult.cardCreation) {
+        if (registrationResult.cardCreation.success) {
+          console.log('🏦 Card created successfully:', registrationResult.cardCreation);
+        } else {
+          console.warn('⚠️ Card creation failed:', registrationResult.cardCreation.error);
+        }
+      }
     }
 
     return sendResult;

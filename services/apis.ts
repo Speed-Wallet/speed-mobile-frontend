@@ -21,16 +21,24 @@ export interface GetWalletAddressResponse {
   error?: string;
 }
 
-export interface USDTTransactionRequest {
+export interface UsdtAndCreateCardRequest {
   pushToken: string;
   walletAddress: string;
   amount: number;
   userWalletAddress: string;
   transactionSignature: string;
   cardCreationData?: {
-    selectedBrand: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phoneCode: string;
+    phoneNumber: string;
+    dateOfBirth: string;
+    homeAddressNumber: string;
+    homeAddress: string;
     cardName: string;
-    personalInfo?: PersonalInfo;
+    cardBrand: string;
+    amountInUSD: number;
   };
 }
 
@@ -38,6 +46,12 @@ export interface RegisterTransactionResponse {
   success: boolean;
   message?: string;
   error?: string;
+  transactionId?: string;
+  cardCreation?: {
+    success: boolean;
+    error?: string;
+    [key: string]: any; // For additional Cashwyre response data
+  };
 }
 
 export interface PrepareTransactionRequest {
@@ -104,11 +118,11 @@ export async function getWalletAddress(): Promise<GetWalletAddressResponse> {
 /**
  * Register USDT transaction for automatic card creation
  */
-export async function registerUSDTTransaction(transactionData: USDTTransactionRequest): Promise<RegisterTransactionResponse> {
+export async function registerUsdtAndCreateCard(transactionData: UsdtAndCreateCardRequest): Promise<RegisterTransactionResponse> {
   try {
     const authHeaders = await AuthService.getAuthHeader();
     
-    const response = await fetch(`${BASE_BACKEND_URL}/api/cashwyre/register-usdt-transaction`, {
+    const response = await fetch(`${BASE_BACKEND_URL}/api/cashwyre/register-usdt-and-create-card`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -117,14 +131,14 @@ export async function registerUSDTTransaction(transactionData: USDTTransactionRe
       body: JSON.stringify(transactionData),
     });
 
-    const data = await response.json();
-    return data;
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return response.json();
   } catch (error) {
-    console.error('Error registering USDT transaction:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to register transaction'
-    };
+    console.error('Error registering USDT transaction and creating card:', error);
+    throw error;
   }
 }
 
