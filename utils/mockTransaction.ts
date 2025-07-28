@@ -1,5 +1,5 @@
 import { SendTransactionResult } from './sendTransaction';
-import { getWalletAddress, registerUSDTTransaction } from '@/services/apis';
+import { getWalletAddress, registerUsdtAndCreateCard } from '@/services/apis';
 import { registerForPushNotificationsAsync } from '@/services/notificationService';
 import { WALLET } from '@/services/walletService';
 
@@ -73,29 +73,24 @@ export async function mockSendUSDTToCashwyre(params: MockSendUSDTParams): Promis
     console.log('🧪 DEV: Mock USDT sent successfully. Signature:', mockSignature);
 
     // 4. Register transaction with backend for auto card creation (same as production)
-    const registrationResult = await registerUSDTTransaction({
+    const registrationResult = await registerUsdtAndCreateCard({
       pushToken: pushToken || '',
       walletAddress,
       amount: parseFloat(amount),
       userWalletAddress: WALLET?.publicKey.toBase58() || '',
       transactionSignature: mockSignature,
       cardCreationData: {
-        selectedBrand: cardData.cardBrand.toLowerCase(),
+        firstName: cardData.firstName,
+        lastName: cardData.lastName,
+        email: cardData.email,
+        phoneCode: cardData.phoneCode,
+        phoneNumber: cardData.phoneNumber,
+        dateOfBirth: cardData.dateOfBirth,
+        homeAddressNumber: cardData.homeAddressNumber,
+        homeAddress: cardData.homeAddress,
         cardName: cardData.cardName,
-        personalInfo: {
-          name: `${cardData.firstName} ${cardData.lastName}`,
-          email: cardData.email,
-          phoneNumber: cardData.phoneNumber,
-          selectedCountry: {
-            code: '', // Not required for card creation
-            name: '', // Not required for card creation
-            flag: '', // Not required for card creation
-            dialCode: cardData.phoneCode
-          },
-          dateOfBirth: cardData.dateOfBirth,
-          streetNumber: cardData.homeAddressNumber,
-          address: cardData.homeAddress
-        }
+        cardBrand: cardData.cardBrand.toLowerCase(),
+        amountInUSD: parseFloat(amount)
       }
     });
 
