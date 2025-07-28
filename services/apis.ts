@@ -40,6 +40,36 @@ export interface RegisterTransactionResponse {
   error?: string;
 }
 
+export interface PrepareTransactionRequest {
+  amount: string;
+  recipient: string;
+  tokenAddress: string;
+  tokenSymbol: string;
+  tokenDecimals: number;
+  sendCashwyreFee?: boolean;
+  senderPublicKey: string;
+}
+
+export interface PrepareTransactionResponse {
+  success: boolean;
+  transaction?: string; // base64 encoded unsigned transaction
+  blockhash?: string;
+  lastValidBlockHeight?: number;
+  error?: string;
+}
+
+export interface SubmitTransactionRequest {
+  signedTransaction: string; // base64 encoded signed transaction
+  blockhash: string;
+  lastValidBlockHeight: number;
+}
+
+export interface SubmitTransactionResponse {
+  success: boolean;
+  signature?: string;
+  error?: string;
+}
+
 /**
  * Get Cashwyre wallet address for USDT deposits
  */
@@ -94,6 +124,60 @@ export async function registerUSDTTransaction(transactionData: USDTTransactionRe
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to register transaction'
+    };
+  }
+}
+
+/**
+ * Prepare token transaction (step 1 - returns unsigned transaction)
+ */
+export async function prepareTokenTransaction(transactionData: PrepareTransactionRequest): Promise<PrepareTransactionResponse> {
+  try {
+    const authHeaders = await AuthService.getAuthHeader();
+    
+    const response = await fetch(`${BASE_BACKEND_URL}/api/transaction/prepare`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...authHeaders,
+      },
+      body: JSON.stringify(transactionData),
+    });
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error preparing transaction:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to prepare transaction'
+    };
+  }
+}
+
+/**
+ * Submit signed transaction (step 2 - submits signed transaction)
+ */
+export async function submitSignedTransaction(transactionData: SubmitTransactionRequest): Promise<SubmitTransactionResponse> {
+  try {
+    const authHeaders = await AuthService.getAuthHeader();
+    
+    const response = await fetch(`${BASE_BACKEND_URL}/api/transaction/submit`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...authHeaders,
+      },
+      body: JSON.stringify(transactionData),
+    });
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error submitting transaction:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to submit transaction'
     };
   }
 }
