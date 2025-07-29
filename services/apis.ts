@@ -27,7 +27,7 @@ export interface UsdtAndCreateCardRequest {
   amount: number;
   userWalletAddress: string;
   transactionSignature: string;
-  cardCreationData?: {
+  cardCreationData: {
     firstName: string;
     lastName: string;
     email: string;
@@ -349,8 +349,7 @@ export async function createUser(username: string, publicKey: string): Promise<{
       },
       body: JSON.stringify({
         username,
-        publicKey,
-        balance: 0
+        publicKey
       }),
     });
 

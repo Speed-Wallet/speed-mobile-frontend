@@ -22,20 +22,21 @@ export default function CreateUsernameStep({ onNext, onBack, isLoading = false }
   const shakeAnimationValue = useRef(new Animated.Value(0)).current;
 
   const validateUsername = (text: string) => {
-    const regex = /^[a-zA-Z0-9_-]{3,20}$/;
+    // Match backend validation exactly
+    const regex = /^[a-zA-Z0-9_]+$/;
     const isValidFormat = regex.test(text);
     
     if (text.length === 0) {
       setError('');
       setIsValid(false);
     } else if (text.length < 3) {
-      setError('Username must be at least 3 characters');
+      setError('Username must be between 3 and 20 characters');
       setIsValid(false);
     } else if (text.length > 20) {
-      setError('Username must be 20 characters or less');
+      setError('Username must be between 3 and 20 characters');
       setIsValid(false);
     } else if (!isValidFormat) {
-      setError('Only letters, numbers, hyphens, and underscores allowed');
+      setError('Username can only contain letters, numbers, and underscores');
       setIsValid(false);
     } else {
       setError('');
@@ -127,7 +128,7 @@ export default function CreateUsernameStep({ onNext, onBack, isLoading = false }
               <Text style={styles.errorText}>{error}</Text>
             ) : (
               <Text style={styles.helperText}>
-                3-20 characters, letters, numbers, hyphens, and underscores only
+                3-20 characters, letters, numbers, and underscores only
               </Text>
             )}
           </View>

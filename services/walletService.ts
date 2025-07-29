@@ -22,6 +22,12 @@ import { getJupiterQuote, prepareJupiterSwap, submitSignedTransaction, type Jupi
 import { generateMnemonic, mnemonicToSeed, validateMnemonic } from '@/utils/bip39';
 import { createKeypairFromMnemonic, getSolanaDerivationPath, getNextAccountIndex } from '@/utils/derivation';
 import { AuthService } from './authService';
+import { 
+  getAppCrypto, 
+  getAllStoredWallets, 
+  getTempAppPin,
+  setTempAppPin
+} from './walletUtils';
 
 export const CONNECTION = new Connection(`https://mainnet.helius-rpc.com/?api-key=${process.env.EXPO_PUBLIC_HELIUS_API_KEY}`, 'confirmed');
 
@@ -36,10 +42,6 @@ export const PLATFORM_FEE_ACCOUNT = new PublicKey(process.env.EXPO_PUBLIC_FEE_AC
 export const PLATFORM_FEE_RATE = parseFloat(process.env.EXPO_PUBLIC_SWAP_FEE_RATE!);
 export const WSOL_MINT = 'So11111111111111111111111111111111111111112';
 export let WALLET: Keypair | null = null; // Initialize WALLET to null
-
-// Store the app PIN temporarily in memory for seamless wallet switching
-// This is cleared when the app is closed or locked
-let TEMP_APP_PIN: string | null = null;
 
 // Helper function to set up AuthService with current wallet
 const setupAuthService = () => {
@@ -195,7 +197,7 @@ export const createAppPin = async (pin: string): Promise<void> => {
   SecureMMKVStorage.setItem(APP_IV_KEY, iv);
   
   // Store temporarily for immediate use
-  TEMP_APP_PIN = pin;
+  setTempAppPin(pin);
   
   console.log('App-level PIN created successfully');
 };
@@ -214,7 +216,7 @@ export const verifyAppPin = async (pin: string): Promise<boolean> => {
     const isValid = pinHash === storedHash;
     
     if (isValid) {
-      TEMP_APP_PIN = pin;
+      setTempAppPin(pin);
       console.log('App PIN verified successfully');
     }
     
@@ -234,28 +236,12 @@ export const hasAppPin = async (): Promise<boolean> => {
   }
 };
 
-export const getAppCrypto = async (): Promise<{ salt: string, iv: string } | null> => {
-  try {
-    const salt = SecureMMKVStorage.getItem(APP_SALT_KEY);
-    const iv = SecureMMKVStorage.getItem(APP_IV_KEY);
-    
-    if (!salt || !iv) {
-      return null;
-    }
-    
-    return { salt, iv };
-  } catch (error) {
-    console.error('Error getting app crypto:', error);
-    return null;
-  }
-};
-
 export const clearAppPin = async (): Promise<void> => {
   try {
     SecureMMKVStorage.removeItem(APP_PIN_KEY);
     SecureMMKVStorage.removeItem(APP_SALT_KEY);
     SecureMMKVStorage.removeItem(APP_IV_KEY);
-    TEMP_APP_PIN = null;
+    setTempAppPin(null);
     console.log('App PIN cleared');
   } catch (error) {
     console.error('Error clearing app PIN:', error);
@@ -263,7 +249,7 @@ export const clearAppPin = async (): Promise<void> => {
 };
 
 export const lockApp = (): void => {
-  TEMP_APP_PIN = null;
+  setTempAppPin(null);
   if (WALLET) {
     WALLET = null;
     notifyWalletStateChange();
@@ -272,7 +258,7 @@ export const lockApp = (): void => {
 };
 
 export const isAppUnlocked = (): boolean => {
-  return !!TEMP_APP_PIN;
+  return !!getTempAppPin();
 };
 // --- End App-Level PIN Management ---
 
@@ -292,7 +278,8 @@ export const generateSolanaWallet = async (): Promise<SolanaWallet> => {
  * Store the master mnemonic encrypted with app PIN
  */
 export const storeMasterMnemonic = async (mnemonic: string): Promise<void> => {
-  if (!TEMP_APP_PIN) {
+  const tempPin = getTempAppPin();
+  if (!tempPin) {
     throw new Error('App not unlocked - no temporary PIN available');
   }
 
@@ -301,7 +288,7 @@ export const storeMasterMnemonic = async (mnemonic: string): Promise<void> => {
     throw new Error('Failed to get app crypto settings');
   }
 
-  const encryption = encryptMnemonic(mnemonic, TEMP_APP_PIN, appCrypto.salt, appCrypto.iv);
+  const encryption = encryptMnemonic(mnemonic, tempPin, appCrypto.salt, appCrypto.iv);
   SecureMMKVStorage.setItem(MASTER_MNEMONIC_KEY, encryption.encryptedMnemonic);
 };
 
@@ -309,7 +296,8 @@ export const storeMasterMnemonic = async (mnemonic: string): Promise<void> => {
  * Get the master mnemonic decrypted
  */
 export const getMasterMnemonic = async (): Promise<string | null> => {
-  if (!TEMP_APP_PIN) {
+  const tempPin = getTempAppPin();
+  if (!tempPin) {
     throw new Error('App not unlocked - no temporary PIN available');
   }
 
@@ -323,7 +311,7 @@ export const getMasterMnemonic = async (): Promise<string | null> => {
     return null;
   }
 
-  return decryptMnemonic(encryptedMnemonic, TEMP_APP_PIN, appCrypto.salt, appCrypto.iv);
+  return decryptMnemonic(encryptedMnemonic, tempPin, appCrypto.salt, appCrypto.iv);
 };
 
 /**
@@ -429,7 +417,7 @@ export const clearIncompleteSetup = async (): Promise<void> => {
       }
       
       // Clear any temporary state
-      TEMP_APP_PIN = null;
+      setTempAppPin(null);
       if (WALLET) {
         WALLET = null;
         notifyWalletStateChange();
@@ -527,7 +515,7 @@ export const unlockWalletWithPin = async (pin: string): Promise<SolanaWallet | n
 
       WALLET = keypair;
       // Store PIN temporarily for seamless wallet switching
-      TEMP_APP_PIN = pin;
+      setTempAppPin(pin);
       console.log('🔐 PIN stored temporarily for seamless wallet switching');
       notifyWalletStateChange(); // Notify listeners about the new wallet state
       return { mnemonic, publicKey: WALLET.publicKey.toBase58() };
@@ -569,7 +557,7 @@ export const clearWallet = async (): Promise<void> => {
     }
     
     // Clear temporary PIN from memory
-    TEMP_APP_PIN = null;
+    setTempAppPin(null);
     
     console.log('🗑️ All wallet data cleared from AsyncStorage and memory.');
   } catch (error) {
@@ -587,12 +575,15 @@ export const lockWallet = (): void => {
     console.log("Wallet locked: Keypair cleared from memory.");
   }
   // Clear temporary PIN from memory when locking
-  TEMP_APP_PIN = null;
+  setTempAppPin(null);
   console.log("Temporary PIN cleared from memory.");
 };
 
 // Re-export Jupiter functions from the new API service
 export { getJupiterQuote as JupiterQuote, type JupiterQuoteResponse } from './jupiterApi';
+
+// Re-export wallet utils for compatibility
+export { getMasterWalletKeypair, getAllStoredWallets, getAppCrypto } from './walletUtils';
 
 /**
  * New jupiterSwap function that uses the backend API
@@ -653,19 +644,6 @@ export const importWalletFromMnemonic = async (mnemonic: string): Promise<Solana
 };
 
 // === Multiple Wallet Management Functions ===
-
-export const getAllStoredWallets = async (): Promise<StoredWalletItem[]> => {
-  try {
-    const walletsJson = SecureMMKVStorage.getItem(WALLETS_LIST_KEY);
-    if (walletsJson) {
-      return JSON.parse(walletsJson);
-    }
-    return [];
-  } catch (error) {
-    console.error('Failed to load wallets list:', error);
-    return [];
-  }
-};
 
 export const saveWalletToList = async (
   id: string,
@@ -902,9 +880,10 @@ export const switchToWalletWithAppPin = async (walletId: string, appPin: string)
 export const switchToWalletUnlocked = async (walletId: string): Promise<boolean> => {
   try {
     // Use the stored temporary PIN for seamless switching if available
-    if (TEMP_APP_PIN) {
+    const tempPin = getTempAppPin();
+    if (tempPin) {
       console.log('Using temporary PIN for seamless wallet switching');
-      return await switchToWalletWithAppPin(walletId, TEMP_APP_PIN);
+      return await switchToWalletWithAppPin(walletId, tempPin);
     }
     
     // Fallback: If no temporary PIN available, require unlock
@@ -937,7 +916,7 @@ export const switchToWalletUnlocked = async (walletId: string): Promise<boolean>
 
 // Debug function to check if temporary PIN is available
 export const hasTempAppPin = (): boolean => {
-  return !!TEMP_APP_PIN;
+  return !!getTempAppPin();
 };
 
 // Save wallet using the current app PIN (for seamless wallet creation)
@@ -950,7 +929,8 @@ export const saveWalletWithAppPin = async (
   derivationPath?: string
 ): Promise<void> => {
   try {
-    if (!TEMP_APP_PIN) {
+    const tempPin = getTempAppPin();
+    if (!tempPin) {
       throw new Error('App not unlocked - no temporary PIN available');
     }
 
@@ -965,7 +945,7 @@ export const saveWalletWithAppPin = async (
     const isMasterWallet = existingWallets.length === 0;
 
     // Encrypt with app-level salt/IV using the temporary PIN
-    const encryption = encryptMnemonic(mnemonic, TEMP_APP_PIN, appCrypto.salt, appCrypto.iv);
+    const encryption = encryptMnemonic(mnemonic, tempPin, appCrypto.salt, appCrypto.iv);
     const walletItem: StoredWalletItem = {
       id,
       name,
@@ -1073,47 +1053,4 @@ export const getMasterWalletPublicKey = async (): Promise<string> => {
   }
 };
 
-/**
- * Get the master wallet's keypair for authentication
- * This requires the app to be unlocked (TEMP_APP_PIN to be set)
- */
-export const getMasterWalletKeypair = async (): Promise<Keypair> => {
-  try {
-    if (!TEMP_APP_PIN) {
-      throw new Error('App must be unlocked to get master wallet keypair');
-    }
 
-    const wallets = await getAllStoredWallets();
-    const masterWallet = wallets.find(wallet => wallet.isMasterWallet);
-    
-    if (!masterWallet) {
-      throw new Error('Master wallet not found');
-    }
-
-    const appCrypto = await getAppCrypto();
-    if (!appCrypto) {
-      throw new Error('App crypto not found');
-    }
-
-    // Decrypt the master wallet's mnemonic
-    const mnemonic = decryptMnemonic(
-      masterWallet.encryptedMnemonic,
-      TEMP_APP_PIN,
-      appCrypto.salt,
-      appCrypto.iv
-    );
-
-    if (!mnemonic || !await validateMnemonic(mnemonic)) {
-      throw new Error('Failed to decrypt master wallet mnemonic');
-    }
-
-    // Create keypair using BIP44 derivation path (m/44'/501'/accountIndex'/0')
-    const accountIndexToUse = masterWallet.accountIndex !== undefined ? masterWallet.accountIndex : 0;
-    const keypair = await createKeypairFromMnemonic(mnemonic, accountIndexToUse);
-    
-    return keypair;
-  } catch (error) {
-    console.error('Failed to get master wallet keypair:', error);
-    throw error;
-  }
-};

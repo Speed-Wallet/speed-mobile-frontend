@@ -1,7 +1,7 @@
 import { SecureMMKVStorage } from '../utils/mmkvStorage';
 import { Keypair } from '@solana/web3.js';
 import { signAsync } from '@noble/ed25519';
-import { getMasterWalletKeypair } from './walletService';
+import { getMasterWalletKeypair } from './walletUtils';
 
 const BASE_BACKEND_URL = process.env.EXPO_PUBLIC_BASE_BACKEND_URL;
 
