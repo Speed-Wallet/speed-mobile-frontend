@@ -27,7 +27,7 @@ const BalanceCard: React.FC<BalanceCardProps> = ({
     { label: "RECEIVE", icon: ArrowDown, bgColor: "#28C165", actionId: "receive" },
     { label: "CARDS", icon: CreditCard, bgColor: "#F5A623", actionId: "cards" },
     { label: "TRADE", icon: ArrowRightLeft, bgColor: "#A259FF", actionId: "trade" },
-    // { label: "BUY", icon: ShoppingCart, bgColor: "#FF6B35", actionId: "buy" },
+    { label: "BUY", icon: ShoppingCart, bgColor: "#FF6B35", actionId: "buy" },
   ];
 
   return (
