@@ -12,28 +12,20 @@ import ScreenContainer from '@/components/ScreenContainer';
 
 const paymentMethods = [
   {
-    id: 'card',
-    name: 'Credit/Debit Card',
+    id: 'yellowcard',
+    name: 'YellowCard',
     recommended: true,
     icon: <CreditCard size={20} color={colors.textPrimary} />,
-    provider: 'Stripe',
-    url: 'https://stripe.com'
+    provider: 'YellowCard',
+    url: 'https://yellowcard.io'
   },
   {
-    id: 'moonpay',
-    name: 'MoonPay',
+    id: 'onramper',
+    name: 'OnRamper',
     recommended: false,
-    icon: <Image source={{ uri: 'https://www.moonpay.com/assets/logo-full-white.svg' }} style={{ width: 20, height: 20 }} />,
-    provider: 'MoonPay',
-    url: 'https://www.moonpay.com'
-  },
-  {
-    id: 'wyre',
-    name: 'Wyre',
-    recommended: false,
-    icon: <Image source={{ uri: 'https://upload.wikimedia.org/wikipedia/commons/7/7f/Wyre_Logo.png' }} style={{ width: 20, height: 20 }} />,
-    provider: 'Wyre',
-    url: 'https://www.sendwyre.com'
+    icon: <CreditCard size={20} color={colors.textPrimary} />,
+    provider: 'OnRamper',
+    url: 'https://onramper.com'
   }
 ];
 
@@ -104,7 +96,7 @@ export default function BuyScreen() {
   };
 
   return (
-    <ScreenContainer>
+    <ScreenContainer edges={['top', 'bottom']}>
       <ScreenHeader 
         title="Buy"
         onBack={() => router.push('/' as any)}
