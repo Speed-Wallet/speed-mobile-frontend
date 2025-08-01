@@ -11,6 +11,7 @@ import {
   Image,
   Animated,
 } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { ArrowLeft, Plus, CreditCard, DollarSign, X } from 'lucide-react-native';
@@ -19,17 +20,20 @@ import ScreenContainer from '@/components/ScreenContainer';
 import ScreenHeader from '@/components/ScreenHeader';
 import { StorageService } from '@/utils/storage';
 import { PaymentCard } from '@/data/types';
-import { sendUSDTToCashwyre } from '@/utils/sendTransaction';
-import { mockSendUSDTToCashwyre } from '@/utils/mockTransaction';
+import { sendUsdtToCashwyre } from '@/utils/sendTransaction';
+import { mockSendUsdtToCashwyre } from '@/utils/mockTransaction';
 import { setupNotificationListeners } from '@/services/notificationService';
 import { getCurrentVerificationLevel } from '@/utils/verification';
-import { simulateUSDTReceived, getWalletAddress, simulateCardCreated, simulateCardCreationFailed, getCards, convertApiCardToPaymentCard } from '@/services/apis';
+import { simulateUSDTReceived, getWalletAddress, simulateCardCreated, simulateCardCreationFailed, getCards, convertApiCardToPaymentCard, getPendingTransactions } from '@/services/apis';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
-import { SuccessfulPaymentCard, FailedPaymentCard } from '@/components/wallet/PaymentCard';
+import { LoadingCard } from '@/components/cards/LoadingCard';
+import { SuccessCard } from '@/components/cards/SuccessCard';
+import { FailedCard } from '@/components/cards/FailedCard';
 import { triggerShake } from '@/utils/animations';
 import * as Notifications from 'expo-notifications';
 
-
+// Constants
+const CASHWYRE_BASE_FEE = parseFloat(process.env.EXPO_PUBLIC_CASHWYRE_BASE_FEE!)
 const MIN_KYC_LEVEL = 1; // Minimum KYC level required for virtual cards
 
 // Configure notification handler
@@ -52,6 +56,7 @@ const initialCards: PaymentCard[] = [
     holder: 'TRISTAN',
     expires: '12/25',
     balance: 2500.00,
+    createdAt: new Date().toISOString(),
   },
 ];
 
@@ -117,10 +122,34 @@ export default function CardsScreen() {
       if (process.env.EXPO_PUBLIC_APP_ENV === 'development') {
         try {
           // Try to fetch real cards first
-          const cardsResponse = await getCards(personalInfo.email);
+          const [cardsResponse, pendingResponse] = await Promise.all([
+            getCards(personalInfo.email),
+            getPendingTransactions(personalInfo.email)
+          ]);
+          
+          let allCards: PaymentCard[] = [];
+          
+          // Add completed cards
           if (cardsResponse.success && cardsResponse.data && cardsResponse.data.length > 0) {
             const paymentCards = cardsResponse.data.map(convertApiCardToPaymentCard);
-            setCards(paymentCards);
+            allCards = [...allCards, ...paymentCards];
+          }
+          
+          // Add pending cards (loading state)
+          if (pendingResponse.success && pendingResponse.data && pendingResponse.data.length > 0) {
+            allCards = [...allCards, ...pendingResponse.data];
+          }
+          
+          if (allCards.length > 0) {
+            // Sort cards: pending/loading cards first, then active cards
+            allCards.sort((a, b) => {
+              // Pending cards should come first
+              if (a.isLoading && !b.isLoading) return -1;
+              if (!a.isLoading && b.isLoading) return 1;
+              // If both are same type, sort by balance (descending)
+              return (b.balance || 0) - (a.balance || 0);
+            });
+            setCards(allCards);
             return;
           }
         } catch (error) {
@@ -132,12 +161,42 @@ export default function CardsScreen() {
         return;
       }
 
-      // Production mode: fetch cards from API
-      const cardsResponse = await getCards(personalInfo.email);
-      if (cardsResponse.success && cardsResponse.data) {
-        const paymentCards = cardsResponse.data.map(convertApiCardToPaymentCard);
-        setCards(paymentCards);
-      } else {
+      // Production mode: fetch both completed and pending cards from API
+      try {
+        const [cardsResponse, pendingResponse] = await Promise.all([
+          getCards(personalInfo.email),
+          getPendingTransactions(personalInfo.email)
+        ]);
+        
+        let allCards: PaymentCard[] = [];
+        
+        // Add completed cards
+        if (cardsResponse.success && cardsResponse.data) {
+          const paymentCards = cardsResponse.data.map(convertApiCardToPaymentCard);
+          allCards = [...allCards, ...paymentCards];
+        }
+        
+        // Add pending cards (loading state)
+        if (pendingResponse.success && pendingResponse.data) {
+          allCards = [...allCards, ...pendingResponse.data];
+        }
+        
+        // Sort cards: pending/loading cards first, then by createdAt (newest first)
+        allCards.sort((a, b) => {
+          // Pending cards should come first
+          if (a.isLoading && !b.isLoading) return -1;
+          if (!a.isLoading && b.isLoading) return 1;
+          
+          // If both are same type, sort by createdAt (newest first)
+          if (a.createdAt && b.createdAt) {
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          }
+          
+          // Fallback to balance if no createdAt
+          return (b.balance || 0) - (a.balance || 0);
+        });
+        setCards(allCards);
+      } catch (error) {
         setCards([]);
       }
     } catch (error) {
@@ -242,9 +301,9 @@ export default function CardsScreen() {
       return;
     }
 
-    if (balance < 15 || balance > 2500) {
+    if (balance < 5 || balance > 2500) {
       setShowValidationError(true);
-      Alert.alert('Error', 'Balance must be between $15.00 and $2,500.00');
+      Alert.alert('Error', 'Balance must be between $5.00 and $2,500.00');
       return;
     }
 
@@ -279,13 +338,49 @@ export default function CardsScreen() {
 
       // Send USDT to Cashwyre and register for auto card creation first
       const sendResult = process.env.EXPO_PUBLIC_APP_ENV === 'development'
-        ? await mockSendUSDTToCashwyre({ amount: cardBalance, cardData, simulationType })
-        : await sendUSDTToCashwyre(cardBalance, cardData);
+        ? await mockSendUsdtToCashwyre({ amount: cardBalance, cardData, simulationType })
+        : await sendUsdtToCashwyre(cardBalance, cardData);
 
       if (!sendResult.success) {
-        // USDT transaction failed - show alert and exit gracefully
+        // USDT transaction failed - show specific error based on failure type
         setIsLoading(false);
-        Alert.alert('💸 Transaction Failed', `Failed to send USDT, please try again: ${sendResult.error}`);
+        
+        let errorTitle = '💸 Transaction Failed';
+        let errorMessage = `Failed to send USDT: ${sendResult.error}`;
+        
+        // Provide more specific error messages based on the failure type
+        if (sendResult.errorType === 'TRANSACTION_SUBMISSION_FAILED') {
+          errorTitle = '💸 Transaction Submission Failed';
+          errorMessage = `Failed to submit transaction to blockchain. Please try again: ${sendResult.error}`;
+        } else if (sendResult.errorType === 'REGISTRATION_FAILED') {
+          console.log(sendResult)
+          errorTitle = '⚠️ Transaction Sent, Registration Failed';
+          errorMessage = `USDT transaction was sent successfully, but failed to register for card creation. Please contact support. Transaction signature: ${sendResult.signature}}`;
+        }
+        
+        Alert.alert(errorTitle, errorMessage);
+        return;
+      }
+
+      // Check if there was a registration warning (transaction succeeded but registration failed)
+      if (sendResult.warning && sendResult.errorType === 'REGISTRATION_FAILED') {
+        setIsLoading(false);
+        Alert.alert(
+          '⚠️ Partial Success', 
+          `Transaction sent successfully but card registration failed. Please contact support with this transaction signature: ${sendResult.signature}`,
+          [
+            { 
+              text: 'Copy Signature', 
+              onPress: async () => {
+                if (sendResult.signature) {
+                  await Clipboard.setStringAsync(sendResult.signature);
+                  Alert.alert('Copied', 'Transaction signature copied to clipboard');
+                }
+              }
+            },
+            { text: 'OK', style: 'default' }
+          ]
+        );
         return;
       }
 
@@ -386,9 +481,10 @@ export default function CardsScreen() {
     const isLoading = card.isLoading || card.status === 'new' || card.status === 'pending';
     const isFailed = card.isFailed || card.status === 'inactive' || card.status === 'failed' || card.status === 'terminated';
 
+    // Failed state
     if (isFailed) {
       return (
-        <FailedPaymentCard
+        <FailedCard
           key={card.id}
           card={{
             ...card,
@@ -400,26 +496,34 @@ export default function CardsScreen() {
           }}
           onDeleteCard={handleDeleteCard}
           getBrandLogo={getBrandLogo}
-          styles={styles}
         />
       );
     }
 
+    // Loading state
+    if (isLoading) {
+      return (
+        <LoadingCard
+          key={card.id}
+          card={card}
+          onDeleteCard={handleDeleteCard}
+          getBrandLogo={getBrandLogo}
+          isDevelopment={isDevelopment}
+        />
+      );
+    }
+
+    // Success state (fully created and ready)
     return (
-      <SuccessfulPaymentCard
+      <SuccessCard
         key={card.id}
-        card={{
-          ...card,
-          isLoading: isLoading
-        }}
+        card={card}
         isVisible={isVisible}
-        isLoading={isLoading}
-        isDevelopment={isDevelopment}
         onToggleVisibility={toggleCardVisibility}
         onDeleteCard={handleDeleteCard}
         formatBalance={formatBalance}
         getBrandLogo={getBrandLogo}
-        styles={styles}
+        isDevelopment={isDevelopment}
       />
     );
   };
@@ -581,7 +685,7 @@ export default function CardsScreen() {
                       // Validate the numeric value
                       const balance = parseFloat(validText);
                       if (validText && !isNaN(balance) && balance > 0) {
-                        setShowValidationError(balance < 15 || balance > 2500);
+                        setShowValidationError(balance < 5 || balance > 2500);
                       } else {
                         setShowValidationError(false);
                       }
@@ -594,7 +698,7 @@ export default function CardsScreen() {
                 styles.inputHint,
                 showValidationError && styles.inputHintError
               ]}>
-                {showValidationError ? '*' : ''}Min: $15.00 • Max: $2,500.00{showValidationError ? ' *' : ''}
+                {showValidationError ? '*' : ''}Min: $5.00 • Max: $2,500.00{showValidationError ? ' *' : ''}
               </Text>
             </View>
 
@@ -610,7 +714,7 @@ export default function CardsScreen() {
                 </View>
                 <View style={styles.feeRow}>
                   <Text style={styles.feeLabel}>Base Fee</Text>
-                  <Text style={styles.feeValue}>$4.00</Text>
+                  <Text style={styles.feeValue}>{formatBalance(CASHWYRE_BASE_FEE)}</Text>
                 </View>
                 <View style={styles.feeRow}>
                   <Text style={styles.feeLabel}>Processing Fee (1%)</Text>
@@ -623,8 +727,8 @@ export default function CardsScreen() {
                   <Text style={styles.feeLabelTotal}>Total Fee</Text>
                   <Text style={styles.feeValueTotal}>
                     {cardBalance 
-                      ? formatBalance(4.00 + (parseFloat(cardBalance) * 0.01))
-                      : '$4.00'
+                      ? formatBalance(CASHWYRE_BASE_FEE + (parseFloat(cardBalance) * 0.01))
+                      : formatBalance(CASHWYRE_BASE_FEE)
                     }
                   </Text>
                 </View>
@@ -637,8 +741,8 @@ export default function CardsScreen() {
                 <Text style={styles.totalToPayLabel}>Total to Pay</Text>
                 <Text style={styles.totalToPayValue}>
                   {cardBalance 
-                    ? formatBalance(parseFloat(cardBalance) + 4.00 + (parseFloat(cardBalance) * 0.01))
-                    : '$4.00'
+                    ? formatBalance(parseFloat(cardBalance) + CASHWYRE_BASE_FEE + (parseFloat(cardBalance) * 0.01))
+                    : formatBalance(CASHWYRE_BASE_FEE)
                   }
                 </Text>
               </View>
@@ -799,98 +903,6 @@ const styles = StyleSheet.create({
   },
   cardsContainer: {
     marginBottom: 24,
-  },
-  paymentCard: {
-    backgroundColor: '#1a1a1a',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  cardHolderSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  userIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#333333',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 8,
-  },
-  cardHolderName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#ffffff',
-  },
-  brandLogo: {
-    width: 40,
-    height: 25,
-  },
-  cardNumberSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-  },
-  cardNumberText: {
-    fontSize: 18,
-    fontWeight: '500',
-    color: '#ffffff',
-    letterSpacing: 2,
-  },
-  visibilityButton: {
-    padding: 4,
-  },
-  cardFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-  },
-  balanceSection: {
-    flex: 1,
-  },
-  cardLabel: {
-    fontSize: 10,
-    fontWeight: '500',
-    color: '#9ca3af',
-    marginBottom: 4,
-  },
-  balanceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  balanceValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#10b981',
-    marginRight: 8,
-  },
-  balanceVisibilityButton: {
-    padding: 2,
-  },
-  cvvSection: {
-    alignItems: 'center',
-    minWidth: 60, // Ensure consistent width
-    marginHorizontal: 20, // Add spacing from sides
-  },
-  expirySection: {
-    alignItems: 'flex-end',
-    flex: 1,
-  },
-  cardValue: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#ffffff',
   },
   addCardButton: {
     backgroundColor: '#1a1a1a',
@@ -1123,66 +1135,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#ffffff',
     marginLeft: 8,
-  },
-  loadingCard: {
-    borderColor: '#4a5568',
-    borderWidth: 1,
-  },
-  failedCard: {
-    borderColor: '#ef4444',
-    borderWidth: 1,
-    backgroundColor: 'rgba(239, 68, 68, 0.05)',
-  },
-  loadingBadge: {
-    backgroundColor: '#3182ce',
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    marginLeft: 8,
-  },
-  failedBadge: {
-    backgroundColor: '#ef4444',
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    marginLeft: 8,
-  },
-  loadingBadgeText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#ffffff',
-  },
-  failedBadgeText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#ffffff',
-  },
-  failedText: {
-    color: '#ef4444',
-  },
-  loadingOpacity: {
-    opacity: 0.5,
-  },
-  cardHeaderActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  deleteButton: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  deleteButtonFailed: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#ef4444',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   devButton: {
     backgroundColor: 'rgba(239, 68, 68, 0.1)',
