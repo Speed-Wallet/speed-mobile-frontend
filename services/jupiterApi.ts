@@ -87,7 +87,7 @@ export const prepareJupiterSwap = async (
     throw new Error('No authentication token available');
   }
 
-  const response = await fetch(`${BASE_BACKEND_URL}api/swap/jupiter`, {
+  const response = await fetch(`${BASE_BACKEND_URL}/api/swap/jupiter`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -123,7 +123,7 @@ export const submitSignedTransaction = async (
     throw new Error('No authentication token available');
   }
 
-  const response = await fetch(`${BASE_BACKEND_URL}api/transaction/submit`, {
+  const response = await fetch(`${BASE_BACKEND_URL}/api/transaction/submit`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

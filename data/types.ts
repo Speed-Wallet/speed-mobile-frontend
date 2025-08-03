@@ -42,6 +42,7 @@ export type CardStatus = 'new' | 'active' | 'inactive' | 'failed' | 'pending' | 
 export interface GetCardData {
   code: string;
   customerName: string;
+  customerCode: string;
   customerFirstName: string;
   customerLastName: string;
   customerEmail: string;
@@ -73,6 +74,7 @@ export interface GetCardsResponse {
   success: boolean;
   message: string;
   data: GetCardData[];
+  error?: string;
 }
 
 // PaymentCard interface for the frontend (maps from GetCardData)
@@ -84,11 +86,14 @@ export interface PaymentCard {
   cardNumber?: string;
   cvv?: string;
   holder: string; // Maps to cardName
+  cardName?: string; // Additional card name property
   expires: string; // Maps to expiryOnInfo
   balance: number; // Maps to cardBalance
   isLoading?: boolean;
   isFailed?: boolean;
   status?: CardStatus;
   failureReason?: string;
+  createdAt?: string; // Maps to createdOn from API or createdAt from pending transactions
+  creationStep?: number; // Current step in the creation process (1-3)
 }
 

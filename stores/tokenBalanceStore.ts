@@ -359,8 +359,6 @@ export const useTokenBalanceStore = create<TokenBalanceStoreState>((set, get) =>
 
             const existingBalanceEntry = state.tokenBalanceDetails[mintAddress]; // Renamed property
 
-            console.log("updating balance for", mintAddress, "to", balance);
-
             return {
                 tokenBalanceDetails: { // Renamed property
                     ...state.tokenBalanceDetails, // Renamed property

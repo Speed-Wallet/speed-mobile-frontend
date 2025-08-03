@@ -12,7 +12,7 @@ import { getAllTokenInfo, getTokenByAddress } from '@/data/tokens';
 // import AmountInput from '@/components/AmountInput'; // Commented out since we're using SwapBox now
 import TokenLogo from '@/components/TokenLogo'; // Added import
 import { EnrichedTokenEntry } from '@/data/types';
-import { PLATFORM_FEE_RATE, JupiterQuote, jupiterSwap } from '@/services/walletService';
+import { PLATFORM_FEE_RATE, JupiterQuote, prepareJupiterSwapTransaction, confirmJupiterSwap, type PreparedJupiterSwap } from '@/services/walletService';
 import ScreenHeader from '@/components/ScreenHeader';
 import ScreenContainer from '@/components/ScreenContainer';
 import { useTokenValue } from '@/hooks/useTokenValue';
@@ -21,7 +21,7 @@ import { triggerShake } from '@/utils/animations';
 import { useTokenBalance } from '@/hooks/useTokenBalance';
 
 const WAIT_ON_AMOUNT_CHANGE = 2000;
-const LOOP_QUOTE_INTERVAL = 10000;
+const LOOP_QUOTE_INTERVAL = 300000;
 let lastQuoteTime = 0;
 let timeoutID: NodeJS.Timeout | undefined;
 let intervalID: NodeJS.Timeout | undefined;
@@ -134,6 +134,11 @@ export default function TradeScreen() {
   const [swapSuccess, setSwapSuccess] = useState(false);
   const [swapTxSignature, setSwapTxSignature] = useState<string>('');
 
+  // New state for prepared swap workflow
+  const [preparedSwap, setPreparedSwap] = useState<PreparedJupiterSwap | null>(null);
+  const [isPreparingSwap, setIsPreparingSwap] = useState(false);
+  const [isConfirmingSwap, setIsConfirmingSwap] = useState(false);
+
   // Custom keyboard state
   const [showCustomKeyboard, setShowCustomKeyboard] = useState(true);
   const [activeInput, setActiveInput] = useState<'from' | null>(null);
@@ -181,7 +186,7 @@ export default function TradeScreen() {
       }
 
       const outAmount = parseFloat(quote.outAmount);
-
+      console.log(`Quote received: ${quote.inAmount} -> ${quote.outAmount} (${quote.slippageBps})`);
       if (!isNaN(outAmount)) {
         const val = outAmount * 10 ** -toToken!.decimals;
         setToAmount(val.toFixed(toToken!.decimalsShown)); // Use decimalsShown (now mandatory)
@@ -267,7 +272,7 @@ export default function TradeScreen() {
     // setSelectedPercentage('25'); // Reset selected percentage
   };
 
-  const handleTrade = async () => {
+  const handlePreviewSwap = async () => {
     const amount = parseFloat(fromAmount);
 
     if (isNaN(amount) || amount <= 0) {
@@ -306,8 +311,39 @@ export default function TradeScreen() {
       intervalID = undefined;
     }
 
-    // Close the main bottom sheet and show loading sheet
+    // Open the bottom sheet immediately
+    bottomSheetRef.current?.expand();
+    
+    // Start preparing the swap in the background
+    setIsPreparingSwap(true);
+    setPreparedSwap(null);
+
+    try {
+      const prepared = await prepareJupiterSwapTransaction(quote, platformFee);
+      setPreparedSwap(prepared);
+      console.log('Swap prepared successfully');
+    } catch (err: any) {
+      console.error('Failed to prepare swap:', err);
+      setToastMessage('Failed to prepare swap. Please try again.');
+      setToastType('error');
+      setShowToast(true);
+      bottomSheetRef.current?.close();
+    } finally {
+      setIsPreparingSwap(false);
+    }
+  };
+
+  const handleConfirmSwap = async () => {
+    if (!preparedSwap) {
+      setToastMessage('Swap not prepared. Please try again.');
+      setToastType('error');
+      setShowToast(true);
+      return;
+    }
+
+    // Close the preview bottom sheet and show loading sheet
     bottomSheetRef.current?.close();
+    setIsConfirmingSwap(true);
     setIsSwapping(true);
     setSwapComplete(false);
     setSwapSuccess(false);
@@ -315,7 +351,7 @@ export default function TradeScreen() {
     loadingBottomSheetRef.current?.expand();
 
     try {
-      const sig = await jupiterSwap(quote, platformFee);
+      const sig = await confirmJupiterSwap(preparedSwap);
       console.log(`Trade Successful: ${sig}`);
       
       // Update loading states - success handled by bottom sheet
@@ -323,15 +359,18 @@ export default function TradeScreen() {
       setSwapTxSignature(sig);
       setSwapComplete(true);
       setIsSwapping(false);
+      setIsConfirmingSwap(false);
       
-      // Clear the input amount after successful trade
+      // Clear the input amount and prepared swap after successful trade
       setFromAmount('');
       setToAmount('');
+      setPreparedSwap(null);
       
     } catch (err: any) {
       console.error(err);
       // Error handled by bottom sheet
       setIsSwapping(false);
+      setIsConfirmingSwap(false);
       setSwapComplete(true);
       setSwapSuccess(false);
     }
@@ -369,11 +408,11 @@ export default function TradeScreen() {
 
   const isButtonDisabled = !fromAmount || parseFloat(fromAmount) <= 0 || !quote || !!quote.errorCode;
 
-  const handlePreviewSwap = useCallback(() => {
+  const handlePreviewSwapClick = useCallback(() => {
     if (isButtonDisabled) {
       triggerShake(shakeAnimationValue);
     } else {
-      bottomSheetRef.current?.expand();
+      handlePreviewSwap();
     }
   }, [isButtonDisabled, shakeAnimationValue]);
 
@@ -385,6 +424,8 @@ export default function TradeScreen() {
       setSwapComplete(false);
       setSwapSuccess(false);
       setSwapTxSignature('');
+      setIsConfirmingSwap(false);
+      setPreparedSwap(null);
     }, 300);
   }, []);
 
@@ -590,7 +631,7 @@ export default function TradeScreen() {
                   styles.tradeExecuteButton,
                   isButtonDisabled && styles.buttonOpacityDisabled,
                 ]}
-                onPress={handlePreviewSwap}
+                onPress={handlePreviewSwapClick}
               >
                 <LinearGradient
                   colors={isButtonDisabled ? ['#4a4a4a', '#3a3a3a'] : ['#3B82F6', '#2563EB']}
@@ -626,6 +667,11 @@ export default function TradeScreen() {
             opacity={0.4}
           />
         )}
+        onClose={() => {
+          // Clean up prepared swap state when bottom sheet closes
+          setPreparedSwap(null);
+          setIsPreparingSwap(false);
+        }}
       >
         <BottomSheetView style={styles.bottomSheetContent}>
           <Text style={styles.bottomSheetTitle}>Swap Details</Text>
@@ -665,13 +711,24 @@ export default function TradeScreen() {
           )}
           
           <TouchableOpacity
-            style={styles.confirmSwapButton}
-            onPress={handleTrade}
+            style={[
+              styles.confirmSwapButton,
+              (!preparedSwap || isPreparingSwap) && styles.buttonOpacityDisabled
+            ]}
+            onPress={handleConfirmSwap}
+            disabled={!preparedSwap || isPreparingSwap}
           >
             <LinearGradient
-              colors={['#3B82F6', '#2563EB']}
+              colors={(!preparedSwap || isPreparingSwap) ? ['#4a4a4a', '#3a3a3a'] : ['#3B82F6', '#2563EB']}
               style={styles.buttonGradient}>
-              <Text style={styles.confirmSwapButtonText}>Confirm Swap</Text>
+              {isPreparingSwap ? (
+                <>
+                  <ActivityIndicator size="small" color={colors.white} />
+                  <Text style={styles.confirmSwapButtonText}>Preparing...</Text>
+                </>
+              ) : (
+                <Text style={styles.confirmSwapButtonText}>Confirm Swap</Text>
+              )}
             </LinearGradient>
           </TouchableOpacity>
         </BottomSheetView>

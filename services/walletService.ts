@@ -38,7 +38,6 @@ const APP_SALT_KEY = 'appSalt'; // Key for storing app-level salt
 const APP_IV_KEY = 'appIV'; // Key for storing app-level IV
 const MASTER_MNEMONIC_KEY = 'masterMnemonic'; // Key for storing encrypted master mnemonic
 
-export const PLATFORM_FEE_ACCOUNT = new PublicKey(process.env.EXPO_PUBLIC_FEE_ACCOUNT!);
 export const PLATFORM_FEE_RATE = parseFloat(process.env.EXPO_PUBLIC_SWAP_FEE_RATE!);
 export const WSOL_MINT = 'So11111111111111111111111111111111111111112';
 export let WALLET: Keypair | null = null; // Initialize WALLET to null
@@ -585,11 +584,22 @@ export { getJupiterQuote as JupiterQuote, type JupiterQuoteResponse } from './ju
 // Re-export wallet utils for compatibility
 export { getMasterWalletKeypair, getAllStoredWallets, getAppCrypto } from './walletUtils';
 
+// Type for prepared Jupiter swap transaction
+export interface PreparedJupiterSwap {
+  signedTransaction: string;
+  blockhash: string;
+  lastValidBlockHeight: number;
+  userPublicKey: string;
+}
+
 /**
- * New jupiterSwap function that uses the backend API
- * This maintains the same interface as the old function for compatibility
+ * Prepare Jupiter swap transaction for preview (Step 1: Prepare and Sign)
+ * This function is called when 'preview swap' is pressed
  */
-export const jupiterSwap = async (quoteResponse: JupiterQuoteResponse, platformFee: number): Promise<string> => {
+export const prepareJupiterSwapTransaction = async (
+  quoteResponse: JupiterQuoteResponse, 
+  platformFee: number
+): Promise<PreparedJupiterSwap> => {
   if (!WALLET) {
     throw new Error('No wallet found');
   }
@@ -601,7 +611,6 @@ export const jupiterSwap = async (quoteResponse: JupiterQuoteResponse, platformF
       platformFee,
       WALLET.publicKey.toBase58()
     );
-
     // Step 2: Deserialize and sign the transaction locally
     const transactionBuffer = Buffer.from(transaction, 'base64');
     const versionedTransaction = VersionedTransaction.deserialize(transactionBuffer);
@@ -609,22 +618,51 @@ export const jupiterSwap = async (quoteResponse: JupiterQuoteResponse, platformF
     // Sign the transaction with the user's wallet
     versionedTransaction.sign([WALLET]);
     
-    // Step 3: Submit the signed transaction to the backend
+    // Serialize the signed transaction
     const signedTransactionBuffer = Buffer.from(versionedTransaction.serialize());
     const signedTransaction = signedTransactionBuffer.toString('base64');
-    
-    const { signature } = await submitSignedTransaction(
+
+    return {
       signedTransaction,
       blockhash,
       lastValidBlockHeight,
-      WALLET.publicKey.toBase58()
+      userPublicKey: WALLET.publicKey.toBase58()
+    };
+  } catch (error) {
+    console.error('Jupiter swap preparation error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Confirm and submit Jupiter swap transaction (Step 2: Submit)
+ * This function is called when 'confirm swap' is pressed
+ */
+export const confirmJupiterSwap = async (preparedSwap: PreparedJupiterSwap): Promise<string> => {
+  try {
+    // Submit the signed transaction to the backend
+    const { signature } = await submitSignedTransaction(
+      preparedSwap.signedTransaction,
+      preparedSwap.blockhash,
+      preparedSwap.lastValidBlockHeight,
+      preparedSwap.userPublicKey
     );
 
     return signature;
   } catch (error) {
-    console.error('Jupiter swap error:', error);
+    console.error('Jupiter swap confirmation error:', error);
     throw error;
   }
+};
+
+/**
+ * Legacy jupiterSwap function that uses the backend API
+ * This maintains the same interface as the old function for compatibility
+ * @deprecated Use prepareJupiterSwapTransaction and confirmJupiterSwap instead
+ */
+export const jupiterSwap = async (quoteResponse: JupiterQuoteResponse, platformFee: number): Promise<string> => {
+  const preparedSwap = await prepareJupiterSwapTransaction(quoteResponse, platformFee);
+  return await confirmJupiterSwap(preparedSwap);
 };
 
 export const importWalletFromMnemonic = async (mnemonic: string): Promise<SolanaWallet> => {

@@ -1,7 +1,14 @@
 import * as Notifications from 'expo-notifications';
 import { Platform, Alert, ToastAndroid } from 'react-native';
 import { router } from 'expo-router';
-import type { NotificationData, VirtualCardEventData } from '@/types/notifications';
+import type { NotificationData, VirtualCardEventData, USDTReceivedEventData, KYCEventData } from '@/types/notifications';
+import { 
+  handleUSDTReceived, 
+  handleCardCreationComplete, 
+  handleCardCreationFailed,
+  handleKYCVerificationComplete,
+  simulateKYCVerification 
+} from './cardCreationSteps';
 
 // Configure notification handler
 Notifications.setNotificationHandler({
@@ -169,24 +176,84 @@ export function setupNotificationListeners(onCardsUpdated?: () => void) {
     // Handle USDT received notifications with toast
     if (data?.type === 'usdt_received') {
       console.log('💰 USDT received notification received');
-      const amount = data.eventData?.amount || 'Unknown';
+      const eventData = data.eventData as USDTReceivedEventData;
+      const amount = eventData?.amount || 'Unknown';
+      const hash = eventData?.hash;
+      
       showToast(`💰 ${amount} USDT received! Creating card...`);
+      
+      // Update creation step and simulate KYC verification
+      if (hash) {
+        handleUSDTReceived(hash);
+        simulateKYCVerification(hash, 3000); // Simulate KYC completion after 3 seconds
+      }
+      
+      // Call the callback to refresh cards
+      onCardsUpdated?.();
     }
     
     // Handle card created notifications immediately
     if (data?.type === 'card_created') {
       console.log('💳 Card created notification received in foreground');
+      const hash = data.transactionSignature;
+      
       if (data.cardCode) {
         handleCardCreatedNotification(data.cardCode, data.cardData);
+        
+        // Mark creation as complete
+        if (hash) {
+          handleCardCreationComplete(hash);
+        }
+        
         // Call the callback to refresh cards
         onCardsUpdated?.();
       }
     }
-    
+
     // Handle card creation failed notifications immediately
     if (data?.type === 'card_creation_failed') {
       console.log('❌ Card creation failed notification received');
+      const hash = data.transactionSignature;
+      
       handleCardCreationFailedNotification(data.error || 'Unknown error', data);
+      
+      // Mark creation as failed
+      if (hash) {
+        handleCardCreationFailed(hash);
+      }
+      
+      // Call the callback to refresh cards
+      onCardsUpdated?.();
+    }
+    
+    // Handle KYC verified notifications
+    if (data?.type === 'kyc_verified') {
+      console.log('✅ KYC verified notification received');
+      const hash = data.transactionSignature;
+      
+      showToast(`✅ KYC verified! Creating your card...`);
+      
+      // Advance creation step to card creation (step 3)
+      if (hash) {
+        handleKYCVerificationComplete(hash); // This advances to step 3
+      }
+      
+      // Call the callback to refresh cards
+      onCardsUpdated?.();
+    }
+    
+    // Handle KYC failed notifications
+    if (data?.type === 'kyc_failed') {
+      console.log('❌ KYC verification failed notification received');
+      const hash = data.transactionSignature;
+      
+      handleCardCreationFailedNotification(`KYC verification failed: ${data.error}`, data);
+      
+      // Mark creation as failed
+      if (hash) {
+        handleCardCreationFailed(hash);
+      }
+      
       // Call the callback to refresh cards
       onCardsUpdated?.();
     }
@@ -222,6 +289,14 @@ export function setupNotificationListeners(onCardsUpdated?: () => void) {
       }
       // Navigate to cards screen where user can try again
       router.push('/transaction/cards');
+    } else if (data?.type === 'kyc_verified') {
+      console.log('✅ KYC verified notification tapped');
+      // Navigate to cards screen to see progress
+      router.push('/transaction/cards');
+    } else if (data?.type === 'kyc_failed') {
+      console.log('❌ KYC failed notification tapped');
+      // Navigate to KYC screen to retry
+      router.push('/settings/kyc');
     }
   });
 

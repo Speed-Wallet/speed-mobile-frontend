@@ -10,6 +10,7 @@ import {
   Alert,
   Image,
   Animated,
+  ActivityIndicator,
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -31,6 +32,15 @@ import { SuccessCard } from '@/components/cards/SuccessCard';
 import { FailedCard } from '@/components/cards/FailedCard';
 import { triggerShake } from '@/utils/animations';
 import * as Notifications from 'expo-notifications';
+import { useCards } from '@/hooks/useCards';
+import { useQueryClient } from '@tanstack/react-query';
+import { 
+  updateCardCreationStep, 
+  handleUSDTReceived, 
+  handleKYCVerificationComplete,
+  simulateKYCVerification,
+  getAllCreationSteps 
+} from '@/services/cardCreationSteps';
 
 // Constants
 const CASHWYRE_BASE_FEE = parseFloat(process.env.EXPO_PUBLIC_CASHWYRE_BASE_FEE!)
@@ -45,23 +55,7 @@ Notifications.setNotificationHandler({
   }),
 });
 
-const initialCards: PaymentCard[] = [
-  {
-    id: '1',
-    type: 'virtual',
-    brand: 'mastercard',
-    last4: '4242',
-    cardNumber: '5555555555554242', // Full card number for testing
-    cvv: '123', // CVV code for testing
-    holder: 'TRISTAN',
-    expires: '12/25',
-    balance: 2500.00,
-    createdAt: new Date().toISOString(),
-  },
-];
-
 export default function CardsScreen() {
-  const [cards, setCards] = useState<PaymentCard[]>([]);
   const [showAddCard, setShowAddCard] = useState(false);
   const [selectedBrand, setSelectedBrand] = useState<'mastercard' | 'visa'>('visa');
   const [cardBalance, setCardBalance] = useState('');
@@ -71,6 +65,13 @@ export default function CardsScreen() {
   const [showValidationError, setShowValidationError] = useState(false);
   const [showNameValidationError, setShowNameValidationError] = useState(false);
   const [showDevButtons, setShowDevButtons] = useState(true);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+
+  // TanStack Query client for cache invalidation
+  const queryClient = useQueryClient();
+
+  // Use TanStack Query for cards data
+  const { data: cards = [], isLoading: isLoadingCards, refetch: refetchCards } = useCards(userEmail);
 
   // Animation refs for shake effects
   const createButtonShakeAnim = useRef(new Animated.Value(0)).current;
@@ -81,128 +82,36 @@ export default function CardsScreen() {
     React.useCallback(() => {
       let mounted = true;
       
-      // Load cards when screen comes into focus
-      loadCards();
+      // Load user email when screen comes into focus
+      const loadUserEmail = async () => {
+        try {
+          const personalInfo = await StorageService.loadPersonalInfo();
+          if (mounted && personalInfo) {
+            setUserEmail(personalInfo.email);
+          }
+        } catch (error) {
+          console.error('Error loading user email:', error);
+        }
+      };
+
+      loadUserEmail();
 
       // Set up notification listeners with card refresh callback
       const cleanupNotifications = setupNotificationListeners(() => {
         // Only refresh if component is still mounted and focused
-        if (mounted) {
-          loadCards();
+        if (mounted && userEmail) {
+          queryClient.invalidateQueries({ queryKey: ['cards', userEmail] });
+          refetchCards();
         }
       });
-
-      // Set up periodic refresh to catch any missed updates
-      const refreshInterval = setInterval(() => {
-        // Only refresh if component is still mounted and focused
-        if (mounted) {
-          loadCards();
-        }
-      }, 10000);
 
       // Cleanup function called when screen loses focus or unmounts
       return () => {
         mounted = false;
         cleanupNotifications();
-        clearInterval(refreshInterval);
       };
-    }, [])
+    }, [refetchCards])
   );
-
-  const loadCards = async () => {
-    try {
-      // Get personal info to get customer email
-      const personalInfo = await StorageService.loadPersonalInfo();
-      if (!personalInfo) {
-        setCards([]);
-        return;
-      }
-
-      // In development mode, show demo cards if no real cards exist
-      if (process.env.EXPO_PUBLIC_APP_ENV === 'development') {
-        try {
-          // Try to fetch real cards first
-          const [cardsResponse, pendingResponse] = await Promise.all([
-            getCards(personalInfo.email),
-            getPendingTransactions(personalInfo.email)
-          ]);
-          
-          let allCards: PaymentCard[] = [];
-          
-          // Add completed cards
-          if (cardsResponse.success && cardsResponse.data && cardsResponse.data.length > 0) {
-            const paymentCards = cardsResponse.data.map(convertApiCardToPaymentCard);
-            allCards = [...allCards, ...paymentCards];
-          }
-          
-          // Add pending cards (loading state)
-          if (pendingResponse.success && pendingResponse.data && pendingResponse.data.length > 0) {
-            allCards = [...allCards, ...pendingResponse.data];
-          }
-          
-          if (allCards.length > 0) {
-            // Sort cards: pending/loading cards first, then active cards
-            allCards.sort((a, b) => {
-              // Pending cards should come first
-              if (a.isLoading && !b.isLoading) return -1;
-              if (!a.isLoading && b.isLoading) return 1;
-              // If both are same type, sort by balance (descending)
-              return (b.balance || 0) - (a.balance || 0);
-            });
-            setCards(allCards);
-            return;
-          }
-        } catch (error) {
-          // If no real cards or API call failed in dev mode, show demo cards
-        }
-        
-        // If no real cards or API call failed in dev mode, show demo cards
-        setCards(initialCards);
-        return;
-      }
-
-      // Production mode: fetch both completed and pending cards from API
-      try {
-        const [cardsResponse, pendingResponse] = await Promise.all([
-          getCards(personalInfo.email),
-          getPendingTransactions(personalInfo.email)
-        ]);
-        
-        let allCards: PaymentCard[] = [];
-        
-        // Add completed cards
-        if (cardsResponse.success && cardsResponse.data) {
-          const paymentCards = cardsResponse.data.map(convertApiCardToPaymentCard);
-          allCards = [...allCards, ...paymentCards];
-        }
-        
-        // Add pending cards (loading state)
-        if (pendingResponse.success && pendingResponse.data) {
-          allCards = [...allCards, ...pendingResponse.data];
-        }
-        
-        // Sort cards: pending/loading cards first, then by createdAt (newest first)
-        allCards.sort((a, b) => {
-          // Pending cards should come first
-          if (a.isLoading && !b.isLoading) return -1;
-          if (!a.isLoading && b.isLoading) return 1;
-          
-          // If both are same type, sort by createdAt (newest first)
-          if (a.createdAt && b.createdAt) {
-            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-          }
-          
-          // Fallback to balance if no createdAt
-          return (b.balance || 0) - (a.balance || 0);
-        });
-        setCards(allCards);
-      } catch (error) {
-        setCards([]);
-      }
-    } catch (error) {
-      setCards([]);
-    }
-  };
 
   const checkKYCLevel = async (minLevel: 1 | 2 | 3) => {
     const verificationLevel = await getCurrentVerificationLevel();
@@ -393,7 +302,8 @@ export default function CardsScreen() {
       setIsLoading(false);
 
       // Refresh cards from API to show any new cards
-      await loadCards();
+      queryClient.invalidateQueries({ queryKey: ['cards', personalInfo.email] });
+      await refetchCards();
 
       // Capture personal info for dev mode simulation
       const userEmail = personalInfo.email;
@@ -424,8 +334,9 @@ export default function CardsScreen() {
   const handleDeleteCard = async (cardId: string) => {
     // In development mode, allow deletion for demo purposes
     if (process.env.EXPO_PUBLIC_APP_ENV === 'development') {
-      const updatedCards = cards.filter(card => card.id !== cardId);
-      setCards(updatedCards);
+      Alert.alert('Info', 'Card deleted in dev mode. Data will refresh automatically.');
+      // Trigger a refetch to update the UI
+      refetchCards();
     } else {
       // In production, you might want to call an API to delete the card
       Alert.alert('Info', 'Card deletion is not available in production mode');
@@ -473,6 +384,28 @@ export default function CardsScreen() {
       : require('@/assets/images/visa.png');
   };
 
+  // Development functions for simulating creation steps
+  const devSimulateUSDTReceived = (cardId: string) => {
+    console.log('🧪 [DEV] Simulating USDT received for card:', cardId);
+    handleUSDTReceived(cardId);
+    simulateKYCVerification(cardId, 2000); // Auto-advance to step 3 after 2 seconds
+    refetchCards();
+  };
+
+  const advanceCreationStep = (cardId: string) => {
+    const currentStep = getAllCreationSteps()[cardId] || 1;
+    const nextStep = Math.min(currentStep + 1, 3);
+    console.log('🧪 [DEV] Advancing creation step from', currentStep, 'to', nextStep, 'for card:', cardId);
+    updateCardCreationStep(cardId, nextStep);
+    refetchCards();
+  };
+
+  const resetCreationStep = (cardId: string) => {
+    console.log('🧪 [DEV] Resetting creation step for card:', cardId);
+    updateCardCreationStep(cardId, 1);
+    refetchCards();
+  };
+
   const renderPaymentCard = (card: PaymentCard) => {
     const isVisible = visibleCards[card.id] || false;
     const isDevelopment = process.env.EXPO_PUBLIC_APP_ENV === 'development';
@@ -509,6 +442,9 @@ export default function CardsScreen() {
           onDeleteCard={handleDeleteCard}
           getBrandLogo={getBrandLogo}
           isDevelopment={isDevelopment}
+          onSimulateUSDTReceived={devSimulateUSDTReceived}
+          onAdvanceCreationStep={advanceCreationStep}
+          onResetCreationStep={resetCreationStep}
         />
       );
     }
@@ -538,7 +474,20 @@ export default function CardsScreen() {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {/* Existing Cards */}
         <View style={styles.cardsContainer}>
-          {cards.map(renderPaymentCard)}
+          {isLoadingCards ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#10b981" />
+              <Text style={styles.loadingText}>Loading your cards...</Text>
+            </View>
+          ) : cards.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <CreditCard size={48} color="#6b7280" />
+              <Text style={styles.emptyTitle}>No Cards Yet</Text>
+              <Text style={styles.emptyText}>Create your first virtual card to get started</Text>
+            </View>
+          ) : (
+            cards.map(renderPaymentCard)
+          )}
         </View>
       </ScrollView>
 
@@ -903,6 +852,37 @@ const styles = StyleSheet.create({
   },
   cardsContainer: {
     marginBottom: 24,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#9ca3af',
+    marginTop: 12,
+    fontWeight: '500',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    color: '#ffffff',
+    marginTop: 16,
+    fontWeight: '600',
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#9ca3af',
+    marginTop: 8,
+    textAlign: 'center',
+    lineHeight: 24,
   },
   addCardButton: {
     backgroundColor: '#1a1a1a',

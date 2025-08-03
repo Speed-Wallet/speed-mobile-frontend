@@ -1,9 +1,9 @@
 import { SendTransactionResult } from './sendTransaction';
-import { getWalletAddress, registerUsdtAndCreateCard } from '@/services/apis';
+import { getWalletAddress } from '@/services/apis';
 import { registerForPushNotificationsAsync } from '@/services/notificationService';
 import { WALLET } from '@/services/walletService';
 
-export interface MockSendUSDTParams {
+export interface MockSendUsdtParams {
   amount: string;
   cardData: {
     firstName: string;
@@ -25,7 +25,7 @@ export interface MockSendUSDTParams {
  * Handles all development-specific logic including simulation types
  * Also handles wallet address fetching and transaction registration
  */
-export async function mockSendUSDTToCashwyre(params: MockSendUSDTParams): Promise<SendTransactionResult> {
+export async function mockSendUsdtToCashwyre(params: MockSendUsdtParams): Promise<SendTransactionResult> {
   const { amount, cardData, simulationType } = params;
   
   console.log('🧪 DEV MODE: Mock USDT transaction starting...');
@@ -72,34 +72,8 @@ export async function mockSendUSDTToCashwyre(params: MockSendUSDTParams): Promis
     
     console.log('🧪 DEV: Mock USDT sent successfully. Signature:', mockSignature);
 
-    // 4. Register transaction with backend for auto card creation (same as production)
-    const registrationResult = await registerUsdtAndCreateCard({
-      pushToken: pushToken || '',
-      walletAddress,
-      amount: parseFloat(amount),
-      userWalletAddress: WALLET?.publicKey.toBase58() || '',
-      transactionSignature: mockSignature,
-      cardCreationData: {
-        firstName: cardData.firstName,
-        lastName: cardData.lastName,
-        email: cardData.email,
-        phoneCode: cardData.phoneCode,
-        phoneNumber: cardData.phoneNumber,
-        dateOfBirth: cardData.dateOfBirth,
-        homeAddressNumber: cardData.homeAddressNumber,
-        homeAddress: cardData.homeAddress,
-        cardName: cardData.cardName,
-        cardBrand: cardData.cardBrand.toLowerCase(),
-        amountInUSD: parseFloat(amount)
-      }
-    });
-
-    if (!registrationResult.success) {
-      console.warn('🧪 DEV: Failed to register transaction for auto card creation:', registrationResult.error);
-      // Don't fail the entire flow if registration fails
-    } else {
-      console.log('🧪 DEV: Transaction registered successfully for auto card creation');
-    }
+    // 4. In development, we'll skip the registration for now since the user said not to worry about dev flow
+    console.log('🧪 DEV: Skipping registration in development mode for now');
     
     return {
       success: true,

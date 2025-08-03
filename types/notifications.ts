@@ -43,13 +43,27 @@ export interface VirtualCardEventData {
   BillingAddressCountryCode: string;
 }
 
+export interface KYCEventData {
+  Code: string;
+  CardEmail: string;
+  CardFirstName: string;
+  CardLastName: string;
+  Country: string;
+  HouseAddressNumber: string;
+  HouseAddressline: string;
+  DateOfBirth: string;
+  Status: string;
+  NumberOfCards: number;
+}
+
 export interface NotificationData {
-  type: 'usdt_received' | 'card_created' | 'card_creation_failed';
+  type: 'usdt_received' | 'card_created' | 'card_creation_failed' | 'kyc_verified' | 'kyc_failed';
   eventType: string;
   cardCode?: string; // Available for card_created notifications
-  eventData?: USDTReceivedEventData;
+  eventData?: USDTReceivedEventData | KYCEventData;
   cardData?: VirtualCardEventData;
-  error?: string; // Available for card_creation_failed notifications
+  error?: string; // Available for card_creation_failed and kyc_failed notifications
+  transactionSignature?: string; // Transaction signature for tracking creation steps
 }
 
 export interface PushNotificationContent {
