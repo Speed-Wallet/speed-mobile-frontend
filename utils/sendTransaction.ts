@@ -4,8 +4,8 @@ import { registerForPushNotificationsAsync } from '@/services/notificationServic
 import { 
   prepareTokenTransaction, 
   submitSignedTransaction, 
-  registerUsdtAndCreateCard,
-  getWalletAddress 
+  getWalletAddress,
+  submitSignedTransactionAndRegisterUsdt
 } from '../services/apis';
 import { Buffer } from 'buffer';
 
@@ -17,13 +17,37 @@ export interface SendTransactionParams {
   tokenAddress: string;
   tokenSymbol: string;
   tokenDecimals: number;
-  sendCashwyreFee?: boolean; // Whether to deduct platform fee from the amount
+  cashwyreData?: {
+    pushToken: string;
+    cashwyreWalletAddress: string;
+    userWalletAddress: string;
+    cardCreationData: {
+      firstName: string;
+      lastName: string;
+      email: string;
+      phoneCode: string;
+      phoneNumber: string;
+      dateOfBirth: string;
+      homeAddressNumber: string;
+      homeAddress: string;
+      cardName: string;
+      cardBrand: string;
+      amountInUSD: number;
+    };
+  };
 }
 
 export interface SendTransactionResult {
   success: boolean;
   signature?: string;
   error?: string;
+  errorType?: 'TRANSACTION_SUBMISSION_FAILED' | 'REGISTRATION_FAILED';
+  step?: 'transaction_submission' | 'usdt_registration';
+  warning?: string;
+  registrationError?: string;
+  transactionId?: string;
+  message?: string;
+  details?: string;
 }
 
 /**
@@ -31,7 +55,14 @@ export interface SendTransactionResult {
  * Now uses secure two-step process: prepare transaction on backend, sign on frontend, submit on backend
  */
 export async function sendTokenTransaction(params: SendTransactionParams): Promise<SendTransactionResult> {
-  const { amount, recipient, tokenAddress, tokenSymbol, tokenDecimals, sendCashwyreFee = false } = params;
+  const { 
+    amount, 
+    recipient, 
+    tokenAddress, 
+    tokenSymbol, 
+    tokenDecimals, 
+    cashwyreData
+  } = params;
 
   try {
     if (!WALLET) {
@@ -45,9 +76,11 @@ export async function sendTokenTransaction(params: SendTransactionParams): Promi
       tokenAddress,
       tokenSymbol,
       tokenDecimals,
-      sendCashwyreFee,
+      sendCashwyreFee: !!cashwyreData, // True if cashwyreData exists
       senderPublicKey: WALLET.publicKey.toBase58()
     });
+
+    console.log("Prepare transaction result:", prepareResult);
 
     if (!prepareResult.success || !prepareResult.transaction) {
       return { success: false, error: prepareResult.error || "Failed to prepare transaction" };
@@ -61,13 +94,28 @@ export async function sendTokenTransaction(params: SendTransactionParams): Promi
     transaction.sign(WALLET);
 
     // Step 3: Submit signed transaction to backend
-    const submitResult = await submitSignedTransaction({
-      signedTransaction: transaction.serialize().toString('base64'),
-      blockhash: prepareResult.blockhash!,
-      lastValidBlockHeight: prepareResult.lastValidBlockHeight!
-    });
-
-    return submitResult;
+    // If this is a Cashwyre transaction with card creation data, use the combined endpoint
+    if (cashwyreData) {
+      const submitResult = await submitSignedTransactionAndRegisterUsdt({
+        signedTransaction: transaction.serialize().toString('base64'),
+        blockhash: prepareResult.blockhash!,
+        lastValidBlockHeight: prepareResult.lastValidBlockHeight!,
+        pushToken: cashwyreData.pushToken,
+        cashwyreWalletAddress: cashwyreData.cashwyreWalletAddress,
+        amount: parseFloat(amount),
+        userWalletAddress: cashwyreData.userWalletAddress,
+        cardCreationData: cashwyreData.cardCreationData
+      });
+      return submitResult;
+    } else {
+      // Use regular transaction submission
+      const submitResult = await submitSignedTransaction({
+        signedTransaction: transaction.serialize().toString('base64'),
+        blockhash: prepareResult.blockhash!,
+        lastValidBlockHeight: prepareResult.lastValidBlockHeight!
+      });
+      return submitResult;
+    }
 
   } catch (error) {
     console.error("Transaction failed:", error);
@@ -80,14 +128,13 @@ export async function sendTokenTransaction(params: SendTransactionParams): Promi
  * Convenience function specifically for sending USDT
  * Used in card creation process
  */
-export async function sendUSDT(amount: string, recipientAddress: string, sendCashwyreFee: boolean = false): Promise<SendTransactionResult> {
+export async function sendUsdt(amount: string, recipientAddress: string): Promise<SendTransactionResult> {
   return sendTokenTransaction({
     amount,
     recipient: recipientAddress,
     tokenAddress: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB', // USDT mainnet address
     tokenSymbol: 'USDT',
-    tokenDecimals: 6,
-    sendCashwyreFee // Whether to deduct platform fee from the amount
+    tokenDecimals: 6
   });
 }
 
@@ -98,7 +145,7 @@ export async function sendUSDT(amount: string, recipientAddress: string, sendCas
  * 3. Send USDT to Cashwyre wallet
  * 4. Register transaction with backend for auto card creation
  */
-export async function sendUSDTToCashwyre(
+export async function sendUsdtToCashwyre(
   amount: string,
   cardData: {
     firstName: string;
@@ -138,67 +185,42 @@ export async function sendUSDTToCashwyre(
     console.log('Using Cashwyre wallet address:', walletAddress);
     console.log('Using push token:', pushToken);
 
-    // 3. Send USDT transaction
-    let sendResult: SendTransactionResult;
-
-    if (process.env.EXPO_PUBLIC_APP_ENV === 'development') {
-      // Mock successful transaction for development
-      console.log('🚧 DEV MODE: Using mock USDT transaction');
-      sendResult = {
-        success: true,
-        signature: `mock_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-      };
-    } else {
-      // Real transaction for production
-      sendResult = await sendUSDT(amount, walletAddress, true);
-    }
+    // 3. Send USDT transaction - for production, use the combined flow
+    const sendResult = await sendTokenTransaction({
+      amount,
+      recipient: walletAddress,
+      tokenAddress: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB', // USDT mainnet address
+      tokenSymbol: 'USDT',
+      tokenDecimals: 6,
+      cashwyreData: {
+        pushToken: pushToken || '',
+        cashwyreWalletAddress: walletAddress,
+        userWalletAddress: WALLET?.publicKey.toBase58() || '',
+        cardCreationData: {
+          firstName: cardData.firstName,
+          lastName: cardData.lastName,
+          email: cardData.email,
+          phoneCode: cardData.phoneCode,
+          phoneNumber: cardData.phoneNumber,
+          dateOfBirth: cardData.dateOfBirth,
+          homeAddressNumber: cardData.homeAddressNumber,
+          homeAddress: cardData.homeAddress,
+          cardName: cardData.cardName,
+          cardBrand: cardData.cardBrand.toLowerCase(),
+          amountInUSD: parseFloat(amount)
+        }
+      }
+    });
     
     if (!sendResult.success) {
-      console.error('Failed to send USDT:', sendResult.error);
+      console.error('Failed to send USDT to cashwyre:', sendResult.error);
       return sendResult;
     }
 
     console.log('USDT sent successfully. Signature:', sendResult.signature);
-
-    // 4. Register transaction with backend for auto card creation
-    const registrationResult = await registerUsdtAndCreateCard({
-      pushToken: pushToken || '',
-      walletAddress,
-      amount: parseFloat(amount),
-      userWalletAddress: WALLET?.publicKey.toBase58() || '',
-      transactionSignature: sendResult.signature || '',
-      cardCreationData: {
-        firstName: cardData.firstName,
-        lastName: cardData.lastName,
-        email: cardData.email,
-        phoneCode: cardData.phoneCode,
-        phoneNumber: cardData.phoneNumber,
-        dateOfBirth: cardData.dateOfBirth,
-        homeAddressNumber: cardData.homeAddressNumber,
-        homeAddress: cardData.homeAddress,
-        cardName: cardData.cardName,
-        cardBrand: cardData.cardBrand.toLowerCase(),
-        amountInUSD: parseFloat(amount)
-      }
-    });
-
-    if (!registrationResult.success) {
-      console.warn('Failed to register transaction for auto card creation:', registrationResult.error);
-      // Don't fail the entire flow if registration fails
-    } else {
-      console.log('✅ Transaction registered successfully');
-      if (registrationResult.cardCreation) {
-        if (registrationResult.cardCreation.success) {
-          console.log('🏦 Card created successfully:', registrationResult.cardCreation);
-        } else {
-          console.warn('⚠️ Card creation failed:', registrationResult.cardCreation.error);
-        }
-      }
-    }
-
     return sendResult;
   } catch (error) {
-    console.error('Error in sendUSDTToCashwyre:', error);
+    console.error('Error in sendUsdtToCashwyre:', error);
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'Failed to complete USDT transfer'
