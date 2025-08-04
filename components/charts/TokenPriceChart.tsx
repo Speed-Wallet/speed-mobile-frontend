@@ -1,7 +1,21 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
-import { PanGestureHandler, PanGestureHandlerGestureEvent, PanGestureHandlerStateChangeEvent, State } from 'react-native-gesture-handler';
-import Svg, { Path, Line, Text as SvgText, LinearGradient, Defs, Stop, G, Circle } from 'react-native-svg';
+import {
+  PanGestureHandler,
+  PanGestureHandlerGestureEvent,
+  PanGestureHandlerStateChangeEvent,
+  State,
+} from 'react-native-gesture-handler';
+import Svg, {
+  Path,
+  Line,
+  Text as SvgText,
+  LinearGradient,
+  Defs,
+  Stop,
+  G,
+  Circle,
+} from 'react-native-svg';
 
 interface DataPoint {
   timestamp: number;
@@ -14,11 +28,13 @@ interface TokenPriceChartProps {
   height?: number;
   timeframe: string;
   isPositive?: boolean;
-  onInteraction?: (data: {
-    priceChange: number;
-    percentageChange: number;
-    isInteracting: boolean;
-  } | null) => void;
+  onInteraction?: (
+    data: {
+      priceChange: number;
+      percentageChange: number;
+      isInteracting: boolean;
+    } | null
+  ) => void;
 }
 
 const screenWidth = Dimensions.get('window').width;
@@ -50,14 +66,15 @@ const TokenPriceChart: React.FC<TokenPriceChartProps> = ({
   const chartHeight = height - padding - topPadding - 30; // Extra space for x-axis labels
 
   // Get min/max values for scaling
-  const prices = data.map(d => d.price);
+  const prices = data.map((d) => d.price);
   const minPrice = Math.min(...prices);
   const maxPrice = Math.max(...prices);
   const priceRange = maxPrice - minPrice || 1; // Avoid division by zero
 
   // Scale functions
   const scaleX = (index: number) => (index / (data.length - 1)) * chartWidth;
-  const scaleY = (price: number) => chartHeight - ((price - minPrice) / priceRange) * chartHeight;
+  const scaleY = (price: number) =>
+    chartHeight - ((price - minPrice) / priceRange) * chartHeight;
 
   // Get the current price (last data point) for comparison
   const currentPrice = data[data.length - 1]?.price || 0;
@@ -66,23 +83,24 @@ const TokenPriceChart: React.FC<TokenPriceChartProps> = ({
   const getPriceChangeInfo = (selectedIndex: number) => {
     const selectedPrice = data[selectedIndex].price;
     const priceChange = selectedPrice - currentPrice;
-    const percentageChange = ((priceChange / currentPrice) * 100);
-    
+    const percentageChange = (priceChange / currentPrice) * 100;
+
     return {
       priceChange,
       percentageChange,
-      isPositive: priceChange >= 0
+      isPositive: priceChange >= 0,
     };
   };
 
   // Generate path for the line with dynamic coloring
   const generatePaths = (splitIndex: number | null = null) => {
-    if (data.length === 0) return { beforePath: '', afterPath: '', fullPath: '' };
-    
+    if (data.length === 0)
+      return { beforePath: '', afterPath: '', fullPath: '' };
+
     let beforePath = '';
     let afterPath = '';
     let fullPath = `M ${scaleX(0)} ${scaleY(data[0].price)}`;
-    
+
     if (splitIndex !== null && splitIndex > 0) {
       // Before selected point
       beforePath = `M ${scaleX(0)} ${scaleY(data[0].price)}`;
@@ -91,7 +109,7 @@ const TokenPriceChart: React.FC<TokenPriceChartProps> = ({
         const y = scaleY(data[i].price);
         beforePath += ` L ${x} ${y}`;
       }
-      
+
       // After selected point
       if (splitIndex < data.length - 1) {
         afterPath = `M ${scaleX(splitIndex)} ${scaleY(data[splitIndex].price)}`;
@@ -102,33 +120,33 @@ const TokenPriceChart: React.FC<TokenPriceChartProps> = ({
         }
       }
     }
-    
+
     // Full path for when not interacting
     for (let i = 1; i < data.length; i++) {
       const x = scaleX(i);
       const y = scaleY(data[i].price);
       fullPath += ` L ${x} ${y}`;
     }
-    
+
     return { beforePath, afterPath, fullPath };
   };
 
   // Generate path for gradient fill
   const generateFillPath = () => {
     if (data.length === 0) return '';
-    
+
     let path = `M ${scaleX(0)} ${chartHeight}`;
     path += ` L ${scaleX(0)} ${scaleY(data[0].price)}`;
-    
+
     for (let i = 1; i < data.length; i++) {
       const x = scaleX(i);
       const y = scaleY(data[i].price);
       path += ` L ${x} ${y}`;
     }
-    
+
     path += ` L ${scaleX(data.length - 1)} ${chartHeight}`;
     path += ' Z';
-    
+
     return path;
   };
 
@@ -153,14 +171,14 @@ const TokenPriceChart: React.FC<TokenPriceChartProps> = ({
   // Format time and date for display
   const formatTimeAndDate = (timestamp: number) => {
     const date = new Date(timestamp);
-    const time = date.toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
+    const time = date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
       minute: '2-digit',
-      hour12: true 
+      hour12: true,
     });
-    const dateStr = date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric' 
+    const dateStr = date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
     });
     return `${time}, ${dateStr}`;
   };
@@ -184,14 +202,14 @@ const TokenPriceChart: React.FC<TokenPriceChartProps> = ({
   const getYAxisLabels = () => {
     const labelCount = 5;
     const labels = [];
-    
+
     for (let i = 0; i < labelCount; i++) {
       const ratio = i / (labelCount - 1);
-      const price = minPrice + (priceRange * (1 - ratio)); // Inverted because Y increases downward
+      const price = minPrice + priceRange * (1 - ratio); // Inverted because Y increases downward
       const y = chartHeight * ratio;
       labels.push({ price, y });
     }
-    
+
     return labels;
   };
 
@@ -200,21 +218,21 @@ const TokenPriceChart: React.FC<TokenPriceChartProps> = ({
   // Format time labels based on timeframe
   const formatTimeLabel = (timestamp: number, index: number) => {
     const date = new Date(timestamp);
-    
+
     switch (timeframe) {
       case '1D':
-        return date.toLocaleTimeString('en-US', { 
-          hour: '2-digit', 
+        return date.toLocaleTimeString('en-US', {
+          hour: '2-digit',
           minute: '2-digit',
-          hour12: false 
+          hour12: false,
         });
       case '1W':
         return date.toLocaleDateString('en-US', { weekday: 'short' });
       case '1M':
       case '3M':
-        return date.toLocaleDateString('en-US', { 
-          month: 'short', 
-          day: 'numeric' 
+        return date.toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
         });
       case '1Y':
         return date.toLocaleDateString('en-US', { month: 'short' });
@@ -231,57 +249,66 @@ const TokenPriceChart: React.FC<TokenPriceChartProps> = ({
     if (data.length <= maxLabels) {
       return data.map((_, index) => index);
     }
-    
+
     const indices = [];
     const step = Math.floor(data.length / (maxLabels - 1));
-    
+
     for (let i = 0; i < maxLabels - 1; i++) {
       indices.push(i * step);
     }
     indices.push(data.length - 1); // Always include the last point
-    
+
     return indices;
   };
 
   // Handle pan gesture
-  const onGestureEvent = useCallback((event: PanGestureHandlerGestureEvent) => {
-    const { x } = event.nativeEvent;
-    const chartX = x - padding;
-    
-    if (chartX >= 0 && chartX <= chartWidth) {
-      const index = Math.round((chartX / chartWidth) * (data.length - 1));
-      const clampedIndex = Math.max(0, Math.min(data.length - 1, index));
-      setSelectedIndex(clampedIndex);
-      
-      // Send interaction data to parent
-      if (onInteraction) {
-        const changeInfo = getPriceChangeInfo(clampedIndex);
-        onInteraction({
-          priceChange: changeInfo.priceChange,
-          percentageChange: changeInfo.percentageChange,
-          isInteracting: true,
-        });
-      }
-    }
-  }, [chartWidth, data.length, padding, onInteraction]);
+  const onGestureEvent = useCallback(
+    (event: PanGestureHandlerGestureEvent) => {
+      const { x } = event.nativeEvent;
+      const chartX = x - padding;
 
-  const onHandlerStateChange = useCallback((event: PanGestureHandlerStateChangeEvent) => {
-    if (event.nativeEvent.state === State.BEGAN) {
-      setIsInteracting(true);
-    } else if (event.nativeEvent.state === State.END || event.nativeEvent.state === State.CANCELLED) {
-      setIsInteracting(false);
-      setSelectedIndex(null);
-      
-      // Reset interaction in parent
-      if (onInteraction) {
-        onInteraction(null);
+      if (chartX >= 0 && chartX <= chartWidth) {
+        const index = Math.round((chartX / chartWidth) * (data.length - 1));
+        const clampedIndex = Math.max(0, Math.min(data.length - 1, index));
+        setSelectedIndex(clampedIndex);
+
+        // Send interaction data to parent
+        if (onInteraction) {
+          const changeInfo = getPriceChangeInfo(clampedIndex);
+          onInteraction({
+            priceChange: changeInfo.priceChange,
+            percentageChange: changeInfo.percentageChange,
+            isInteracting: true,
+          });
+        }
       }
-    }
-  }, [onInteraction]);
+    },
+    [chartWidth, data.length, padding, onInteraction]
+  );
+
+  const onHandlerStateChange = useCallback(
+    (event: PanGestureHandlerStateChangeEvent) => {
+      if (event.nativeEvent.state === State.BEGAN) {
+        setIsInteracting(true);
+      } else if (
+        event.nativeEvent.state === State.END ||
+        event.nativeEvent.state === State.CANCELLED
+      ) {
+        setIsInteracting(false);
+        setSelectedIndex(null);
+
+        // Reset interaction in parent
+        if (onInteraction) {
+          onInteraction(null);
+        }
+      }
+    },
+    [onInteraction]
+  );
 
   const labelsToShow = getLabelsToShow();
   const paths = generatePaths(selectedIndex);
-  
+
   // Determine colors based on price movement
   const getLineColors = () => {
     if (selectedIndex !== null) {
@@ -298,14 +325,36 @@ const TokenPriceChart: React.FC<TokenPriceChartProps> = ({
   };
 
   const { beforeColor, afterColor } = getLineColors();
-  const displayColor = isInteracting && selectedIndex !== null ? beforeColor : (isPositive ? '#10b981' : '#ef4444');
+  const displayColor =
+    isInteracting && selectedIndex !== null
+      ? beforeColor
+      : isPositive
+      ? '#10b981'
+      : '#ef4444';
   const gradientColorStart = displayColor;
 
   // Get price change info for selected point
-  const selectedPriceChangeInfo = selectedIndex !== null ? getPriceChangeInfo(selectedIndex) : null;
+  const selectedPriceChangeInfo =
+    selectedIndex !== null ? getPriceChangeInfo(selectedIndex) : null;
 
   return (
     <View style={[styles.container, { width, height }]}>
+      {isInteracting && selectedIndex !== null && (
+        <View
+          style={[
+            styles.timeDisplay,
+            {
+              left: padding + scaleX(selectedIndex) - 40,
+              top: topPadding - 25,
+            },
+          ]}
+        >
+          <Text style={styles.timeText}>
+            {formatTimeAndDate(data[selectedIndex].timestamp)}
+          </Text>
+        </View>
+      )}
+
       <PanGestureHandler
         onGestureEvent={onGestureEvent}
         onHandlerStateChange={onHandlerStateChange}
@@ -313,14 +362,27 @@ const TokenPriceChart: React.FC<TokenPriceChartProps> = ({
         <View style={{ flex: 1 }}>
           <Svg width={width} height={height}>
             <Defs>
-              <LinearGradient id="priceGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                <Stop offset="0%" stopColor={gradientColorStart} stopOpacity="0.3" />
-                <Stop offset="100%" stopColor={gradientColorStart} stopOpacity="0.05" />
+              <LinearGradient
+                id="priceGradient"
+                x1="0%"
+                y1="0%"
+                x2="0%"
+                y2="100%"
+              >
+                <Stop
+                  offset="0%"
+                  stopColor={gradientColorStart}
+                  stopOpacity="0.3"
+                />
+                <Stop
+                  offset="100%"
+                  stopColor={gradientColorStart}
+                  stopOpacity="0.05"
+                />
               </LinearGradient>
             </Defs>
-            
+
             <G x={padding} y={topPadding}>
-              {/* Grid lines (subtle) */}
               {yAxisLabels.map((label, index) => (
                 <Line
                   key={index}
@@ -333,17 +395,11 @@ const TokenPriceChart: React.FC<TokenPriceChartProps> = ({
                   opacity="0.3"
                 />
               ))}
-              
-              {/* Gradient fill */}
-              <Path
-                d={generateFillPath()}
-                fill="url(#priceGradient)"
-              />
-              
-              {/* Line paths */}
+
+              <Path d={generateFillPath()} fill="url(#priceGradient)" />
+
               {isInteracting && selectedIndex !== null ? (
                 <>
-                  {/* Before selected point */}
                   {paths.beforePath && (
                     <Path
                       d={paths.beforePath}
@@ -354,8 +410,7 @@ const TokenPriceChart: React.FC<TokenPriceChartProps> = ({
                       strokeLinejoin="round"
                     />
                   )}
-                  
-                  {/* After selected point */}
+
                   {paths.afterPath && (
                     <Path
                       d={paths.afterPath}
@@ -366,8 +421,7 @@ const TokenPriceChart: React.FC<TokenPriceChartProps> = ({
                       strokeLinejoin="round"
                     />
                   )}
-                  
-                  {/* Selected point indicator */}
+
                   <Circle
                     cx={scaleX(selectedIndex)}
                     cy={scaleY(data[selectedIndex].price)}
@@ -376,8 +430,7 @@ const TokenPriceChart: React.FC<TokenPriceChartProps> = ({
                     stroke="#fff"
                     strokeWidth="2"
                   />
-                  
-                  {/* Vertical line at selected point */}
+
                   <Line
                     x1={scaleX(selectedIndex)}
                     y1={0}
@@ -390,7 +443,6 @@ const TokenPriceChart: React.FC<TokenPriceChartProps> = ({
                   />
                 </>
               ) : (
-                /* Full line when not interacting */
                 <Path
                   d={paths.fullPath}
                   stroke={displayColor}
@@ -400,8 +452,7 @@ const TokenPriceChart: React.FC<TokenPriceChartProps> = ({
                   strokeLinejoin="round"
                 />
               )}
-              
-              {/* Y-axis labels (right side) */}
+
               {yAxisLabels.map((label, index) => (
                 <SvgText
                   key={index}
@@ -414,8 +465,7 @@ const TokenPriceChart: React.FC<TokenPriceChartProps> = ({
                   {formatYAxisPrice(label.price)}
                 </SvgText>
               ))}
-              
-              {/* X-axis labels */}
+
               {labelsToShow.map((dataIndex, index) => (
                 <SvgText
                   key={index}
@@ -447,6 +497,21 @@ const styles = StyleSheet.create({
   noDataText: {
     color: '#9ca3af',
     fontSize: 14,
+  },
+  timeDisplay: {
+    position: 'absolute',
+    backgroundColor: '#2a2a2a',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#444',
+    zIndex: 10,
+  },
+  timeText: {
+    fontSize: 11,
+    color: '#fff',
+    fontWeight: '500',
   },
 });
 
