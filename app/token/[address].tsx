@@ -29,6 +29,11 @@ export default function TokenDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [priceChange, setPriceChange] = useState({ change: 0, changePercentage: 0 });
+  const [chartSelectedData, setChartSelectedData] = useState<{
+    priceChange: number;
+    percentageChange: number;
+    isInteracting: boolean;
+  } | null>(null);
   
   const router = useRouter();
   const { address } = useLocalSearchParams<{ address: string }>();
@@ -107,6 +112,15 @@ export default function TokenDetailScreen() {
     setSelectedTimeframe(timeframe);
   };
 
+  // Handle chart interaction data
+  const handleChartInteraction = (data: {
+    priceChange: number;
+    percentageChange: number;
+    isInteracting: boolean;
+  } | null) => {
+    setChartSelectedData(data);
+  };
+
   // Show loading state
   if (loading && !tokenData) {
     return (
@@ -150,8 +164,12 @@ export default function TokenDetailScreen() {
   }
 
   const currentPrice = tokenData.priceData?.current_price || 0;
-  const currentChange = formatPriceChangeString(priceChange.changePercentage);
-  const isNegative = priceChange.changePercentage < 0;
+  
+  // Use chart selected data if available, otherwise use default price change
+  const displayPriceChange = priceChange;
+    
+  const currentChange = formatPriceChangeString(displayPriceChange.changePercentage);
+  const isNegative = displayPriceChange.changePercentage < 0;
 
   const statsData = [
     {
@@ -191,9 +209,22 @@ export default function TokenDetailScreen() {
         {/* Price Section */}
         <View style={styles.priceSection}>
           <Text style={styles.price}>{formatPrice(currentPrice)}</Text>
-          <Text style={[styles.priceChange, { color: isNegative ? '#ef4444' : '#10b981' }]}>
-            {currentChange}
-          </Text>
+          
+          {/* Show either the timeframe change OR the chart selected change, not both */}
+          {chartSelectedData?.isInteracting ? (
+            <View style={styles.chartSelectedDisplay}>
+              <Text style={[styles.chartSelectedPrice, { color: chartSelectedData.percentageChange < 0 ? '#ef4444' : '#10b981' }]}>
+                {chartSelectedData.priceChange >= 0 ? '+$' : '-$'}{Math.abs(chartSelectedData.priceChange).toFixed(8)}
+              </Text>
+              <Text style={[styles.chartSelectedPercentage, { color: chartSelectedData.percentageChange < 0 ? '#ef4444' : '#10b981' }]}>
+                {chartSelectedData.percentageChange >= 0 ? '+' : ''}{chartSelectedData.percentageChange.toFixed(2)}%
+              </Text>
+            </View>
+          ) : (
+            <Text style={[styles.priceChange, { color: isNegative ? '#ef4444' : '#10b981' }]}>
+              {currentChange}
+            </Text>
+          )}
         </View>
 
         {/* Chart */}
@@ -210,6 +241,7 @@ export default function TokenDetailScreen() {
               height={200}
               timeframe={selectedTimeframe}
               isPositive={priceChange.changePercentage >= 0}
+              onInteraction={handleChartInteraction}
             />
           ) : (
             <View style={styles.chartErrorContainer}>
@@ -339,6 +371,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  chartSelectedDisplay: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+    gap: 8,
+  },
+  chartSelectedPrice: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  chartSelectedPercentage: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
   chartContainer: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -368,7 +414,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#ef4444',
   },
-
   timeframeContainer: {
     flexDirection: 'row',
     paddingHorizontal: 16,
