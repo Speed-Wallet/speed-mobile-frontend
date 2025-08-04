@@ -10,6 +10,11 @@ export interface FormattedChartData {
   }>;
 }
 
+export interface ChartDataPoint {
+  timestamp: number;
+  price: number;
+}
+
 export interface TimeframeConfig {
   days: number;
   label: string;
@@ -50,7 +55,7 @@ export const timeframeConfigs: Record<string, TimeframeConfig> = {
 };
 
 /**
- * Format historical price data for chart display
+ * Format historical price data for chart display (legacy - for react-native-chart-kit)
  */
 export function formatHistoricalDataForChart(
   historicalResponse: HistoricalPricesResponse,
@@ -91,6 +96,61 @@ export function formatHistoricalDataForChart(
     
     formattedData.labels.push(config.formatLabel(date));
     formattedData.datasets[0].data.push(price);
+  }
+
+  return formattedData;
+}
+
+/**
+ * Format historical price data for custom chart component
+ */
+export function formatHistoricalDataForCustomChart(
+  historicalResponse: HistoricalPricesResponse,
+  timeframe: string
+): ChartDataPoint[] {
+  if (!historicalResponse.success || !historicalResponse.data?.historicalData?.prices) {
+    return [];
+  }
+
+  const { prices } = historicalResponse.data.historicalData;
+  
+  // For custom chart, we can handle more data points efficiently
+  let maxDataPoints = 50;
+  
+  // Adjust based on timeframe
+  switch (timeframe) {
+    case '1D':
+      maxDataPoints = 24; // Hourly data points
+      break;
+    case '1W':
+      maxDataPoints = 30;
+      break;
+    case '1M':
+      maxDataPoints = 30;
+      break;
+    case '3M':
+      maxDataPoints = 40;
+      break;
+    case '1Y':
+      maxDataPoints = 50;
+      break;
+    case 'ALL':
+      maxDataPoints = 60;
+      break;
+  }
+  
+  const dataPoints = prices.length;
+  const step = Math.max(1, Math.floor(dataPoints / maxDataPoints));
+  
+  const formattedData: ChartDataPoint[] = [];
+
+  // Sample data points evenly
+  for (let i = 0; i < dataPoints; i += step) {
+    const [timestamp, price] = prices[i];
+    formattedData.push({
+      timestamp,
+      price
+    });
   }
 
   return formattedData;
