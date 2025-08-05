@@ -1,20 +1,39 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
-import { ArrowLeft, Star, ArrowUpRight, ArrowRightLeft, ArrowDownLeft } from 'lucide-react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Dimensions,
+  ActivityIndicator,
+} from 'react-native';
+import {
+  ArrowLeft,
+  Star,
+  ArrowUpRight,
+  ArrowRightLeft,
+  ArrowDownLeft,
+} from 'lucide-react-native';
 import { useState, useEffect } from 'react';
 import ScreenHeader from '@/components/ScreenHeader';
 import ScreenContainer from '@/components/ScreenContainer';
 import { TokenPriceChart } from '@/components/charts';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { getHistoricalPrices, getTokenPrices, TokenMetadata } from '@/services/apis';
-import { 
+import {
+  getHistoricalPrices,
+  getTokenPrices,
+  TokenMetadata,
+} from '@/services/apis';
+import {
   formatHistoricalDataForCustomChart,
-  formatPriceChangeString, 
-  formatPrice, 
-  formatLargeNumber, 
+  formatPriceChangeString,
+  formatPrice,
+  formatLargeNumber,
   formatSupply,
   calculatePriceChange,
   timeframeConfigs,
-  ChartDataPoint
+  ChartDataPoint,
+  formatPriceChange,
 } from '@/utils/chartUtils';
 
 const screenWidth = Dimensions.get('window').width;
@@ -28,22 +47,23 @@ export default function TokenDetailScreen() {
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [priceChange, setPriceChange] = useState({ change: 0, changePercentage: 0 });
+  const [priceChange, setPriceChange] = useState({
+    change: 0,
+    changePercentage: 0,
+  });
   const [chartSelectedData, setChartSelectedData] = useState<{
     priceChange: number;
     percentageChange: number;
     isInteracting: boolean;
   } | null>(null);
-  
+
   const router = useRouter();
   const { address } = useLocalSearchParams<{ address: string }>();
 
-  // Load token data on component mount
   useEffect(() => {
     loadTokenData();
   }, [address]);
 
-  // Load historical data when timeframe changes
   useEffect(() => {
     if (tokenData?.coingeckoId) {
       loadHistoricalData(selectedTimeframe);
@@ -54,16 +74,15 @@ export default function TokenDetailScreen() {
     try {
       setLoading(true);
       setError(null);
-      
+
       const response = await getTokenPrices();
-      
+
       if (!response.success) {
         throw new Error(response.error || 'Failed to load token data');
       }
 
-      // Find the token by address
-      const token = response.data.find(t => t.address === address);
-      
+      const token = response.data.find((t) => t.address === address);
+
       if (!token) {
         throw new Error('Token not found');
       }
@@ -71,7 +90,9 @@ export default function TokenDetailScreen() {
       setTokenData(token);
     } catch (err) {
       console.error('Error loading token data:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load token data');
+      setError(
+        err instanceof Error ? err.message : 'Failed to load token data'
+      );
     } finally {
       setLoading(false);
     }
@@ -79,30 +100,35 @@ export default function TokenDetailScreen() {
 
   const loadHistoricalData = async (timeframe: string) => {
     if (!tokenData?.coingeckoId) return;
-    
+
     try {
       setLoading(true);
       const config = timeframeConfigs[timeframe];
-      
-      const response = await getHistoricalPrices(tokenData.coingeckoId, config.days);
-      
+
+      const response = await getHistoricalPrices(
+        tokenData.coingeckoId,
+        config.days
+      );
+
       if (!response.success) {
         throw new Error(response.error || 'Failed to load historical data');
       }
 
       setHistoricalData(response);
-      
-      // Format data for custom chart
-      const formattedChart = formatHistoricalDataForCustomChart(response, timeframe);
+
+      const formattedChart = formatHistoricalDataForCustomChart(
+        response,
+        timeframe
+      );
       setChartData(formattedChart);
-      
-      // Calculate price change
+
       const change = calculatePriceChange(response, timeframe);
       setPriceChange(change);
-      
     } catch (err) {
       console.error('Error loading historical data:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load historical data');
+      setError(
+        err instanceof Error ? err.message : 'Failed to load historical data'
+      );
     } finally {
       setLoading(false);
     }
@@ -112,23 +138,20 @@ export default function TokenDetailScreen() {
     setSelectedTimeframe(timeframe);
   };
 
-  // Handle chart interaction data
-  const handleChartInteraction = (data: {
-    priceChange: number;
-    percentageChange: number;
-    isInteracting: boolean;
-  } | null) => {
+  const handleChartInteraction = (
+    data: {
+      priceChange: number;
+      percentageChange: number;
+      isInteracting: boolean;
+    } | null
+  ) => {
     setChartSelectedData(data);
   };
 
-  // Show loading state
   if (loading && !tokenData) {
     return (
       <ScreenContainer edges={['top', 'bottom']}>
-        <ScreenHeader 
-          title="Loading..."
-          onBack={() => router.back()}
-        />
+        <ScreenHeader title="Loading..." onBack={() => router.back()} />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#6366f1" />
           <Text style={styles.loadingText}>Loading token data...</Text>
@@ -141,13 +164,10 @@ export default function TokenDetailScreen() {
   if (error) {
     return (
       <ScreenContainer edges={['top', 'bottom']}>
-        <ScreenHeader 
-          title="Error"
-          onBack={() => router.back()}
-        />
+        <ScreenHeader title="Error" onBack={() => router.back()} />
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.retryButton}
             onPress={() => loadTokenData()}
           >
@@ -158,17 +178,17 @@ export default function TokenDetailScreen() {
     );
   }
 
-  // Show main content
   if (!tokenData) {
     return null;
   }
 
   const currentPrice = tokenData.priceData?.current_price || 0;
-  
-  // Use chart selected data if available, otherwise use default price change
+
   const displayPriceChange = priceChange;
-    
-  const currentChange = formatPriceChangeString(displayPriceChange.changePercentage);
+
+  const currentChange = `${formatPriceChange(
+    displayPriceChange.change
+  )} ${formatPriceChangeString(displayPriceChange.changePercentage)}`;
   const isNegative = displayPriceChange.changePercentage < 0;
 
   const statsData = [
@@ -182,19 +202,22 @@ export default function TokenDetailScreen() {
     },
     {
       label: 'Circulating Supply',
-      value: formatSupply(tokenData.priceData?.circulating_supply || 0, tokenData.symbol),
+      value: formatSupply(
+        tokenData.priceData?.circulating_supply || 0,
+        tokenData.symbol
+      ),
     },
     {
       label: 'Max Supply',
-      value: tokenData.priceData?.max_supply ? 
-        formatSupply(tokenData.priceData.max_supply, tokenData.symbol) : 
-        'N/A',
+      value: tokenData.priceData?.max_supply
+        ? formatSupply(tokenData.priceData.max_supply, tokenData.symbol)
+        : 'N/A',
     },
   ];
 
   return (
     <ScreenContainer edges={['top', 'bottom']}>
-      <ScreenHeader 
+      <ScreenHeader
         title={tokenData.symbol}
         onBack={() => router.back()}
         rightElement={
@@ -203,25 +226,52 @@ export default function TokenDetailScreen() {
           </TouchableOpacity>
         }
       />
-      
-      <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollView}>
 
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        style={styles.scrollView}
+      >
         {/* Price Section */}
         <View style={styles.priceSection}>
           <Text style={styles.price}>{formatPrice(currentPrice)}</Text>
-          
-          {/* Show either the timeframe change OR the chart selected change, not both */}
+
           {chartSelectedData?.isInteracting ? (
             <View style={styles.chartSelectedDisplay}>
-              <Text style={[styles.chartSelectedPrice, { color: chartSelectedData.percentageChange < 0 ? '#ef4444' : '#10b981' }]}>
-                {chartSelectedData.priceChange >= 0 ? '+$' : '-$'}{Math.abs(chartSelectedData.priceChange).toFixed(8)}
+              <Text
+                style={[
+                  styles.chartSelectedPrice,
+                  {
+                    color:
+                      chartSelectedData.percentageChange < 0
+                        ? '#ef4444'
+                        : '#10b981',
+                  },
+                ]}
+              >
+                {formatPriceChange(chartSelectedData.priceChange)}
               </Text>
-              <Text style={[styles.chartSelectedPercentage, { color: chartSelectedData.percentageChange < 0 ? '#ef4444' : '#10b981' }]}>
-                {chartSelectedData.percentageChange >= 0 ? '+' : ''}{chartSelectedData.percentageChange.toFixed(2)}%
+              <Text
+                style={[
+                  styles.chartSelectedPercentage,
+                  {
+                    color:
+                      chartSelectedData.percentageChange < 0
+                        ? '#ef4444'
+                        : '#10b981',
+                  },
+                ]}
+              >
+                {chartSelectedData.percentageChange >= 0 ? '+' : ''}
+                {chartSelectedData.percentageChange.toFixed(2)}%
               </Text>
             </View>
           ) : (
-            <Text style={[styles.priceChange, { color: isNegative ? '#ef4444' : '#10b981' }]}>
+            <Text
+              style={[
+                styles.priceChange,
+                { color: isNegative ? '#ef4444' : '#10b981' },
+              ]}
+            >
               {currentChange}
             </Text>
           )}
@@ -259,12 +309,14 @@ export default function TokenDetailScreen() {
                 styles.timeframeButton,
                 selectedTimeframe === timeframe && styles.timeframeButtonActive,
               ]}
-              onPress={() => handleTimeframeChange(timeframe)}>
+              onPress={() => handleTimeframeChange(timeframe)}
+            >
               <Text
                 style={[
                   styles.timeframeText,
                   selectedTimeframe === timeframe && styles.timeframeTextActive,
-                ]}>
+                ]}
+              >
                 {timeframe}
               </Text>
             </TouchableOpacity>
@@ -276,7 +328,13 @@ export default function TokenDetailScreen() {
           <Text style={styles.sectionTitle}>Market Info</Text>
           <View style={styles.statsContainer}>
             {statsData.map((stat, index) => (
-              <View key={index} style={[styles.statRow, index === statsData.length - 1 && styles.lastStatRow]}>
+              <View
+                key={index}
+                style={[
+                  styles.statRow,
+                  index === statsData.length - 1 && styles.lastStatRow,
+                ]}
+              >
                 <Text style={styles.statLabel}>{stat.label}</Text>
                 <Text style={styles.statValue}>{stat.value}</Text>
               </View>
@@ -288,7 +346,7 @@ export default function TokenDetailScreen() {
         <View style={styles.aboutSection}>
           <Text style={styles.sectionTitle}>About {tokenData.name}</Text>
           <Text style={styles.description}>
-            {tokenData.name} ({tokenData.symbol}) is a cryptocurrency token. 
+            {tokenData.name} ({tokenData.symbol}) is a cryptocurrency token.
             Current price data and market information are provided by CoinGecko.
           </Text>
         </View>
