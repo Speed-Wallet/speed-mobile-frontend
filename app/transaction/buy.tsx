@@ -3,6 +3,10 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Image,
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { X, ArrowRight, ChevronDown, Info, CreditCard } from 'lucide-react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
+import { WebView } from 'react-native-webview';
+
+// TODO: Replace 'YOUR_YELLOWCARD_API_KEY' with actual YellowCard API key
+// You can get your API key from YellowCard's developer dashboard
 import colors from '@/constants/colors';
 import { formatCurrency } from '@/utils/formatters';
 import { getAllTokenInfo, getTokenByAddress } from '@/data/tokens';
@@ -41,6 +45,8 @@ export default function BuyScreen() {
   const [tokenList, setTokenList] = useState<EnrichedTokenEntry[]>([]);
   const [amount, setAmount] = useState('');
   const [selectedMethod, setSelectedMethod] = useState(paymentMethods[0]);
+  const [showWebView, setShowWebView] = useState(false);
+  const [webViewLoading, setWebViewLoading] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -82,8 +88,13 @@ export default function BuyScreen() {
       return;
     }
     
-    // Open the selected provider's website
-    Linking.openURL(selectedMethod.url);
+    // Check if YellowCard is selected
+    if (selectedMethod.id === 'yellowcard') {
+      setShowWebView(true);
+    } else {
+      // Open the selected provider's website for other methods
+      Linking.openURL(selectedMethod.url);
+    }
   };
 
   const getTokenAmount = () => {
@@ -97,110 +108,161 @@ export default function BuyScreen() {
 
   return (
     <ScreenContainer edges={['top', 'bottom']}>
-      <ScreenHeader 
-        title="Buy"
-        onBack={() => router.push('/' as any)}
-      />
+      {showWebView ? (
+        // WebView for YellowCard widget
+        <View style={styles.webViewContainer}>
+          <View style={styles.webViewHeader}>
+            <TouchableOpacity 
+              style={styles.closeButton} 
+              onPress={() => setShowWebView(false)}
+            >
+              <X size={24} color={colors.textPrimary} />
+            </TouchableOpacity>
+            <Text style={styles.webViewTitle}>Buy Crypto with YellowCard</Text>
+            {webViewLoading && (
+              <Text style={styles.loadingText}>Loading...</Text>
+            )}
+          </View>
+          <WebView
+            source={{ uri: 'https://sandbox--payments-widget.netlify.app/landing/YOUR_YELLOWCARD_API_KEY' }}
+            style={styles.webView}
+            javaScriptEnabled={true}
+            domStorageEnabled={true}
+            startInLoadingState={true}
+            mediaPlaybackRequiresUserAction={false}
+            allowsInlineMediaPlayback={true}
+            onError={(syntheticEvent) => {
+              const { nativeEvent } = syntheticEvent;
+              console.warn('WebView error: ', nativeEvent);
+              alert('Failed to load YellowCard widget. Please try again.');
+            }}
+            onLoadStart={() => {
+              console.log('WebView loading started');
+              setWebViewLoading(true);
+            }}
+            onLoadEnd={() => {
+              console.log('WebView loading ended');
+              setWebViewLoading(false);
+            }}
+            onNavigationStateChange={(navState) => {
+              // Handle navigation changes if needed
+              console.log('WebView navigation:', navState.url);
+            }}
+          />
+        </View>
+      ) : (
+        <>
+          <ScreenHeader 
+            title="Buy"
+            onBack={() => router.push('/' as any)}
+          />
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.content}
-      >
-        {selectedToken && (
-          <>
-            {/* Amount Input */}
-            <Animated.View entering={FadeIn.delay(100)} style={styles.amountSection}>
-              <Text style={styles.amountLabel}>Amount to Buy (USD)</Text>
-              <View style={styles.amountDisplay}>
-                <Text style={styles.currencySymbol}>$</Text>
-                <TextInput
-                  style={styles.amountInput}
-                  placeholder="0.00"
-                  placeholderTextColor={colors.textSecondary}
-                  keyboardType="decimal-pad"
-                  value={amount}
-                  onChangeText={setAmount}
-                />
-              </View>
-              <Text style={styles.tokenAmount}>
-                ≈ {getTokenAmount()} {selectedToken.symbol}
-              </Text>
-              
-              <View style={styles.quickAmounts}>
-                {quickAmounts.map((value) => (
-                  <TouchableOpacity
-                    key={value}
-                    style={[
-                      styles.quickAmountButton,
-                      amount === value.toString() && styles.quickAmountButtonActive
-                    ]}
-                    onPress={() => handleQuickAmount(value)}
-                  >
-                    <Text style={[
-                      styles.quickAmountText,
-                      amount === value.toString() && styles.quickAmountTextActive
-                    ]}>
-                      ${value}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </Animated.View>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.content}
+          >
+            {selectedToken && (
+              <>
+                {/* Amount Input */}
+                <Animated.View entering={FadeIn.delay(100)} style={styles.amountSection}>
+                  <Text style={styles.amountLabel}>Amount to Buy (USD)</Text>
+                  <View style={styles.amountDisplay}>
+                    <Text style={styles.currencySymbol}>$</Text>
+                    <TextInput
+                      style={styles.amountInput}
+                      placeholder="0.00"
+                      placeholderTextColor={colors.textSecondary}
+                      keyboardType="decimal-pad"
+                      value={amount}
+                      onChangeText={setAmount}
+                    />
+                  </View>
+                  <Text style={styles.tokenAmount}>
+                    ≈ {getTokenAmount()} {selectedToken.symbol}
+                  </Text>
+                  
+                  <View style={styles.quickAmounts}>
+                    {quickAmounts.map((value) => (
+                      <TouchableOpacity
+                        key={value}
+                        style={[
+                          styles.quickAmountButton,
+                          amount === value.toString() && styles.quickAmountButtonActive
+                        ]}
+                        onPress={() => handleQuickAmount(value)}
+                      >
+                        <Text style={[
+                          styles.quickAmountText,
+                          amount === value.toString() && styles.quickAmountTextActive
+                        ]}>
+                          ${value}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </Animated.View>
 
-            {/* Payment Methods */}
-            <Animated.View entering={FadeIn.delay(200)}>
-              <Text style={styles.sectionTitle}>Payment Method</Text>
-              <View style={styles.methodsContainer}>
-                {paymentMethods.map((method) => (
-                  <TouchableOpacity
-                    key={method.id}
-                    style={[
-                      styles.methodCard,
-                      selectedMethod.id === method.id && styles.selectedMethodCard
-                    ]}
-                    onPress={() => setSelectedMethod(method)}
-                  >
-                    <View style={styles.methodContent}>
-                      <View style={styles.methodIconContainer}>
-                        {method.icon}
-                      </View>
-                      <Text style={styles.methodName}>{method.name}</Text>
-                      {method.recommended && (
-                        <View style={styles.recommendedBadge}>
-                          <Text style={styles.recommendedText}>Recommended</Text>
+                {/* Payment Methods */}
+                <Animated.View entering={FadeIn.delay(200)}>
+                  <Text style={styles.sectionTitle}>Payment Method</Text>
+                  <View style={styles.methodsContainer}>
+                    {paymentMethods.map((method) => (
+                      <TouchableOpacity
+                        key={method.id}
+                        style={[
+                          styles.methodCard,
+                          selectedMethod.id === method.id && styles.selectedMethodCard
+                        ]}
+                        onPress={() => setSelectedMethod(method)}
+                      >
+                        <View style={styles.methodContent}>
+                          <View style={styles.methodIconContainer}>
+                            {method.icon}
+                          </View>
+                          <Text style={styles.methodName}>{method.name}</Text>
+                          {method.recommended && (
+                            <View style={styles.recommendedBadge}>
+                              <Text style={styles.recommendedText}>Recommended</Text>
+                            </View>
+                          )}
                         </View>
-                      )}
-                    </View>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </Animated.View>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </Animated.View>
 
-            {/* Provider Info */}
-            <View style={styles.providerInfo}>
-              <Info size={16} color={colors.textSecondary} />
-              <Text style={styles.providerText}>
-                You will be redirected to {selectedMethod.provider} to complete your purchase
+                {/* Provider Info */}
+                <View style={styles.providerInfo}>
+                  <Info size={16} color={colors.textSecondary} />
+                  <Text style={styles.providerText}>
+                    {selectedMethod.id === 'yellowcard' 
+                      ? 'The YellowCard widget will open to complete your purchase'
+                      : `You will be redirected to ${selectedMethod.provider} to complete your purchase`
+                    }
+                  </Text>
+                </View>
+              </>
+            )}
+          </ScrollView>
+
+          {/* Buy Button */}
+          <View style={styles.bottomContainer}>
+            <TouchableOpacity 
+              style={[
+                styles.buyButton,
+                (!amount || parseFloat(amount) <= 0) && styles.buyButtonDisabled
+              ]}
+              disabled={!amount || parseFloat(amount) <= 0}
+              onPress={handleBuy}
+            >
+              <Text style={styles.buyButtonText}>
+                {selectedMethod.id === 'yellowcard' ? 'Open YellowCard Widget' : `Continue to ${selectedMethod.provider}`}
               </Text>
-            </View>
-          </>
-        )}
-      </ScrollView>
-
-      {/* Buy Button */}
-      <View style={styles.bottomContainer}>
-        <TouchableOpacity 
-          style={[
-            styles.buyButton,
-            (!amount || parseFloat(amount) <= 0) && styles.buyButtonDisabled
-          ]}
-          disabled={!amount || parseFloat(amount) <= 0}
-          onPress={handleBuy}
-        >
-          <Text style={styles.buyButtonText}>Continue to {selectedMethod.provider}</Text>
-          <ArrowRight size={20} color={colors.white} />
-        </TouchableOpacity>
-      </View>
+              <ArrowRight size={20} color={colors.white} />
+            </TouchableOpacity>
+          </View>
+        </>
+      )}
     </ScreenContainer>
   );
 }
@@ -370,5 +432,37 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-SemiBold',
     color: colors.white,
     marginRight: 8,
+  },
+  webViewContainer: {
+    flex: 1,
+    backgroundColor: colors.backgroundDark,
+  },
+  webViewHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: colors.backgroundMedium,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  closeButton: {
+    padding: 8,
+    marginRight: 12,
+  },
+  webViewTitle: {
+    flex: 1,
+    fontSize: 16,
+    fontFamily: 'Inter-SemiBold',
+    color: colors.textPrimary,
+  },
+  loadingText: {
+    fontSize: 12,
+    fontFamily: 'Inter-Regular',
+    color: colors.textSecondary,
+    marginLeft: 8,
+  },
+  webView: {
+    flex: 1,
   },
 });
