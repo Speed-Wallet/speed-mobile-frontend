@@ -11,12 +11,12 @@ interface ScreenHeaderProps {
   style?: ViewStyle;
 }
 
-export default function ScreenHeader({ 
-  title, 
-  onBack, 
-  showBackButton = true, 
+export default function ScreenHeader({
+  title,
+  onBack,
+  showBackButton = true,
   rightElement,
-  style 
+  style,
 }: ScreenHeaderProps) {
   return (
     <View style={[styles.header, style]}>
@@ -25,9 +25,9 @@ export default function ScreenHeader({
       ) : (
         <View style={styles.placeholder} />
       )}
-      
+
       {title && <Text style={styles.title}>{title}</Text>}
-      
+
       {rightElement ? (
         <View style={styles.rightElement}>{rightElement}</View>
       ) : (

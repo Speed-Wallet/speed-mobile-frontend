@@ -1,5 +1,11 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+} from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
 import { Copy } from 'lucide-react-native';
@@ -8,13 +14,16 @@ import Avatar from '@/components/Avatar';
 import TokenList from '@/components/TokenList';
 import { EnrichedTokenEntry } from '@/data/types';
 import BalanceCard from '@/components/BalanceCard';
-import { useWalletPublicKey, getAllStoredWallets, getActiveWalletId } from '@/services/walletService';
+import {
+  useWalletPublicKey,
+  getAllStoredWallets,
+  getActiveWalletId,
+} from '@/services/walletService';
 import { setStringAsync } from 'expo-clipboard';
 import ScreenContainer from '@/components/ScreenContainer';
 import TabSelector from '@/components/TabSelector';
 import { AuthService } from '@/services/authService';
 // import CryptoTest from '@/components/CryptoTest';
-
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -37,7 +46,7 @@ export default function HomeScreen() {
   useFocusEffect(
     useCallback(() => {
       loadUserData();
-    }, [])
+    }, []),
   );
 
   const loadUserData = async () => {
@@ -46,13 +55,15 @@ export default function HomeScreen() {
       if (storedUsername) {
         setUsername(storedUsername);
       }
-      
+
       // Load active wallet name from wallet service
       const storedWallets = await getAllStoredWallets();
       const activeWalletId = await getActiveWalletId();
-      
+
       if (activeWalletId && storedWallets.length > 0) {
-        const activeWallet = storedWallets.find(wallet => wallet.id === activeWalletId);
+        const activeWallet = storedWallets.find(
+          (wallet) => wallet.id === activeWalletId,
+        );
         if (activeWallet) {
           setWalletName(activeWallet.name);
         }
@@ -68,8 +79,8 @@ export default function HomeScreen() {
 
   const handleBalanceCardAction = (actionType: string) => {
     // actionType will be "send", "receive", "cards", "trade", "buy"
-    if (actionType === "cards") {
-      router.push("/transaction/cards");
+    if (actionType === 'cards') {
+      router.push('/transaction/cards');
     } else {
       router.push(`/transaction/${actionType}` as any);
     }
@@ -83,7 +94,7 @@ export default function HomeScreen() {
       >
         {/* Crypto Test - Remove this after testing */}
         {/* <CryptoTest /> */}
-        
+
         {/* Header section */}
         <View style={styles.header}>
           <View style={styles.userSection}>
@@ -93,7 +104,10 @@ export default function HomeScreen() {
               <Text style={styles.walletNameText}>@{username}</Text>
             </View>
           </View>
-          <TouchableOpacity onPress={handleCopyAddress} style={styles.copyButton}>
+          <TouchableOpacity
+            onPress={handleCopyAddress}
+            style={styles.copyButton}
+          >
             <Copy size={20} color={colors.textPrimary} />
           </TouchableOpacity>
         </View>
@@ -101,27 +115,28 @@ export default function HomeScreen() {
         {/* Balance card */}
         <BalanceCard
           onActionPress={handleBalanceCardAction}
-        // currencySymbol="$" // Optional: if you want to override default
+          // currencySymbol="$" // Optional: if you want to override default
         />
 
         {/* Tab selector */}
-        <TabSelector
-          activeTab={activeTab}
-          onTabPress={setActiveTab}
-        />
+        <TabSelector activeTab={activeTab} onTabPress={setActiveTab} />
 
         {/* Content based on active tab */}
         {activeTab === 'tokens' && (
           <View style={styles.assetsSection}>
             <TokenList
-              onSelectToken={(token: EnrichedTokenEntry) => router.push(`/token/${token.address}`)}
+              onSelectToken={(token: EnrichedTokenEntry) =>
+                router.push(`/token/${token.address}`)
+              }
             />
           </View>
         )}
 
         {activeTab === 'activity' && (
           <View style={styles.activitySection}>
-            <Text style={styles.placeholderText}>Activity content coming soon...</Text>
+            <Text style={styles.placeholderText}>
+              Activity content coming soon...
+            </Text>
           </View>
         )}
       </ScrollView>

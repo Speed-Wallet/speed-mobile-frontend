@@ -5,7 +5,7 @@ const UserData = {
   username: 'tristanroberts',
   email: 'tristan@example.com',
   totalBalance: 45684.86,
-  walletAddress: 'AcTPq8AvN7TQWLxF1a9JPQfG9yrUBxpJTcY39Ki8ZrQL'
+  walletAddress: 'AcTPq8AvN7TQWLxF1a9JPQfG9yrUBxpJTcY39Ki8ZrQL',
 };
 
 export default UserData;

@@ -20,33 +20,39 @@ export const timeframeConfigs: Record<string, TimeframeConfig> = {
   '1D': {
     days: 1,
     label: '24H',
-    formatLabel: (date: Date) => date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+    formatLabel: (date: Date) =>
+      date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
   },
   '1W': {
     days: 7,
     label: '7D',
-    formatLabel: (date: Date) => date.toLocaleDateString('en-US', { weekday: 'short' })
+    formatLabel: (date: Date) =>
+      date.toLocaleDateString('en-US', { weekday: 'short' }),
   },
   '1M': {
     days: 30,
     label: '1M',
-    formatLabel: (date: Date) => date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    formatLabel: (date: Date) =>
+      date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
   },
   '3M': {
     days: 90,
     label: '3M',
-    formatLabel: (date: Date) => date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    formatLabel: (date: Date) =>
+      date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
   },
   '1Y': {
     days: 365,
     label: '1Y',
-    formatLabel: (date: Date) => date.toLocaleDateString('en-US', { month: 'short' })
+    formatLabel: (date: Date) =>
+      date.toLocaleDateString('en-US', { month: 'short' }),
   },
-  'ALL': {
+  ALL: {
     days: 2000, // Max supported by CoinGecko
     label: 'MAX',
-    formatLabel: (date: Date) => date.toLocaleDateString('en-US', { year: 'numeric' })
-  }
+    formatLabel: (date: Date) =>
+      date.toLocaleDateString('en-US', { year: 'numeric' }),
+  },
 };
 
 /**
@@ -54,41 +60,48 @@ export const timeframeConfigs: Record<string, TimeframeConfig> = {
  */
 export function formatHistoricalDataForChart(
   historicalResponse: HistoricalPricesResponse,
-  timeframe: string
+  timeframe: string,
 ): FormattedChartData {
-  if (!historicalResponse.success || !historicalResponse.data?.historicalData?.prices) {
+  if (
+    !historicalResponse.success ||
+    !historicalResponse.data?.historicalData?.prices
+  ) {
     return {
       labels: [],
-      datasets: [{
-        data: [],
-        color: (opacity = 1) => `rgba(99, 102, 241, ${opacity})`,
-        strokeWidth: 2,
-      }]
+      datasets: [
+        {
+          data: [],
+          color: (opacity = 1) => `rgba(99, 102, 241, ${opacity})`,
+          strokeWidth: 2,
+        },
+      ],
     };
   }
 
   const { prices } = historicalResponse.data.historicalData;
   const config = timeframeConfigs[timeframe];
-  
+
   // For charts, we want to show a reasonable number of data points
   const maxDataPoints = 20;
   const dataPoints = prices.length;
   const step = Math.max(1, Math.floor(dataPoints / maxDataPoints));
-  
+
   const formattedData: FormattedChartData = {
     labels: [],
-    datasets: [{
-      data: [],
-      color: (opacity = 1) => `rgba(99, 102, 241, ${opacity})`,
-      strokeWidth: 2,
-    }]
+    datasets: [
+      {
+        data: [],
+        color: (opacity = 1) => `rgba(99, 102, 241, ${opacity})`,
+        strokeWidth: 2,
+      },
+    ],
   };
 
   // Sample data points evenly
   for (let i = 0; i < dataPoints; i += step) {
     const [timestamp, price] = prices[i];
     const date = new Date(timestamp);
-    
+
     formattedData.labels.push(config.formatLabel(date));
     formattedData.datasets[0].data.push(price);
   }
@@ -101,21 +114,24 @@ export function formatHistoricalDataForChart(
  */
 export function calculatePriceChange(
   historicalResponse: HistoricalPricesResponse,
-  timeframe: string
+  timeframe: string,
 ): { change: number; changePercentage: number } {
-  if (!historicalResponse.success || !historicalResponse.data?.historicalData?.prices) {
+  if (
+    !historicalResponse.success ||
+    !historicalResponse.data?.historicalData?.prices
+  ) {
     return { change: 0, changePercentage: 0 };
   }
 
   const { prices } = historicalResponse.data.historicalData;
-  
+
   if (prices.length < 2) {
     return { change: 0, changePercentage: 0 };
   }
 
   const currentPrice = prices[prices.length - 1][1];
   const startPrice = prices[0][1];
-  
+
   const change = currentPrice - startPrice;
   const changePercentage = (change / startPrice) * 100;
 

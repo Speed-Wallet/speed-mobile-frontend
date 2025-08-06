@@ -1,5 +1,12 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Modal,
+  ScrollView,
+} from 'react-native';
 import { X } from 'lucide-react-native';
 import Animated, { FadeIn, SlideInUp } from 'react-native-reanimated';
 import colors from '@/constants/colors';
@@ -11,11 +18,11 @@ type BuyMethodSelectorProps = {
   onClose: () => void;
 };
 
-const BuyMethodSelector = ({ 
-  methods, 
-  selectedMethod, 
-  onSelectMethod, 
-  onClose 
+const BuyMethodSelector = ({
+  methods,
+  selectedMethod,
+  onSelectMethod,
+  onClose,
 }: BuyMethodSelectorProps) => {
   return (
     <Modal
@@ -25,8 +32,8 @@ const BuyMethodSelector = ({
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
-        <Animated.View 
-          entering={SlideInUp.duration(300)} 
+        <Animated.View
+          entering={SlideInUp.duration(300)}
           style={styles.modalContainer}
         >
           <View style={styles.header}>
@@ -35,20 +42,18 @@ const BuyMethodSelector = ({
               <X size={24} color={colors.textPrimary} />
             </TouchableOpacity>
           </View>
-          
+
           <ScrollView contentContainerStyle={styles.content}>
             {methods.map((method) => (
-              <TouchableOpacity 
+              <TouchableOpacity
                 key={method.id}
                 style={[
                   styles.methodItem,
-                  selectedMethod?.id === method.id && styles.selectedMethodItem
+                  selectedMethod?.id === method.id && styles.selectedMethodItem,
                 ]}
                 onPress={() => onSelectMethod(method)}
               >
-                <View style={styles.methodIconContainer}>
-                  {method.icon}
-                </View>
+                <View style={styles.methodIconContainer}>{method.icon}</View>
                 <View style={styles.methodInfo}>
                   <Text style={styles.methodName}>{method.name}</Text>
                   <Text style={styles.methodDetails}>

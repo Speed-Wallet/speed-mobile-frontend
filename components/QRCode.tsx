@@ -10,25 +10,29 @@ type QRCodeProps = {
   logoUrl?: string;
 };
 
-const QRCode = ({ 
-  value, 
-  size, 
-  color = '#000000', 
+const QRCode = ({
+  value,
+  size,
+  color = '#000000',
   backgroundColor = '#FFFFFF',
-  logoUrl
+  logoUrl,
 }: QRCodeProps) => {
   // This is a simplified mockup of a QR code
   // In a real app, this would use a proper QR code generator library
-  
+
   const moduleCount = 25; // Number of modules (rows/columns) in the QR code
   const moduleSize = size / moduleCount;
   const logoSize = size * 0.2;
-  
+
   // Mock QR code pattern - this would be generated from the value in a real app
-  const modules = Array(moduleCount).fill(0).map(() => 
-    Array(moduleCount).fill(0).map(() => Math.random() > 0.7)
-  );
-  
+  const modules = Array(moduleCount)
+    .fill(0)
+    .map(() =>
+      Array(moduleCount)
+        .fill(0)
+        .map(() => Math.random() > 0.7),
+    );
+
   // Add finder patterns (the three square patterns in corners)
   const addFinderPattern = (row: number, col: number) => {
     for (let r = 0; r < 7; r++) {
@@ -48,17 +52,17 @@ const QRCode = ({
       }
     }
   };
-  
+
   // Add finder patterns
   addFinderPattern(0, 0); // Top-left
   addFinderPattern(0, moduleCount - 7); // Top-right
   addFinderPattern(moduleCount - 7, 0); // Bottom-left
-  
+
   // Clear center for logo
   if (logoUrl) {
     const logoModules = Math.ceil(logoSize / moduleSize);
     const startIndex = Math.floor((moduleCount - logoModules) / 2);
-    
+
     for (let r = 0; r < logoModules; r++) {
       for (let c = 0; c < logoModules; c++) {
         if (startIndex + r < moduleCount && startIndex + c < moduleCount) {
@@ -67,12 +71,14 @@ const QRCode = ({
       }
     }
   }
-  
+
   return (
-    <View style={[styles.container, { width: size, height: size, backgroundColor }]}>
+    <View
+      style={[styles.container, { width: size, height: size, backgroundColor }]}
+    >
       <Svg width={size} height={size}>
-        {modules.map((row, rowIndex) => 
-          row.map((isActive, colIndex) => 
+        {modules.map((row, rowIndex) =>
+          row.map((isActive, colIndex) =>
             isActive ? (
               <Rect
                 key={`${rowIndex}-${colIndex}`}
@@ -82,21 +88,21 @@ const QRCode = ({
                 height={moduleSize}
                 fill={color}
               />
-            ) : null
-          )
+            ) : null,
+          ),
         )}
       </Svg>
-      
+
       {logoUrl && (
         <Image
           source={{ uri: logoUrl }}
           style={[
-            styles.logo, 
-            { 
-              width: logoSize, 
+            styles.logo,
+            {
+              width: logoSize,
               height: logoSize,
-              borderRadius: logoSize / 2 
-            }
+              borderRadius: logoSize / 2,
+            },
           ]}
         />
       )}
@@ -114,7 +120,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     backgroundColor: '#FFFFFF',
     padding: 2,
-  }
+  },
 });
 
 export default QRCode;

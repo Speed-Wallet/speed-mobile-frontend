@@ -15,7 +15,13 @@ import {
 import * as Clipboard from 'expo-clipboard';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import { ArrowLeft, Plus, CreditCard, DollarSign, X } from 'lucide-react-native';
+import {
+  ArrowLeft,
+  Plus,
+  CreditCard,
+  DollarSign,
+  X,
+} from 'lucide-react-native';
 import { router } from 'expo-router';
 import ScreenContainer from '@/components/ScreenContainer';
 import ScreenHeader from '@/components/ScreenHeader';
@@ -25,7 +31,15 @@ import { sendUsdtToCashwyre } from '@/utils/sendTransaction';
 import { mockSendUsdtToCashwyre } from '@/utils/mockTransaction';
 import { setupNotificationListeners } from '@/services/notificationService';
 import { getCurrentVerificationLevel } from '@/utils/verification';
-import { simulateUSDTReceived, getWalletAddress, simulateCardCreated, simulateCardCreationFailed, getCards, convertApiCardToPaymentCard, getPendingTransactions } from '@/services/apis';
+import {
+  simulateUSDTReceived,
+  getWalletAddress,
+  simulateCardCreated,
+  simulateCardCreationFailed,
+  getCards,
+  convertApiCardToPaymentCard,
+  getPendingTransactions,
+} from '@/services/apis';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
 import { LoadingCard } from '@/components/cards/LoadingCard';
 import { SuccessCard } from '@/components/cards/SuccessCard';
@@ -34,16 +48,18 @@ import { triggerShake } from '@/utils/animations';
 import * as Notifications from 'expo-notifications';
 import { useCards } from '@/hooks/useCards';
 import { useQueryClient } from '@tanstack/react-query';
-import { 
-  updateCardCreationStep, 
-  handleUSDTReceived, 
+import {
+  updateCardCreationStep,
+  handleUSDTReceived,
   handleKYCVerificationComplete,
   simulateKYCVerification,
-  getAllCreationSteps 
+  getAllCreationSteps,
 } from '@/services/cardCreationSteps';
 
 // Constants
-const CASHWYRE_BASE_FEE = parseFloat(process.env.EXPO_PUBLIC_CASHWYRE_BASE_FEE!)
+const CASHWYRE_BASE_FEE = parseFloat(
+  process.env.EXPO_PUBLIC_CASHWYRE_BASE_FEE!,
+);
 const MIN_KYC_LEVEL = 1; // Minimum KYC level required for virtual cards
 
 // Configure notification handler
@@ -57,11 +73,15 @@ Notifications.setNotificationHandler({
 
 export default function CardsScreen() {
   const [showAddCard, setShowAddCard] = useState(false);
-  const [selectedBrand, setSelectedBrand] = useState<'mastercard' | 'visa'>('visa');
+  const [selectedBrand, setSelectedBrand] = useState<'mastercard' | 'visa'>(
+    'visa',
+  );
   const [cardBalance, setCardBalance] = useState('');
   const [cardName, setCardName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [visibleCards, setVisibleCards] = useState<{ [key: string]: boolean }>({});
+  const [visibleCards, setVisibleCards] = useState<{ [key: string]: boolean }>(
+    {},
+  );
   const [showValidationError, setShowValidationError] = useState(false);
   const [showNameValidationError, setShowNameValidationError] = useState(false);
   const [showDevButtons, setShowDevButtons] = useState(true);
@@ -71,7 +91,11 @@ export default function CardsScreen() {
   const queryClient = useQueryClient();
 
   // Use TanStack Query for cards data
-  const { data: cards = [], isLoading: isLoadingCards, refetch: refetchCards } = useCards(userEmail);
+  const {
+    data: cards = [],
+    isLoading: isLoadingCards,
+    refetch: refetchCards,
+  } = useCards(userEmail);
 
   // Animation refs for shake effects
   const createButtonShakeAnim = useRef(new Animated.Value(0)).current;
@@ -81,7 +105,7 @@ export default function CardsScreen() {
   useFocusEffect(
     React.useCallback(() => {
       let mounted = true;
-      
+
       // Load user email when screen comes into focus
       const loadUserEmail = async () => {
         try {
@@ -110,7 +134,7 @@ export default function CardsScreen() {
         mounted = false;
         cleanupNotifications();
       };
-    }, [refetchCards])
+    }, [refetchCards]),
   );
 
   const checkKYCLevel = async (minLevel: 1 | 2 | 3) => {
@@ -121,14 +145,14 @@ export default function CardsScreen() {
   const handleAddCardPress = async () => {
     // Show modal immediately for better UX
     setShowAddCard(true);
-    
+
     // Check KYC in the background
     const isKYCCompliant = await checkKYCLevel(MIN_KYC_LEVEL);
 
     if (!isKYCCompliant) {
       // Close the modal first
       setShowAddCard(false);
-      
+
       // Then show the KYC alert
       Alert.alert(
         'KYC Verification Required',
@@ -144,13 +168,16 @@ export default function CardsScreen() {
               router.push('/settings/kyc');
             },
           },
-        ]
+        ],
       );
       return;
     }
   };
 
-  const simulateCardFailureFlow = async (userEmail: string, cardBalance: string) => {
+  const simulateCardFailureFlow = async (
+    userEmail: string,
+    cardBalance: string,
+  ) => {
     try {
       const walletResponse = await getWalletAddress();
 
@@ -163,7 +190,6 @@ export default function CardsScreen() {
           setTimeout(async () => {
             await simulateCardCreationFailed(userEmail);
           }, 1000);
-
         }, 2000);
       }
     } catch (error) {
@@ -171,7 +197,10 @@ export default function CardsScreen() {
     }
   };
 
-  const simulateCardSuccessFlow = async (userEmail: string, cardBalance: string) => {
+  const simulateCardSuccessFlow = async (
+    userEmail: string,
+    cardBalance: string,
+  ) => {
     try {
       const walletResponse = await getWalletAddress();
 
@@ -192,7 +221,9 @@ export default function CardsScreen() {
     }
   };
 
-  const handleAddCard = async (simulationType?: 'simulate_usdt_failed' | 'simulate_card_failed') => {
+  const handleAddCard = async (
+    simulationType?: 'simulate_usdt_failed' | 'simulate_card_failed',
+  ) => {
     const balance = parseFloat(cardBalance);
 
     if (!cardName.trim()) {
@@ -223,7 +254,9 @@ export default function CardsScreen() {
       // Load personal info for card creation
       const personalInfo = await StorageService.loadPersonalInfo();
       if (!personalInfo) {
-        throw new Error('Personal information not found. Please complete KYC verification first.');
+        throw new Error(
+          'Personal information not found. Please complete KYC verification first.',
+        );
       }
 
       // Split the name into first and last name
@@ -242,53 +275,66 @@ export default function CardsScreen() {
         homeAddressNumber: personalInfo.streetNumber,
         homeAddress: personalInfo.address,
         cardName: cardName.trim(),
-        cardBrand: selectedBrand.charAt(0).toUpperCase() + selectedBrand.slice(1).toLowerCase(),
+        cardBrand:
+          selectedBrand.charAt(0).toUpperCase() +
+          selectedBrand.slice(1).toLowerCase(),
       };
 
       // Send USDT to Cashwyre and register for auto card creation first
-      const sendResult = process.env.EXPO_PUBLIC_APP_ENV === 'development'
-        ? await mockSendUsdtToCashwyre({ amount: cardBalance, cardData, simulationType })
-        : await sendUsdtToCashwyre(cardBalance, cardData);
+      const sendResult =
+        process.env.EXPO_PUBLIC_APP_ENV === 'development'
+          ? await mockSendUsdtToCashwyre({
+              amount: cardBalance,
+              cardData,
+              simulationType,
+            })
+          : await sendUsdtToCashwyre(cardBalance, cardData);
 
       if (!sendResult.success) {
         // USDT transaction failed - show specific error based on failure type
         setIsLoading(false);
-        
+
         let errorTitle = '💸 Transaction Failed';
         let errorMessage = `Failed to send USDT: ${sendResult.error}`;
-        
+
         // Provide more specific error messages based on the failure type
         if (sendResult.errorType === 'TRANSACTION_SUBMISSION_FAILED') {
           errorTitle = '💸 Transaction Submission Failed';
           errorMessage = `Failed to submit transaction to blockchain. Please try again: ${sendResult.error}`;
         } else if (sendResult.errorType === 'REGISTRATION_FAILED') {
-          console.log(sendResult)
+          console.log(sendResult);
           errorTitle = '⚠️ Transaction Sent, Registration Failed';
           errorMessage = `USDT transaction was sent successfully, but failed to register for card creation. Please contact support. Transaction signature: ${sendResult.signature}}`;
         }
-        
+
         Alert.alert(errorTitle, errorMessage);
         return;
       }
 
       // Check if there was a registration warning (transaction succeeded but registration failed)
-      if (sendResult.warning && sendResult.errorType === 'REGISTRATION_FAILED') {
+      if (
+        sendResult.warning &&
+        sendResult.errorType === 'REGISTRATION_FAILED'
+      ) {
         setIsLoading(false);
         Alert.alert(
-          '⚠️ Partial Success', 
+          '⚠️ Partial Success',
           `Transaction sent successfully but card registration failed. Please contact support with this transaction signature: ${sendResult.signature}`,
           [
-            { 
-              text: 'Copy Signature', 
+            {
+              text: 'Copy Signature',
               onPress: async () => {
                 if (sendResult.signature) {
                   await Clipboard.setStringAsync(sendResult.signature);
-                  Alert.alert('Copied', 'Transaction signature copied to clipboard');
+                  Alert.alert(
+                    'Copied',
+                    'Transaction signature copied to clipboard',
+                  );
                 }
-              }
+              },
             },
-            { text: 'OK', style: 'default' }
-          ]
+            { text: 'OK', style: 'default' },
+          ],
         );
         return;
       }
@@ -302,14 +348,19 @@ export default function CardsScreen() {
       setIsLoading(false);
 
       // Refresh cards from API to show any new cards
-      queryClient.invalidateQueries({ queryKey: ['cards', personalInfo.email] });
+      queryClient.invalidateQueries({
+        queryKey: ['cards', personalInfo.email],
+      });
       await refetchCards();
 
       // Capture personal info for dev mode simulation
       const userEmail = personalInfo.email;
 
       // Handle different simulation types in development mode
-      if (process.env.EXPO_PUBLIC_APP_ENV === 'development' && simulationType === 'simulate_card_failed') {
+      if (
+        process.env.EXPO_PUBLIC_APP_ENV === 'development' &&
+        simulationType === 'simulate_card_failed'
+      ) {
         await simulateCardFailureFlow(userEmail, cardBalance);
         return;
       }
@@ -320,21 +371,29 @@ export default function CardsScreen() {
       }
     } catch (error) {
       setIsLoading(false);
-      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to create card. Please try again.');
+      Alert.alert(
+        'Error',
+        error instanceof Error
+          ? error.message
+          : 'Failed to create card. Please try again.',
+      );
     }
   };
 
   const toggleCardVisibility = (cardId: string) => {
-    setVisibleCards(prev => ({
+    setVisibleCards((prev) => ({
       ...prev,
-      [cardId]: !prev[cardId]
+      [cardId]: !prev[cardId],
     }));
   };
 
   const handleDeleteCard = async (cardId: string) => {
     // In development mode, allow deletion for demo purposes
     if (process.env.EXPO_PUBLIC_APP_ENV === 'development') {
-      Alert.alert('Info', 'Card deleted in dev mode. Data will refresh automatically.');
+      Alert.alert(
+        'Info',
+        'Card deleted in dev mode. Data will refresh automatically.',
+      );
       // Trigger a refetch to update the UI
       refetchCards();
     } else {
@@ -352,7 +411,14 @@ export default function CardsScreen() {
 
   // Handler functions for button interactions with shake animation
   const handleCreateCardAttempt = () => {
-    const isDisabled = !cardName.trim() || cardName.trim().length < 4 || !cardBalance || parseFloat(cardBalance) <= 0 || isLoading || showValidationError || showNameValidationError;
+    const isDisabled =
+      !cardName.trim() ||
+      cardName.trim().length < 4 ||
+      !cardBalance ||
+      parseFloat(cardBalance) <= 0 ||
+      isLoading ||
+      showValidationError ||
+      showNameValidationError;
     if (isDisabled) {
       triggerShake(createButtonShakeAnim);
     } else {
@@ -361,7 +427,14 @@ export default function CardsScreen() {
   };
 
   const handleDevButton1Attempt = () => {
-    const isDisabled = !cardName.trim() || cardName.trim().length < 4 || !cardBalance || parseFloat(cardBalance) <= 0 || isLoading || showValidationError || showNameValidationError;
+    const isDisabled =
+      !cardName.trim() ||
+      cardName.trim().length < 4 ||
+      !cardBalance ||
+      parseFloat(cardBalance) <= 0 ||
+      isLoading ||
+      showValidationError ||
+      showNameValidationError;
     if (isDisabled) {
       triggerShake(devButton1ShakeAnim);
     } else {
@@ -370,7 +443,14 @@ export default function CardsScreen() {
   };
 
   const handleDevButton2Attempt = () => {
-    const isDisabled = !cardName.trim() || cardName.trim().length < 4 || !cardBalance || parseFloat(cardBalance) <= 0 || isLoading || showValidationError || showNameValidationError;
+    const isDisabled =
+      !cardName.trim() ||
+      cardName.trim().length < 4 ||
+      !cardBalance ||
+      parseFloat(cardBalance) <= 0 ||
+      isLoading ||
+      showValidationError ||
+      showNameValidationError;
     if (isDisabled) {
       triggerShake(devButton2ShakeAnim);
     } else {
@@ -395,7 +475,14 @@ export default function CardsScreen() {
   const advanceCreationStep = (cardId: string) => {
     const currentStep = getAllCreationSteps()[cardId] || 1;
     const nextStep = Math.min(currentStep + 1, 3);
-    console.log('🧪 [DEV] Advancing creation step from', currentStep, 'to', nextStep, 'for card:', cardId);
+    console.log(
+      '🧪 [DEV] Advancing creation step from',
+      currentStep,
+      'to',
+      nextStep,
+      'for card:',
+      cardId,
+    );
     updateCardCreationStep(cardId, nextStep);
     refetchCards();
   };
@@ -411,8 +498,13 @@ export default function CardsScreen() {
     const isDevelopment = process.env.EXPO_PUBLIC_APP_ENV === 'development';
 
     // Determine card state based on status
-    const isLoading = card.isLoading || card.status === 'new' || card.status === 'pending';
-    const isFailed = card.isFailed || card.status === 'inactive' || card.status === 'failed' || card.status === 'terminated';
+    const isLoading =
+      card.isLoading || card.status === 'new' || card.status === 'pending';
+    const isFailed =
+      card.isFailed ||
+      card.status === 'inactive' ||
+      card.status === 'failed' ||
+      card.status === 'terminated';
 
     // Failed state
     if (isFailed) {
@@ -422,10 +514,15 @@ export default function CardsScreen() {
           card={{
             ...card,
             isFailed: true,
-            failureReason: card.failureReason || 
-                          (card.status === 'inactive' ? 'Card is inactive' :
-                           card.status === 'failed' ? 'Card creation failed' :
-                           card.status === 'terminated' ? 'Card has been terminated' : 'Unknown error')
+            failureReason:
+              card.failureReason ||
+              (card.status === 'inactive'
+                ? 'Card is inactive'
+                : card.status === 'failed'
+                  ? 'Card creation failed'
+                  : card.status === 'terminated'
+                    ? 'Card has been terminated'
+                    : 'Unknown error'),
           }}
           onDeleteCard={handleDeleteCard}
           getBrandLogo={getBrandLogo}
@@ -466,12 +563,16 @@ export default function CardsScreen() {
 
   return (
     <ScreenContainer edges={['top', 'bottom']}>
-      <ScreenHeader 
+      <ScreenHeader
         title="Virtual Cards"
         onBack={() => router.push('/' as any)}
       />
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        style={styles.content}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
         {/* Existing Cards */}
         <View style={styles.cardsContainer}>
           {isLoadingCards ? (
@@ -483,7 +584,9 @@ export default function CardsScreen() {
             <View style={styles.emptyContainer}>
               <CreditCard size={48} color="#6b7280" />
               <Text style={styles.emptyTitle}>No Cards Yet</Text>
-              <Text style={styles.emptyText}>Create your first virtual card to get started</Text>
+              <Text style={styles.emptyText}>
+                Create your first virtual card to get started
+              </Text>
             </View>
           ) : (
             cards.map(renderPaymentCard)
@@ -528,7 +631,11 @@ export default function CardsScreen() {
             </TouchableOpacity>
           </View>
 
-          <ScrollView style={styles.content} showsVerticalScrollIndicator={false} contentContainerStyle={styles.modalScrollContent}>
+          <ScrollView
+            style={styles.content}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.modalScrollContent}
+          >
             {/* Card Brand Selection */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Card Brand</Text>
@@ -537,22 +644,33 @@ export default function CardsScreen() {
                   style={[
                     styles.brandOption,
                     styles.brandOptionDisabled,
-                    selectedBrand === 'mastercard' && styles.brandOptionSelected
+                    selectedBrand === 'mastercard' &&
+                      styles.brandOptionSelected,
                   ]}
                   disabled={true}
                 >
                   <Image
                     source={getBrandLogo('mastercard')}
-                    style={[styles.brandOptionLogo, styles.brandOptionLogoDisabled]}
+                    style={[
+                      styles.brandOptionLogo,
+                      styles.brandOptionLogoDisabled,
+                    ]}
                     resizeMode="contain"
                   />
-                  <Text style={[styles.brandOptionText, styles.brandOptionTextDisabled]}>Mastercard</Text>
+                  <Text
+                    style={[
+                      styles.brandOptionText,
+                      styles.brandOptionTextDisabled,
+                    ]}
+                  >
+                    Mastercard
+                  </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   style={[
                     styles.brandOption,
-                    selectedBrand === 'visa' && styles.brandOptionSelected
+                    selectedBrand === 'visa' && styles.brandOptionSelected,
                   ]}
                   onPress={() => setSelectedBrand('visa')}
                 >
@@ -570,7 +688,11 @@ export default function CardsScreen() {
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Card Name</Text>
               <View style={styles.inputWrapper}>
-                <CreditCard size={20} color="#9ca3af" style={styles.inputIcon} />
+                <CreditCard
+                  size={20}
+                  color="#9ca3af"
+                  style={styles.inputIcon}
+                />
                 <TextInput
                   style={styles.balanceInput}
                   placeholder="Enter card name (e.g., Personal Card)"
@@ -579,27 +701,34 @@ export default function CardsScreen() {
                   onChangeText={(text) => {
                     // Only allow English letters (a-z, A-Z) and spaces
                     const letterRegex = /^[a-zA-Z\s]*$/;
-                    
+
                     // Remove any non-letter characters except spaces
                     const cleanedText = text.replace(/[^a-zA-Z\s]/g, '');
-                    
+
                     // Remove extra consecutive spaces and trim leading spaces
-                    const normalizedText = cleanedText.replace(/\s+/g, ' ').replace(/^\s+/, '');
-                    
+                    const normalizedText = cleanedText
+                      .replace(/\s+/g, ' ')
+                      .replace(/^\s+/, '');
+
                     // Only update if the text matches our letter pattern
                     if (letterRegex.test(normalizedText)) {
                       setCardName(normalizedText);
                       // Check minimum length validation
-                      setShowNameValidationError(normalizedText.length > 0 && normalizedText.length < 4);
+                      setShowNameValidationError(
+                        normalizedText.length > 0 && normalizedText.length < 4,
+                      );
                     }
                   }}
                 />
               </View>
-              <Text style={[
-                styles.inputHint,
-                showNameValidationError && styles.inputHintError
-              ]}>
-                {showNameValidationError ? '*' : ''}Minimum 4 characters, letters only{showNameValidationError ? ' *' : ''}
+              <Text
+                style={[
+                  styles.inputHint,
+                  showNameValidationError && styles.inputHintError,
+                ]}
+              >
+                {showNameValidationError ? '*' : ''}Minimum 4 characters,
+                letters only{showNameValidationError ? ' *' : ''}
               </Text>
             </View>
 
@@ -607,7 +736,11 @@ export default function CardsScreen() {
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Initial Balance</Text>
               <View style={styles.inputWrapper}>
-                <DollarSign size={20} color="#9ca3af" style={styles.inputIcon} />
+                <DollarSign
+                  size={20}
+                  color="#9ca3af"
+                  style={styles.inputIcon}
+                />
                 <TextInput
                   style={styles.balanceInput}
                   placeholder="Enter amount (e.g., 500.00)"
@@ -616,21 +749,21 @@ export default function CardsScreen() {
                   onChangeText={(text) => {
                     // Only allow numbers and one decimal point
                     const numericRegex = /^(\d*\.?\d{0,2})$/;
-                    
+
                     // Remove any non-numeric characters except decimal point
                     const cleanedText = text.replace(/[^0-9.]/g, '');
-                    
+
                     // Ensure only one decimal point and max 2 decimal places
                     const parts = cleanedText.split('.');
                     let validText = parts[0];
                     if (parts.length > 1) {
                       validText += '.' + parts[1].substring(0, 2);
                     }
-                    
+
                     // Only update if the text matches our numeric pattern
                     if (numericRegex.test(validText)) {
                       setCardBalance(validText);
-                      
+
                       // Validate the numeric value
                       const balance = parseFloat(validText);
                       if (validText && !isNaN(balance) && balance > 0) {
@@ -643,11 +776,14 @@ export default function CardsScreen() {
                   keyboardType="decimal-pad"
                 />
               </View>
-              <Text style={[
-                styles.inputHint,
-                showValidationError && styles.inputHintError
-              ]}>
-                {showValidationError ? '*' : ''}Min: $5.00 • Max: $2,500.00{showValidationError ? ' *' : ''}
+              <Text
+                style={[
+                  styles.inputHint,
+                  showValidationError && styles.inputHintError,
+                ]}
+              >
+                {showValidationError ? '*' : ''}Min: $5.00 • Max: $2,500.00
+                {showValidationError ? ' *' : ''}
               </Text>
             </View>
 
@@ -658,27 +794,34 @@ export default function CardsScreen() {
                 <View style={styles.feeRow}>
                   <Text style={styles.feeLabel}>Initial Balance</Text>
                   <Text style={styles.feeValue}>
-                    {cardBalance ? formatBalance(parseFloat(cardBalance)) : '$0.00'}
+                    {cardBalance
+                      ? formatBalance(parseFloat(cardBalance))
+                      : '$0.00'}
                   </Text>
                 </View>
                 <View style={styles.feeRow}>
                   <Text style={styles.feeLabel}>Base Fee</Text>
-                  <Text style={styles.feeValue}>{formatBalance(CASHWYRE_BASE_FEE)}</Text>
+                  <Text style={styles.feeValue}>
+                    {formatBalance(CASHWYRE_BASE_FEE)}
+                  </Text>
                 </View>
                 <View style={styles.feeRow}>
                   <Text style={styles.feeLabel}>Processing Fee (1%)</Text>
                   <Text style={styles.feeValue}>
-                    {cardBalance ? formatBalance(parseFloat(cardBalance) * 0.01) : '$0.00'}
+                    {cardBalance
+                      ? formatBalance(parseFloat(cardBalance) * 0.01)
+                      : '$0.00'}
                   </Text>
                 </View>
                 <View style={styles.feeDivider} />
                 <View style={styles.feeRow}>
                   <Text style={styles.feeLabelTotal}>Total Fee</Text>
                   <Text style={styles.feeValueTotal}>
-                    {cardBalance 
-                      ? formatBalance(CASHWYRE_BASE_FEE + (parseFloat(cardBalance) * 0.01))
-                      : formatBalance(CASHWYRE_BASE_FEE)
-                    }
+                    {cardBalance
+                      ? formatBalance(
+                          CASHWYRE_BASE_FEE + parseFloat(cardBalance) * 0.01,
+                        )
+                      : formatBalance(CASHWYRE_BASE_FEE)}
                   </Text>
                 </View>
               </View>
@@ -689,10 +832,13 @@ export default function CardsScreen() {
               <View style={styles.totalToPayCard}>
                 <Text style={styles.totalToPayLabel}>Total to Pay</Text>
                 <Text style={styles.totalToPayValue}>
-                  {cardBalance 
-                    ? formatBalance(parseFloat(cardBalance) + CASHWYRE_BASE_FEE + (parseFloat(cardBalance) * 0.01))
-                    : formatBalance(CASHWYRE_BASE_FEE)
-                  }
+                  {cardBalance
+                    ? formatBalance(
+                        parseFloat(cardBalance) +
+                          CASHWYRE_BASE_FEE +
+                          parseFloat(cardBalance) * 0.01,
+                      )
+                    : formatBalance(CASHWYRE_BASE_FEE)}
                 </Text>
               </View>
             </View>
@@ -752,57 +898,111 @@ export default function CardsScreen() {
           {/* Sticky Button Container */}
           <View style={styles.modalStickyButtonContainer}>
             {/* Development Mode: Toggle and Simulation Buttons */}
-            {process.env.EXPO_PUBLIC_APP_ENV === 'development' && showDevButtons && (
-              <View style={styles.devSection}>
-                <TouchableOpacity
-                  style={styles.devToggleButton}
-                  onPress={() => setShowDevButtons(false)}
-                >
-                  <Text style={styles.devToggleButtonText}>
-                    Hide Dev Buttons
-                  </Text>
-                </TouchableOpacity>
+            {process.env.EXPO_PUBLIC_APP_ENV === 'development' &&
+              showDevButtons && (
+                <View style={styles.devSection}>
+                  <TouchableOpacity
+                    style={styles.devToggleButton}
+                    onPress={() => setShowDevButtons(false)}
+                  >
+                    <Text style={styles.devToggleButtonText}>
+                      Hide Dev Buttons
+                    </Text>
+                  </TouchableOpacity>
 
-                <View style={styles.devButtonsContainer}>
-                  <Animated.View style={{ transform: [{ translateX: devButton1ShakeAnim }] }}>
-                    <TouchableOpacity
-                      style={[
-                        styles.devSimulateButton,
-                        (!cardName.trim() || cardName.trim().length < 4 || !cardBalance || parseFloat(cardBalance) <= 0 || isLoading || showValidationError || showNameValidationError) && styles.devSimulateButtonDisabled
-                      ]}
-                      onPress={handleDevButton1Attempt}
+                  <View style={styles.devButtonsContainer}>
+                    <Animated.View
+                      style={{
+                        transform: [{ translateX: devButton1ShakeAnim }],
+                      }}
                     >
-                      <Text style={[
-                        styles.devSimulateButtonText,
-                        (!cardName.trim() || cardName.trim().length < 4 || !cardBalance || parseFloat(cardBalance) <= 0 || isLoading || showValidationError || showNameValidationError) && styles.devSimulateButtonTextDisabled
-                      ]}>Simulate USDT Send Failed</Text>
-                    </TouchableOpacity>
-                  </Animated.View>
+                      <TouchableOpacity
+                        style={[
+                          styles.devSimulateButton,
+                          (!cardName.trim() ||
+                            cardName.trim().length < 4 ||
+                            !cardBalance ||
+                            parseFloat(cardBalance) <= 0 ||
+                            isLoading ||
+                            showValidationError ||
+                            showNameValidationError) &&
+                            styles.devSimulateButtonDisabled,
+                        ]}
+                        onPress={handleDevButton1Attempt}
+                      >
+                        <Text
+                          style={[
+                            styles.devSimulateButtonText,
+                            (!cardName.trim() ||
+                              cardName.trim().length < 4 ||
+                              !cardBalance ||
+                              parseFloat(cardBalance) <= 0 ||
+                              isLoading ||
+                              showValidationError ||
+                              showNameValidationError) &&
+                              styles.devSimulateButtonTextDisabled,
+                          ]}
+                        >
+                          Simulate USDT Send Failed
+                        </Text>
+                      </TouchableOpacity>
+                    </Animated.View>
 
-                  <Animated.View style={{ transform: [{ translateX: devButton2ShakeAnim }] }}>
-                    <TouchableOpacity
-                      style={[
-                        styles.devSimulateButton,
-                        (!cardName.trim() || cardName.trim().length < 4 || !cardBalance || parseFloat(cardBalance) <= 0 || isLoading || showValidationError || showNameValidationError) && styles.devSimulateButtonDisabled
-                      ]}
-                      onPress={handleDevButton2Attempt}
+                    <Animated.View
+                      style={{
+                        transform: [{ translateX: devButton2ShakeAnim }],
+                      }}
                     >
-                      <Text style={[
-                        styles.devSimulateButtonText,
-                        (!cardName.trim() || cardName.trim().length < 4 || !cardBalance || parseFloat(cardBalance) <= 0 || isLoading || showValidationError || showNameValidationError) && styles.devSimulateButtonTextDisabled
-                      ]}>Simulate Card Creation Failed</Text>
-                    </TouchableOpacity>
-                  </Animated.View>
+                      <TouchableOpacity
+                        style={[
+                          styles.devSimulateButton,
+                          (!cardName.trim() ||
+                            cardName.trim().length < 4 ||
+                            !cardBalance ||
+                            parseFloat(cardBalance) <= 0 ||
+                            isLoading ||
+                            showValidationError ||
+                            showNameValidationError) &&
+                            styles.devSimulateButtonDisabled,
+                        ]}
+                        onPress={handleDevButton2Attempt}
+                      >
+                        <Text
+                          style={[
+                            styles.devSimulateButtonText,
+                            (!cardName.trim() ||
+                              cardName.trim().length < 4 ||
+                              !cardBalance ||
+                              parseFloat(cardBalance) <= 0 ||
+                              isLoading ||
+                              showValidationError ||
+                              showNameValidationError) &&
+                              styles.devSimulateButtonTextDisabled,
+                          ]}
+                        >
+                          Simulate Card Creation Failed
+                        </Text>
+                      </TouchableOpacity>
+                    </Animated.View>
+                  </View>
                 </View>
-              </View>
-            )}
+              )}
 
             {/* Create Button */}
-            <Animated.View style={{ transform: [{ translateX: createButtonShakeAnim }] }}>
+            <Animated.View
+              style={{ transform: [{ translateX: createButtonShakeAnim }] }}
+            >
               <TouchableOpacity
                 style={[
                   styles.createButton,
-                  (!cardName.trim() || cardName.trim().length < 4 || !cardBalance || parseFloat(cardBalance) <= 0 || isLoading || showValidationError || showNameValidationError) && styles.createButtonDisabled
+                  (!cardName.trim() ||
+                    cardName.trim().length < 4 ||
+                    !cardBalance ||
+                    parseFloat(cardBalance) <= 0 ||
+                    isLoading ||
+                    showValidationError ||
+                    showNameValidationError) &&
+                    styles.createButtonDisabled,
                 ]}
                 onPress={handleCreateCardAttempt}
               >

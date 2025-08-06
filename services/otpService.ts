@@ -30,7 +30,7 @@ export interface CheckEmailStatusResponse {
 export async function sendOtp(email: string): Promise<SendOtpResponse> {
   try {
     const authHeaders = await AuthService.getAuthHeader();
-    
+
     const response = await fetch(`${BASE_BACKEND_URL}/email/request-otp`, {
       method: 'POST',
       headers: {
@@ -39,17 +39,17 @@ export async function sendOtp(email: string): Promise<SendOtpResponse> {
       },
       body: JSON.stringify({ email }),
     });
-    console.log('response', response)
+    console.log('response', response);
     const data = await response.json();
-    console.log('data', data)
-    
+    console.log('data', data);
+
     if (!response.ok) {
-      console.log("response not ok", response)
+      console.log('response not ok', response);
       throw new Error(data.error || 'Failed to request OTP');
     }
 
     // Calculate expiration timestamp
-    const expiresAt = Date.now() + (data.expiresIn * 1000);
+    const expiresAt = Date.now() + data.expiresIn * 1000;
 
     return {
       success: true,
@@ -65,19 +65,22 @@ export async function sendOtp(email: string): Promise<SendOtpResponse> {
   }
 }
 
-export async function verifyOtp(email: string, code: string): Promise<VerifyOtpResponse> {
+export async function verifyOtp(
+  email: string,
+  code: string,
+): Promise<VerifyOtpResponse> {
   try {
     const authHeaders = await AuthService.getAuthHeader();
-    
+
     const response = await fetch(`${BASE_BACKEND_URL}/email/verify-otp`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         ...authHeaders,
       },
-      body: JSON.stringify({ 
+      body: JSON.stringify({
         email,
-        otp: code 
+        otp: code,
       }),
     });
 
@@ -106,10 +109,12 @@ export async function verifyOtp(email: string, code: string): Promise<VerifyOtpR
   }
 }
 
-export async function checkEmailStatus(email: string): Promise<CheckEmailStatusResponse> {
+export async function checkEmailStatus(
+  email: string,
+): Promise<CheckEmailStatusResponse> {
   try {
     const authHeaders = await AuthService.getAuthHeader();
-    
+
     const response = await fetch(`${BASE_BACKEND_URL}/email/check-status`, {
       method: 'POST',
       headers: {

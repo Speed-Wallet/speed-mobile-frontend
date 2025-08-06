@@ -43,7 +43,7 @@ const EmailVerificationSheet: React.FC<EmailVerificationSheetProps> = ({
   const snapPoints = useMemo(() => {
     return ['70%'];
   }, []);
-  
+
   // Memoize styles to prevent re-creation on every render
   const bottomSheetStyle = useMemo(() => {
     return { backgroundColor: '#1a1a1a' };
@@ -65,13 +65,13 @@ const EmailVerificationSheet: React.FC<EmailVerificationSheetProps> = ({
   // Start cooldown countdown
   const startCooldown = (seconds: number) => {
     setResendCooldown(seconds);
-    
+
     if (cooldownIntervalRef.current) {
       clearInterval(cooldownIntervalRef.current);
     }
-    
+
     cooldownIntervalRef.current = setInterval(() => {
-      setResendCooldown(prev => {
+      setResendCooldown((prev) => {
         if (prev <= 1) {
           if (cooldownIntervalRef.current) {
             clearInterval(cooldownIntervalRef.current);
@@ -126,7 +126,7 @@ const EmailVerificationSheet: React.FC<EmailVerificationSheetProps> = ({
 
   const handleVerify = async (code?: string) => {
     const otpCode = code || otp.join('');
-    
+
     if (otpCode.length !== 6) {
       setError('Please enter all 6 digits');
       return;
@@ -137,7 +137,7 @@ const EmailVerificationSheet: React.FC<EmailVerificationSheetProps> = ({
 
     try {
       const response = await verifyOtp(email, otpCode);
-      
+
       if (response.success) {
         onVerified();
         onClose();
@@ -146,16 +146,16 @@ const EmailVerificationSheet: React.FC<EmailVerificationSheetProps> = ({
       } else {
         setError(response.error || 'Invalid verification code');
         setAttemptsLeft(response.attemptsRemaining || 0);
-        
+
         // Clear OTP inputs on error
         setOtp(['', '', '', '', '', '']);
         inputRefs.current[0]?.focus();
-        
+
         if (response.attemptsRemaining === 0) {
           Alert.alert(
             'Too Many Attempts',
             'You have exceeded the maximum number of attempts. Please request a new verification code.',
-            [{ text: 'OK' }]
+            [{ text: 'OK' }],
           );
         }
       }
@@ -188,18 +188,18 @@ const EmailVerificationSheet: React.FC<EmailVerificationSheetProps> = ({
   const handleClose = () => {
     if (hasClosed.current) return;
     hasClosed.current = true;
-    
+
     setOtp(['', '', '', '', '', '']);
     setError('');
     setAttemptsLeft(5);
     setResendCooldown(0);
-    
+
     // Clear any running cooldown
     if (cooldownIntervalRef.current) {
       clearInterval(cooldownIntervalRef.current);
       cooldownIntervalRef.current = null;
     }
-    
+
     onClose();
   };
 
@@ -241,7 +241,9 @@ const EmailVerificationSheet: React.FC<EmailVerificationSheetProps> = ({
               ]}
               value={digit}
               onChangeText={(value) => handleOtpChange(value, index)}
-              onKeyPress={({ nativeEvent }) => handleKeyPress(nativeEvent.key, index)}
+              onKeyPress={({ nativeEvent }) =>
+                handleKeyPress(nativeEvent.key, index)
+              }
               keyboardType="numeric"
               maxLength={1}
               textAlign="center"
@@ -251,9 +253,7 @@ const EmailVerificationSheet: React.FC<EmailVerificationSheetProps> = ({
           ))}
         </View>
 
-        {error && (
-          <Text style={styles.errorText}>{error}</Text>
-        )}
+        {error && <Text style={styles.errorText}>{error}</Text>}
 
         {attemptsLeft < 5 && attemptsLeft > 0 && (
           <Text style={styles.attemptsText}>
@@ -262,7 +262,10 @@ const EmailVerificationSheet: React.FC<EmailVerificationSheetProps> = ({
         )}
 
         <TouchableOpacity
-          style={[styles.verifyButton, isVerifying && styles.verifyButtonDisabled]}
+          style={[
+            styles.verifyButton,
+            isVerifying && styles.verifyButtonDisabled,
+          ]}
           onPress={() => handleVerify()}
           disabled={isVerifying || otp.join('').length !== 6}
         >
@@ -282,16 +285,17 @@ const EmailVerificationSheet: React.FC<EmailVerificationSheetProps> = ({
               size={16}
               color={resendCooldown > 0 ? '#6b7280' : '#3b82f6'}
             />
-            <Text style={[
-              styles.resendButtonText,
-              resendCooldown > 0 && styles.resendButtonTextDisabled
-            ]}>
+            <Text
+              style={[
+                styles.resendButtonText,
+                resendCooldown > 0 && styles.resendButtonTextDisabled,
+              ]}
+            >
               {isResending
                 ? 'Resending...'
                 : resendCooldown > 0
-                ? `Resend in ${resendCooldown}s`
-                : 'Resend Code'
-              }
+                  ? `Resend in ${resendCooldown}s`
+                  : 'Resend Code'}
             </Text>
           </TouchableOpacity>
         </View>

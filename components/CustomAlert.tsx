@@ -131,7 +131,10 @@ const CustomAlert: React.FC<CustomAlertProps> = ({
             >
               {/* Close button */}
               {showCloseButton && (
-                <TouchableOpacity style={styles.closeButton} onPress={onDismiss}>
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={onDismiss}
+                >
                   <X size={20} color="#9ca3af" />
                 </TouchableOpacity>
               )}
@@ -157,7 +160,9 @@ const CustomAlert: React.FC<CustomAlertProps> = ({
                     style={[
                       styles.button,
                       getButtonStyle(button.style || 'default'),
-                      buttons.length > 1 && index === 0 && styles.buttonMarginRight,
+                      buttons.length > 1 &&
+                        index === 0 &&
+                        styles.buttonMarginRight,
                     ]}
                     onPress={() => {
                       button.onPress?.();

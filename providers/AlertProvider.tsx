@@ -10,11 +10,21 @@ interface AlertButton {
 }
 
 interface AlertContextType {
-  alert: (title: string, message?: string, buttons?: AlertButton[], type?: 'success' | 'error' | 'warning' | 'info') => void;
+  alert: (
+    title: string,
+    message?: string,
+    buttons?: AlertButton[],
+    type?: 'success' | 'error' | 'warning' | 'info',
+  ) => void;
   success: (title: string, message?: string, buttons?: AlertButton[]) => void;
   error: (title: string, message?: string, buttons?: AlertButton[]) => void;
   warning: (title: string, message?: string, buttons?: AlertButton[]) => void;
-  confirm: (title: string, message?: string, onConfirm?: () => void, onCancel?: () => void) => void;
+  confirm: (
+    title: string,
+    message?: string,
+    onConfirm?: () => void,
+    onCancel?: () => void,
+  ) => void;
 }
 
 const AlertContext = createContext<AlertContextType | undefined>(undefined);
@@ -24,7 +34,8 @@ interface AlertProviderProps {
 }
 
 export const AlertProvider: React.FC<AlertProviderProps> = ({ children }) => {
-  const { alertState, hideAlert, alert, success, error, warning, confirm } = useCustomAlert();
+  const { alertState, hideAlert, alert, success, error, warning, confirm } =
+    useCustomAlert();
 
   const contextValue: AlertContextType = {
     alert,
@@ -71,11 +82,18 @@ class GlobalAlert {
     GlobalAlert.instance = instance;
   }
 
-  static alert(title: string, message?: string, buttons?: AlertButton[], type?: 'success' | 'error' | 'warning' | 'info') {
+  static alert(
+    title: string,
+    message?: string,
+    buttons?: AlertButton[],
+    type?: 'success' | 'error' | 'warning' | 'info',
+  ) {
     if (GlobalAlert.instance) {
       GlobalAlert.instance.alert(title, message, buttons, type);
     } else {
-      console.warn('GlobalAlert not initialized. Make sure AlertProvider is set up.');
+      console.warn(
+        'GlobalAlert not initialized. Make sure AlertProvider is set up.',
+      );
     }
   }
 
@@ -97,7 +115,12 @@ class GlobalAlert {
     }
   }
 
-  static confirm(title: string, message?: string, onConfirm?: () => void, onCancel?: () => void) {
+  static confirm(
+    title: string,
+    message?: string,
+    onConfirm?: () => void,
+    onCancel?: () => void,
+  ) {
     if (GlobalAlert.instance) {
       GlobalAlert.instance.confirm(title, message, onConfirm, onCancel);
     }

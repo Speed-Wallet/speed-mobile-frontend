@@ -60,10 +60,10 @@ export const SuccessCard: React.FC<SuccessCardProps> = ({
       {/* Card Number Section */}
       <View style={styles.cardNumberSection}>
         <Text style={styles.cardNumberText}>
-          {isVisible 
-            ? (card.cardNumber 
-                ? `${card.cardNumber.slice(0, 4)} ${card.cardNumber.slice(4, 8)} ${card.cardNumber.slice(8, 12)} ${card.cardNumber.slice(12, 16)}`
-                : `•••• •••• •••• ${card.last4}`) 
+          {isVisible
+            ? card.cardNumber
+              ? `${card.cardNumber.slice(0, 4)} ${card.cardNumber.slice(4, 8)} ${card.cardNumber.slice(8, 12)} ${card.cardNumber.slice(12, 16)}`
+              : `•••• •••• •••• ${card.last4}`
             : '•••• •••• •••• ••••'}
         </Text>
         <TouchableOpacity
@@ -98,14 +98,14 @@ export const SuccessCard: React.FC<SuccessCardProps> = ({
             </TouchableOpacity>
           </View>
         </View>
-        
+
         <View style={styles.cvvSection}>
           <Text style={styles.cardLabel}>CVV</Text>
           <Text style={styles.cardValue}>
-            {isVisible ? (card.cvv || '•••') : '•••'}
+            {isVisible ? card.cvv || '•••' : '•••'}
           </Text>
         </View>
-        
+
         <View style={styles.expirySection}>
           <Text style={styles.cardLabel}>EXPIRES</Text>
           <Text style={styles.cardValue}>{card.expires}</Text>

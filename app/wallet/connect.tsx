@@ -66,7 +66,6 @@ const styles = StyleSheet.create({
   },
   placeholder: {
     width: 40,
-  
   },
   content: {
     padding: 16,

@@ -1,9 +1,30 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, SafeAreaView, StatusBar, ScrollView, Animated, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  TextInput,
+  SafeAreaView,
+  StatusBar,
+  ScrollView,
+  Animated,
+  ActivityIndicator,
+} from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowDownUp, DollarSign, Lock, ChevronDown, Zap, Check } from 'lucide-react-native';
+import {
+  ArrowDownUp,
+  DollarSign,
+  Lock,
+  ChevronDown,
+  Zap,
+  Check,
+} from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import BottomSheet, { BottomSheetView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import BottomSheet, {
+  BottomSheetView,
+  BottomSheetBackdrop,
+} from '@gorhom/bottom-sheet';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Toast from '@/components/Toast';
 import colors from '@/constants/colors';
@@ -12,7 +33,13 @@ import { getAllTokenInfo, getTokenByAddress } from '@/data/tokens';
 // import AmountInput from '@/components/AmountInput'; // Commented out since we're using SwapBox now
 import TokenLogo from '@/components/TokenLogo'; // Added import
 import { EnrichedTokenEntry } from '@/data/types';
-import { PLATFORM_FEE_RATE, JupiterQuote, prepareJupiterSwapTransaction, confirmJupiterSwap, type PreparedJupiterSwap } from '@/services/walletService';
+import {
+  PLATFORM_FEE_RATE,
+  JupiterQuote,
+  prepareJupiterSwapTransaction,
+  confirmJupiterSwap,
+  type PreparedJupiterSwap,
+} from '@/services/walletService';
 import ScreenHeader from '@/components/ScreenHeader';
 import ScreenContainer from '@/components/ScreenContainer';
 import { useTokenValue } from '@/hooks/useTokenValue';
@@ -41,22 +68,23 @@ interface SwapBoxProps {
   onInputFocus?: () => void;
 }
 
-const SwapBox: React.FC<SwapBoxProps> = ({ 
-  token, 
-  onTokenPress, 
-  labelText, 
-  amount, 
-  onAmountChange, 
+const SwapBox: React.FC<SwapBoxProps> = ({
+  token,
+  onTokenPress,
+  labelText,
+  amount,
+  onAmountChange,
   isInput = false,
   showBalance = false,
-  onInputFocus
+  onInputFocus,
 }) => {
   const { balance: tokenBalance } = useTokenBalance(token?.address);
   const { price: tokenPrice } = useTokenPrice(token?.extensions.coingeckoId);
-  
-  const usdValue = token && amount && parseFloat(amount) > 0 
-    ? formatCurrency(parseFloat(amount) * (tokenPrice || 0))
-    : '$0';
+
+  const usdValue =
+    token && amount && parseFloat(amount) > 0
+      ? formatCurrency(parseFloat(amount) * (tokenPrice || 0))
+      : '$0';
 
   return (
     <View style={styles.swapBoxContainer}>
@@ -68,13 +96,20 @@ const SwapBox: React.FC<SwapBoxProps> = ({
           </Text>
         )}
       </View>
-      
+
       <View style={styles.swapBoxContent}>
         {/* Left side - Token selector */}
-        <TouchableOpacity onPress={onTokenPress} style={styles.tokenSelectorInBox}>
+        <TouchableOpacity
+          onPress={onTokenPress}
+          style={styles.tokenSelectorInBox}
+        >
           {token ? (
             <View style={styles.tokenDisplay}>
-              <TokenLogo logoURI={token.logoURI} size={24} style={styles.tokenLogo} />
+              <TokenLogo
+                logoURI={token.logoURI}
+                size={24}
+                style={styles.tokenLogo}
+              />
               <Text style={styles.tokenSymbolText}>{token.symbol}</Text>
             </View>
           ) : (
@@ -82,19 +117,25 @@ const SwapBox: React.FC<SwapBoxProps> = ({
           )}
           <ChevronDown color={colors.textSecondary} size={16} />
         </TouchableOpacity>
-        
+
         {/* Right side - Amount input/output */}
         <View style={styles.amountSection}>
           {isInput ? (
-            <TouchableOpacity onPress={onInputFocus} style={styles.amountInputTouchable}>
-              <Text style={[styles.amountInput, !amount && styles.amountPlaceholder]}>
+            <TouchableOpacity
+              onPress={onInputFocus}
+              style={styles.amountInputTouchable}
+            >
+              <Text
+                style={[
+                  styles.amountInput,
+                  !amount && styles.amountPlaceholder,
+                ]}
+              >
                 {amount || '0'}
               </Text>
             </TouchableOpacity>
           ) : (
-            <Text style={styles.amountOutput}>
-              {amount || '0'}
-            </Text>
+            <Text style={styles.amountOutput}>{amount || '0'}</Text>
           )}
           <Text style={styles.usdValue}>{usdValue}</Text>
         </View>
@@ -103,13 +144,13 @@ const SwapBox: React.FC<SwapBoxProps> = ({
   );
 };
 
-
 export default function TradeScreen() {
-  const { tokenAddress, selectedTokenAddress, returnParam } = useLocalSearchParams<{
-    tokenAddress?: string;
-    selectedTokenAddress?: string;
-    returnParam?: string;
-  }>();
+  const { tokenAddress, selectedTokenAddress, returnParam } =
+    useLocalSearchParams<{
+      tokenAddress?: string;
+      selectedTokenAddress?: string;
+      returnParam?: string;
+    }>();
   const router = useRouter();
   const [fromToken, setFromToken] = useState<EnrichedTokenEntry | null>(null);
   const [toToken, setToToken] = useState<EnrichedTokenEntry | null>(null);
@@ -120,13 +161,17 @@ export default function TradeScreen() {
   const bottomSheetRef = useRef<BottomSheet>(null);
   const loadingBottomSheetRef = useRef<BottomSheet>(null);
 
-  const { price: fromTokenPrice } = useTokenPrice(fromToken?.extensions.coingeckoId);
+  const { price: fromTokenPrice } = useTokenPrice(
+    fromToken?.extensions.coingeckoId,
+  );
   const { balance: fromTokenBalance } = useTokenBalance(fromToken?.address);
 
   // Toast state for validation errors and network issues
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
-  const [toastType, setToastType] = useState<'success' | 'error' | 'info'>('error');
+  const [toastType, setToastType] = useState<'success' | 'error' | 'info'>(
+    'error',
+  );
 
   // Loading state for swap
   const [isSwapping, setIsSwapping] = useState(false);
@@ -135,7 +180,9 @@ export default function TradeScreen() {
   const [swapTxSignature, setSwapTxSignature] = useState<string>('');
 
   // New state for prepared swap workflow
-  const [preparedSwap, setPreparedSwap] = useState<PreparedJupiterSwap | null>(null);
+  const [preparedSwap, setPreparedSwap] = useState<PreparedJupiterSwap | null>(
+    null,
+  );
   const [isPreparingSwap, setIsPreparingSwap] = useState(false);
   const [isConfirmingSwap, setIsConfirmingSwap] = useState(false);
 
@@ -174,7 +221,11 @@ export default function TradeScreen() {
 
   async function fetchAndApplyQuote(inAmount: number) {
     try {
-      quote = await JupiterQuote(fromToken!.address, toToken!.address, inAmount);
+      quote = await JupiterQuote(
+        fromToken!.address,
+        toToken!.address,
+        inAmount,
+      );
 
       if (!quote) {
         quote = undefined;
@@ -186,14 +237,20 @@ export default function TradeScreen() {
       }
 
       const outAmount = parseFloat(quote.outAmount);
-      console.log(`Quote received: ${quote.inAmount} -> ${quote.outAmount} (${quote.slippageBps})`);
+      console.log(
+        `Quote received: ${quote.inAmount} -> ${quote.outAmount} (${quote.slippageBps})`,
+      );
       if (!isNaN(outAmount)) {
         const val = outAmount * 10 ** -toToken!.decimals;
         setToAmount(val.toFixed(toToken!.decimalsShown)); // Use decimalsShown (now mandatory)
       }
 
       if (!intervalID) {
-        intervalID = setInterval(fetchAndApplyQuote, LOOP_QUOTE_INTERVAL, inAmount);
+        intervalID = setInterval(
+          fetchAndApplyQuote,
+          LOOP_QUOTE_INTERVAL,
+          inAmount,
+        );
       }
     } catch (err: any) {
       console.error(err.message);
@@ -209,7 +266,9 @@ export default function TradeScreen() {
   useEffect(() => {
     if (selectedTokenAddress && returnParam) {
       const tokens = getAllTokenInfo();
-      const selectedToken = tokens.find(token => token.address === selectedTokenAddress);
+      const selectedToken = tokens.find(
+        (token) => token.address === selectedTokenAddress,
+      );
 
       if (selectedToken) {
         if (returnParam === 'fromToken') {
@@ -222,7 +281,7 @@ export default function TradeScreen() {
       // Clear the params to prevent re-triggering
       router.setParams({
         selectedTokenAddress: undefined,
-        returnParam: undefined
+        returnParam: undefined,
       });
     }
   }, [selectedTokenAddress, returnParam]);
@@ -235,7 +294,7 @@ export default function TradeScreen() {
         const token = getTokenByAddress(tokenAddress as string);
         setFromToken(token);
 
-        const defaultTo = tokens.find(t => t.address !== token.address);
+        const defaultTo = tokens.find((t) => t.address !== token.address);
         if (defaultTo) {
           setToToken(defaultTo);
         }
@@ -244,7 +303,7 @@ export default function TradeScreen() {
         setToToken(tokens[1]);
       }
     };
-    loadData()
+    loadData();
   }, [tokenAddress]);
 
   if (Array.isArray(tokenAddress)) {
@@ -262,7 +321,7 @@ export default function TradeScreen() {
     // Let's assume user might want to re-enter or recalculate.
     // For simplicity, we can swap amounts or clear toAmount.
     // Swapping amounts:
-    // setFromAmount(tempToAmount); 
+    // setFromAmount(tempToAmount);
     // setToAmount(tempFromAmount);
 
     // Or, more robustly, clear toAmount and let it recalculate if fromAmount is present
@@ -290,7 +349,7 @@ export default function TradeScreen() {
     }
 
     if (amount > fromTokenBalance) {
-      setToastMessage('You don\'t have enough tokens for this trade');
+      setToastMessage("You don't have enough tokens for this trade");
       setToastType('error');
       setShowToast(true);
       return;
@@ -313,7 +372,7 @@ export default function TradeScreen() {
 
     // Open the bottom sheet immediately
     bottomSheetRef.current?.expand();
-    
+
     // Start preparing the swap in the background
     setIsPreparingSwap(true);
     setPreparedSwap(null);
@@ -353,19 +412,18 @@ export default function TradeScreen() {
     try {
       const sig = await confirmJupiterSwap(preparedSwap);
       console.log(`Trade Successful: ${sig}`);
-      
+
       // Update loading states - success handled by bottom sheet
       setSwapSuccess(true);
       setSwapTxSignature(sig);
       setSwapComplete(true);
       setIsSwapping(false);
       setIsConfirmingSwap(false);
-      
+
       // Clear the input amount and prepared swap after successful trade
       setFromAmount('');
       setToAmount('');
       setPreparedSwap(null);
-      
     } catch (err: any) {
       console.error(err);
       // Error handled by bottom sheet
@@ -377,9 +435,12 @@ export default function TradeScreen() {
   };
 
   // Calculate exchange rate and receive amount for display
-  const exchangeRate = (quote && toToken && fromToken && parseFloat(fromAmount) > 0)
-    ? (parseFloat(quote.outAmount) / (10 ** toToken.decimals)) / parseFloat(fromAmount)
-    : null;
+  const exchangeRate =
+    quote && toToken && fromToken && parseFloat(fromAmount) > 0
+      ? parseFloat(quote.outAmount) /
+        10 ** toToken.decimals /
+        parseFloat(fromAmount)
+      : null;
 
   // Determine if the effective 'toAmount' is zero for styling purposes
   const effectiveToAmountIsZero = !toAmount || parseFloat(toAmount) === 0;
@@ -401,12 +462,13 @@ export default function TradeScreen() {
     });
   }, [toAmount, toToken]);
 
+  const totalValueDisplay =
+    fromAmount && fromToken && parseFloat(fromAmount) > 0
+      ? formatCurrency(parseFloat(fromAmount) * (fromTokenPrice || 0))
+      : '$0.00';
 
-  const totalValueDisplay = (fromAmount && fromToken && parseFloat(fromAmount) > 0)
-    ? formatCurrency(parseFloat(fromAmount) * (fromTokenPrice || 0))
-    : '$0.00';
-
-  const isButtonDisabled = !fromAmount || parseFloat(fromAmount) <= 0 || !quote || !!quote.errorCode;
+  const isButtonDisabled =
+    !fromAmount || parseFloat(fromAmount) <= 0 || !quote || !!quote.errorCode;
 
   const handlePreviewSwapClick = useCallback(() => {
     if (isButtonDisabled) {
@@ -430,31 +492,37 @@ export default function TradeScreen() {
   }, []);
 
   // Custom keyboard handlers
-  const handleKeyPress = useCallback((key: string) => {
-    if (activeInput !== 'from') return;
+  const handleKeyPress = useCallback(
+    (key: string) => {
+      if (activeInput !== 'from') return;
 
-    if (key === 'backspace') {
-      setFromAmount(prev => prev.slice(0, -1));
-    } else if (key === '.') {
-      if (!fromAmount.includes('.')) {
-        setFromAmount(prev => prev + '.');
-      }
-    } else {
-      // Number key
-      setFromAmount(prev => {
-        // Prevent multiple leading zeros
-        if (prev === '0' && key !== '.') return key;
-        // Limit decimal places
-        if (prev.includes('.')) {
-          const decimalPart = prev.split('.')[1];
-          if (decimalPart && decimalPart.length >= (fromToken?.decimalsShown || 6)) {
-            return prev;
-          }
+      if (key === 'backspace') {
+        setFromAmount((prev) => prev.slice(0, -1));
+      } else if (key === '.') {
+        if (!fromAmount.includes('.')) {
+          setFromAmount((prev) => prev + '.');
         }
-        return prev + key;
-      });
-    }
-  }, [activeInput, fromAmount, fromToken]);
+      } else {
+        // Number key
+        setFromAmount((prev) => {
+          // Prevent multiple leading zeros
+          if (prev === '0' && key !== '.') return key;
+          // Limit decimal places
+          if (prev.includes('.')) {
+            const decimalPart = prev.split('.')[1];
+            if (
+              decimalPart &&
+              decimalPart.length >= (fromToken?.decimalsShown || 6)
+            ) {
+              return prev;
+            }
+          }
+          return prev + key;
+        });
+      }
+    },
+    [activeInput, fromAmount, fromToken],
+  );
 
   const handleInputFocus = useCallback(() => {
     setActiveInput('from');
@@ -464,29 +532,33 @@ export default function TradeScreen() {
     setActiveInput(null);
   }, []);
 
-
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ScreenContainer edges={['top', 'bottom']} style={styles.container}>
-        <ScreenHeader 
+        <ScreenHeader
           title="Swap Tokens"
           onBack={() => router.push('/' as any)}
         />
-        
+
         <View style={styles.mainContent}>
-          <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollViewContent}>
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollViewContent}
+          >
             {/* From Token Box */}
             <SwapBox
               labelText="From"
               token={fromToken}
-              onTokenPress={() => router.push({
-                pathname: '/token/select',
-                params: {
-                  excludeAddress: toToken?.address,
-                  selectedAddress: fromToken?.address,
-                  returnParam: 'fromToken'
-                }
-              })}
+              onTokenPress={() =>
+                router.push({
+                  pathname: '/token/select',
+                  params: {
+                    excludeAddress: toToken?.address,
+                    selectedAddress: fromToken?.address,
+                    returnParam: 'fromToken',
+                  },
+                })
+              }
               amount={fromAmount}
               onAmountChange={setFromAmount}
               onInputFocus={handleInputFocus}
@@ -496,7 +568,10 @@ export default function TradeScreen() {
 
             {/* Swap Button */}
             <View style={styles.swapButtonContainer}>
-              <TouchableOpacity style={styles.swapButton} onPress={handleSwapTokens}>
+              <TouchableOpacity
+                style={styles.swapButton}
+                onPress={handleSwapTokens}
+              >
                 <ArrowDownUp color={colors.white} size={16} />
               </TouchableOpacity>
             </View>
@@ -505,14 +580,16 @@ export default function TradeScreen() {
             <SwapBox
               labelText="To"
               token={toToken}
-              onTokenPress={() => router.push({
-                pathname: '/token/select',
-                params: {
-                  excludeAddress: fromToken?.address,
-                  selectedAddress: toToken?.address,
-                  returnParam: 'toToken'
-                }
-              })}
+              onTokenPress={() =>
+                router.push({
+                  pathname: '/token/select',
+                  params: {
+                    excludeAddress: fromToken?.address,
+                    selectedAddress: toToken?.address,
+                    returnParam: 'toToken',
+                  },
+                })
+              }
               amount={toAmount}
               isInput={false}
               showBalance={false}
@@ -526,98 +603,218 @@ export default function TradeScreen() {
               <View style={styles.inlineKeyboard}>
                 <View style={styles.keyboardGrid}>
                   <View style={styles.keyboardRow}>
-                    <TouchableOpacity 
-                      style={[styles.keyboardKey, !activeInput && styles.keyboardKeyDisabled]} 
+                    <TouchableOpacity
+                      style={[
+                        styles.keyboardKey,
+                        !activeInput && styles.keyboardKeyDisabled,
+                      ]}
                       onPress={() => handleKeyPress('1')}
                       disabled={!activeInput}
                     >
-                      <Text style={[styles.keyboardKeyText, !activeInput && styles.keyboardKeyTextDisabled]}>1</Text>
+                      <Text
+                        style={[
+                          styles.keyboardKeyText,
+                          !activeInput && styles.keyboardKeyTextDisabled,
+                        ]}
+                      >
+                        1
+                      </Text>
                     </TouchableOpacity>
-                    <TouchableOpacity 
-                      style={[styles.keyboardKey, !activeInput && styles.keyboardKeyDisabled]} 
+                    <TouchableOpacity
+                      style={[
+                        styles.keyboardKey,
+                        !activeInput && styles.keyboardKeyDisabled,
+                      ]}
                       onPress={() => handleKeyPress('2')}
                       disabled={!activeInput}
                     >
-                      <Text style={[styles.keyboardKeyText, !activeInput && styles.keyboardKeyTextDisabled]}>2</Text>
+                      <Text
+                        style={[
+                          styles.keyboardKeyText,
+                          !activeInput && styles.keyboardKeyTextDisabled,
+                        ]}
+                      >
+                        2
+                      </Text>
                     </TouchableOpacity>
-                    <TouchableOpacity 
-                      style={[styles.keyboardKey, !activeInput && styles.keyboardKeyDisabled]} 
+                    <TouchableOpacity
+                      style={[
+                        styles.keyboardKey,
+                        !activeInput && styles.keyboardKeyDisabled,
+                      ]}
                       onPress={() => handleKeyPress('3')}
                       disabled={!activeInput}
                     >
-                      <Text style={[styles.keyboardKeyText, !activeInput && styles.keyboardKeyTextDisabled]}>3</Text>
+                      <Text
+                        style={[
+                          styles.keyboardKeyText,
+                          !activeInput && styles.keyboardKeyTextDisabled,
+                        ]}
+                      >
+                        3
+                      </Text>
                     </TouchableOpacity>
                   </View>
-                  
+
                   <View style={styles.keyboardRow}>
-                    <TouchableOpacity 
-                      style={[styles.keyboardKey, !activeInput && styles.keyboardKeyDisabled]} 
+                    <TouchableOpacity
+                      style={[
+                        styles.keyboardKey,
+                        !activeInput && styles.keyboardKeyDisabled,
+                      ]}
                       onPress={() => handleKeyPress('4')}
                       disabled={!activeInput}
                     >
-                      <Text style={[styles.keyboardKeyText, !activeInput && styles.keyboardKeyTextDisabled]}>4</Text>
+                      <Text
+                        style={[
+                          styles.keyboardKeyText,
+                          !activeInput && styles.keyboardKeyTextDisabled,
+                        ]}
+                      >
+                        4
+                      </Text>
                     </TouchableOpacity>
-                    <TouchableOpacity 
-                      style={[styles.keyboardKey, !activeInput && styles.keyboardKeyDisabled]} 
+                    <TouchableOpacity
+                      style={[
+                        styles.keyboardKey,
+                        !activeInput && styles.keyboardKeyDisabled,
+                      ]}
                       onPress={() => handleKeyPress('5')}
                       disabled={!activeInput}
                     >
-                      <Text style={[styles.keyboardKeyText, !activeInput && styles.keyboardKeyTextDisabled]}>5</Text>
+                      <Text
+                        style={[
+                          styles.keyboardKeyText,
+                          !activeInput && styles.keyboardKeyTextDisabled,
+                        ]}
+                      >
+                        5
+                      </Text>
                     </TouchableOpacity>
-                    <TouchableOpacity 
-                      style={[styles.keyboardKey, !activeInput && styles.keyboardKeyDisabled]} 
+                    <TouchableOpacity
+                      style={[
+                        styles.keyboardKey,
+                        !activeInput && styles.keyboardKeyDisabled,
+                      ]}
                       onPress={() => handleKeyPress('6')}
                       disabled={!activeInput}
                     >
-                      <Text style={[styles.keyboardKeyText, !activeInput && styles.keyboardKeyTextDisabled]}>6</Text>
+                      <Text
+                        style={[
+                          styles.keyboardKeyText,
+                          !activeInput && styles.keyboardKeyTextDisabled,
+                        ]}
+                      >
+                        6
+                      </Text>
                     </TouchableOpacity>
                   </View>
-                  
+
                   <View style={styles.keyboardRow}>
-                    <TouchableOpacity 
-                      style={[styles.keyboardKey, !activeInput && styles.keyboardKeyDisabled]} 
+                    <TouchableOpacity
+                      style={[
+                        styles.keyboardKey,
+                        !activeInput && styles.keyboardKeyDisabled,
+                      ]}
                       onPress={() => handleKeyPress('7')}
                       disabled={!activeInput}
                     >
-                      <Text style={[styles.keyboardKeyText, !activeInput && styles.keyboardKeyTextDisabled]}>7</Text>
+                      <Text
+                        style={[
+                          styles.keyboardKeyText,
+                          !activeInput && styles.keyboardKeyTextDisabled,
+                        ]}
+                      >
+                        7
+                      </Text>
                     </TouchableOpacity>
-                    <TouchableOpacity 
-                      style={[styles.keyboardKey, !activeInput && styles.keyboardKeyDisabled]} 
+                    <TouchableOpacity
+                      style={[
+                        styles.keyboardKey,
+                        !activeInput && styles.keyboardKeyDisabled,
+                      ]}
                       onPress={() => handleKeyPress('8')}
                       disabled={!activeInput}
                     >
-                      <Text style={[styles.keyboardKeyText, !activeInput && styles.keyboardKeyTextDisabled]}>8</Text>
+                      <Text
+                        style={[
+                          styles.keyboardKeyText,
+                          !activeInput && styles.keyboardKeyTextDisabled,
+                        ]}
+                      >
+                        8
+                      </Text>
                     </TouchableOpacity>
-                    <TouchableOpacity 
-                      style={[styles.keyboardKey, !activeInput && styles.keyboardKeyDisabled]} 
+                    <TouchableOpacity
+                      style={[
+                        styles.keyboardKey,
+                        !activeInput && styles.keyboardKeyDisabled,
+                      ]}
                       onPress={() => handleKeyPress('9')}
                       disabled={!activeInput}
                     >
-                      <Text style={[styles.keyboardKeyText, !activeInput && styles.keyboardKeyTextDisabled]}>9</Text>
+                      <Text
+                        style={[
+                          styles.keyboardKeyText,
+                          !activeInput && styles.keyboardKeyTextDisabled,
+                        ]}
+                      >
+                        9
+                      </Text>
                     </TouchableOpacity>
                   </View>
-                  
+
                   <View style={styles.keyboardRow}>
-                    <TouchableOpacity 
-                      style={[styles.keyboardKey, !activeInput && styles.keyboardKeyDisabled]} 
+                    <TouchableOpacity
+                      style={[
+                        styles.keyboardKey,
+                        !activeInput && styles.keyboardKeyDisabled,
+                      ]}
                       onPress={() => handleKeyPress('.')}
                       disabled={!activeInput}
                     >
-                      <Text style={[styles.keyboardKeyText, !activeInput && styles.keyboardKeyTextDisabled]}>.</Text>
+                      <Text
+                        style={[
+                          styles.keyboardKeyText,
+                          !activeInput && styles.keyboardKeyTextDisabled,
+                        ]}
+                      >
+                        .
+                      </Text>
                     </TouchableOpacity>
-                    <TouchableOpacity 
-                      style={[styles.keyboardKey, !activeInput && styles.keyboardKeyDisabled]} 
+                    <TouchableOpacity
+                      style={[
+                        styles.keyboardKey,
+                        !activeInput && styles.keyboardKeyDisabled,
+                      ]}
                       onPress={() => handleKeyPress('0')}
                       disabled={!activeInput}
                     >
-                      <Text style={[styles.keyboardKeyText, !activeInput && styles.keyboardKeyTextDisabled]}>0</Text>
+                      <Text
+                        style={[
+                          styles.keyboardKeyText,
+                          !activeInput && styles.keyboardKeyTextDisabled,
+                        ]}
+                      >
+                        0
+                      </Text>
                     </TouchableOpacity>
-                    <TouchableOpacity 
-                      style={[styles.keyboardKey, !activeInput && styles.keyboardKeyDisabled]} 
+                    <TouchableOpacity
+                      style={[
+                        styles.keyboardKey,
+                        !activeInput && styles.keyboardKeyDisabled,
+                      ]}
                       onPress={() => handleKeyPress('backspace')}
                       disabled={!activeInput}
                     >
-                      <Text style={[styles.keyboardKeyText, !activeInput && styles.keyboardKeyTextDisabled]}>⌫</Text>
+                      <Text
+                        style={[
+                          styles.keyboardKeyText,
+                          !activeInput && styles.keyboardKeyTextDisabled,
+                        ]}
+                      >
+                        ⌫
+                      </Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -634,16 +831,33 @@ export default function TradeScreen() {
                 onPress={handlePreviewSwapClick}
               >
                 <LinearGradient
-                  colors={isButtonDisabled ? ['#4a4a4a', '#3a3a3a'] : ['#3B82F6', '#2563EB']}
-                  style={styles.buttonGradient}>
-                  <Animated.View style={{ transform: [{ translateX: shakeAnimationValue }] }}>
+                  colors={
+                    isButtonDisabled
+                      ? ['#4a4a4a', '#3a3a3a']
+                      : ['#3B82F6', '#2563EB']
+                  }
+                  style={styles.buttonGradient}
+                >
+                  <Animated.View
+                    style={{ transform: [{ translateX: shakeAnimationValue }] }}
+                  >
                     {isButtonDisabled ? (
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <View
+                        style={{
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: 8,
+                        }}
+                      >
                         <Lock size={20} color={colors.white} />
-                        <Text style={styles.tradeExecuteButtonText}>Preview Swap</Text>
+                        <Text style={styles.tradeExecuteButtonText}>
+                          Preview Swap
+                        </Text>
                       </View>
                     ) : (
-                      <Text style={styles.tradeExecuteButtonText}>Preview Swap</Text>
+                      <Text style={styles.tradeExecuteButtonText}>
+                        Preview Swap
+                      </Text>
                     )}
                   </Animated.View>
                 </LinearGradient>
@@ -652,148 +866,178 @@ export default function TradeScreen() {
           </View>
         </View>
 
-      {/* Bottom Sheet for Swap Details */}
-      <BottomSheet
-        ref={bottomSheetRef}
-        index={-1}
-        enablePanDownToClose={true}
-        backgroundStyle={styles.bottomSheetBackground}
-        handleIndicatorStyle={styles.bottomSheetHandle}
-        backdropComponent={(props) => (
-          <BottomSheetBackdrop
-            {...props}
-            appearsOnIndex={0}
-            disappearsOnIndex={-1}
-            opacity={0.4}
-          />
-        )}
-        onClose={() => {
-          // Clean up prepared swap state when bottom sheet closes
-          setPreparedSwap(null);
-          setIsPreparingSwap(false);
-        }}
-      >
-        <BottomSheetView style={styles.bottomSheetContent}>
-          <Text style={styles.bottomSheetTitle}>Swap Details</Text>
-          
-          {fromToken && toToken && (
-            <View style={styles.swapDetailsContainer}>
-              <View style={styles.swapDetailRow}>
-                <Text style={styles.swapDetailLabel}>Rate</Text>
-                <Text style={styles.swapDetailValue}>
-                  {exchangeRate ? `1 ${fromToken.symbol} = ${exchangeRate.toFixed(toToken.decimalsShown)} ${toToken.symbol}` : 'N/A'}
-                </Text>
-              </View>
-              
-              <View style={styles.swapDetailRow}>
-                <Text style={styles.swapDetailLabel}>Total Value</Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <DollarSign size={14} color={'#4ade80'} style={{ marginRight: 2 }} />
-                  <Text style={[styles.swapDetailValue, { color: '#4ade80' }]}>
-                    {totalValueDisplay.startsWith('$') ? totalValueDisplay.substring(1) : totalValueDisplay}
+        {/* Bottom Sheet for Swap Details */}
+        <BottomSheet
+          ref={bottomSheetRef}
+          index={-1}
+          enablePanDownToClose={true}
+          backgroundStyle={styles.bottomSheetBackground}
+          handleIndicatorStyle={styles.bottomSheetHandle}
+          backdropComponent={(props) => (
+            <BottomSheetBackdrop
+              {...props}
+              appearsOnIndex={0}
+              disappearsOnIndex={-1}
+              opacity={0.4}
+            />
+          )}
+          onClose={() => {
+            // Clean up prepared swap state when bottom sheet closes
+            setPreparedSwap(null);
+            setIsPreparingSwap(false);
+          }}
+        >
+          <BottomSheetView style={styles.bottomSheetContent}>
+            <Text style={styles.bottomSheetTitle}>Swap Details</Text>
+
+            {fromToken && toToken && (
+              <View style={styles.swapDetailsContainer}>
+                <View style={styles.swapDetailRow}>
+                  <Text style={styles.swapDetailLabel}>Rate</Text>
+                  <Text style={styles.swapDetailValue}>
+                    {exchangeRate
+                      ? `1 ${fromToken.symbol} = ${exchangeRate.toFixed(toToken.decimalsShown)} ${toToken.symbol}`
+                      : 'N/A'}
                   </Text>
                 </View>
-              </View>
-              
-              <View style={styles.swapDetailRow}>
-                <Text style={styles.swapDetailLabel}>Trade Fee</Text>
-                <Text style={styles.swapDetailValue}>0.2%</Text>
-              </View>
-              
-              {/* <View style={styles.swapDetailRow}>
+
+                <View style={styles.swapDetailRow}>
+                  <Text style={styles.swapDetailLabel}>Total Value</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <DollarSign
+                      size={14}
+                      color={'#4ade80'}
+                      style={{ marginRight: 2 }}
+                    />
+                    <Text
+                      style={[styles.swapDetailValue, { color: '#4ade80' }]}
+                    >
+                      {totalValueDisplay.startsWith('$')
+                        ? totalValueDisplay.substring(1)
+                        : totalValueDisplay}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.swapDetailRow}>
+                  <Text style={styles.swapDetailLabel}>Trade Fee</Text>
+                  <Text style={styles.swapDetailValue}>0.2%</Text>
+                </View>
+
+                {/* <View style={styles.swapDetailRow}>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <Zap size={14} color={'#eab308'} style={{ marginRight: 4 }} />
                   <Text style={styles.swapDetailLabel}>Network Fee</Text>
                 </View>
                 <Text style={styles.swapDetailValue}>$0.01</Text>
               </View> */}
-            </View>
-          )}
-          
-          <TouchableOpacity
-            style={[
-              styles.confirmSwapButton,
-              (!preparedSwap || isPreparingSwap) && styles.buttonOpacityDisabled
-            ]}
-            onPress={handleConfirmSwap}
-            disabled={!preparedSwap || isPreparingSwap}
-          >
-            <LinearGradient
-              colors={(!preparedSwap || isPreparingSwap) ? ['#4a4a4a', '#3a3a3a'] : ['#3B82F6', '#2563EB']}
-              style={styles.buttonGradient}>
-              {isPreparingSwap ? (
-                <>
-                  <ActivityIndicator size="small" color={colors.white} />
-                  <Text style={styles.confirmSwapButtonText}>Preparing...</Text>
-                </>
-              ) : (
-                <Text style={styles.confirmSwapButtonText}>Confirm Swap</Text>
-              )}
-            </LinearGradient>
-          </TouchableOpacity>
-        </BottomSheetView>
-      </BottomSheet>
+              </View>
+            )}
 
-      {/* Loading Bottom Sheet for Swap Progress */}
-      <BottomSheet
-        ref={loadingBottomSheetRef}
-        index={-1}
-        enablePanDownToClose={swapComplete}
-        backgroundStyle={styles.bottomSheetBackground}
-        handleIndicatorStyle={styles.bottomSheetHandle}
-        backdropComponent={(props) => (
-          <BottomSheetBackdrop
-            {...props}
-            appearsOnIndex={0}
-            disappearsOnIndex={-1}
-            opacity={0.4}
-          />
-        )}
-        onClose={handleCloseLoadingSheet}
-      >
-        <BottomSheetView style={styles.loadingBottomSheetContent}>
-          <View style={styles.loadingContainer}>
-            {isSwapping && (
-              <>
-                <ActivityIndicator size="large" color="#3B82F6" style={styles.loadingSpinner} />
-                <Text style={styles.loadingTitle}>Processing Swap...</Text>
-                <Text style={styles.loadingSubtitle}>Please wait while we execute your trade</Text>
-              </>
-            )}
-            
-            {swapComplete && swapSuccess && (
-              <>
-                <View style={styles.successIcon}>
-                  <Check size={32} color="#10b981" />
-                </View>
-                <Text style={styles.loadingTitle}>Swap Successful!</Text>
-                <Text style={styles.loadingSubtitle}>
-                  Transaction: {swapTxSignature.substring(0, 8)}...{swapTxSignature.substring(swapTxSignature.length - 8)}
-                </Text>
-                <TouchableOpacity style={styles.closeButton} onPress={handleCloseLoadingSheet}>
-                  <Text style={styles.closeButtonText}>Close</Text>
-                </TouchableOpacity>
-              </>
-            )}
-            
-            {swapComplete && !swapSuccess && (
-              <>
-                <View style={styles.errorIcon}>
-                  <Text style={styles.errorIconText}>✕</Text>
-                </View>
-                <Text style={styles.loadingTitle}>Swap Failed</Text>
-                <Text style={styles.loadingSubtitle}>Please try again</Text>
-                <TouchableOpacity style={styles.closeButton} onPress={handleCloseLoadingSheet}>
-                  <Text style={styles.closeButtonText}>Close</Text>
-                </TouchableOpacity>
-              </>
-            )}
-          </View>
-        </BottomSheetView>
-      </BottomSheet>
-      
+            <TouchableOpacity
+              style={[
+                styles.confirmSwapButton,
+                (!preparedSwap || isPreparingSwap) &&
+                  styles.buttonOpacityDisabled,
+              ]}
+              onPress={handleConfirmSwap}
+              disabled={!preparedSwap || isPreparingSwap}
+            >
+              <LinearGradient
+                colors={
+                  !preparedSwap || isPreparingSwap
+                    ? ['#4a4a4a', '#3a3a3a']
+                    : ['#3B82F6', '#2563EB']
+                }
+                style={styles.buttonGradient}
+              >
+                {isPreparingSwap ? (
+                  <>
+                    <ActivityIndicator size="small" color={colors.white} />
+                    <Text style={styles.confirmSwapButtonText}>
+                      Preparing...
+                    </Text>
+                  </>
+                ) : (
+                  <Text style={styles.confirmSwapButtonText}>Confirm Swap</Text>
+                )}
+              </LinearGradient>
+            </TouchableOpacity>
+          </BottomSheetView>
+        </BottomSheet>
+
+        {/* Loading Bottom Sheet for Swap Progress */}
+        <BottomSheet
+          ref={loadingBottomSheetRef}
+          index={-1}
+          enablePanDownToClose={swapComplete}
+          backgroundStyle={styles.bottomSheetBackground}
+          handleIndicatorStyle={styles.bottomSheetHandle}
+          backdropComponent={(props) => (
+            <BottomSheetBackdrop
+              {...props}
+              appearsOnIndex={0}
+              disappearsOnIndex={-1}
+              opacity={0.4}
+            />
+          )}
+          onClose={handleCloseLoadingSheet}
+        >
+          <BottomSheetView style={styles.loadingBottomSheetContent}>
+            <View style={styles.loadingContainer}>
+              {isSwapping && (
+                <>
+                  <ActivityIndicator
+                    size="large"
+                    color="#3B82F6"
+                    style={styles.loadingSpinner}
+                  />
+                  <Text style={styles.loadingTitle}>Processing Swap...</Text>
+                  <Text style={styles.loadingSubtitle}>
+                    Please wait while we execute your trade
+                  </Text>
+                </>
+              )}
+
+              {swapComplete && swapSuccess && (
+                <>
+                  <View style={styles.successIcon}>
+                    <Check size={32} color="#10b981" />
+                  </View>
+                  <Text style={styles.loadingTitle}>Swap Successful!</Text>
+                  <Text style={styles.loadingSubtitle}>
+                    Transaction: {swapTxSignature.substring(0, 8)}...
+                    {swapTxSignature.substring(swapTxSignature.length - 8)}
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.closeButton}
+                    onPress={handleCloseLoadingSheet}
+                  >
+                    <Text style={styles.closeButtonText}>Close</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+
+              {swapComplete && !swapSuccess && (
+                <>
+                  <View style={styles.errorIcon}>
+                    <Text style={styles.errorIconText}>✕</Text>
+                  </View>
+                  <Text style={styles.loadingTitle}>Swap Failed</Text>
+                  <Text style={styles.loadingSubtitle}>Please try again</Text>
+                  <TouchableOpacity
+                    style={styles.closeButton}
+                    onPress={handleCloseLoadingSheet}
+                  >
+                    <Text style={styles.closeButtonText}>Close</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
+          </BottomSheetView>
+        </BottomSheet>
       </ScreenContainer>
-      
+
       <Toast
         message={toastMessage}
         visible={showToast}
@@ -892,7 +1136,8 @@ const styles = StyleSheet.create({
     opacity: 0.7, // Added opacity to make it slightly less prominent than full white
     marginBottom: 8,
   },
-  bottomLabel: { // This style might no longer be needed if TokenSelectorDisplay handles its own label
+  bottomLabel: {
+    // This style might no longer be needed if TokenSelectorDisplay handles its own label
     // marginTop: -10, // Or adjust if still used elsewhere
   },
   tokenSelectorContainer: {
@@ -1034,7 +1279,8 @@ const styles = StyleSheet.create({
     // Android Shadow (kept commented as per last file state)
     // elevation: 5,
   },
-  buttonOpacityDisabled: { // New style for TouchableOpacity's disabled state when wrapping a gradient
+  buttonOpacityDisabled: {
+    // New style for TouchableOpacity's disabled state when wrapping a gradient
     opacity: 0.6, // Made less opaque
   },
   buttonGradient: {

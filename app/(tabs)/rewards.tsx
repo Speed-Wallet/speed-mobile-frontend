@@ -1,6 +1,25 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Dimensions, Modal } from 'react-native';
-import { Gift, Trophy, Star, Users, ArrowRight, Medal, Crown, Zap, X } from 'lucide-react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Image,
+  Dimensions,
+  Modal,
+} from 'react-native';
+import {
+  Gift,
+  Trophy,
+  Star,
+  Users,
+  ArrowRight,
+  Medal,
+  Crown,
+  Zap,
+  X,
+} from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import colors from '@/constants/colors';
 import UserData from '@/data/user';
@@ -10,47 +29,118 @@ import TabScreenHeader from '@/components/TabScreenHeader';
 const { width } = Dimensions.get('window');
 
 const TIERS = {
-  BRONZE: { 
-    name: 'Bronze', 
-    color: '#CD7F32', 
+  BRONZE: {
+    name: 'Bronze',
+    color: '#CD7F32',
     points: 0,
     gradient: ['#8D6E63', '#6D4C41'],
-    perks: ['Basic Trading', 'Standard Support']
+    perks: ['Basic Trading', 'Standard Support'],
   },
-  SILVER: { 
-    name: 'Silver', 
-    color: '#C0C0C0', 
+  SILVER: {
+    name: 'Silver',
+    color: '#C0C0C0',
     points: 1000,
     gradient: ['#BDBDBD', '#9E9E9E'],
-    perks: ['Lower Fees', 'Priority Support']
+    perks: ['Lower Fees', 'Priority Support'],
   },
-  GOLD: { 
-    name: 'Gold', 
+  GOLD: {
+    name: 'Gold',
     color: '#A17917', // Adjusted for an even more opaque/subdued gold appearance
     points: 5000,
     gradient: ['#FFC107', '#FFA000'],
-    perks: ['VIP Trading', 'Exclusive Events']
+    perks: ['VIP Trading', 'Exclusive Events'],
   },
-  PLATINUM: { 
-    name: 'Platinum', 
-    color: '#E5E4E2', 
+  PLATINUM: {
+    name: 'Platinum',
+    color: '#E5E4E2',
     points: 10000,
     gradient: ['#E0E0E0', '#BDBDBD'],
-    perks: ['Zero Fees', '24/7 Support', 'Custom Benefits']
+    perks: ['Zero Fees', '24/7 Support', 'Custom Benefits'],
   },
 };
 
 const FULL_LEADERBOARD = [
-  { id: 1, name: 'Alex Thompson', points: 12500, tier: 'PLATINUM', avatar: 'https://randomuser.me/api/portraits/men/1.jpg', weeklyGain: 2500 },
-  { id: 2, name: 'Sarah Chen', points: 11200, tier: 'PLATINUM', avatar: 'https://randomuser.me/api/portraits/women/2.jpg', weeklyGain: 1800 },
-  { id: 3, name: 'Mike Johnson', points: 9800, tier: 'GOLD', avatar: 'https://randomuser.me/api/portraits/men/3.jpg', weeklyGain: 1200 },
-  { id: 4, name: 'Emma Davis', points: 8500, tier: 'GOLD', avatar: 'https://randomuser.me/api/portraits/women/4.jpg', weeklyGain: 900 },
-  { id: 5, name: 'James Wilson', points: 7200, tier: 'GOLD', avatar: 'https://randomuser.me/api/portraits/men/5.jpg', weeklyGain: 800 },
-  { id: 6, name: UserData.name, points: 6800, tier: 'GOLD', avatar: UserData.avatar || 'https://randomuser.me/api/portraits/men/6.jpg', weeklyGain: 750, isCurrentUser: true },
-  { id: 7, name: 'Sophie Brown', points: 6200, tier: 'SILVER', avatar: 'https://randomuser.me/api/portraits/women/7.jpg', weeklyGain: 600 },
-  { id: 8, name: 'David Lee', points: 5800, tier: 'SILVER', avatar: 'https://randomuser.me/api/portraits/men/8.jpg', weeklyGain: 500 },
-  { id: 9, name: 'Lisa Wang', points: 5200, tier: 'SILVER', avatar: 'https://randomuser.me/api/portraits/women/9.jpg', weeklyGain: 400 },
-  { id: 10, name: 'Tom Harris', points: 4800, tier: 'SILVER', avatar: 'https://randomuser.me/api/portraits/men/10.jpg', weeklyGain: 300 },
+  {
+    id: 1,
+    name: 'Alex Thompson',
+    points: 12500,
+    tier: 'PLATINUM',
+    avatar: 'https://randomuser.me/api/portraits/men/1.jpg',
+    weeklyGain: 2500,
+  },
+  {
+    id: 2,
+    name: 'Sarah Chen',
+    points: 11200,
+    tier: 'PLATINUM',
+    avatar: 'https://randomuser.me/api/portraits/women/2.jpg',
+    weeklyGain: 1800,
+  },
+  {
+    id: 3,
+    name: 'Mike Johnson',
+    points: 9800,
+    tier: 'GOLD',
+    avatar: 'https://randomuser.me/api/portraits/men/3.jpg',
+    weeklyGain: 1200,
+  },
+  {
+    id: 4,
+    name: 'Emma Davis',
+    points: 8500,
+    tier: 'GOLD',
+    avatar: 'https://randomuser.me/api/portraits/women/4.jpg',
+    weeklyGain: 900,
+  },
+  {
+    id: 5,
+    name: 'James Wilson',
+    points: 7200,
+    tier: 'GOLD',
+    avatar: 'https://randomuser.me/api/portraits/men/5.jpg',
+    weeklyGain: 800,
+  },
+  {
+    id: 6,
+    name: UserData.name,
+    points: 6800,
+    tier: 'GOLD',
+    avatar: UserData.avatar || 'https://randomuser.me/api/portraits/men/6.jpg',
+    weeklyGain: 750,
+    isCurrentUser: true,
+  },
+  {
+    id: 7,
+    name: 'Sophie Brown',
+    points: 6200,
+    tier: 'SILVER',
+    avatar: 'https://randomuser.me/api/portraits/women/7.jpg',
+    weeklyGain: 600,
+  },
+  {
+    id: 8,
+    name: 'David Lee',
+    points: 5800,
+    tier: 'SILVER',
+    avatar: 'https://randomuser.me/api/portraits/men/8.jpg',
+    weeklyGain: 500,
+  },
+  {
+    id: 9,
+    name: 'Lisa Wang',
+    points: 5200,
+    tier: 'SILVER',
+    avatar: 'https://randomuser.me/api/portraits/women/9.jpg',
+    weeklyGain: 400,
+  },
+  {
+    id: 10,
+    name: 'Tom Harris',
+    points: 4800,
+    tier: 'SILVER',
+    avatar: 'https://randomuser.me/api/portraits/men/10.jpg',
+    weeklyGain: 300,
+  },
 ];
 
 const TOP_3 = FULL_LEADERBOARD.slice(0, 3);
@@ -64,19 +154,20 @@ export default function RewardsScreen() {
 
   const getCurrentTierProgress = () => {
     const currentTier = TIERS[userTier];
-    const nextTier = Object.values(TIERS).find(tier => tier.points > currentTier.points);
+    const nextTier = Object.values(TIERS).find(
+      (tier) => tier.points > currentTier.points,
+    );
     if (!nextTier) return 100;
-    
-    const progress = ((userPoints - currentTier.points) / (nextTier.points - currentTier.points)) * 100;
+
+    const progress =
+      ((userPoints - currentTier.points) /
+        (nextTier.points - currentTier.points)) *
+      100;
     return Math.min(Math.max(progress, 0), 100);
   };
 
   const LeaderboardModal = () => (
-    <Modal
-      visible={showLeaderboard}
-      animationType="slide"
-      transparent={true}
-    >
+    <Modal visible={showLeaderboard} animationType="slide" transparent={true}>
       <View style={styles.modalContainer}>
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
@@ -84,7 +175,7 @@ export default function RewardsScreen() {
               <Crown size={24} color={colors.warning} />
               <Text style={styles.modalTitle}>Global Rankings</Text>
             </View>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.closeButton}
               onPress={() => setShowLeaderboard(false)}
             >
@@ -97,9 +188,9 @@ export default function RewardsScreen() {
               <LinearGradient
                 key={user.id}
                 colors={
-                  user.isCurrentUser 
+                  user.isCurrentUser
                     ? ['#5D5FEF20', '#7577FF20']
-                    : index === 0 
+                    : index === 0
                       ? ['#FFD70020', '#FFA00020']
                       : ['#1E1E1E', '#2C2C2C']
                 }
@@ -107,38 +198,52 @@ export default function RewardsScreen() {
                 end={{ x: 1, y: 0 }}
                 style={[
                   styles.leaderboardItem,
-                  user.isCurrentUser && styles.currentUserItem
+                  user.isCurrentUser && styles.currentUserItem,
                 ]}
               >
                 <View style={styles.rankContainer}>
-                  <Text style={[
-                    styles.rank,
-                    index === 0 && styles.topRank,
-                    user.isCurrentUser && styles.currentUserRank
-                  ]}>#{index + 1}</Text>
+                  <Text
+                    style={[
+                      styles.rank,
+                      index === 0 && styles.topRank,
+                      user.isCurrentUser && styles.currentUserRank,
+                    ]}
+                  >
+                    #{index + 1}
+                  </Text>
                 </View>
                 <Image source={{ uri: user.avatar }} style={styles.avatar} />
                 <View style={styles.userInfo}>
-                  <Text style={[
-                    styles.userName,
-                    user.isCurrentUser && styles.currentUserText
-                  ]}>{user.name}</Text>
+                  <Text
+                    style={[
+                      styles.userName,
+                      user.isCurrentUser && styles.currentUserText,
+                    ]}
+                  >
+                    {user.name}
+                  </Text>
                   <View style={styles.userStats}>
                     <Text style={styles.userPoints}>{user.points} Points</Text>
                     <View style={styles.weeklyGain}>
                       <Zap size={12} color={colors.success} />
-                      <Text style={styles.gainText}>+{user.weeklyGain} this week</Text>
+                      <Text style={styles.gainText}>
+                        +{user.weeklyGain} this week
+                      </Text>
                     </View>
                   </View>
                 </View>
-                <View style={[
-                  styles.tierIndicator,
-                  { backgroundColor: TIERS[user.tier].color + '20' }
-                ]}>
-                  <Text style={[
-                    styles.tierIndicatorText,
-                    { color: TIERS[user.tier].color }
-                  ]}>
+                <View
+                  style={[
+                    styles.tierIndicator,
+                    { backgroundColor: TIERS[user.tier].color + '20' },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.tierIndicatorText,
+                      { color: TIERS[user.tier].color },
+                    ]}
+                  >
                     {TIERS[user.tier].name}
                   </Text>
                 </View>
@@ -174,19 +279,25 @@ export default function RewardsScreen() {
           ))}
         </View>
       </View>
-      
+
       <View style={styles.progressContainer}>
         <View style={styles.progressBar}>
-          <View style={[styles.progress, { width: `${getCurrentTierProgress()}%` }]} />
+          <View
+            style={[styles.progress, { width: `${getCurrentTierProgress()}%` }]}
+          />
         </View>
         <View style={styles.progressInfo}>
           <Text style={styles.progressText}>
-            {Math.round(getCurrentTierProgress())}% to {
-              Object.values(TIERS).find(tier => tier.points > TIERS[userTier].points)?.name || 'Max'
-            }
+            {Math.round(getCurrentTierProgress())}% to{' '}
+            {Object.values(TIERS).find(
+              (tier) => tier.points > TIERS[userTier].points,
+            )?.name || 'Max'}
           </Text>
           <Text style={styles.pointsNeeded}>
-            {Object.values(TIERS).find(tier => tier.points > TIERS[userTier].points)?.points - userPoints || 0} points needed
+            {Object.values(TIERS).find(
+              (tier) => tier.points > TIERS[userTier].points,
+            )?.points - userPoints || 0}{' '}
+            points needed
           </Text>
         </View>
       </View>
@@ -200,7 +311,7 @@ export default function RewardsScreen() {
           <Crown size={24} color={colors.warning} />
           <Text style={styles.sectionTitle}>Top Players</Text>
         </View>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.viewAllButton}
           onPress={() => setShowLeaderboard(true)}
         >
@@ -218,7 +329,9 @@ export default function RewardsScreen() {
           style={styles.leaderboardItem}
         >
           <View style={styles.rankContainer}>
-            <Text style={[styles.rank, index === 0 && styles.topRank]}>#{index + 1}</Text>
+            <Text style={[styles.rank, index === 0 && styles.topRank]}>
+              #{index + 1}
+            </Text>
           </View>
           <Image source={{ uri: user.avatar }} style={styles.avatar} />
           <View style={styles.userInfo}>
@@ -227,19 +340,31 @@ export default function RewardsScreen() {
               <Text style={styles.userPoints}>{user.points} Points</Text>
               <View style={styles.weeklyGain}>
                 <Zap size={12} color={colors.success} />
-                <Text style={styles.gainText}>+{user.weeklyGain} this week</Text>
+                <Text style={styles.gainText}>
+                  +{user.weeklyGain} this week
+                </Text>
               </View>
             </View>
           </View>
-          <View style={[styles.tierIndicator, { backgroundColor: TIERS[user.tier].color + '20' }]}>
-            <Text style={[styles.tierIndicatorText, { color: TIERS[user.tier].color }]}>
+          <View
+            style={[
+              styles.tierIndicator,
+              { backgroundColor: TIERS[user.tier].color + '20' },
+            ]}
+          >
+            <Text
+              style={[
+                styles.tierIndicatorText,
+                { color: TIERS[user.tier].color },
+              ]}
+            >
               {TIERS[user.tier].name}
             </Text>
           </View>
         </LinearGradient>
       ))}
 
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.yourRankingButton}
         onPress={() => setShowLeaderboard(true)}
       >
@@ -255,21 +380,20 @@ export default function RewardsScreen() {
 
   return (
     <ScreenContainer edges={['top', 'bottom']}>
-      <TabScreenHeader 
-        title="Rewards" 
-        subtitle="Compete and earn rewards" 
-      />
+      <TabScreenHeader title="Rewards" subtitle="Compete and earn rewards" />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {renderTierCard()}
         {renderLeaderboard()}
-        
+
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Daily Tasks</Text>
-            <Text style={styles.taskProgress}>{dailyTasksCompleted}/{totalDailyTasks}</Text>
+            <Text style={styles.taskProgress}>
+              {dailyTasksCompleted}/{totalDailyTasks}
+            </Text>
           </View>
-          
+
           <View style={styles.tasksContainer}>
             <TouchableOpacity style={styles.taskCard}>
               <View style={styles.taskIcon}>
@@ -307,7 +431,9 @@ export default function RewardsScreen() {
             </View>
             <View style={styles.rewardInfo}>
               <Text style={styles.rewardTitle}>Premium Features</Text>
-              <Text style={styles.rewardDescription}>Unlock advanced trading tools</Text>
+              <Text style={styles.rewardDescription}>
+                Unlock advanced trading tools
+              </Text>
             </View>
             <Text style={styles.rewardCost}>5000 pts</Text>
           </TouchableOpacity>
@@ -318,7 +444,9 @@ export default function RewardsScreen() {
             </View>
             <View style={styles.rewardInfo}>
               <Text style={styles.rewardTitle}>NFT Collection</Text>
-              <Text style={styles.rewardDescription}>Exclusive digital collectibles</Text>
+              <Text style={styles.rewardDescription}>
+                Exclusive digital collectibles
+              </Text>
             </View>
             <Text style={styles.rewardCost}>10000 pts</Text>
           </TouchableOpacity>

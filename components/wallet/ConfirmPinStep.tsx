@@ -1,7 +1,22 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Animated, Platform, TextInput } from 'react-native';
+import {
+  StyleSheet,
+  View,
+  Text,
+  TouchableOpacity,
+  Animated,
+  Platform,
+  TextInput,
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ArrowRight, ShieldCheck, Eye, EyeOff, CheckCircle, AlertTriangle } from 'lucide-react-native';
+import {
+  ArrowRight,
+  ShieldCheck,
+  Eye,
+  EyeOff,
+  CheckCircle,
+  AlertTriangle,
+} from 'lucide-react-native';
 import { triggerShake } from '@/utils/animations';
 import ScreenContainer from '@/components/ScreenContainer';
 import BackButton from '@/components/BackButton';
@@ -16,18 +31,18 @@ interface ConfirmPinStepProps {
   pinError?: string;
 }
 
-const ConfirmPinStep: React.FC<ConfirmPinStepProps> = ({ 
-  confirmPin, 
-  onConfirmPinChange, 
-  onConfirm, 
+const ConfirmPinStep: React.FC<ConfirmPinStepProps> = ({
+  confirmPin,
+  onConfirmPinChange,
+  onConfirm,
   onBack,
   isLoading,
-  pinError
+  pinError,
 }) => {
   const [isFocused, setIsFocused] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const pinInputRef = useRef<TextInput>(null);
-  
+
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.95)).current;
   const translateY = useRef(new Animated.Value(20)).current;
@@ -54,13 +69,16 @@ const ConfirmPinStep: React.FC<ConfirmPinStepProps> = ({
   }, []);
 
   // Handle keyboard input
-  const handleKeyPress = useCallback((key: string) => {
-    if (key === 'backspace') {
-      onConfirmPinChange(confirmPin.slice(0, -1));
-    } else if (key >= '0' && key <= '9' && confirmPin.length < 4) {
-      onConfirmPinChange(confirmPin + key);
-    }
-  }, [confirmPin, onConfirmPinChange]);
+  const handleKeyPress = useCallback(
+    (key: string) => {
+      if (key === 'backspace') {
+        onConfirmPinChange(confirmPin.slice(0, -1));
+      } else if (key >= '0' && key <= '9' && confirmPin.length < 4) {
+        onConfirmPinChange(confirmPin + key);
+      }
+    },
+    [confirmPin, onConfirmPinChange],
+  );
 
   // Trigger shake animation when PIN error occurs
   useEffect(() => {
@@ -95,7 +113,7 @@ const ConfirmPinStep: React.FC<ConfirmPinStepProps> = ({
       {process.env.EXPO_PUBLIC_APP_ENV === 'development' && (
         <BackButton onPress={onBack} style={styles.devBackButton} />
       )}
-      
+
       <View style={styles.content}>
         {/* Header */}
         <Animated.View
@@ -105,18 +123,24 @@ const ConfirmPinStep: React.FC<ConfirmPinStepProps> = ({
               opacity: fadeAnim,
               transform: [{ translateY }],
             },
-          ]}>
+          ]}
+        >
           <View style={styles.headerContent}>
             <View style={styles.iconContainer}>
               <LinearGradient
-                colors={['rgba(124, 92, 255, 0.15)', 'rgba(124, 92, 255, 0.05)']}
-                style={styles.iconBadge}>
+                colors={[
+                  'rgba(124, 92, 255, 0.15)',
+                  'rgba(124, 92, 255, 0.05)',
+                ]}
+                style={styles.iconBadge}
+              >
                 <ShieldCheck size={24} color="#7c5cff" />
               </LinearGradient>
             </View>
             <Text style={styles.title}>Confirm Your PIN</Text>
             <Text style={styles.subtitle}>
-              Please re-enter your 4-digit PIN to confirm and secure your wallet.
+              Please re-enter your 4-digit PIN to confirm and secure your
+              wallet.
             </Text>
           </View>
         </Animated.View>
@@ -129,16 +153,19 @@ const ConfirmPinStep: React.FC<ConfirmPinStepProps> = ({
               opacity: fadeAnim,
               transform: [{ scale: scaleAnim }],
             },
-          ]}>
+          ]}
+        >
           <LinearGradient
             colors={['#1a1a1a', '#1f1f1f']}
-            style={styles.pinCard}>
+            style={styles.pinCard}
+          >
             <View style={styles.pinHeader}>
               <CheckCircle size={20} color="#7c5cff" />
               <Text style={styles.pinHeaderText}>Confirm PIN</Text>
               <TouchableOpacity
                 style={styles.visibilityButton}
-                onPress={() => setIsVisible(!isVisible)}>
+                onPress={() => setIsVisible(!isVisible)}
+              >
                 {isVisible ? (
                   <EyeOff size={18} color="#9ca3af" />
                 ) : (
@@ -146,16 +173,23 @@ const ConfirmPinStep: React.FC<ConfirmPinStepProps> = ({
                 )}
               </TouchableOpacity>
             </View>
-            
-            <TouchableOpacity 
-              style={[styles.pinInputArea, isFocused && styles.pinInputAreaFocused]}
-              activeOpacity={1}>
+
+            <TouchableOpacity
+              style={[
+                styles.pinInputArea,
+                isFocused && styles.pinInputAreaFocused,
+              ]}
+              activeOpacity={1}
+            >
               {renderPinDots()}
             </TouchableOpacity>
-            
+
             <Text style={styles.pinInstruction}>
-              {confirmPin.length === 0 ? 'Use the keypad below to re-enter your PIN' : 
-               confirmPin.length < 4 ? `${4 - confirmPin.length} more digits` : 'Confirm PIN'}
+              {confirmPin.length === 0
+                ? 'Use the keypad below to re-enter your PIN'
+                : confirmPin.length < 4
+                  ? `${4 - confirmPin.length} more digits`
+                  : 'Confirm PIN'}
             </Text>
           </LinearGradient>
         </Animated.View>
@@ -169,10 +203,12 @@ const ConfirmPinStep: React.FC<ConfirmPinStepProps> = ({
                 opacity: fadeAnim,
                 transform: [{ scale: scaleAnim }],
               },
-            ]}>
+            ]}
+          >
             <LinearGradient
               colors={['rgba(239, 68, 68, 0.1)', 'rgba(239, 68, 68, 0.05)']}
-              style={styles.securityCard}>
+              style={styles.securityCard}
+            >
               <View style={styles.securityContent}>
                 <AlertTriangle size={18} color="#ef4444" />
                 <Text style={[styles.securityText, styles.securityTextError]}>
@@ -193,25 +229,44 @@ const ConfirmPinStep: React.FC<ConfirmPinStepProps> = ({
             <TouchableOpacity style={styles.backTextButton} onPress={onBack}>
               <Text style={styles.backTextButtonText}>Back to Create PIN</Text>
             </TouchableOpacity>
-            
+
             <TouchableOpacity
-              style={[styles.continueButton, confirmPin.length < 4 && styles.continueButtonDisabled]}
+              style={[
+                styles.continueButton,
+                confirmPin.length < 4 && styles.continueButtonDisabled,
+              ]}
               activeOpacity={0.8}
               onPress={onConfirm}
-              disabled={isLoading || confirmPin.length < 4}>
+              disabled={isLoading || confirmPin.length < 4}
+            >
               <LinearGradient
-                colors={confirmPin.length === 4 ? ['#7c5cff', '#6446fe'] : ['#4a4a4a', '#3a3a3a']}
-                style={styles.buttonGradient}>
-                <Animated.View style={{ 
-                  transform: [{ translateX: shakeAnimationValue }], 
-                  flexDirection: 'row', 
-                  alignItems: 'center', 
-                  justifyContent: 'center' 
-                }}>
-                  <Text style={[styles.buttonText, confirmPin.length < 4 && styles.buttonTextDisabled]}>
+                colors={
+                  confirmPin.length === 4
+                    ? ['#7c5cff', '#6446fe']
+                    : ['#4a4a4a', '#3a3a3a']
+                }
+                style={styles.buttonGradient}
+              >
+                <Animated.View
+                  style={{
+                    transform: [{ translateX: shakeAnimationValue }],
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.buttonText,
+                      confirmPin.length < 4 && styles.buttonTextDisabled,
+                    ]}
+                  >
                     {isLoading ? 'Creating Wallet...' : 'Confirm Pin'}
                   </Text>
-                  <ArrowRight size={20} color={confirmPin.length === 4 ? "#fff" : "#9ca3af"} />
+                  <ArrowRight
+                    size={20}
+                    color={confirmPin.length === 4 ? '#fff' : '#9ca3af'}
+                  />
                 </Animated.View>
               </LinearGradient>
             </TouchableOpacity>

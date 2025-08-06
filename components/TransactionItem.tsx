@@ -10,11 +10,15 @@ type TransactionItemProps = {
   showDate?: boolean;
 };
 
-const TransactionItem = ({ transaction, tokenData, showDate = false }: TransactionItemProps) => {
-  const token = tokenData.find(c => c.id === transaction.tokenId);
-  
+const TransactionItem = ({
+  transaction,
+  tokenData,
+  showDate = false,
+}: TransactionItemProps) => {
+  const token = tokenData.find((c) => c.id === transaction.tokenId);
+
   if (!token) return null;
-  
+
   const getTransactionIcon = () => {
     switch (transaction.type) {
       case 'receive':
@@ -27,7 +31,7 @@ const TransactionItem = ({ transaction, tokenData, showDate = false }: Transacti
         return <ArrowUp size={20} color={colors.textSecondary} />;
     }
   };
-  
+
   const getTransactionTitle = () => {
     switch (transaction.type) {
       case 'receive':
@@ -42,7 +46,7 @@ const TransactionItem = ({ transaction, tokenData, showDate = false }: Transacti
         return `${token.name} Transaction`;
     }
   };
-  
+
   const getTransactionDescription = () => {
     switch (transaction.type) {
       case 'receive':
@@ -57,13 +61,11 @@ const TransactionItem = ({ transaction, tokenData, showDate = false }: Transacti
         return '';
     }
   };
-  
+
   return (
     <View style={styles.container}>
-      <View style={styles.iconContainer}>
-        {getTransactionIcon()}
-      </View>
-      
+      <View style={styles.iconContainer}>{getTransactionIcon()}</View>
+
       <View style={styles.infoContainer}>
         <Text style={styles.title}>{getTransactionTitle()}</Text>
         <Text style={styles.description}>{getTransactionDescription()}</Text>
@@ -71,15 +73,18 @@ const TransactionItem = ({ transaction, tokenData, showDate = false }: Transacti
           <Text style={styles.date}>{formatDate(transaction.date)}</Text>
         )}
       </View>
-      
+
       <View style={styles.amountContainer}>
-        <Text 
+        <Text
           style={[
             styles.amount,
-            transaction.type === 'receive' ? styles.receiveAmount : styles.otherAmount
+            transaction.type === 'receive'
+              ? styles.receiveAmount
+              : styles.otherAmount,
           ]}
         >
-          {transaction.type === 'receive' ? '+' : '-'} {transaction.amount} {token.symbol}
+          {transaction.type === 'receive' ? '+' : '-'} {transaction.amount}{' '}
+          {token.symbol}
         </Text>
         <Text style={styles.fiatAmount}>
           {formatCurrency(transaction.amount * transaction.price)}

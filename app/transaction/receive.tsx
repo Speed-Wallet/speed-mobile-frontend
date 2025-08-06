@@ -1,5 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Share, TextInput, Dimensions, Platform } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Share,
+  TextInput,
+  Dimensions,
+  Platform,
+} from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Copy, Share as ShareIcon } from 'lucide-react-native';
 import QRCode from 'react-native-qrcode-svg';
@@ -38,16 +47,14 @@ export default function ReceiveScreen() {
 
   return (
     <ScreenContainer edges={['top', 'bottom']}>
-      <ScreenHeader 
+      <ScreenHeader
         title="Receive Crypto"
         onBack={() => router.push('/' as any)}
       />
 
       <View style={styles.content}>
         <View style={styles.qrSection}>
-          <Text style={styles.qrTitle}>
-            Scan QR code to receive crypto
-          </Text>
+          <Text style={styles.qrTitle}>Scan QR code to receive crypto</Text>
 
           <View style={styles.qrContainer}>
             <QRCode
@@ -62,9 +69,7 @@ export default function ReceiveScreen() {
 
       <View style={styles.bottomSection}>
         <View style={styles.addressContainer}>
-          <Text style={styles.addressLabel}>
-            Wallet Address (Solana)
-          </Text>
+          <Text style={styles.addressLabel}>Wallet Address (Solana)</Text>
           <View style={styles.addressInputContainer}>
             <View style={styles.addressGroup}>
               <TextInput
@@ -85,10 +90,7 @@ export default function ReceiveScreen() {
           </View>
         </View>
 
-        <TouchableOpacity
-          style={styles.shareButton}
-          onPress={handleShare}
-        >
+        <TouchableOpacity style={styles.shareButton} onPress={handleShare}>
           <ShareIcon size={20} color={colors.white} />
           <Text style={styles.actionButtonText}>Share</Text>
         </TouchableOpacity>

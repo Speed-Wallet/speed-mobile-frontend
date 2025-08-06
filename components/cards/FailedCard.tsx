@@ -59,17 +59,21 @@ export const FailedCard: React.FC<FailedCardProps> = ({
         <View style={styles.balanceSection}>
           <Text style={[styles.cardLabel, styles.failedText]}>ERROR</Text>
           <View style={styles.balanceRow}>
-            <Text style={[styles.balanceValue, styles.failedText]} numberOfLines={3}>
-              {card.failureReason || 'Failed to create card. Please try again or contact support.'}
+            <Text
+              style={[styles.balanceValue, styles.failedText]}
+              numberOfLines={3}
+            >
+              {card.failureReason ||
+                'Failed to create card. Please try again or contact support.'}
             </Text>
           </View>
         </View>
-        
+
         <View style={styles.cvvSection}>
           <Text style={[styles.cardLabel, styles.failedText]}>CVV</Text>
           <Text style={[styles.cardValue, styles.failedText]}>N/A</Text>
         </View>
-        
+
         <View style={styles.expirySection}>
           <Text style={[styles.cardLabel, styles.failedText]}>EXPIRES</Text>
           <Text style={[styles.cardValue, styles.failedText]}>N/A</Text>

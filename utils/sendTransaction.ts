@@ -1,15 +1,17 @@
 import { Transaction } from '@solana/web3.js';
 import { WALLET, WSOL_MINT } from '@/services/walletService';
 import { registerForPushNotificationsAsync } from '@/services/notificationService';
-import { 
-  prepareTokenTransaction, 
-  submitSignedTransaction, 
+import {
+  prepareTokenTransaction,
+  submitSignedTransaction,
   getWalletAddress,
-  submitSignedTransactionAndRegisterUsdt
+  submitSignedTransactionAndRegisterUsdt,
 } from '../services/apis';
 import { Buffer } from 'buffer';
 
-const CASHWYRE_FEE_RATE = parseFloat(process.env.EXPO_PUBLIC_CASHWYRE_FEE_RATE!)
+const CASHWYRE_FEE_RATE = parseFloat(
+  process.env.EXPO_PUBLIC_CASHWYRE_FEE_RATE!,
+);
 
 export interface SendTransactionParams {
   amount: string;
@@ -54,19 +56,21 @@ export interface SendTransactionResult {
  * Generic function to send tokens (SOL or SPL tokens) to a recipient
  * Now uses secure two-step process: prepare transaction on backend, sign on frontend, submit on backend
  */
-export async function sendTokenTransaction(params: SendTransactionParams): Promise<SendTransactionResult> {
-  const { 
-    amount, 
-    recipient, 
-    tokenAddress, 
-    tokenSymbol, 
-    tokenDecimals, 
-    cashwyreData
+export async function sendTokenTransaction(
+  params: SendTransactionParams,
+): Promise<SendTransactionResult> {
+  const {
+    amount,
+    recipient,
+    tokenAddress,
+    tokenSymbol,
+    tokenDecimals,
+    cashwyreData,
   } = params;
 
   try {
     if (!WALLET) {
-      return { success: false, error: "Wallet is not unlocked" };
+      return { success: false, error: 'Wallet is not unlocked' };
     }
 
     // Step 1: Prepare transaction on backend
@@ -77,19 +81,22 @@ export async function sendTokenTransaction(params: SendTransactionParams): Promi
       tokenSymbol,
       tokenDecimals,
       sendCashwyreFee: !!cashwyreData, // True if cashwyreData exists
-      senderPublicKey: WALLET.publicKey.toBase58()
+      senderPublicKey: WALLET.publicKey.toBase58(),
     });
 
-    console.log("Prepare transaction result:", prepareResult);
+    console.log('Prepare transaction result:', prepareResult);
 
     if (!prepareResult.success || !prepareResult.transaction) {
-      return { success: false, error: prepareResult.error || "Failed to prepare transaction" };
+      return {
+        success: false,
+        error: prepareResult.error || 'Failed to prepare transaction',
+      };
     }
 
     // Step 2: Sign transaction on frontend
     const transactionBuffer = Buffer.from(prepareResult.transaction, 'base64');
     const transaction = Transaction.from(transactionBuffer);
-    
+
     // Sign the transaction with the wallet
     transaction.sign(WALLET);
 
@@ -104,7 +111,7 @@ export async function sendTokenTransaction(params: SendTransactionParams): Promi
         cashwyreWalletAddress: cashwyreData.cashwyreWalletAddress,
         amount: parseFloat(amount),
         userWalletAddress: cashwyreData.userWalletAddress,
-        cardCreationData: cashwyreData.cardCreationData
+        cardCreationData: cashwyreData.cardCreationData,
       });
       return submitResult;
     } else {
@@ -112,14 +119,16 @@ export async function sendTokenTransaction(params: SendTransactionParams): Promi
       const submitResult = await submitSignedTransaction({
         signedTransaction: transaction.serialize().toString('base64'),
         blockhash: prepareResult.blockhash!,
-        lastValidBlockHeight: prepareResult.lastValidBlockHeight!
+        lastValidBlockHeight: prepareResult.lastValidBlockHeight!,
       });
       return submitResult;
     }
-
   } catch (error) {
-    console.error("Transaction failed:", error);
-    const errorMessage = error instanceof Error ? error.message : "Transaction failed. Please try again.";
+    console.error('Transaction failed:', error);
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : 'Transaction failed. Please try again.';
     return { success: false, error: errorMessage };
   }
 }
@@ -128,13 +137,16 @@ export async function sendTokenTransaction(params: SendTransactionParams): Promi
  * Convenience function specifically for sending USDT
  * Used in card creation process
  */
-export async function sendUsdt(amount: string, recipientAddress: string): Promise<SendTransactionResult> {
+export async function sendUsdt(
+  amount: string,
+  recipientAddress: string,
+): Promise<SendTransactionResult> {
   return sendTokenTransaction({
     amount,
     recipient: recipientAddress,
     tokenAddress: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB', // USDT mainnet address
     tokenSymbol: 'USDT',
-    tokenDecimals: 6
+    tokenDecimals: 6,
   });
 }
 
@@ -158,14 +170,14 @@ export async function sendUsdtToCashwyre(
     homeAddress: string;
     cardName: string;
     cardBrand: string;
-  }
+  },
 ): Promise<SendTransactionResult> {
   try {
     // 1. Get wallet address from APIs
     const walletResponse = await getWalletAddress();
-    
+
     if (!walletResponse.success || !walletResponse.data) {
-      console.log(walletResponse)
+      console.log(walletResponse);
       return { success: false, error: 'Failed to get Cashwyre wallet address' };
     }
 
@@ -175,7 +187,7 @@ export async function sendUsdtToCashwyre(
 
     // 2. Get push token for notifications
     let pushToken = await registerForPushNotificationsAsync();
-    
+
     if (!pushToken) {
       console.warn('Failed to get push token, using fallback for development');
       // Use a fallback token for development/testing
@@ -207,11 +219,11 @@ export async function sendUsdtToCashwyre(
           homeAddress: cardData.homeAddress,
           cardName: cardData.cardName,
           cardBrand: cardData.cardBrand.toLowerCase(),
-          amountInUSD: parseFloat(amount)
-        }
-      }
+          amountInUSD: parseFloat(amount),
+        },
+      },
     });
-    
+
     if (!sendResult.success) {
       console.error('Failed to send USDT to cashwyre:', sendResult.error);
       return sendResult;
@@ -221,9 +233,12 @@ export async function sendUsdtToCashwyre(
     return sendResult;
   } catch (error) {
     console.error('Error in sendUsdtToCashwyre:', error);
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Failed to complete USDT transfer'
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : 'Failed to complete USDT transfer',
     };
   }
 }

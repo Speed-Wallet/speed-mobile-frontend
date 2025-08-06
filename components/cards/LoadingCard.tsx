@@ -1,6 +1,13 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
-import { User, Eye, X, Clock, CheckCircle, AlertCircle } from 'lucide-react-native';
+import {
+  User,
+  Eye,
+  X,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+} from 'lucide-react-native';
 import { PaymentCard as PaymentCardType } from '@/data/types';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
 
@@ -34,7 +41,7 @@ export const LoadingCard: React.FC<LoadingCardProps> = ({
     if (card.creationStep) {
       return card.creationStep;
     }
-    
+
     // Default to step 1 for backward compatibility
     return 1;
   };
@@ -48,22 +55,22 @@ export const LoadingCard: React.FC<LoadingCardProps> = ({
       title: 'Confirming Transaction',
       description: 'Processing payment details',
       icon: Clock,
-      color: '#3182ce'
+      color: '#3182ce',
     },
     {
       number: 2,
       title: 'Verifying KYC',
       description: 'Identity verification in progress',
       icon: Clock,
-      color: '#3182ce'
+      color: '#3182ce',
     },
     {
       number: 3,
       title: 'Creating Card',
       description: 'Generating virtual card',
       icon: Clock,
-      color: '#3182ce'
-    }
+      color: '#3182ce',
+    },
   ];
 
   const getStepStatus = (stepNumber: number) => {
@@ -94,8 +101,15 @@ export const LoadingCard: React.FC<LoadingCardProps> = ({
           <View style={styles.userIcon}>
             <User size={14} color="#ffffff" />
           </View>
-          <Text style={styles.cardHolderName}>{card.holder || card.cardName || 'Card'}</Text>
-          <View style={[styles.loadingBadge, { backgroundColor: getStepColor(currentStep) }]}>
+          <Text style={styles.cardHolderName}>
+            {card.holder || card.cardName || 'Card'}
+          </Text>
+          <View
+            style={[
+              styles.loadingBadge,
+              { backgroundColor: getStepColor(currentStep) },
+            ]}
+          >
             <Clock size={12} color="#ffffff" />
             <Text style={styles.loadingBadgeText}>Creating...</Text>
           </View>
@@ -133,16 +147,22 @@ export const LoadingCard: React.FC<LoadingCardProps> = ({
               const Icon = getStepIcon(step.number);
               const color = getStepColor(step.number);
               const status = getStepStatus(step.number);
-              
+
               return (
                 <React.Fragment key={step.number}>
                   <View style={[styles.stepIndicator, { borderColor: color }]}>
                     <Icon size={16} color={color} />
                   </View>
                   {index < steps.length - 1 && (
-                    <View style={[styles.stepConnector, {
-                      backgroundColor: step.number < currentStep ? '#10b981' : '#374151'
-                    }]} />
+                    <View
+                      style={[
+                        styles.stepConnector,
+                        {
+                          backgroundColor:
+                            step.number < currentStep ? '#10b981' : '#374151',
+                        },
+                      ]}
+                    />
                   )}
                 </React.Fragment>
               );
@@ -169,17 +189,26 @@ export const LoadingCard: React.FC<LoadingCardProps> = ({
             const Icon = getStepIcon(step.number);
             const color = getStepColor(step.number);
             const status = getStepStatus(step.number);
-            
+
             return (
               <View key={step.number} style={styles.stepItem}>
                 <View style={styles.stepItemIcon}>
                   <Icon size={14} color={color} />
                 </View>
                 <View style={styles.stepItemContent}>
-                  <Text style={[styles.stepItemTitle, {
-                    color: status === 'completed' ? '#10b981' : 
-                           status === 'active' ? '#ffffff' : '#9ca3af'
-                  }]}>
+                  <Text
+                    style={[
+                      styles.stepItemTitle,
+                      {
+                        color:
+                          status === 'completed'
+                            ? '#10b981'
+                            : status === 'active'
+                              ? '#ffffff'
+                              : '#9ca3af',
+                      },
+                    ]}
+                  >
                     {step.title}
                   </Text>
                   <Text style={styles.stepItemDescription}>

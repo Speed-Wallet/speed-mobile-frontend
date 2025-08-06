@@ -3,7 +3,11 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Check, Clock, AlertCircle } from 'lucide-react-native';
 import { useOtpTimer, formatTime } from '@/hooks/useOtpTimer';
 
-export type EmailStatus = 'unverified' | 'needs_verification' | 'otp_pending' | 'verified';
+export type EmailStatus =
+  | 'unverified'
+  | 'needs_verification'
+  | 'otp_pending'
+  | 'verified';
 
 interface EmailBadgeProps {
   status: EmailStatus;
@@ -11,7 +15,11 @@ interface EmailBadgeProps {
   onExpire?: () => void;
 }
 
-const EmailBadge: React.FC<EmailBadgeProps> = ({ status, expiresAt, onExpire }) => {
+const EmailBadge: React.FC<EmailBadgeProps> = ({
+  status,
+  expiresAt,
+  onExpire,
+}) => {
   const remaining = useOtpTimer(expiresAt || null, onExpire || (() => {}));
 
   if (status === 'otp_pending' && remaining) {
@@ -50,9 +58,7 @@ const EmailBadge: React.FC<EmailBadgeProps> = ({ status, expiresAt, onExpire }) 
       return (
         <View style={[styles.badge, styles.verifiedBadge]}>
           <Check size={12} color="#10b981" />
-          <Text style={[styles.badgeText, styles.verifiedText]}>
-            Verified
-          </Text>
+          <Text style={[styles.badgeText, styles.verifiedText]}>Verified</Text>
         </View>
       );
 

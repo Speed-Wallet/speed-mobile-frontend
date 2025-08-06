@@ -8,11 +8,11 @@ interface LoadingSkeletonProps {
   style?: any;
 }
 
-const LoadingSkeleton: React.FC<LoadingSkeletonProps> = ({ 
-  width = '100%', 
-  height = 20, 
+const LoadingSkeleton: React.FC<LoadingSkeletonProps> = ({
+  width = '100%',
+  height = 20,
   borderRadius = 4,
-  style 
+  style,
 }) => {
   const shimmerAnim = useRef(new Animated.Value(0)).current;
 
@@ -30,7 +30,7 @@ const LoadingSkeleton: React.FC<LoadingSkeletonProps> = ({
             duration: 1000,
             useNativeDriver: false,
           }),
-        ])
+        ]),
       ).start();
     };
 
@@ -44,14 +44,14 @@ const LoadingSkeleton: React.FC<LoadingSkeletonProps> = ({
 
   return (
     <View style={[styles.container, { width, height, borderRadius }, style]}>
-      <Animated.View 
+      <Animated.View
         style={[
-          styles.shimmer, 
-          { 
+          styles.shimmer,
+          {
             opacity: shimmerOpacity,
-            borderRadius 
-          }
-        ]} 
+            borderRadius,
+          },
+        ]}
       />
     </View>
   );

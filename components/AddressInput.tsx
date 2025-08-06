@@ -1,5 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+} from 'react-native';
 import { Camera, Scan } from 'lucide-react-native';
 import colors from '@/constants/colors';
 
@@ -9,23 +15,25 @@ type AddressInputProps = {
   selectedToken: any;
 };
 
-const AddressInput = ({ address, onChangeAddress, selectedToken }: AddressInputProps) => {
+const AddressInput = ({
+  address,
+  onChangeAddress,
+  selectedToken,
+}: AddressInputProps) => {
   const [isFocused, setIsFocused] = useState(false);
-  
+
   const handleScanQR = () => {
     // In a real app, this would open a QR code scanner
     alert('QR scanner would open here');
   };
-  
+
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>
-        {selectedToken.name} Address
-      </Text>
-      <View 
+      <Text style={styles.label}>{selectedToken.name} Address</Text>
+      <View
         style={[
           styles.inputContainer,
-          isFocused && styles.inputContainerFocused
+          isFocused && styles.inputContainerFocused,
         ]}
       >
         <TextInput
@@ -38,10 +46,7 @@ const AddressInput = ({ address, onChangeAddress, selectedToken }: AddressInputP
           onBlur={() => setIsFocused(false)}
           autoCapitalize="none"
         />
-        <TouchableOpacity 
-          style={styles.scanButton}
-          onPress={handleScanQR}
-        >
+        <TouchableOpacity style={styles.scanButton} onPress={handleScanQR}>
           <Scan size={20} color={colors.primary} />
         </TouchableOpacity>
       </View>

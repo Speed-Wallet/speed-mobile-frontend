@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, TextInput } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  FlatList,
+  TextInput,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { X, Search } from 'lucide-react-native';
 import { router } from 'expo-router';
@@ -12,13 +19,15 @@ export default function CountryPickerScreen() {
 
   // Load current country from storage
   const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
-  
+
   useEffect(() => {
     const loadCurrentCountry = async () => {
       try {
         const currentInfo = await StorageService.loadPersonalInfo();
         if (currentInfo?.selectedCountry) {
-          const country = countries.find(c => c.code === currentInfo.selectedCountry.code);
+          const country = countries.find(
+            (c) => c.code === currentInfo.selectedCountry.code,
+          );
           if (country) {
             setSelectedCountry(country);
           }
@@ -27,13 +36,14 @@ export default function CountryPickerScreen() {
         console.error('Error loading current country:', error);
       }
     };
-    
+
     loadCurrentCountry();
   }, []);
-  
-  const filteredCountries = countries.filter(country =>
-    country.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    country.dialCode.includes(searchQuery)
+
+  const filteredCountries = countries.filter(
+    (country) =>
+      country.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      country.dialCode.includes(searchQuery),
   );
 
   const handleSelectCountry = async (country: Country) => {
@@ -56,7 +66,7 @@ export default function CountryPickerScreen() {
     <TouchableOpacity
       style={[
         styles.countryItem,
-        selectedCountry?.code === item.code && styles.selectedCountryItem
+        selectedCountry?.code === item.code && styles.selectedCountryItem,
       ]}
       onPress={() => handleSelectCountry(item)}
     >
@@ -70,13 +80,20 @@ export default function CountryPickerScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Select Country</Text>
-        <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.closeButton}
+        >
           <X size={24} color={colors.textPrimary} />
         </TouchableOpacity>
       </View>
-      
+
       <View style={styles.searchContainer}>
-        <Search size={20} color={colors.textSecondary} style={styles.searchIcon} />
+        <Search
+          size={20}
+          color={colors.textSecondary}
+          style={styles.searchIcon}
+        />
         <TextInput
           style={styles.searchInput}
           placeholder="Search by country name or dial code"
@@ -85,7 +102,7 @@ export default function CountryPickerScreen() {
           onChangeText={setSearchQuery}
         />
       </View>
-      
+
       <FlatList
         data={filteredCountries}
         keyExtractor={(country) => country.code}

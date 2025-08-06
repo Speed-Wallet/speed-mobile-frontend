@@ -2046,5 +2046,5 @@ export const englishWordlist: string[] = [
   'zebra',
   'zero',
   'zone',
-  'zoo'
+  'zoo',
 ];

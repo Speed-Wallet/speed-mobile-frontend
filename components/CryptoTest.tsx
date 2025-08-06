@@ -6,7 +6,7 @@ export default function CryptoTest() {
 
   const testCryptoPolyfill = () => {
     const results: string[] = [];
-    
+
     try {
       // Test 1: Check if crypto is available
       if (typeof crypto !== 'undefined') {
@@ -26,21 +26,24 @@ export default function CryptoTest() {
       }
 
       // Test 3: Test react-native-quick-crypto import
-      import('react-native-quick-crypto').then((quickCrypto) => {
-        results.push('✅ react-native-quick-crypto import successful');
-        
-        // Test createHash
-        const hash = quickCrypto.createHash('sha256');
-        hash.update('test');
-        const hashResult = hash.digest('hex');
-        results.push(`✅ SHA256 hash test: ${hashResult}`);
-        
-        setTestResults([...results]);
-      }).catch((error) => {
-        results.push('❌ react-native-quick-crypto import failed: ' + error.message);
-        setTestResults([...results]);
-      });
+      import('react-native-quick-crypto')
+        .then((quickCrypto) => {
+          results.push('✅ react-native-quick-crypto import successful');
 
+          // Test createHash
+          const hash = quickCrypto.createHash('sha256');
+          hash.update('test');
+          const hashResult = hash.digest('hex');
+          results.push(`✅ SHA256 hash test: ${hashResult}`);
+
+          setTestResults([...results]);
+        })
+        .catch((error) => {
+          results.push(
+            '❌ react-native-quick-crypto import failed: ' + error.message,
+          );
+          setTestResults([...results]);
+        });
     } catch (error) {
       results.push('❌ Error during crypto test: ' + (error as Error).message);
       setTestResults(results);
@@ -56,15 +59,15 @@ export default function CryptoTest() {
       <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>
         Crypto Polyfill Test Results:
       </Text>
-      
+
       {testResults.map((result, index) => (
         <Text key={index} style={{ marginBottom: 5, fontFamily: 'monospace' }}>
           {result}
         </Text>
       ))}
-      
-      <Button 
-        title="Run Test Again" 
+
+      <Button
+        title="Run Test Again"
         onPress={testCryptoPolyfill}
         style={{ marginTop: 20 }}
       />

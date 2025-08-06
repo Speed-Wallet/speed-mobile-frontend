@@ -12,23 +12,22 @@ interface SettingsScreenProps {
   bottomElement?: React.ReactNode;
 }
 
-export default function SettingsScreen({ 
-  title, 
-  onBack, 
-  rightElement, 
-  children, 
+export default function SettingsScreen({
+  title,
+  onBack,
+  rightElement,
+  children,
   scrollable = true,
-  bottomElement
+  bottomElement,
 }: SettingsScreenProps) {
   return (
     <ScreenContainer edges={['top', 'bottom']}>
-      <ScreenHeader 
-        title={title} 
-        onBack={onBack}
-        rightElement={rightElement}
-      />
+      <ScreenHeader title={title} onBack={onBack} rightElement={rightElement} />
       {scrollable ? (
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+        >
           {children}
         </ScrollView>
       ) : (

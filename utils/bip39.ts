@@ -31,7 +31,7 @@ async function deriveChecksumBits(entropyBuffer: Uint8Array): Promise<string> {
   const hashBuffer = await crypto.subtle.digest('SHA-256', entropyBuffer);
   const hash = new Uint8Array(hashBuffer);
   const bits = bytesToBinary(hash);
-  const checksumLength = entropyBuffer.length * 8 / 32;
+  const checksumLength = (entropyBuffer.length * 8) / 32;
   return bits.slice(0, checksumLength);
 }
 
@@ -39,7 +39,9 @@ async function deriveChecksumBits(entropyBuffer: Uint8Array): Promise<string> {
  * Generate a mnemonic phrase
  * @param strength - entropy bit length (128, 160, 192, 224, 256)
  */
-export async function generateMnemonic(strength: number = 128): Promise<string> {
+export async function generateMnemonic(
+  strength: number = 128,
+): Promise<string> {
   if (strength % 32 !== 0 || strength < 128 || strength > 256) {
     throw new Error('Strength must be a multiple of 32 between 128 and 256');
   }
@@ -81,7 +83,9 @@ export async function validateMnemonic(mnemonic: string): Promise<boolean> {
   const entropyBits = bits.slice(0, dividerIndex);
   const checksumBits = bits.slice(dividerIndex);
 
-  const entropyBytes = new Uint8Array(entropyBits.match(/.{1,8}/g)!.map((bin) => parseInt(bin, 2)));
+  const entropyBytes = new Uint8Array(
+    entropyBits.match(/.{1,8}/g)!.map((bin) => parseInt(bin, 2)),
+  );
   const newChecksum = await deriveChecksumBits(entropyBytes);
   return newChecksum === checksumBits;
 }
@@ -93,17 +97,19 @@ export async function validateMnemonic(mnemonic: string): Promise<boolean> {
  */
 export async function mnemonicToSeed(
   mnemonic: string,
-  password: string = ''
+  password: string = '',
 ): Promise<Uint8Array> {
   const mnemonicBuffer = new TextEncoder().encode(mnemonic.normalize('NFKD'));
-  const saltBuffer = new TextEncoder().encode('mnemonic' + password.normalize('NFKD'));
+  const saltBuffer = new TextEncoder().encode(
+    'mnemonic' + password.normalize('NFKD'),
+  );
 
   const key = await crypto.subtle.importKey(
     'raw',
     mnemonicBuffer,
     { name: 'PBKDF2' },
     false,
-    ['deriveBits']
+    ['deriveBits'],
   );
 
   const derivedBits = await crypto.subtle.deriveBits(
@@ -114,7 +120,7 @@ export async function mnemonicToSeed(
       hash: 'SHA-512',
     },
     key,
-    512
+    512,
   );
 
   return new Uint8Array(derivedBits);

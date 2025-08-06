@@ -54,22 +54,24 @@ export interface SubmitTransactionResponse {
 export const getJupiterQuote = async (
   fromMint: string,
   toMint: string,
-  amount: number
+  amount: number,
 ): Promise<JupiterQuoteResponse> => {
   const quoteQueries = [
     `inputMint=${fromMint}`,
     `outputMint=${toMint}`,
     `amount=${amount}`,
     'restrictIntermediateTokens=true',
-    'dynamicSlippage=true'
+    'dynamicSlippage=true',
   ];
 
-  const response = await fetch(`${JUPITER_API_URL}quote?${quoteQueries.join('&')}`);
-  
+  const response = await fetch(
+    `${JUPITER_API_URL}quote?${quoteQueries.join('&')}`,
+  );
+
   if (!response.ok) {
     throw new Error(`Failed to get Jupiter quote: ${response.statusText}`);
   }
-  
+
   return response.json();
 };
 
@@ -77,12 +79,12 @@ export const getJupiterQuote = async (
  * Prepare a Jupiter swap transaction on the backend
  */
 export const prepareJupiterSwap = async (
-  quoteResponse: JupiterQuoteResponse, 
+  quoteResponse: JupiterQuoteResponse,
   platformFee: number,
-  userPublicKey: string
+  userPublicKey: string,
 ): Promise<JupiterSwapResponse> => {
   const token = await AuthService.getToken();
-  
+
   if (!token) {
     throw new Error('No authentication token available');
   }
@@ -91,18 +93,21 @@ export const prepareJupiterSwap = async (
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
+      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({
       quoteResponse,
       platformFee,
-      userPublicKey
-    })
+      userPublicKey,
+    }),
   });
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error || `Failed to prepare Jupiter swap: ${response.statusText}`);
+    throw new Error(
+      errorData.error ||
+        `Failed to prepare Jupiter swap: ${response.statusText}`,
+    );
   }
 
   return response.json();
@@ -115,10 +120,10 @@ export const submitSignedTransaction = async (
   signedTransaction: string,
   blockhash: string,
   lastValidBlockHeight: number,
-  userPublicKey: string
+  userPublicKey: string,
 ): Promise<SubmitTransactionResponse> => {
   const token = await AuthService.getToken();
-  
+
   if (!token) {
     throw new Error('No authentication token available');
   }
@@ -127,19 +132,21 @@ export const submitSignedTransaction = async (
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
+      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({
       signedTransaction,
       blockhash,
       lastValidBlockHeight,
-      userPublicKey
-    })
+      userPublicKey,
+    }),
   });
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error || `Failed to submit transaction: ${response.statusText}`);
+    throw new Error(
+      errorData.error || `Failed to submit transaction: ${response.statusText}`,
+    );
   }
 
   return response.json();

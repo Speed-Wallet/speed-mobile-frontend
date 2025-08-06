@@ -12,13 +12,13 @@ export const useOtpTimer = (expiresAt: number | null, onExpire: () => void) => {
     const updateTimer = () => {
       const now = Date.now();
       const diff = expiresAt - now;
-      
+
       if (diff <= 0) {
         setRemaining(null);
         onExpire();
         return;
       }
-      
+
       setRemaining(diff);
     };
 

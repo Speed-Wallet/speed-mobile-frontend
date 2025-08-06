@@ -46,20 +46,23 @@ const PinInputCard: React.FC<PinInputCardProps> = ({
 
   const getInstructionText = () => {
     if (pin.length === 0) return instruction.empty;
-    if (pin.length < 4) return instruction.incomplete.replace('{count}', (4 - pin.length).toString());
+    if (pin.length < 4)
+      return instruction.incomplete.replace(
+        '{count}',
+        (4 - pin.length).toString(),
+      );
     return instruction.complete;
   };
 
   return (
-    <LinearGradient
-      colors={['#1a1a1a', '#1f1f1f']}
-      style={styles.pinCard}>
+    <LinearGradient colors={['#1a1a1a', '#1f1f1f']} style={styles.pinCard}>
       <View style={styles.pinHeader}>
         {headerIcon}
         <Text style={styles.pinHeaderText}>{headerText}</Text>
         <TouchableOpacity
           style={styles.visibilityButton}
-          onPress={() => setIsVisible(!isVisible)}>
+          onPress={() => setIsVisible(!isVisible)}
+        >
           {isVisible ? (
             <EyeOff size={18} color="#9ca3af" />
           ) : (
@@ -67,16 +70,12 @@ const PinInputCard: React.FC<PinInputCardProps> = ({
           )}
         </TouchableOpacity>
       </View>
-      
-      <TouchableOpacity 
-        style={styles.pinInputArea}
-        activeOpacity={1}>
+
+      <TouchableOpacity style={styles.pinInputArea} activeOpacity={1}>
         {renderPinDots()}
       </TouchableOpacity>
-      
-      <Text style={styles.pinInstruction}>
-        {getInstructionText()}
-      </Text>
+
+      <Text style={styles.pinInstruction}>{getInstructionText()}</Text>
     </LinearGradient>
   );
 };

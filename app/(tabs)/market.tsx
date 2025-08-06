@@ -1,7 +1,19 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TextInput,
+  TouchableOpacity,
+} from 'react-native';
 import { useRouter } from 'expo-router';
-import { Search, TrendingUp, TrendingDown, ArrowUpDown } from 'lucide-react-native';
+import {
+  Search,
+  TrendingUp,
+  TrendingDown,
+  ArrowUpDown,
+} from 'lucide-react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import colors from '@/constants/colors';
 import { getAllTokenInfo } from '@/data/tokens';
@@ -24,9 +36,9 @@ export default function MarketScreen() {
 
   // Batch fetch all token prices at once
   const coingeckoIds = tokenData
-    .map(token => token.extensions?.coingeckoId)
+    .map((token) => token.extensions?.coingeckoId)
     .filter(Boolean) as string[];
-  
+
   const { prices, isLoading: isPricesLoading } = useTokenPrices(coingeckoIds);
 
   useEffect(() => {
@@ -45,19 +57,20 @@ export default function MarketScreen() {
 
   const filterAndSortData = () => {
     let filtered = [...tokenData];
-    
+
     // Filter by search query
     if (searchQuery) {
-      filtered = filtered.filter(crypto => 
-        crypto.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        crypto.symbol.toLowerCase().includes(searchQuery.toLowerCase())
+      filtered = filtered.filter(
+        (crypto) =>
+          crypto.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          crypto.symbol.toLowerCase().includes(searchQuery.toLowerCase()),
       );
     }
-    
+
     // Sort data
     filtered.sort((a, b) => {
       let comparison = 0;
-      
+
       if (sortBy === 'price') {
         comparison = a.price - b.price;
       } else if (sortBy === 'name') {
@@ -65,10 +78,10 @@ export default function MarketScreen() {
       } else if (sortBy === 'change') {
         comparison = a.priceChangePercentage - b.priceChangePercentage;
       }
-      
+
       return sortDirection === 'asc' ? comparison : -comparison;
     });
-    
+
     setFilteredData(filtered);
   };
 
@@ -87,14 +100,18 @@ export default function MarketScreen() {
 
   return (
     <ScreenContainer edges={['top', 'bottom']}>
-      <TabScreenHeader 
-        title="Market" 
-        subtitle="Discover and track cryptocurrencies" 
+      <TabScreenHeader
+        title="Market"
+        subtitle="Discover and track cryptocurrencies"
       />
-      
+
       {/* Search Bar */}
       <View style={styles.searchContainer}>
-        <Search size={20} color={colors.textSecondary} style={styles.searchIcon} />
+        <Search
+          size={20}
+          color={colors.textSecondary}
+          style={styles.searchIcon}
+        />
         <TextInput
           style={styles.searchInput}
           placeholder="Search cryptocurrencies..."
@@ -103,53 +120,104 @@ export default function MarketScreen() {
           onChangeText={setSearchQuery}
         />
       </View>
-      
+
       {/* Sort Options */}
       <View style={styles.sortOptionsContainer}>
-        <TouchableOpacity 
-          style={[styles.sortOption, sortBy === 'name' && styles.activeSortOption]} 
+        <TouchableOpacity
+          style={[
+            styles.sortOption,
+            sortBy === 'name' && styles.activeSortOption,
+          ]}
           onPress={() => setSortOption('name')}
         >
-          <Text style={[styles.sortOptionText, sortBy === 'name' && styles.activeSortOptionText]}>Name</Text>
+          <Text
+            style={[
+              styles.sortOptionText,
+              sortBy === 'name' && styles.activeSortOptionText,
+            ]}
+          >
+            Name
+          </Text>
           {sortBy === 'name' && (
-            <ArrowUpDown size={14} color={colors.primary} style={{ marginLeft: 4 }} />
+            <ArrowUpDown
+              size={14}
+              color={colors.primary}
+              style={{ marginLeft: 4 }}
+            />
           )}
         </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={[styles.sortOption, sortBy === 'price' && styles.activeSortOption]} 
+
+        <TouchableOpacity
+          style={[
+            styles.sortOption,
+            sortBy === 'price' && styles.activeSortOption,
+          ]}
           onPress={() => setSortOption('price')}
         >
-          <Text style={[styles.sortOptionText, sortBy === 'price' && styles.activeSortOptionText]}>Price</Text>
+          <Text
+            style={[
+              styles.sortOptionText,
+              sortBy === 'price' && styles.activeSortOptionText,
+            ]}
+          >
+            Price
+          </Text>
           {sortBy === 'price' && (
-            <ArrowUpDown size={14} color={colors.primary} style={{ marginLeft: 4 }} />
+            <ArrowUpDown
+              size={14}
+              color={colors.primary}
+              style={{ marginLeft: 4 }}
+            />
           )}
         </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={[styles.sortOption, sortBy === 'change' && styles.activeSortOption]} 
+
+        <TouchableOpacity
+          style={[
+            styles.sortOption,
+            sortBy === 'change' && styles.activeSortOption,
+          ]}
           onPress={() => setSortOption('change')}
         >
-          <Text style={[styles.sortOptionText, sortBy === 'change' && styles.activeSortOptionText]}>24h Change</Text>
-          {sortBy === 'change' && (
-            sortDirection === 'asc' ? 
-              <TrendingUp size={14} color={colors.primary} style={{ marginLeft: 4 }} /> :
-              <TrendingDown size={14} color={colors.primary} style={{ marginLeft: 4 }} />
-          )}
+          <Text
+            style={[
+              styles.sortOptionText,
+              sortBy === 'change' && styles.activeSortOptionText,
+            ]}
+          >
+            24h Change
+          </Text>
+          {sortBy === 'change' &&
+            (sortDirection === 'asc' ? (
+              <TrendingUp
+                size={14}
+                color={colors.primary}
+                style={{ marginLeft: 4 }}
+              />
+            ) : (
+              <TrendingDown
+                size={14}
+                color={colors.primary}
+                style={{ marginLeft: 4 }}
+              />
+            ))}
         </TouchableOpacity>
       </View>
-      
+
       {/* Token List */}
       <Animated.FlatList
         data={filteredData}
         keyExtractor={(item) => item.address}
         renderItem={({ item, index }) => (
           <Animated.View entering={FadeInUp.delay(index * 100).duration(400)}>
-            <TokenItem 
-              token={item} 
+            <TokenItem
+              token={item}
               onPress={() => router.push(`/token/${item.address}`)}
               showBalance={false}
-              preloadedPrice={item.extensions?.coingeckoId ? prices[item.extensions.coingeckoId] : undefined}
+              preloadedPrice={
+                item.extensions?.coingeckoId
+                  ? prices[item.extensions.coingeckoId]
+                  : undefined
+              }
               isPriceLoading={isPricesLoading}
             />
           </Animated.View>

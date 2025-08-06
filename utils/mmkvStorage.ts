@@ -6,7 +6,7 @@ export const storage = new MMKV();
 // Create a secure MMKV instance for sensitive data like auth tokens and wallet keys
 export const secureStorage = new MMKV({
   id: 'secure-storage',
-  encryptionKey: 'speed-wallet-secure-key-2024'
+  encryptionKey: 'speed-wallet-secure-key-2024',
 });
 
 // Utility functions to maintain compatibility with AsyncStorage API
@@ -44,7 +44,7 @@ export const MMKVStorage = {
 
   // Multi-operations for batch removal
   multiRemove: (keys: string[]): void => {
-    keys.forEach(key => storage.delete(key));
+    keys.forEach((key) => storage.delete(key));
   },
 
   // Check if key exists
@@ -60,7 +60,7 @@ export const MMKVStorage = {
   // Clear all data
   clearAll: (): void => {
     storage.clearAll();
-  }
+  },
 };
 
 // Secure storage utilities for sensitive data
@@ -95,7 +95,7 @@ export const SecureMMKVStorage = {
   },
 
   multiRemove: (keys: string[]): void => {
-    keys.forEach(key => secureStorage.delete(key));
+    keys.forEach((key) => secureStorage.delete(key));
   },
 
   contains: (key: string): boolean => {
@@ -108,7 +108,7 @@ export const SecureMMKVStorage = {
 
   clearAll: (): void => {
     secureStorage.clearAll();
-  }
+  },
 };
 
 // Export storage instances for direct use

@@ -1,4 +1,13 @@
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, Animated } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  KeyboardAvoidingView,
+  Platform,
+  Animated,
+} from 'react-native';
 import { useState, useRef } from 'react';
 import { User, ArrowRight } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -14,7 +23,11 @@ interface CreateUsernameStepProps {
   isLoading?: boolean;
 }
 
-export default function CreateUsernameStep({ onNext, onBack, isLoading = false }: CreateUsernameStepProps) {
+export default function CreateUsernameStep({
+  onNext,
+  onBack,
+  isLoading = false,
+}: CreateUsernameStepProps) {
   const [username, setUsername] = useState('');
   const [isValid, setIsValid] = useState(false);
   const [error, setError] = useState('');
@@ -25,7 +38,7 @@ export default function CreateUsernameStep({ onNext, onBack, isLoading = false }
     // Match backend validation exactly
     const regex = /^[a-zA-Z0-9_]+$/;
     const isValidFormat = regex.test(text);
-    
+
     if (text.length === 0) {
       setError('');
       setIsValid(false);
@@ -71,9 +84,9 @@ export default function CreateUsernameStep({ onNext, onBack, isLoading = false }
       {process.env.EXPO_PUBLIC_APP_ENV === 'development' && onBack && (
         <BackButton onPress={onBack} style={styles.devBackButton} />
       )}
-      
-      <KeyboardAvoidingView 
-        style={styles.content} 
+
+      <KeyboardAvoidingView
+        style={styles.content}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         {/* Header Section */}
@@ -81,9 +94,12 @@ export default function CreateUsernameStep({ onNext, onBack, isLoading = false }
           <View style={styles.iconContainer}>
             <User size={32} color={colors.primary} strokeWidth={2} />
           </View>
-          
+
           <Text style={styles.title}>
-            Welcome{username.length > 0 && <Text style={styles.usernameText}> {username}</Text>}
+            Welcome
+            {username.length > 0 && (
+              <Text style={styles.usernameText}> {username}</Text>
+            )}
           </Text>
           <Text style={styles.subtitle}>
             Please enter your username to get started with your wallet setup
@@ -93,20 +109,21 @@ export default function CreateUsernameStep({ onNext, onBack, isLoading = false }
         {/* Form Section */}
         <View style={styles.form}>
           <Text style={styles.label}>Username</Text>
-          
-          <Animated.View style={[
-            styles.inputContainer,
-            username.length > 0 && (
-              isUsernameTaken || (!isValid && error) 
-                ? styles.inputError 
-                : isValid 
-                ? styles.inputValid 
-                : styles.inputContainer
-            ),
-            {
-              transform: [{ translateX: shakeAnimationValue }],
-            },
-          ]}>
+
+          <Animated.View
+            style={[
+              styles.inputContainer,
+              username.length > 0 &&
+                (isUsernameTaken || (!isValid && error)
+                  ? styles.inputError
+                  : isValid
+                    ? styles.inputValid
+                    : styles.inputContainer),
+              {
+                transform: [{ translateX: shakeAnimationValue }],
+              },
+            ]}
+          >
             <View style={styles.inputWrapper}>
               <Text style={styles.atSymbol}>@</Text>
               <TextInput
@@ -122,7 +139,7 @@ export default function CreateUsernameStep({ onNext, onBack, isLoading = false }
               />
             </View>
           </Animated.View>
-          
+
           <View style={styles.helperContainer}>
             {error ? (
               <Text style={styles.errorText}>{error}</Text>
@@ -147,21 +164,27 @@ export default function CreateUsernameStep({ onNext, onBack, isLoading = false }
                 !isValid
                   ? [colors.backgroundMedium, colors.backgroundMedium]
                   : isUsernameTaken
-                  ? ['#ff5252', '#e53e3e']
-                  : ['#7c5cff', '#6446fe']
+                    ? ['#ff5252', '#e53e3e']
+                    : ['#7c5cff', '#6446fe']
               }
               style={styles.buttonGradient}
             >
-              <Text style={[
-                styles.continueButtonText,
-                isValid && styles.continueButtonTextActive
-              ]}>
-                {isLoading ? 'Loading...' : isUsernameTaken ? 'Username Taken' : 'Continue'}
+              <Text
+                style={[
+                  styles.continueButtonText,
+                  isValid && styles.continueButtonTextActive,
+                ]}
+              >
+                {isLoading
+                  ? 'Loading...'
+                  : isUsernameTaken
+                    ? 'Username Taken'
+                    : 'Continue'}
               </Text>
               {!isUsernameTaken && (
-                <ArrowRight 
-                  size={20} 
-                  color={isValid ? colors.white : colors.textSecondary} 
+                <ArrowRight
+                  size={20}
+                  color={isValid ? colors.white : colors.textSecondary}
                   strokeWidth={2}
                 />
               )}

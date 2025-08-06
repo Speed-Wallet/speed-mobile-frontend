@@ -8,43 +8,45 @@ const AlertDemo: React.FC = () => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Custom Alert Demo</Text>
-      
-      <TouchableOpacity 
-        style={[styles.button, styles.infoButton]} 
+
+      <TouchableOpacity
+        style={[styles.button, styles.infoButton]}
         onPress={() => alert('Info Alert', 'This is an informational message')}
       >
         <Text style={styles.buttonText}>Show Info Alert</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity 
-        style={[styles.button, styles.successButton]} 
+      <TouchableOpacity
+        style={[styles.button, styles.successButton]}
         onPress={() => success('Success!', 'Operation completed successfully')}
       >
         <Text style={styles.buttonText}>Show Success Alert</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity 
-        style={[styles.button, styles.errorButton]} 
+      <TouchableOpacity
+        style={[styles.button, styles.errorButton]}
         onPress={() => error('Error!', 'Something went wrong')}
       >
         <Text style={styles.buttonText}>Show Error Alert</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity 
-        style={[styles.button, styles.warningButton]} 
+      <TouchableOpacity
+        style={[styles.button, styles.warningButton]}
         onPress={() => warning('Warning!', 'Please be careful')}
       >
         <Text style={styles.buttonText}>Show Warning Alert</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity 
-        style={[styles.button, styles.confirmButton]} 
-        onPress={() => confirm(
-          'Confirm Action', 
-          'Are you sure you want to proceed?',
-          () => alert('Confirmed!', 'You chose to proceed'),
-          () => alert('Cancelled', 'You chose to cancel')
-        )}
+      <TouchableOpacity
+        style={[styles.button, styles.confirmButton]}
+        onPress={() =>
+          confirm(
+            'Confirm Action',
+            'Are you sure you want to proceed?',
+            () => alert('Confirmed!', 'You chose to proceed'),
+            () => alert('Cancelled', 'You chose to cancel'),
+          )
+        }
       >
         <Text style={styles.buttonText}>Show Confirm Dialog</Text>
       </TouchableOpacity>

@@ -32,21 +32,29 @@ const deriveKey = (pin: string, salt: string): CryptoJS.lib.WordArray => {
   return CryptoJS.PBKDF2(pin, CryptoJS.enc.Hex.parse(salt), {
     keySize: KEY_SIZE,
     iterations: ITERATION_COUNT,
-    hasher: CryptoJS.algo.SHA256
+    hasher: CryptoJS.algo.SHA256,
   });
 };
 
-const decryptMnemonic = (encryptedMnemonic: string, pin: string, salt: string, iv: string): string | null => {
+const decryptMnemonic = (
+  encryptedMnemonic: string,
+  pin: string,
+  salt: string,
+  iv: string,
+): string | null => {
   try {
     const key = deriveKey(pin, salt);
     const decrypted = CryptoJS.AES.decrypt(encryptedMnemonic, key, {
       iv: CryptoJS.enc.Hex.parse(iv),
       mode: CryptoJS.mode.CBC,
-      padding: CryptoJS.pad.Pkcs7
+      padding: CryptoJS.pad.Pkcs7,
     });
     const decryptedText = decrypted.toString(CryptoJS.enc.Utf8);
-    if (!decryptedText) { // Decryption might "succeed" but produce empty string if key is wrong
-      console.warn('Decryption resulted in empty string, likely incorrect PIN.');
+    if (!decryptedText) {
+      // Decryption might "succeed" but produce empty string if key is wrong
+      console.warn(
+        'Decryption resulted in empty string, likely incorrect PIN.',
+      );
       return null;
     }
     return decryptedText;
@@ -56,15 +64,18 @@ const decryptMnemonic = (encryptedMnemonic: string, pin: string, salt: string, i
   }
 };
 
-export const getAppCrypto = async (): Promise<{ salt: string, iv: string } | null> => {
+export const getAppCrypto = async (): Promise<{
+  salt: string;
+  iv: string;
+} | null> => {
   try {
     const salt = SecureMMKVStorage.getItem(APP_SALT_KEY);
     const iv = SecureMMKVStorage.getItem(APP_IV_KEY);
-    
+
     if (!salt || !iv) {
       return null;
     }
-    
+
     return { salt, iv };
   } catch (error) {
     console.error('Error getting app crypto:', error);
@@ -106,8 +117,8 @@ export const getMasterWalletKeypair = async (): Promise<Keypair> => {
     }
 
     const wallets = await getAllStoredWallets();
-    const masterWallet = wallets.find(wallet => wallet.isMasterWallet);
-    
+    const masterWallet = wallets.find((wallet) => wallet.isMasterWallet);
+
     if (!masterWallet) {
       throw new Error('Master wallet not found');
     }
@@ -122,17 +133,21 @@ export const getMasterWalletKeypair = async (): Promise<Keypair> => {
       masterWallet.encryptedMnemonic,
       TEMP_APP_PIN,
       appCrypto.salt,
-      appCrypto.iv
+      appCrypto.iv,
     );
 
-    if (!mnemonic || !await validateMnemonic(mnemonic)) {
+    if (!mnemonic || !(await validateMnemonic(mnemonic))) {
       throw new Error('Failed to decrypt master wallet mnemonic');
     }
 
     // Create keypair using BIP44 derivation path (m/44'/501'/accountIndex'/0')
-    const accountIndexToUse = masterWallet.accountIndex !== undefined ? masterWallet.accountIndex : 0;
-    const keypair = await createKeypairFromMnemonic(mnemonic, accountIndexToUse);
-    
+    const accountIndexToUse =
+      masterWallet.accountIndex !== undefined ? masterWallet.accountIndex : 0;
+    const keypair = await createKeypairFromMnemonic(
+      mnemonic,
+      accountIndexToUse,
+    );
+
     return keypair;
   } catch (error) {
     console.error('Failed to get master wallet keypair:', error);

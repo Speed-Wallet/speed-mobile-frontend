@@ -1,7 +1,23 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Animated, SafeAreaView, Platform, Clipboard } from 'react-native';
+import {
+  StyleSheet,
+  View,
+  Text,
+  TouchableOpacity,
+  Animated,
+  SafeAreaView,
+  Platform,
+  Clipboard,
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ArrowRight, Copy, Eye, EyeOff, ShieldCheck, AlertTriangle } from 'lucide-react-native';
+import {
+  ArrowRight,
+  Copy,
+  Eye,
+  EyeOff,
+  ShieldCheck,
+  AlertTriangle,
+} from 'lucide-react-native';
 import WordBox from './WordBox';
 
 interface ShowMnemonicStepProps {
@@ -11,15 +27,15 @@ interface ShowMnemonicStepProps {
   isLoading: boolean;
 }
 
-const ShowMnemonicStep: React.FC<ShowMnemonicStepProps> = ({ 
-  mnemonic, 
-  publicKey, 
-  onNext, 
-  isLoading 
+const ShowMnemonicStep: React.FC<ShowMnemonicStepProps> = ({
+  mnemonic,
+  publicKey,
+  onNext,
+  isLoading,
 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [copied, setCopied] = useState(false);
-  
+
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.95)).current;
   const translateY = useRef(new Animated.Value(20)).current;
@@ -54,14 +70,11 @@ const ShowMnemonicStep: React.FC<ShowMnemonicStepProps> = ({
     <SafeAreaView style={styles.container}>
       {/* Dev Mode Skip Button */}
       {process.env.EXPO_PUBLIC_APP_ENV === 'development' && (
-        <TouchableOpacity 
-          style={styles.skipButton} 
-          onPress={onNext}
-        >
+        <TouchableOpacity style={styles.skipButton} onPress={onNext}>
           <Text style={styles.skipButtonText}>Skip</Text>
         </TouchableOpacity>
       )}
-      
+
       <View style={styles.content}>
         {/* Header */}
         <Animated.View
@@ -71,7 +84,8 @@ const ShowMnemonicStep: React.FC<ShowMnemonicStepProps> = ({
               opacity: fadeAnim,
               transform: [{ translateY }],
             },
-          ]}>
+          ]}
+        >
           <View style={styles.headerContent}>
             {/* <LinearGradient
               colors={['rgba(124, 92, 255, 0.15)', 'rgba(124, 92, 255, 0.05)']}
@@ -81,7 +95,11 @@ const ShowMnemonicStep: React.FC<ShowMnemonicStepProps> = ({
             </LinearGradient> */}
             <Text style={styles.title}>Your Seed Phrase</Text>
             <Text style={styles.subtitle}>
-              Write down these 12 words in order and keep them in a safe place. Never share them with anyone. <Text style={{ fontWeight: 'bold', color: '#ffffff' }}>Anyone with these words can access the funds in your wallet.</Text>
+              Write down these 12 words in order and keep them in a safe place.
+              Never share them with anyone.{' '}
+              <Text style={{ fontWeight: 'bold', color: '#ffffff' }}>
+                Anyone with these words can access the funds in your wallet.
+              </Text>
             </Text>
           </View>
         </Animated.View>
@@ -94,22 +112,28 @@ const ShowMnemonicStep: React.FC<ShowMnemonicStepProps> = ({
               opacity: fadeAnim,
               transform: [{ scale: scaleAnim }],
             },
-          ]}>
+          ]}
+        >
           <LinearGradient
             colors={['#1a1a1a', '#1f1f1f']}
-            style={styles.seedPhraseCard}>
+            style={styles.seedPhraseCard}
+          >
             <View style={styles.seedPhraseHeader}>
               <TouchableOpacity
                 style={[styles.copyButton, copied && styles.copyButtonActive]}
-                onPress={handleCopy}>
+                onPress={handleCopy}
+              >
                 <Copy size={20} color={copied ? '#7c5cff' : '#9ca3af'} />
-                <Text style={[styles.copyText, copied && styles.copyTextActive]}>
+                <Text
+                  style={[styles.copyText, copied && styles.copyTextActive]}
+                >
                   {copied ? 'Copied!' : 'Copy'}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.visibilityButton}
-                onPress={() => setIsVisible(!isVisible)}>
+                onPress={() => setIsVisible(!isVisible)}
+              >
                 {isVisible ? (
                   <EyeOff size={20} color="#9ca3af" />
                 ) : (
@@ -117,7 +141,7 @@ const ShowMnemonicStep: React.FC<ShowMnemonicStepProps> = ({
                 )}
               </TouchableOpacity>
             </View>
-            
+
             <View style={styles.phraseGrid}>
               {mnemonic.split(' ').map((word, index) => (
                 <WordBox
@@ -162,10 +186,12 @@ const ShowMnemonicStep: React.FC<ShowMnemonicStepProps> = ({
             style={styles.continueButton}
             activeOpacity={0.8}
             onPress={onNext}
-            disabled={isLoading}>
+            disabled={isLoading}
+          >
             <LinearGradient
               colors={['#7c5cff', '#6446fe']}
-              style={styles.buttonGradient}>
+              style={styles.buttonGradient}
+            >
               <Text style={styles.buttonText}>I've Saved My Phrase</Text>
               <ArrowRight size={20} color="#fff" />
             </LinearGradient>

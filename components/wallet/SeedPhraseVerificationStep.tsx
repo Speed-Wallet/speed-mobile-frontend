@@ -1,5 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated, Platform } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  Animated,
+  Platform,
+} from 'react-native';
 import { Eye, EyeOff, RotateCcw, ArrowRight } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import colors from '@/constants/colors';
@@ -15,16 +23,18 @@ interface SeedPhraseVerificationStepProps {
   isLoading?: boolean;
 }
 
-const SeedPhraseVerificationStep: React.FC<SeedPhraseVerificationStepProps> = ({ 
-  words, 
-  onBack, 
+const SeedPhraseVerificationStep: React.FC<SeedPhraseVerificationStepProps> = ({
+  words,
+  onBack,
   onSuccess,
-  isLoading = false 
+  isLoading = false,
 }) => {
   const [shuffledWords, setShuffledWords] = useState<string[]>([]);
   const [selectedWords, setSelectedWords] = useState<string[]>([]);
   const [isVisible, setIsVisible] = useState(false);
-  const [buttonState, setButtonState] = useState<'disabled' | 'try-again' | 'continue'>('disabled');
+  const [buttonState, setButtonState] = useState<
+    'disabled' | 'try-again' | 'continue'
+  >('disabled');
   const shakeAnimationValue = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.95)).current;
@@ -57,8 +67,8 @@ const SeedPhraseVerificationStep: React.FC<SeedPhraseVerificationStepProps> = ({
   useEffect(() => {
     if (selectedWords.length === words.length) {
       // Check if the selected words are in the correct order
-      const correct = selectedWords.every((selectedWord, index) => 
-        selectedWord === words[index]
+      const correct = selectedWords.every(
+        (selectedWord, index) => selectedWord === words[index],
       );
       if (correct) {
         setButtonState('continue');
@@ -81,10 +91,10 @@ const SeedPhraseVerificationStep: React.FC<SeedPhraseVerificationStepProps> = ({
 
   const handleWordClick = (word: string) => {
     const isAlreadySelected = selectedWords.includes(word);
-    
+
     if (isAlreadySelected) {
       // Remove word from selection
-      setSelectedWords(selectedWords.filter(sw => sw !== word));
+      setSelectedWords(selectedWords.filter((sw) => sw !== word));
     } else {
       // Add word to selection
       setSelectedWords([...selectedWords, word]);
@@ -106,7 +116,7 @@ const SeedPhraseVerificationStep: React.FC<SeedPhraseVerificationStepProps> = ({
   };
 
   const getWordDisplayNumber = (word: string) => {
-    const selectedIndex = selectedWords.findIndex(sw => sw === word);
+    const selectedIndex = selectedWords.findIndex((sw) => sw === word);
     return selectedIndex >= 0 ? selectedIndex + 1 : null;
   };
 
@@ -123,7 +133,7 @@ const SeedPhraseVerificationStep: React.FC<SeedPhraseVerificationStepProps> = ({
           {rowWords.map((word, index) => {
             const isSelected = isWordSelected(word);
             const displayNumber = getWordDisplayNumber(word);
-            
+
             return (
               <WordBox
                 key={`${word}-${i + index}`}
@@ -137,7 +147,7 @@ const SeedPhraseVerificationStep: React.FC<SeedPhraseVerificationStepProps> = ({
               />
             );
           })}
-        </View>
+        </View>,
       );
     }
     return rows;
@@ -190,19 +200,19 @@ const SeedPhraseVerificationStep: React.FC<SeedPhraseVerificationStepProps> = ({
       {process.env.EXPO_PUBLIC_APP_ENV === 'development' && (
         <BackButton onPress={onBack} style={styles.devBackButton} />
       )}
-      
+
       {/* Dev Mode Skip Button */}
       {process.env.EXPO_PUBLIC_APP_ENV === 'development' && (
-        <TouchableOpacity 
-          style={styles.skipButton} 
-          onPress={handleContinue}
-        >
+        <TouchableOpacity style={styles.skipButton} onPress={handleContinue}>
           <Text style={styles.skipButtonText}>Skip</Text>
         </TouchableOpacity>
       )}
-      
+
       <View style={styles.content}>
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+        >
           {/* Title and Description */}
           <Animated.View
             style={[
@@ -211,13 +221,15 @@ const SeedPhraseVerificationStep: React.FC<SeedPhraseVerificationStepProps> = ({
                 opacity: fadeAnim,
                 transform: [{ translateY }],
               },
-            ]}>
+            ]}
+          >
             <Text style={styles.title}>Verify Your Seed Phrase</Text>
             <Text style={styles.description}>
-              Tap the words in the correct order to verify you've saved your seed phrase.
+              Tap the words in the correct order to verify you've saved your
+              seed phrase.
             </Text>
           </Animated.View>
-          
+
           {/* Seed Phrase Box */}
           <Animated.View
             style={[
@@ -226,17 +238,22 @@ const SeedPhraseVerificationStep: React.FC<SeedPhraseVerificationStepProps> = ({
                 opacity: fadeAnim,
                 transform: [{ scale: scaleAnim }],
               },
-            ]}>
+            ]}
+          >
             <LinearGradient
               colors={['#1a1a1a', '#1f1f1f']}
-              style={styles.seedPhraseBox}>
+              style={styles.seedPhraseBox}
+            >
               <View style={styles.seedPhraseHeader}>
-                <TouchableOpacity style={styles.iconButton} onPress={shuffleWords}>
+                <TouchableOpacity
+                  style={styles.iconButton}
+                  onPress={shuffleWords}
+                >
                   <RotateCcw size={20} color="#9ca3af" />
                 </TouchableOpacity>
-                
-                <TouchableOpacity 
-                  style={styles.iconButton} 
+
+                <TouchableOpacity
+                  style={styles.iconButton}
                   onPress={() => setIsVisible(!isVisible)}
                 >
                   {isVisible ? (
@@ -248,25 +265,28 @@ const SeedPhraseVerificationStep: React.FC<SeedPhraseVerificationStepProps> = ({
               </View>
               {renderWordGrid()}
             </LinearGradient>
-            
+
             {/* Controls Row */}
             <View style={styles.controlsRow}>
               <TouchableOpacity
                 style={[
                   styles.backspaceButton,
-                  selectedWords.length === 0 && styles.backspaceButtonDisabled
+                  selectedWords.length === 0 && styles.backspaceButtonDisabled,
                 ]}
                 onPress={handleBackspace}
                 disabled={selectedWords.length === 0}
               >
-                <Text style={[
-                  styles.backspaceButtonText,
-                  selectedWords.length === 0 && styles.backspaceButtonTextDisabled
-                ]}>
+                <Text
+                  style={[
+                    styles.backspaceButtonText,
+                    selectedWords.length === 0 &&
+                      styles.backspaceButtonTextDisabled,
+                  ]}
+                >
                   ← Backspace
                 </Text>
               </TouchableOpacity>
-              
+
               <Text style={styles.wordCounter}>
                 {selectedWords.length}/{words.length} words
               </Text>
@@ -281,29 +301,32 @@ const SeedPhraseVerificationStep: React.FC<SeedPhraseVerificationStepProps> = ({
                 {
                   transform: [{ translateX: shakeAnimationValue }],
                 },
-              ]}>
+              ]}
+            >
               <TouchableOpacity
                 style={styles.actionButton}
                 onPress={handleButtonPress}
                 disabled={isLoading || buttonState === 'disabled'}
-                activeOpacity={0.8}>
+                activeOpacity={0.8}
+              >
                 <LinearGradient
                   colors={
-                    buttonState === 'disabled' 
+                    buttonState === 'disabled'
                       ? [colors.backgroundMedium, colors.backgroundMedium]
                       : buttonState === 'try-again'
-                      ? ['#ff5252', '#e53e3e']
-                      : ['#7c5cff', '#6446fe']
+                        ? ['#ff5252', '#e53e3e']
+                        : ['#7c5cff', '#6446fe']
                   }
-                  style={styles.buttonGradient}>
-                  <Text style={getButtonTextStyle()}>
-                    {getButtonText()}
-                  </Text>
-                  {buttonState === 'continue' && <ArrowRight size={20} color="#fff" />}
+                  style={styles.buttonGradient}
+                >
+                  <Text style={getButtonTextStyle()}>{getButtonText()}</Text>
+                  {buttonState === 'continue' && (
+                    <ArrowRight size={20} color="#fff" />
+                  )}
                 </LinearGradient>
               </TouchableOpacity>
             </Animated.View>
-            
+
             <TouchableOpacity style={styles.backTextButton} onPress={onBack}>
               <Text style={styles.backTextButtonText}>Back to Seed Phrase</Text>
             </TouchableOpacity>

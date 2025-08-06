@@ -1,8 +1,14 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import ActionButton from '@/components/ActionButton'; 
-import { ArrowUp, ArrowDown, CreditCard, ArrowRightLeft, ShoppingCart } from 'lucide-react-native';
-import colors from '@/constants/colors'; 
+import ActionButton from '@/components/ActionButton';
+import {
+  ArrowUp,
+  ArrowDown,
+  CreditCard,
+  ArrowRightLeft,
+  ShoppingCart,
+} from 'lucide-react-native';
+import colors from '@/constants/colors';
 import GradientCard from './GradientCard';
 import { usePortfolioValue } from '@/hooks/usePortfolioValue';
 
@@ -11,23 +17,33 @@ interface BalanceCardProps {
   onActionPress: (action: string) => void;
 }
 
-const BalanceCard: React.FC<BalanceCardProps> = ({ 
+const BalanceCard: React.FC<BalanceCardProps> = ({
   currencySymbol = '$',
-  onActionPress
+  onActionPress,
 }) => {
   const { portfolioValue } = usePortfolioValue();
 
   const formattedBalance = portfolioValue.toLocaleString('en-US', {
     minimumFractionDigits: 2,
-    maximumFractionDigits: 2
+    maximumFractionDigits: 2,
   });
 
   const actions = [
-    { label: "SEND", icon: ArrowUp, bgColor: "#5B68F6", actionId: "send" },
-    { label: "RECEIVE", icon: ArrowDown, bgColor: "#28C165", actionId: "receive" },
-    { label: "CARDS", icon: CreditCard, bgColor: "#F5A623", actionId: "cards" },
-    { label: "TRADE", icon: ArrowRightLeft, bgColor: "#A259FF", actionId: "trade" },
-    { label: "BUY", icon: ShoppingCart, bgColor: "#FF6B35", actionId: "buy" },
+    { label: 'SEND', icon: ArrowUp, bgColor: '#5B68F6', actionId: 'send' },
+    {
+      label: 'RECEIVE',
+      icon: ArrowDown,
+      bgColor: '#28C165',
+      actionId: 'receive',
+    },
+    { label: 'CARDS', icon: CreditCard, bgColor: '#F5A623', actionId: 'cards' },
+    {
+      label: 'TRADE',
+      icon: ArrowRightLeft,
+      bgColor: '#A259FF',
+      actionId: 'trade',
+    },
+    { label: 'BUY', icon: ShoppingCart, bgColor: '#FF6B35', actionId: 'buy' },
   ];
 
   return (
@@ -35,18 +51,19 @@ const BalanceCard: React.FC<BalanceCardProps> = ({
       <View style={styles.upperContent}>
         {/* <Text style={styles.balanceLabel}>TOTAL BALANCE</Text> */}
         <Text style={styles.balanceAmount}>
-          {currencySymbol}{formattedBalance}
+          {currencySymbol}
+          {formattedBalance}
         </Text>
       </View>
 
       <View style={styles.actionButtonsContainer}>
-        {actions.map(action => (
-          <ActionButton 
+        {actions.map((action) => (
+          <ActionButton
             key={action.label}
             icon={<action.icon color="#FFF" size={20} />}
             label={action.label}
             onPress={() => onActionPress(action.actionId)}
-            backgroundColor={action.bgColor} 
+            backgroundColor={action.bgColor}
           />
         ))}
       </View>
@@ -55,11 +72,12 @@ const BalanceCard: React.FC<BalanceCardProps> = ({
 };
 
 const styles = StyleSheet.create({
-  balanceCardSpecificContainer: { // Style for the GradientCard instance if needed
-    marginBottom: 24, 
+  balanceCardSpecificContainer: {
+    // Style for the GradientCard instance if needed
+    marginBottom: 24,
   },
   upperContent: {
-    marginBottom: 24, 
+    marginBottom: 24,
   },
   balanceLabel: {
     fontSize: 14,

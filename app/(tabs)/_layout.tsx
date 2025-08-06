@@ -1,6 +1,12 @@
 import { Tabs } from 'expo-router';
 import { View, useWindowDimensions } from 'react-native'; // Import useWindowDimensions instead of Dimensions
-import { House, ChartPie as PieChart, ChartBar as BarChart3, Settings, Gift } from 'lucide-react-native';
+import {
+  House,
+  ChartPie as PieChart,
+  ChartBar as BarChart3,
+  Settings,
+  Gift,
+} from 'lucide-react-native';
 import colors from '@/constants/colors';
 
 const TABLET_BREAKPOINT = 600; // Define a breakpoint for tablet screens
@@ -37,9 +43,7 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color, size }) => (
-            <House size={size} color={color} />
-          ),
+          tabBarIcon: ({ color, size }) => <House size={size} color={color} />,
         }}
       />
       <Tabs.Screen
@@ -64,9 +68,7 @@ export default function TabLayout() {
         name="rewards"
         options={{
           title: 'Rewards',
-          tabBarIcon: ({ color, size }) => (
-            <Gift size={size} color={color} />
-          ),
+          tabBarIcon: ({ color, size }) => <Gift size={size} color={color} />,
         }}
       />
       <Tabs.Screen

@@ -1,5 +1,11 @@
 import React, { useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Animated,
+} from 'react-native';
 import colors from '@/constants/colors';
 import { triggerShake } from '@/utils/animations';
 

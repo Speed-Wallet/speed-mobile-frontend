@@ -18,7 +18,7 @@ const TokenLogo: React.FC<TokenLogoProps> = ({ logoURI, size = 40, style }) => {
     return null;
   }
 
-  const imageSource = logoURI.startsWith('local://') 
+  const imageSource = logoURI.startsWith('local://')
     ? localAssets[logoURI.replace('local://', '') as keyof typeof localAssets]
     : { uri: logoURI };
 
@@ -28,7 +28,7 @@ const TokenLogo: React.FC<TokenLogoProps> = ({ logoURI, size = 40, style }) => {
       style={[
         styles.logo,
         { width: size, height: size, borderRadius: size / 2 },
-        style
+        style,
       ]}
       resizeMode="contain"
     />

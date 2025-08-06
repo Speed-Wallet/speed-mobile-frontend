@@ -1,9 +1,21 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Image, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  Image,
+  ActivityIndicator,
+} from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Search, ArrowRight, Check, DollarSign } from 'lucide-react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
-import BottomSheet, { BottomSheetView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import BottomSheet, {
+  BottomSheetView,
+  BottomSheetBackdrop,
+} from '@gorhom/bottom-sheet';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { LinearGradient } from 'expo-linear-gradient';
 import Toast from '@/components/Toast';
@@ -18,30 +30,38 @@ import AmountInputWithValue from '@/components/AmountInputWithValue';
 import TokenItem from '@/components/TokenItem';
 import { sendTokenTransaction } from '@/utils/sendTransaction';
 
-
 export default function SendScreen() {
   const { tokenAddress, selectedTokenAddress } = useLocalSearchParams<{
     tokenAddress?: string;
     selectedTokenAddress?: string;
   }>();
   const router = useRouter();
-  const [selectedToken, setSelectedToken] = useState<EnrichedTokenEntry | null>(null);
+  const [selectedToken, setSelectedToken] = useState<EnrichedTokenEntry | null>(
+    null,
+  );
   const [amount, setAmount] = useState<string | null>(null);
   const [recipient, setRecipient] = useState<string | null>(null);
   const [note, setNote] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedContact, setSelectedContact] = useState<any>(null);
   const [filteredContacts, setFilteredContacts] = useState(RecentContacts);
-  
+
   // Bottom sheet states
   const previewBottomSheetRef = useRef<BottomSheet>(null);
   const statusBottomSheetRef = useRef<BottomSheet>(null);
   const [isPreviewSheetOpen, setIsPreviewSheetOpen] = useState(false);
   const [isStatusSheetOpen, setIsStatusSheetOpen] = useState(false);
   const [isSending, setIsSending] = useState(false);
-  const [sendResult, setSendResult] = useState<{ success: boolean; signature?: string; error?: string } | null>(null);
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
-  
+  const [sendResult, setSendResult] = useState<{
+    success: boolean;
+    signature?: string;
+    error?: string;
+  } | null>(null);
+  const [toast, setToast] = useState<{
+    message: string;
+    type: 'success' | 'error';
+  } | null>(null);
+
   const renderBackdrop = useCallback(
     (props: any) => (
       <BottomSheetBackdrop
@@ -51,7 +71,7 @@ export default function SendScreen() {
         opacity={0.5}
       />
     ),
-    []
+    [],
   );
 
   useEffect(() => {
@@ -77,7 +97,7 @@ export default function SendScreen() {
         setSelectedToken(token);
       };
       loadSelectedToken();
-      
+
       // Clear the param to prevent re-triggering
       router.setParams({ selectedTokenAddress: undefined });
     }
@@ -85,9 +105,10 @@ export default function SendScreen() {
 
   useEffect(() => {
     if (searchQuery) {
-      const filtered = RecentContacts.filter(contact =>
-        contact.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        contact.username.toLowerCase().includes(searchQuery.toLowerCase())
+      const filtered = RecentContacts.filter(
+        (contact) =>
+          contact.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          contact.username.toLowerCase().includes(searchQuery.toLowerCase()),
       );
       setFilteredContacts(filtered);
     } else {
@@ -101,18 +122,18 @@ export default function SendScreen() {
 
   const handleSend = () => {
     if (!selectedToken) {
-      setToast({ message: "Please select a token to send.", type: "error" });
+      setToast({ message: 'Please select a token to send.', type: 'error' });
       return;
     }
     if (!amount) {
-      setToast({ message: "Please enter an amount.", type: "error" });
+      setToast({ message: 'Please enter an amount.', type: 'error' });
       return;
     }
     if (!recipient && !selectedContact) {
-      setToast({ message: "Please enter a recipient.", type: "error" });
+      setToast({ message: 'Please enter a recipient.', type: 'error' });
       return;
     }
-    
+
     setIsPreviewSheetOpen(true);
     previewBottomSheetRef.current?.expand();
   };
@@ -125,7 +146,7 @@ export default function SendScreen() {
     setIsSending(true);
     previewBottomSheetRef.current?.close();
     setIsPreviewSheetOpen(false);
-    
+
     setTimeout(() => {
       statusBottomSheetRef.current?.expand();
       setIsStatusSheetOpen(true);
@@ -136,21 +157,21 @@ export default function SendScreen() {
       recipient: recipient || '',
       tokenAddress: selectedToken.address,
       tokenSymbol: selectedToken.symbol,
-      tokenDecimals: selectedToken.decimals
+      tokenDecimals: selectedToken.decimals,
     });
 
     setSendResult(result);
     setIsSending(false);
 
     if (result.success) {
-      console.log("Transaction successful. Signature:", result.signature);
+      console.log('Transaction successful. Signature:', result.signature);
       // Clear inputs after successful send
       setAmount('');
       setRecipient('');
       setNote('');
       setSelectedContact(null);
     } else {
-      console.error("Transaction failed:", result.error);
+      console.error('Transaction failed:', result.error);
     }
   };
 
@@ -162,7 +183,7 @@ export default function SendScreen() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ScreenContainer edges={['top', 'bottom']}>
-        <ScreenHeader 
+        <ScreenHeader
           title="Send Crypto"
           onBack={() => router.push('/' as any)}
         />
@@ -174,15 +195,17 @@ export default function SendScreen() {
           {selectedToken && (
             <>
               <Text style={styles.inputLabel}>Token</Text>
-              <TokenItem 
-                token={selectedToken} 
-                onPress={() => router.push({
-                  pathname: '/token/select',
-                  params: {
-                    selectedAddress: selectedToken?.address
-                  }
-                })} 
-                showSelectorIcon={true} 
+              <TokenItem
+                token={selectedToken}
+                onPress={() =>
+                  router.push({
+                    pathname: '/token/select',
+                    params: {
+                      selectedAddress: selectedToken?.address,
+                    },
+                  })
+                }
+                showSelectorIcon={true}
               />
               <Text style={styles.inputLabel}>Amount</Text>
               <AmountInputWithValue
@@ -192,7 +215,10 @@ export default function SendScreen() {
               />
 
               {/* Recipient Section */}
-              <Animated.View entering={FadeIn.delay(200)} style={styles.recipientSection}>
+              <Animated.View
+                entering={FadeIn.delay(200)}
+                style={styles.recipientSection}
+              >
                 <Text style={styles.inputLabel}>Send To</Text>
 
                 {selectedContact ? (
@@ -202,8 +228,12 @@ export default function SendScreen() {
                       style={styles.contactAvatar}
                     />
                     <View style={styles.contactInfo}>
-                      <Text style={styles.contactName}>{selectedContact.name}</Text>
-                      <Text style={styles.contactUsername}>@{selectedContact.username}</Text>
+                      <Text style={styles.contactName}>
+                        {selectedContact.name}
+                      </Text>
+                      <Text style={styles.contactUsername}>
+                        @{selectedContact.username}
+                      </Text>
                     </View>
                     <TouchableOpacity
                       style={styles.changeButton}
@@ -223,7 +253,7 @@ export default function SendScreen() {
                         value={searchQuery}
                         onChangeText={(value) => {
                           setSearchQuery(value);
-                          setRecipient(value)
+                          setRecipient(value);
                         }}
                       />
                     </View>
@@ -279,7 +309,10 @@ export default function SendScreen() {
               </Animated.View>
 
               {/* Note Input */}
-              <Animated.View entering={FadeIn.delay(300)} style={styles.inputGroup}>
+              <Animated.View
+                entering={FadeIn.delay(300)}
+                style={styles.inputGroup}
+              >
                 <Text style={styles.inputLabel}>Note (Optional)</Text>
                 <TextInput
                   style={styles.noteInput}
@@ -303,11 +336,15 @@ export default function SendScreen() {
         </ScrollView>
 
         {/* Send Button */}
-        <Animated.View entering={FadeInDown.duration(300)} style={styles.bottomContainer}>
+        <Animated.View
+          entering={FadeInDown.duration(300)}
+          style={styles.bottomContainer}
+        >
           <TouchableOpacity
             style={[
               styles.sendButton,
-              (!amount || !recipient && !selectedContact) && styles.sendButtonDisabled
+              (!amount || (!recipient && !selectedContact)) &&
+                styles.sendButtonDisabled,
             ]}
             disabled={!amount || (!recipient && !selectedContact)}
             onPress={handleSend}
@@ -329,26 +366,30 @@ export default function SendScreen() {
         >
           <BottomSheetView style={styles.bottomSheetContent}>
             <Text style={styles.bottomSheetTitle}>Preview Send</Text>
-            
+
             {selectedToken && (
               <View style={styles.previewContainer}>
                 <View style={styles.previewRow}>
                   <Text style={styles.previewLabel}>Amount</Text>
-                  <Text style={styles.previewValue}>{amount} {selectedToken.symbol}</Text>
+                  <Text style={styles.previewValue}>
+                    {amount} {selectedToken.symbol}
+                  </Text>
                 </View>
-                
+
                 <View style={styles.previewRow}>
                   <Text style={styles.previewLabel}>To</Text>
                   <Text style={styles.previewValue} numberOfLines={1}>
-                    {selectedContact ? selectedContact.name : (recipient?.slice(0, 6) + '...' + recipient?.slice(-4))}
+                    {selectedContact
+                      ? selectedContact.name
+                      : recipient?.slice(0, 6) + '...' + recipient?.slice(-4)}
                   </Text>
                 </View>
-                
+
                 <View style={styles.previewRow}>
                   <Text style={styles.previewLabel}>Network Fee</Text>
                   <Text style={styles.previewValue}>~0.000005 SOL</Text>
                 </View>
-                
+
                 {note && (
                   <View style={styles.previewRow}>
                     <Text style={styles.previewLabel}>Note</Text>
@@ -357,7 +398,7 @@ export default function SendScreen() {
                 )}
               </View>
             )}
-            
+
             <TouchableOpacity
               style={styles.confirmButton}
               onPress={handleConfirmSend}
@@ -377,12 +418,22 @@ export default function SendScreen() {
           backgroundStyle={styles.bottomSheetBackground}
           handleIndicatorStyle={styles.bottomSheetHandle}
         >
-          <BottomSheetView style={[styles.bottomSheetContent, { alignItems: 'center' }]}>
+          <BottomSheetView
+            style={[styles.bottomSheetContent, { alignItems: 'center' }]}
+          >
             {isSending ? (
               <>
-                <ActivityIndicator size="large" color={colors.primary} style={styles.loadingIndicator} />
-                <Text style={styles.loadingText}>Processing Transaction...</Text>
-                <Text style={styles.loadingSubtext}>Please wait while we process your transaction</Text>
+                <ActivityIndicator
+                  size="large"
+                  color={colors.primary}
+                  style={styles.loadingIndicator}
+                />
+                <Text style={styles.loadingText}>
+                  Processing Transaction...
+                </Text>
+                <Text style={styles.loadingSubtext}>
+                  Please wait while we process your transaction
+                </Text>
               </>
             ) : sendResult ? (
               <>
@@ -395,10 +446,13 @@ export default function SendScreen() {
                       <Check size={32} color={colors.white} />
                     </LinearGradient>
                     <Text style={styles.successTitle}>Send Successful!</Text>
-                    <Text style={styles.successSubtitle}>Your transaction has been sent successfully</Text>
+                    <Text style={styles.successSubtitle}>
+                      Your transaction has been sent successfully
+                    </Text>
                     {sendResult.signature && (
                       <Text style={styles.transactionId} numberOfLines={1}>
-                        Transaction ID: {sendResult.signature.slice(0, 8)}...{sendResult.signature.slice(-8)}
+                        Transaction ID: {sendResult.signature.slice(0, 8)}...
+                        {sendResult.signature.slice(-8)}
                       </Text>
                     )}
                   </>
@@ -409,11 +463,12 @@ export default function SendScreen() {
                     </View>
                     <Text style={styles.errorTitle}>Send Failed</Text>
                     <Text style={styles.errorSubtitle}>
-                      {sendResult.error || 'Something went wrong. Please try again.'}
+                      {sendResult.error ||
+                        'Something went wrong. Please try again.'}
                     </Text>
                   </>
                 )}
-                
+
                 <TouchableOpacity
                   style={styles.doneButton}
                   onPress={() => {
