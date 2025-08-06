@@ -10,6 +10,11 @@ export interface FormattedChartData {
   }>;
 }
 
+export interface ChartDataPoint {
+  timestamp: number;
+  price: number;
+}
+
 export interface TimeframeConfig {
   days: number;
   label: string;
@@ -56,7 +61,7 @@ export const timeframeConfigs: Record<string, TimeframeConfig> = {
 };
 
 /**
- * Format historical price data for chart display
+ * Format historical price data for chart display (legacy - for react-native-chart-kit)
  */
 export function formatHistoricalDataForChart(
   historicalResponse: HistoricalPricesResponse,
@@ -110,6 +115,64 @@ export function formatHistoricalDataForChart(
 }
 
 /**
+ * Format historical price data for custom chart component
+ */
+export function formatHistoricalDataForCustomChart(
+  historicalResponse: HistoricalPricesResponse,
+  timeframe: string,
+): ChartDataPoint[] {
+  if (
+    !historicalResponse.success ||
+    !historicalResponse.data?.historicalData?.prices
+  ) {
+    return [];
+  }
+
+  const { prices } = historicalResponse.data.historicalData;
+
+  // For custom chart, we can handle more data points efficiently
+  let maxDataPoints = 50;
+
+  // Adjust based on timeframe
+  switch (timeframe) {
+    case '1D':
+      maxDataPoints = 24; // Hourly data points
+      break;
+    case '1W':
+      maxDataPoints = 30;
+      break;
+    case '1M':
+      maxDataPoints = 30;
+      break;
+    case '3M':
+      maxDataPoints = 40;
+      break;
+    case '1Y':
+      maxDataPoints = 50;
+      break;
+    case 'ALL':
+      maxDataPoints = 60;
+      break;
+  }
+
+  const dataPoints = prices.length;
+  const step = Math.max(1, Math.floor(dataPoints / maxDataPoints));
+
+  const formattedData: ChartDataPoint[] = [];
+
+  // Sample data points evenly
+  for (let i = 0; i < dataPoints; i += step) {
+    const [timestamp, price] = prices[i];
+    formattedData.push({
+      timestamp,
+      price,
+    });
+  }
+
+  return formattedData;
+}
+
+/**
  * Calculate price change percentage for a given timeframe
  */
 export function calculatePriceChange(
@@ -151,12 +214,23 @@ export function formatPriceChangeString(changePercentage: number): string {
  */
 export function formatPrice(price: number): string {
   if (price < 0.01) {
-    return `$${price.toFixed(6)}`;
+    return `${price.toFixed(6)}`;
   } else if (price < 1) {
-    return `$${price.toFixed(4)}`;
+    return `${price.toFixed(4)}`;
   } else {
-    return `$${price.toFixed(2)}`;
+    return `${price.toFixed(2)}`;
   }
+}
+export function formatPriceChange(priceChange: number): string {
+  const sign = priceChange >= 0 ? '+' : '-';
+  const absChange = Math.abs(priceChange);
+
+  const formatted =
+    absChange < 0.01 && absChange > 0
+      ? absChange.toFixed(8)
+      : absChange.toFixed(2);
+
+  return `${sign}$${formatted}`;
 }
 
 /**
