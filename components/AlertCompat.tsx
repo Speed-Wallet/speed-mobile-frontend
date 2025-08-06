@@ -5,7 +5,12 @@
  */
 
 import { useAlert } from '@/providers/AlertProvider';
-import { showAlert, showError, showSuccess, showWarning } from '@/utils/globalAlert';
+import {
+  showAlert,
+  showError,
+  showSuccess,
+  showWarning,
+} from '@/utils/globalAlert';
 
 interface AlertButton {
   text: string;
@@ -27,7 +32,7 @@ export class Alert {
     title: string,
     message?: string,
     buttons?: AlertButton[],
-    options?: AlertOptions
+    options?: AlertOptions,
   ): void {
     showAlert(title, message, buttons, 'info');
   }
@@ -38,7 +43,7 @@ export class Alert {
   static success(
     title: string,
     message?: string,
-    buttons?: AlertButton[]
+    buttons?: AlertButton[],
   ): void {
     showSuccess(title, message, buttons);
   }
@@ -46,11 +51,7 @@ export class Alert {
   /**
    * Show error alert
    */
-  static error(
-    title: string,
-    message?: string,
-    buttons?: AlertButton[]
-  ): void {
+  static error(title: string, message?: string, buttons?: AlertButton[]): void {
     showError(title, message, buttons);
   }
 
@@ -60,7 +61,7 @@ export class Alert {
   static warning(
     title: string,
     message?: string,
-    buttons?: AlertButton[]
+    buttons?: AlertButton[],
   ): void {
     showWarning(title, message, buttons);
   }
@@ -72,7 +73,7 @@ export class Alert {
  */
 export const useAlertCompat = () => {
   const { alert, success, error, warning, confirm } = useAlert();
-  
+
   return {
     alert,
     success,
@@ -85,6 +86,6 @@ export const useAlertCompat = () => {
       success,
       error,
       warning,
-    }
+    },
   };
 };

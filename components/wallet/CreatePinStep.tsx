@@ -1,5 +1,12 @@
 import React, { useRef, useEffect, useCallback } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Animated, Platform } from 'react-native';
+import {
+  StyleSheet,
+  View,
+  Text,
+  TouchableOpacity,
+  Animated,
+  Platform,
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowRight, Lock, Shield } from 'lucide-react-native';
 import PinInputCard from './PinInputCard';
@@ -15,25 +22,28 @@ interface CreatePinStepProps {
   isLoading: boolean;
 }
 
-const CreatePinStep: React.FC<CreatePinStepProps> = ({ 
-  pin, 
-  onPinChange, 
-  onNext, 
+const CreatePinStep: React.FC<CreatePinStepProps> = ({
+  pin,
+  onPinChange,
+  onNext,
   onBack,
-  isLoading 
+  isLoading,
 }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.95)).current;
   const translateY = useRef(new Animated.Value(20)).current;
 
   // Handle keyboard input
-  const handleKeyPress = useCallback((key: string) => {
-    if (key === 'backspace') {
-      onPinChange(pin.slice(0, -1));
-    } else if (key >= '0' && key <= '9' && pin.length < 4) {
-      onPinChange(pin + key);
-    }
-  }, [pin, onPinChange]);
+  const handleKeyPress = useCallback(
+    (key: string) => {
+      if (key === 'backspace') {
+        onPinChange(pin.slice(0, -1));
+      } else if (key >= '0' && key <= '9' && pin.length < 4) {
+        onPinChange(pin + key);
+      }
+    },
+    [pin, onPinChange],
+  );
 
   useEffect(() => {
     Animated.parallel([
@@ -61,7 +71,7 @@ const CreatePinStep: React.FC<CreatePinStepProps> = ({
       {process.env.EXPO_PUBLIC_APP_ENV === 'development' && onBack && (
         <BackButton onPress={onBack} style={styles.devBackButton} />
       )}
-      
+
       <View style={styles.content}>
         {/* Header */}
         <Animated.View
@@ -71,18 +81,24 @@ const CreatePinStep: React.FC<CreatePinStepProps> = ({
               opacity: fadeAnim,
               transform: [{ translateY }],
             },
-          ]}>
+          ]}
+        >
           <View style={styles.headerContent}>
             <View style={styles.iconContainer}>
               <LinearGradient
-                colors={['rgba(124, 92, 255, 0.15)', 'rgba(124, 92, 255, 0.05)']}
-                style={styles.iconBadge}>
+                colors={[
+                  'rgba(124, 92, 255, 0.15)',
+                  'rgba(124, 92, 255, 0.05)',
+                ]}
+                style={styles.iconBadge}
+              >
                 <Lock size={24} color="#7c5cff" />
               </LinearGradient>
             </View>
             <Text style={styles.title}>Create Your PIN</Text>
             <Text style={styles.subtitle}>
-              Choose a 4-digit PIN to quickly access your wallet. Make it memorable but secure.
+              Choose a 4-digit PIN to quickly access your wallet. Make it
+              memorable but secure.
             </Text>
           </View>
         </Animated.View>
@@ -95,7 +111,8 @@ const CreatePinStep: React.FC<CreatePinStepProps> = ({
               opacity: fadeAnim,
               transform: [{ scale: scaleAnim }],
             },
-          ]}>
+          ]}
+        >
           <PinInputCard
             pin={pin}
             onPinChange={onPinChange}
@@ -104,7 +121,7 @@ const CreatePinStep: React.FC<CreatePinStepProps> = ({
             instruction={{
               empty: 'Use the keypad below to enter PIN',
               incomplete: '{count} more digits',
-              complete: 'PIN complete'
+              complete: 'PIN complete',
             }}
           />
         </Animated.View>
@@ -117,17 +134,34 @@ const CreatePinStep: React.FC<CreatePinStepProps> = ({
           {/* Action Button */}
           <View style={styles.buttonContainer}>
             <TouchableOpacity
-              style={[styles.continueButton, pin.length < 4 && styles.continueButtonDisabled]}
+              style={[
+                styles.continueButton,
+                pin.length < 4 && styles.continueButtonDisabled,
+              ]}
               activeOpacity={0.8}
               onPress={onNext}
-              disabled={isLoading || pin.length < 4}>
+              disabled={isLoading || pin.length < 4}
+            >
               <LinearGradient
-                colors={pin.length === 4 ? ['#7c5cff', '#6446fe'] : ['#4a4a4a', '#3a3a3a']}
-                style={styles.buttonGradient}>
-                <Text style={[styles.buttonText, pin.length < 4 && styles.buttonTextDisabled]}>
+                colors={
+                  pin.length === 4
+                    ? ['#7c5cff', '#6446fe']
+                    : ['#4a4a4a', '#3a3a3a']
+                }
+                style={styles.buttonGradient}
+              >
+                <Text
+                  style={[
+                    styles.buttonText,
+                    pin.length < 4 && styles.buttonTextDisabled,
+                  ]}
+                >
                   {isLoading ? 'Creating...' : 'Continue'}
                 </Text>
-                <ArrowRight size={20} color={pin.length === 4 ? "#fff" : "#9ca3af"} />
+                <ArrowRight
+                  size={20}
+                  color={pin.length === 4 ? '#fff' : '#9ca3af'}
+                />
               </LinearGradient>
             </TouchableOpacity>
           </View>

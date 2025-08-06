@@ -7,7 +7,10 @@ interface TabScreenHeaderProps {
   subtitle: string;
 }
 
-export default function TabScreenHeader({ title, subtitle }: TabScreenHeaderProps) {
+export default function TabScreenHeader({
+  title,
+  subtitle,
+}: TabScreenHeaderProps) {
   return (
     <View style={styles.header}>
       <Text style={styles.title}>{title}</Text>

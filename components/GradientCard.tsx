@@ -26,11 +26,11 @@ const GradientCard: React.FC<GradientCardProps> = ({
       <LinearGradient
         colors={gradientColors}
         style={[
-          styles.gradientBackground, 
-          { 
+          styles.gradientBackground,
+          {
             paddingHorizontal: contentPaddingHorizontal,
-            paddingVertical: contentPaddingVertical 
-          }
+            paddingVertical: contentPaddingVertical,
+          },
         ]} // Apply contentPadding here
         start={gradientStart}
         end={gradientEnd}
@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 8,
     width: '100%',
-    maxWidth: 400, 
+    maxWidth: 400,
     alignSelf: 'center',
   },
   gradientBackground: {

@@ -1,23 +1,29 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+} from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { 
-  User, 
-  Shield, 
-  CreditCard, 
-  Bell, 
-  Globe, 
-  Moon, 
-  CircleHelp as HelpCircle, 
-  MessageCircle, 
-  FileText, 
+import {
+  User,
+  Shield,
+  CreditCard,
+  Bell,
+  Globe,
+  Moon,
+  CircleHelp as HelpCircle,
+  MessageCircle,
+  FileText,
   ChevronRight,
   Check,
   Users,
   Gift,
   TrendingUp,
   Link,
-  Wallet
+  Wallet,
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import colors from '@/constants/colors';
@@ -121,7 +127,7 @@ export default function SettingsScreen() {
       return () => {
         mounted = false;
       };
-    }, [])
+    }, []),
   );
 
   // Get color for verification level
@@ -177,16 +183,16 @@ export default function SettingsScreen() {
     const isFirst = index === 0;
     const isLast = index === array.length - 1;
     const isOnly = array.length === 1;
-    
+
     return (
-      <TouchableOpacity 
-        key={option.id} 
+      <TouchableOpacity
+        key={option.id}
         style={[
           styles.settingItem,
           isFirst && styles.firstItem,
           isLast && styles.lastItem,
           isOnly && styles.onlyItem,
-        ]} 
+        ]}
         onPress={() => handlePress(option)}
       >
         <View style={[styles.iconContainer, { backgroundColor: option.color }]}>
@@ -210,18 +216,19 @@ export default function SettingsScreen() {
 
   return (
     <ScreenContainer edges={['top', 'bottom']}>
-      <TabScreenHeader 
-        title="Settings" 
-        subtitle="Manage your account and preferences" 
+      <TabScreenHeader
+        title="Settings"
+        subtitle="Manage your account and preferences"
       />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-
         {/* Account Section */}
         <View style={[styles.section, styles.firstSection]}>
           <Text style={styles.sectionTitle}>Account</Text>
           <View style={styles.sectionContent}>
-            {getAccountOptions().map((option, index, array) => renderSettingItem(option, index, array))}
+            {getAccountOptions().map((option, index, array) =>
+              renderSettingItem(option, index, array),
+            )}
           </View>
         </View>
 
@@ -229,7 +236,9 @@ export default function SettingsScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Preferences</Text>
           <View style={styles.sectionContent}>
-            {preferencesOptions.map((option, index, array) => renderSettingItem(option, index, array))}
+            {preferencesOptions.map((option, index, array) =>
+              renderSettingItem(option, index, array),
+            )}
           </View>
         </View>
 
@@ -237,7 +246,9 @@ export default function SettingsScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Referrals & Affiliates</Text>
           <View style={styles.sectionContent}>
-            {referralOptions.map((option, index, array) => renderSettingItem(option, index, array))}
+            {referralOptions.map((option, index, array) =>
+              renderSettingItem(option, index, array),
+            )}
           </View>
         </View>
 
@@ -245,7 +256,9 @@ export default function SettingsScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Support</Text>
           <View style={styles.sectionContent}>
-            {supportOptions.map((option, index, array) => renderSettingItem(option, index, array))}
+            {supportOptions.map((option, index, array) =>
+              renderSettingItem(option, index, array),
+            )}
           </View>
         </View>
 

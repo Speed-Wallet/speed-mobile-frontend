@@ -1,6 +1,19 @@
 import React, { useState } from 'react';
-import { View, ActivityIndicator, Modal, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
-import { generateInitialSolanaWallet, saveWalletToList, createAppPin, importWalletFromMnemonic } from '@/services/walletService';
+import {
+  View,
+  ActivityIndicator,
+  Modal,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+} from 'react-native';
+import {
+  generateInitialSolanaWallet,
+  saveWalletToList,
+  createAppPin,
+  importWalletFromMnemonic,
+} from '@/services/walletService';
 import { createUser } from '@/services/apis';
 import { AuthService } from '@/services/authService';
 import { useAlert } from '@/providers/AlertProvider';
@@ -18,19 +31,25 @@ interface SetupWalletScreenProps {
   onWalletSetupComplete: () => void;
 }
 
-const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComplete }) => {
+const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
+  onWalletSetupComplete,
+}) => {
   const { alert, error: showError, success } = useAlert();
   const [step, setStep] = useState(1); // 1: Initial, 2: Show Mnemonic, 3: Verify Mnemonic, 4: Username, 5: Create PIN, 6: Confirm PIN
   const [mnemonic, setMnemonic] = useState<string | null>(null);
   const [publicKey, setPublicKey] = useState<string | null>(null);
-  const [accountIndex, setAccountIndex] = useState<number | undefined>(undefined);
-  const [derivationPath, setDerivationPath] = useState<string | undefined>(undefined);
+  const [accountIndex, setAccountIndex] = useState<number | undefined>(
+    undefined,
+  );
+  const [derivationPath, setDerivationPath] = useState<string | undefined>(
+    undefined,
+  );
   const [username, setUsername] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [pin, setPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
   const [pinError, setPinError] = useState<string>('');
-  
+
   // Import wallet states
   const [showImportModal, setShowImportModal] = useState(false);
   const [importPhrase, setImportPhrase] = useState('');
@@ -46,7 +65,7 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComp
       setDerivationPath(wallet.derivationPath);
       setStep(2);
     } catch (error) {
-      showError("Error", "Could not generate wallet. Please try again.");
+      showError('Error', 'Could not generate wallet. Please try again.');
       console.error(error);
     }
     setIsLoading(false);
@@ -64,7 +83,7 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComp
 
   const handleUsernameNext = async (selectedUsername: string) => {
     if (!publicKey) {
-      showError("Error", "Public key not available. Please try again.");
+      showError('Error', 'Public key not available. Please try again.');
       return;
     }
 
@@ -72,14 +91,20 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComp
     try {
       // Create user in backend
       const result = await createUser(selectedUsername, publicKey);
-      
+
       if (!result.success) {
         // Handle specific error cases
-        if (result.error?.includes('User already exists') || result.statusCode === 409) {
+        if (
+          result.error?.includes('User already exists') ||
+          result.statusCode === 409
+        ) {
           // Throw error to let the child component handle the visual feedback
           throw new Error('Username already exists');
         } else {
-          showError("Error", result.error || "Failed to create user. Please try again.");
+          showError(
+            'Error',
+            result.error || 'Failed to create user. Please try again.',
+          );
         }
         return;
       }
@@ -90,12 +115,18 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComp
       setStep(5); // Move to PIN creation
     } catch (error) {
       console.error('Error in handleUsernameNext:', error);
-      
+
       // Only show alert for unknown errors, not for username taken
-      if (error instanceof Error && error.message !== 'Username already exists') {
-        showError("Error", "Failed to create user. Please check your connection and try again.");
+      if (
+        error instanceof Error &&
+        error.message !== 'Username already exists'
+      ) {
+        showError(
+          'Error',
+          'Failed to create user. Please check your connection and try again.',
+        );
       }
-      
+
       // Re-throw the error so the child component can handle the visual feedback
       throw error;
     } finally {
@@ -104,8 +135,9 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComp
   };
 
   const handleSetPin = () => {
-    if (pin.length < 4) { // Basic PIN validation
-      showError("Invalid PIN", "PIN must be at least 4 digits.");
+    if (pin.length < 4) {
+      // Basic PIN validation
+      showError('Invalid PIN', 'PIN must be at least 4 digits.');
       return;
     }
     setStep(6); // Move to PIN confirmation
@@ -125,14 +157,17 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComp
     try {
       const cleanPhrase = importPhrase.trim().toLowerCase();
       const wallet = await importWalletFromMnemonic(cleanPhrase);
-      
+
       // Set the imported wallet data and proceed to verification
       setMnemonic(wallet.mnemonic);
       setPublicKey(wallet.publicKey);
       setShowImportModal(false);
       setStep(3); // Move to verification
     } catch (error) {
-      showError('Error', 'Failed to import wallet. Please check your seed phrase and try again.');
+      showError(
+        'Error',
+        'Failed to import wallet. Please check your seed phrase and try again.',
+      );
       console.error('Error importing wallet:', error);
     }
     setIsImporting(false);
@@ -149,11 +184,13 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComp
   const handleConfirmSave = async () => {
     if (!mnemonic || !publicKey) return;
     if (pin !== confirmPin) {
-      setPinError("Incorrect PIN entered. The PINs do not match. Please try again.");
+      setPinError(
+        'Incorrect PIN entered. The PINs do not match. Please try again.',
+      );
       return;
     }
     if (pin.length < 4) {
-      setPinError("Invalid PIN. PIN must be at least 4 digits.");
+      setPinError('Invalid PIN. PIN must be at least 4 digits.');
       return;
     }
 
@@ -161,16 +198,27 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComp
     try {
       // Create the app-level PIN first (this is the first wallet)
       await createAppPin(pin);
-      
+
       // Generate unique wallet ID and save to multi-wallet system using app PIN
       const walletId = `wallet-${Date.now()}`;
       const walletName = 'Main';
-      await saveWalletToList(walletId, walletName, mnemonic, publicKey, pin, accountIndex, derivationPath);
-      
-      success("Success", "Your wallet has been created and secured with a PIN. Keep your seed phrase and PIN safe!");
+      await saveWalletToList(
+        walletId,
+        walletName,
+        mnemonic,
+        publicKey,
+        pin,
+        accountIndex,
+        derivationPath,
+      );
+
+      success(
+        'Success',
+        'Your wallet has been created and secured with a PIN. Keep your seed phrase and PIN safe!',
+      );
       onWalletSetupComplete();
     } catch (error) {
-      showError("Error", "Could not save wallet. Please try again.");
+      showError('Error', 'Could not save wallet. Please try again.');
     }
     setIsLoading(false);
   };
@@ -184,16 +232,22 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComp
 
   return (
     <View style={{ flex: 1 }}>
-      {isLoading && <ActivityIndicator size="large" color={colors.primary} style={{
-        position: 'absolute',
-        top: '50%',
-        left: '50%',
-        transform: [{ translateX: -25 }, { translateY: -25 }],
-        zIndex: 1000,
-      }} />}
-      
+      {isLoading && (
+        <ActivityIndicator
+          size="large"
+          color={colors.primary}
+          style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: [{ translateX: -25 }, { translateY: -25 }],
+            zIndex: 1000,
+          }}
+        />
+      )}
+
       {step === 1 && (
-        <CreateWalletIntroStep 
+        <CreateWalletIntroStep
           onCreateWallet={handleCreateWallet}
           onImportWallet={handleImportWallet}
           isLoading={isLoading}
@@ -201,7 +255,7 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComp
       )}
 
       {step === 2 && mnemonic && publicKey && (
-        <ShowMnemonicStep 
+        <ShowMnemonicStep
           mnemonic={mnemonic}
           publicKey={publicKey}
           onNext={handleMnemonicSaved}
@@ -210,7 +264,7 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComp
       )}
 
       {step === 3 && mnemonic && (
-        <SeedPhraseVerificationStep 
+        <SeedPhraseVerificationStep
           words={mnemonic.split(' ')}
           onBack={() => setStep(2)}
           onSuccess={handleVerificationSuccess}
@@ -219,7 +273,7 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComp
       )}
 
       {step === 4 && (
-        <CreateUsernameStep 
+        <CreateUsernameStep
           onNext={handleUsernameNext}
           onBack={() => setStep(3)}
           isLoading={isLoading}
@@ -227,7 +281,7 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComp
       )}
 
       {step === 5 && (
-        <CreatePinStep 
+        <CreatePinStep
           pin={pin}
           onPinChange={setPin}
           onNext={handleSetPin}
@@ -237,7 +291,7 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComp
       )}
 
       {step === 6 && (
-        <ConfirmPinStep 
+        <ConfirmPinStep
           confirmPin={confirmPin}
           onConfirmPinChange={handleConfirmPinChange}
           onConfirm={handleConfirmSave}
@@ -256,18 +310,18 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComp
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.modalCloseButton}
               onPress={() => setShowImportModal(false)}
             >
               <X size={24} color={colors.textSecondary} />
             </TouchableOpacity>
-            
+
             <Text style={styles.modalTitle}>Import Wallet</Text>
             <Text style={styles.modalSubtitle}>
               Enter your existing wallet's seed phrase
             </Text>
-            
+
             <Text style={styles.inputLabel}>Seed Phrase</Text>
             <TextInput
               style={[styles.input, styles.textArea]}
@@ -280,20 +334,25 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({ onWalletSetupComp
               textAlignVertical="top"
               autoFocus
             />
-            
+
             {/* Dev Button */}
             {process.env.EXPO_PUBLIC_APP_ENV === 'development' && (
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.devButton}
-                onPress={() => setImportPhrase(process.env.EXPO_PUBLIC_DEV_SEED_PHRASE || '')}
+                onPress={() =>
+                  setImportPhrase(process.env.EXPO_PUBLIC_DEV_SEED_PHRASE || '')
+                }
               >
                 <Text style={styles.devButtonText}>DEV</Text>
               </TouchableOpacity>
             )}
-            
+
             <View style={styles.modalActions}>
-              <TouchableOpacity 
-                style={[styles.primaryButton, isImporting && styles.buttonDisabled]}
+              <TouchableOpacity
+                style={[
+                  styles.primaryButton,
+                  isImporting && styles.buttonDisabled,
+                ]}
                 onPress={processImportWallet}
                 disabled={isImporting}
               >

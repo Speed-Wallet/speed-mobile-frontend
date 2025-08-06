@@ -36,7 +36,13 @@ export interface EnrichedTokenEntry extends TokenEntry {
 }
 
 // Card status types
-export type CardStatus = 'new' | 'active' | 'inactive' | 'failed' | 'pending' | 'terminated';
+export type CardStatus =
+  | 'new'
+  | 'active'
+  | 'inactive'
+  | 'failed'
+  | 'pending'
+  | 'terminated';
 
 // Get Card API types (matching backend)
 export interface GetCardData {
@@ -96,4 +102,3 @@ export interface PaymentCard {
   createdAt?: string; // Maps to createdOn from API or createdAt from pending transactions
   creationStep?: number; // Current step in the creation process (1-3)
 }
-

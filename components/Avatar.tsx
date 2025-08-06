@@ -14,7 +14,7 @@ const Avatar = ({ user, size = 40 }: AvatarProps) => {
   const getInitials = (name: string) => {
     return name
       .split(' ')
-      .map(part => part.charAt(0))
+      .map((part) => part.charAt(0))
       .join('')
       .toUpperCase();
   };
@@ -26,22 +26,17 @@ const Avatar = ({ user, size = 40 }: AvatarProps) => {
           source={{ uri: user.avatar }}
           style={[
             styles.avatar,
-            { width: size, height: size, borderRadius: size / 2 }
+            { width: size, height: size, borderRadius: size / 2 },
           ]}
         />
       ) : (
-        <View 
+        <View
           style={[
             styles.avatarPlaceholder,
-            { width: size, height: size, borderRadius: size / 2 }
+            { width: size, height: size, borderRadius: size / 2 },
           ]}
         >
-          <Text 
-            style={[
-              styles.initialsText,
-              { fontSize: size * 0.4 }
-            ]}
-          >
+          <Text style={[styles.initialsText, { fontSize: size * 0.4 }]}>
             {getInitials(user.name)}
           </Text>
         </View>

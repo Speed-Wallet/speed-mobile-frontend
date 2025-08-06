@@ -1,7 +1,22 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Image, Linking } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  TextInput,
+  ScrollView,
+  Image,
+  Linking,
+} from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { X, ArrowRight, ChevronDown, Info, CreditCard } from 'lucide-react-native';
+import {
+  X,
+  ArrowRight,
+  ChevronDown,
+  Info,
+  CreditCard,
+} from 'lucide-react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { WebView } from 'react-native-webview';
 
@@ -21,7 +36,7 @@ const paymentMethods = [
     recommended: true,
     icon: <CreditCard size={20} color={colors.textPrimary} />,
     provider: 'YellowCard',
-    url: 'https://yellowcard.io'
+    url: 'https://yellowcard.io',
   },
   {
     id: 'onramper',
@@ -29,8 +44,8 @@ const paymentMethods = [
     recommended: false,
     icon: <CreditCard size={20} color={colors.textPrimary} />,
     provider: 'OnRamper',
-    url: 'https://onramper.com'
-  }
+    url: 'https://onramper.com',
+  },
 ];
 
 const quickAmounts = [10, 100, 1000];
@@ -41,7 +56,9 @@ export default function BuyScreen() {
     selectedTokenAddress?: string;
   }>();
   const router = useRouter();
-  const [selectedToken, setSelectedToken] = useState<EnrichedTokenEntry | null>(null);
+  const [selectedToken, setSelectedToken] = useState<EnrichedTokenEntry | null>(
+    null,
+  );
   const [tokenList, setTokenList] = useState<EnrichedTokenEntry[]>([]);
   const [amount, setAmount] = useState('');
   const [selectedMethod, setSelectedMethod] = useState(paymentMethods[0]);
@@ -60,7 +77,7 @@ export default function BuyScreen() {
         setSelectedToken(token);
       };
       loadSelectedToken();
-      
+
       // Clear the param to prevent re-triggering
       router.setParams({ selectedTokenAddress: undefined });
     }
@@ -73,7 +90,7 @@ export default function BuyScreen() {
   const loadData = async () => {
     const tokens = await getAllTokenInfo();
     setTokenList(tokens);
-    
+
     if (tokenAddress) {
       const token = await getTokenByAddress(tokenAddress);
       setSelectedToken(token);
@@ -87,7 +104,7 @@ export default function BuyScreen() {
       alert('Please enter a valid amount');
       return;
     }
-    
+
     // Check if YellowCard is selected
     if (selectedMethod.id === 'yellowcard') {
       setShowWebView(true);
@@ -112,8 +129,8 @@ export default function BuyScreen() {
         // WebView for YellowCard widget
         <View style={styles.webViewContainer}>
           <View style={styles.webViewHeader}>
-            <TouchableOpacity 
-              style={styles.closeButton} 
+            <TouchableOpacity
+              style={styles.closeButton}
               onPress={() => setShowWebView(false)}
             >
               <X size={24} color={colors.textPrimary} />
@@ -124,7 +141,9 @@ export default function BuyScreen() {
             )}
           </View>
           <WebView
-            source={{ uri: 'https://sandbox--payments-widget.netlify.app/landing/YOUR_YELLOWCARD_API_KEY' }}
+            source={{
+              uri: 'https://sandbox--payments-widget.netlify.app/landing/YOUR_YELLOWCARD_API_KEY',
+            }}
             style={styles.webView}
             javaScriptEnabled={true}
             domStorageEnabled={true}
@@ -152,10 +171,7 @@ export default function BuyScreen() {
         </View>
       ) : (
         <>
-          <ScreenHeader 
-            title="Buy"
-            onBack={() => router.push('/' as any)}
-          />
+          <ScreenHeader title="Buy" onBack={() => router.push('/' as any)} />
 
           <ScrollView
             showsVerticalScrollIndicator={false}
@@ -164,7 +180,10 @@ export default function BuyScreen() {
             {selectedToken && (
               <>
                 {/* Amount Input */}
-                <Animated.View entering={FadeIn.delay(100)} style={styles.amountSection}>
+                <Animated.View
+                  entering={FadeIn.delay(100)}
+                  style={styles.amountSection}
+                >
                   <Text style={styles.amountLabel}>Amount to Buy (USD)</Text>
                   <View style={styles.amountDisplay}>
                     <Text style={styles.currencySymbol}>$</Text>
@@ -180,21 +199,25 @@ export default function BuyScreen() {
                   <Text style={styles.tokenAmount}>
                     ≈ {getTokenAmount()} {selectedToken.symbol}
                   </Text>
-                  
+
                   <View style={styles.quickAmounts}>
                     {quickAmounts.map((value) => (
                       <TouchableOpacity
                         key={value}
                         style={[
                           styles.quickAmountButton,
-                          amount === value.toString() && styles.quickAmountButtonActive
+                          amount === value.toString() &&
+                            styles.quickAmountButtonActive,
                         ]}
                         onPress={() => handleQuickAmount(value)}
                       >
-                        <Text style={[
-                          styles.quickAmountText,
-                          amount === value.toString() && styles.quickAmountTextActive
-                        ]}>
+                        <Text
+                          style={[
+                            styles.quickAmountText,
+                            amount === value.toString() &&
+                              styles.quickAmountTextActive,
+                          ]}
+                        >
                           ${value}
                         </Text>
                       </TouchableOpacity>
@@ -211,7 +234,8 @@ export default function BuyScreen() {
                         key={method.id}
                         style={[
                           styles.methodCard,
-                          selectedMethod.id === method.id && styles.selectedMethodCard
+                          selectedMethod.id === method.id &&
+                            styles.selectedMethodCard,
                         ]}
                         onPress={() => setSelectedMethod(method)}
                       >
@@ -222,7 +246,9 @@ export default function BuyScreen() {
                           <Text style={styles.methodName}>{method.name}</Text>
                           {method.recommended && (
                             <View style={styles.recommendedBadge}>
-                              <Text style={styles.recommendedText}>Recommended</Text>
+                              <Text style={styles.recommendedText}>
+                                Recommended
+                              </Text>
                             </View>
                           )}
                         </View>
@@ -235,10 +261,9 @@ export default function BuyScreen() {
                 <View style={styles.providerInfo}>
                   <Info size={16} color={colors.textSecondary} />
                   <Text style={styles.providerText}>
-                    {selectedMethod.id === 'yellowcard' 
+                    {selectedMethod.id === 'yellowcard'
                       ? 'The YellowCard widget will open to complete your purchase'
-                      : `You will be redirected to ${selectedMethod.provider} to complete your purchase`
-                    }
+                      : `You will be redirected to ${selectedMethod.provider} to complete your purchase`}
                   </Text>
                 </View>
               </>
@@ -247,16 +272,19 @@ export default function BuyScreen() {
 
           {/* Buy Button */}
           <View style={styles.bottomContainer}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[
                 styles.buyButton,
-                (!amount || parseFloat(amount) <= 0) && styles.buyButtonDisabled
+                (!amount || parseFloat(amount) <= 0) &&
+                  styles.buyButtonDisabled,
               ]}
               disabled={!amount || parseFloat(amount) <= 0}
               onPress={handleBuy}
             >
               <Text style={styles.buyButtonText}>
-                {selectedMethod.id === 'yellowcard' ? 'Open YellowCard Widget' : `Continue to ${selectedMethod.provider}`}
+                {selectedMethod.id === 'yellowcard'
+                  ? 'Open YellowCard Widget'
+                  : `Continue to ${selectedMethod.provider}`}
               </Text>
               <ArrowRight size={20} color={colors.white} />
             </TouchableOpacity>

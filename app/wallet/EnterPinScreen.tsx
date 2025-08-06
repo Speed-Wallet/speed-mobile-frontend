@@ -1,5 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Animated } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ActivityIndicator,
+  Animated,
+} from 'react-native';
 import { unlockApp } from '@/services/walletService';
 import PinInputCard from '@/components/wallet/PinInputCard';
 import NumericKeyboard from '@/components/NumericKeyboard';
@@ -8,26 +15,30 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { triggerShake } from '@/utils/animations';
 import ScreenContainer from '@/components/ScreenContainer';
 
-
 interface EnterPinScreenProps {
   onWalletUnlocked: () => void;
   publicKey?: string | null;
 }
 
-const EnterPinScreen: React.FC<EnterPinScreenProps> = ({ onWalletUnlocked, publicKey }) => {
+const EnterPinScreen: React.FC<EnterPinScreenProps> = ({
+  onWalletUnlocked,
+  publicKey,
+}) => {
   const [pin, setPin] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const shakeAnimationValue = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    console.log(process.env.EXPO_PUBLIC_APP_ENV)
-    console.log(process.env.EXPO_PUBLIC_DEV_PIN)
+    console.log(process.env.EXPO_PUBLIC_APP_ENV);
+    console.log(process.env.EXPO_PUBLIC_DEV_PIN);
     const autoUnlockDev = async () => {
       if (process.env.EXPO_PUBLIC_APP_ENV === 'development') {
         const devPin = process.env.EXPO_PUBLIC_DEV_PIN;
         if (devPin) {
-          console.log(`Development mode: Attempting auto-unlock with EXPO_PUBLIC_DEV_PIN ${devPin}`);
+          console.log(
+            `Development mode: Attempting auto-unlock with EXPO_PUBLIC_DEV_PIN ${devPin}`,
+          );
           setIsLoading(true);
           try {
             const success = await unlockApp(devPin);
@@ -36,11 +47,11 @@ const EnterPinScreen: React.FC<EnterPinScreenProps> = ({ onWalletUnlocked, publi
               onWalletUnlocked();
             } else {
               console.warn('Development mode: Auto-unlock failed.');
-              setError("Dev auto-unlock failed. Please enter PIN manually.");
+              setError('Dev auto-unlock failed. Please enter PIN manually.');
             }
           } catch (err) {
-            console.error("Development mode: Auto-unlock error:", err);
-            setError("Error during dev auto-unlock.");
+            console.error('Development mode: Auto-unlock error:', err);
+            setError('Error during dev auto-unlock.');
           } finally {
             setIsLoading(false);
           }
@@ -52,19 +63,22 @@ const EnterPinScreen: React.FC<EnterPinScreenProps> = ({ onWalletUnlocked, publi
   }, [onWalletUnlocked]);
 
   // Handle keyboard input
-  const handleKeyPress = useCallback((key: string) => {
-    if (key === 'backspace') {
-      setPin(prev => prev.slice(0, -1));
-      if (error) setError(null);
-    } else if (key >= '0' && key <= '9' && pin.length < 4) {
-      setPin(prev => prev + key);
-      if (error) setError(null);
-    }
-  }, [pin, error]);
+  const handleKeyPress = useCallback(
+    (key: string) => {
+      if (key === 'backspace') {
+        setPin((prev) => prev.slice(0, -1));
+        if (error) setError(null);
+      } else if (key >= '0' && key <= '9' && pin.length < 4) {
+        setPin((prev) => prev + key);
+        if (error) setError(null);
+      }
+    },
+    [pin, error],
+  );
 
   const handleUnlockWallet = async () => {
     if (pin.length < 4) {
-      setError("PIN must be at least 4 digits.");
+      setError('PIN must be at least 4 digits.');
       triggerShake(shakeAnimationValue);
       return;
     }
@@ -75,13 +89,13 @@ const EnterPinScreen: React.FC<EnterPinScreenProps> = ({ onWalletUnlocked, publi
       if (success) {
         onWalletUnlocked();
       } else {
-        setError("Invalid PIN. Please try again.");
+        setError('Invalid PIN. Please try again.');
         setPin('');
         triggerShake(shakeAnimationValue);
       }
     } catch (err) {
-      console.error("Unlock error:", err);
-      setError("Failed to unlock wallet. Please try again.");
+      console.error('Unlock error:', err);
+      setError('Failed to unlock wallet. Please try again.');
       setPin('');
       triggerShake(shakeAnimationValue);
     }
@@ -96,7 +110,8 @@ const EnterPinScreen: React.FC<EnterPinScreenProps> = ({ onWalletUnlocked, publi
           <View style={styles.logoContainer}>
             <LinearGradient
               colors={['rgba(124, 92, 255, 0.15)', 'rgba(124, 92, 255, 0.05)']}
-              style={styles.logoBadge}>
+              style={styles.logoBadge}
+            >
               <Lock size={32} color="#7c5cff" />
             </LinearGradient>
           </View>
@@ -116,7 +131,7 @@ const EnterPinScreen: React.FC<EnterPinScreenProps> = ({ onWalletUnlocked, publi
             instruction={{
               empty: 'Use the keypad below to enter PIN',
               incomplete: '{count} more digits',
-              complete: 'PIN complete'
+              complete: 'PIN complete',
             }}
           />
         </View>
@@ -137,11 +152,17 @@ const EnterPinScreen: React.FC<EnterPinScreenProps> = ({ onWalletUnlocked, publi
 
           {/* Unlock Button */}
           <View style={styles.buttonContainer}>
-            <Animated.View style={{ transform: [{ translateX: shakeAnimationValue }] }}>
+            <Animated.View
+              style={{ transform: [{ translateX: shakeAnimationValue }] }}
+            >
               <TouchableOpacity
-                style={[styles.unlockButton, (isLoading || pin.length < 4) && styles.unlockButtonDisabled]}
+                style={[
+                  styles.unlockButton,
+                  (isLoading || pin.length < 4) && styles.unlockButtonDisabled,
+                ]}
                 onPress={handleUnlockWallet}
-                disabled={isLoading || pin.length < 4}>
+                disabled={isLoading || pin.length < 4}
+              >
                 {isLoading ? (
                   <ActivityIndicator size={20} color="#ffffff" />
                 ) : (

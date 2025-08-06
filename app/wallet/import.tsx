@@ -1,11 +1,20 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  TextInput,
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAlert } from '@/providers/AlertProvider';
 import colors from '@/constants/colors';
 import ScreenHeader from '@/components/ScreenHeader';
 import ScreenContainer from '@/components/ScreenContainer';
-import { importWalletFromMnemonic, saveWalletToList } from '@/services/walletService';
+import {
+  importWalletFromMnemonic,
+  saveWalletToList,
+} from '@/services/walletService';
 
 export default function ImportPhraseScreen() {
   const router = useRouter();
@@ -51,18 +60,29 @@ export default function ImportPhraseScreen() {
     try {
       const cleanPhrase = phrase.trim().toLowerCase();
       const wallet = await importWalletFromMnemonic(cleanPhrase);
-      
+
       // Generate unique wallet ID and save to multi-wallet system with proper derivation info
       const walletId = `wallet-${Date.now()}`;
       const accountIndex = 0; // Imported wallets use the first derivation (m/44'/501'/0'/0')
       const derivationPath = "m/44'/501'/0'/0'";
-      await saveWalletToList(walletId, walletName, wallet.mnemonic, wallet.publicKey, pin, accountIndex, derivationPath);
-      
+      await saveWalletToList(
+        walletId,
+        walletName,
+        wallet.mnemonic,
+        wallet.publicKey,
+        pin,
+        accountIndex,
+        derivationPath,
+      );
+
       success('Success', 'Wallet imported successfully!', [
-        { text: 'OK', onPress: () => router.replace('/') }
+        { text: 'OK', onPress: () => router.replace('/') },
       ]);
     } catch (error) {
-      showError('Error', 'Failed to import wallet. Please check your seed phrase and try again.');
+      showError(
+        'Error',
+        'Failed to import wallet. Please check your seed phrase and try again.',
+      );
       console.error('Import error:', error);
     }
     setLoading(false);
@@ -82,7 +102,8 @@ export default function ImportPhraseScreen() {
         <>
           <Text style={styles.title}>Secret Recovery Phrase</Text>
           <Text style={styles.subtitle}>
-            Restore an existing wallet with your 12 or 24 word secret recovery phrase
+            Restore an existing wallet with your 12 or 24 word secret recovery
+            phrase
           </Text>
 
           <TextInput
@@ -141,9 +162,7 @@ export default function ImportPhraseScreen() {
       return (
         <>
           <Text style={styles.title}>Confirm PIN</Text>
-          <Text style={styles.subtitle}>
-            Re-enter your PIN to confirm
-          </Text>
+          <Text style={styles.subtitle}>Re-enter your PIN to confirm</Text>
 
           <TextInput
             style={styles.input}
@@ -162,16 +181,13 @@ export default function ImportPhraseScreen() {
 
   return (
     <ScreenContainer>
-      <ScreenHeader 
-        title="Import Recovery Phrase"
-        onBack={handleBack}
-      />
+      <ScreenHeader title="Import Recovery Phrase" onBack={handleBack} />
 
       <View style={styles.content}>
         {renderStep()}
 
-        <TouchableOpacity 
-          style={[styles.importButton, loading && styles.buttonDisabled]} 
+        <TouchableOpacity
+          style={[styles.importButton, loading && styles.buttonDisabled]}
           onPress={handleNextStep}
           disabled={loading}
         >

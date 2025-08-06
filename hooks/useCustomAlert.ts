@@ -36,60 +36,85 @@ export const useCustomAlert = () => {
   }, []);
 
   const hideAlert = useCallback(() => {
-    setAlertState(prev => ({
+    setAlertState((prev) => ({
       ...prev,
       visible: false,
     }));
   }, []);
 
   // Convenience methods that match React Native's Alert API
-  const alert = useCallback((title: string, message?: string, buttons?: AlertButton[], type?: 'success' | 'error' | 'warning' | 'info') => {
-    showAlert({
-      title,
-      message,
-      buttons: buttons || [{ text: 'OK' }],
-      type: type || 'info',
-    });
-  }, [showAlert]);
+  const alert = useCallback(
+    (
+      title: string,
+      message?: string,
+      buttons?: AlertButton[],
+      type?: 'success' | 'error' | 'warning' | 'info',
+    ) => {
+      showAlert({
+        title,
+        message,
+        buttons: buttons || [{ text: 'OK' }],
+        type: type || 'info',
+      });
+    },
+    [showAlert],
+  );
 
-  const success = useCallback((title: string, message?: string, buttons?: AlertButton[]) => {
-    showAlert({
-      title,
-      message,
-      buttons: buttons || [{ text: 'OK' }],
-      type: 'success',
-    });
-  }, [showAlert]);
+  const success = useCallback(
+    (title: string, message?: string, buttons?: AlertButton[]) => {
+      showAlert({
+        title,
+        message,
+        buttons: buttons || [{ text: 'OK' }],
+        type: 'success',
+      });
+    },
+    [showAlert],
+  );
 
-  const error = useCallback((title: string, message?: string, buttons?: AlertButton[]) => {
-    showAlert({
-      title,
-      message,
-      buttons: buttons || [{ text: 'OK' }],
-      type: 'error',
-    });
-  }, [showAlert]);
+  const error = useCallback(
+    (title: string, message?: string, buttons?: AlertButton[]) => {
+      showAlert({
+        title,
+        message,
+        buttons: buttons || [{ text: 'OK' }],
+        type: 'error',
+      });
+    },
+    [showAlert],
+  );
 
-  const warning = useCallback((title: string, message?: string, buttons?: AlertButton[]) => {
-    showAlert({
-      title,
-      message,
-      buttons: buttons || [{ text: 'OK' }],
-      type: 'warning',
-    });
-  }, [showAlert]);
+  const warning = useCallback(
+    (title: string, message?: string, buttons?: AlertButton[]) => {
+      showAlert({
+        title,
+        message,
+        buttons: buttons || [{ text: 'OK' }],
+        type: 'warning',
+      });
+    },
+    [showAlert],
+  );
 
-  const confirm = useCallback((title: string, message?: string, onConfirm?: () => void, onCancel?: () => void) => {
-    showAlert({
-      title,
-      message,
-      buttons: [
-        { text: 'Cancel', style: 'cancel', onPress: onCancel },
-        { text: 'OK', style: 'default', onPress: onConfirm },
-      ],
-      type: 'warning',
-    });
-  }, [showAlert]);
+  const confirm = useCallback(
+    (
+      title: string,
+      message?: string,
+      onConfirm?: () => void,
+      onCancel?: () => void,
+    ) => {
+      showAlert({
+        title,
+        message,
+        buttons: [
+          { text: 'Cancel', style: 'cancel', onPress: onCancel },
+          { text: 'OK', style: 'default', onPress: onConfirm },
+        ],
+        type: 'warning',
+      });
+    },
+    [showAlert],
+  );
 
   return {
     alertState,

@@ -1,5 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, TextInput } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  FlatList,
+  TextInput,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { X, Search } from 'lucide-react-native';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -9,28 +16,30 @@ import { EnrichedTokenEntry, TokenEntry } from '@/data/types';
 import TokenItemAlt from '@/components/TokenItemAlt';
 
 export default function TokenSelectScreen() {
-  const { excludeAddress, selectedAddress, returnParam } = useLocalSearchParams<{
-    excludeAddress?: string;
-    selectedAddress?: string;
-    returnParam?: string;
-  }>();
-  
+  const { excludeAddress, selectedAddress, returnParam } =
+    useLocalSearchParams<{
+      excludeAddress?: string;
+      selectedAddress?: string;
+      returnParam?: string;
+    }>();
+
   const [searchQuery, setSearchQuery] = useState('');
 
   const tokenList = getAllTokenInfo();
-  
+
   // Parse selected token from address
-  const selectedToken = selectedAddress 
-    ? tokenList.find(token => token.address === selectedAddress) || null
+  const selectedToken = selectedAddress
+    ? tokenList.find((token) => token.address === selectedAddress) || null
     : null;
-  
+
   const filteredTokens = tokenList
-    .filter(token =>
-      excludeAddress ? token.address !== excludeAddress : true
+    .filter((token) =>
+      excludeAddress ? token.address !== excludeAddress : true,
     )
-    .filter(token =>
-      token.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      token.symbol.toLowerCase().includes(searchQuery.toLowerCase())
+    .filter(
+      (token) =>
+        token.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        token.symbol.toLowerCase().includes(searchQuery.toLowerCase()),
     );
 
   const handleSelectToken = (token: EnrichedTokenEntry) => {
@@ -38,9 +47,9 @@ export default function TokenSelectScreen() {
     router.back();
     // Use a timeout to ensure navigation completes before setting params
     setTimeout(() => {
-      router.setParams({ 
+      router.setParams({
         selectedTokenAddress: token.address,
-        returnParam: returnParam // Pass through the returnParam
+        returnParam: returnParam, // Pass through the returnParam
       });
     }, 100);
   };
@@ -49,13 +58,20 @@ export default function TokenSelectScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Select Token</Text>
-        <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.closeButton}
+        >
           <X size={24} color={colors.textPrimary} />
         </TouchableOpacity>
       </View>
-      
+
       <View style={styles.searchContainer}>
-        <Search size={20} color={colors.textSecondary} style={styles.searchIcon} />
+        <Search
+          size={20}
+          color={colors.textSecondary}
+          style={styles.searchIcon}
+        />
         <TextInput
           style={styles.searchInput}
           placeholder="Search by name or symbol"
@@ -64,15 +80,15 @@ export default function TokenSelectScreen() {
           onChangeText={setSearchQuery}
         />
       </View>
-      
+
       <FlatList
         data={filteredTokens}
         keyExtractor={(token) => token.address}
         renderItem={({ item }) => (
-          <TokenItemAlt 
-            token={item} 
-            selectedToken={selectedToken} 
-            onSelectToken={handleSelectToken} 
+          <TokenItemAlt
+            token={item}
+            selectedToken={selectedToken}
+            onSelectToken={handleSelectToken}
           />
         )}
         contentContainerStyle={styles.listContent}

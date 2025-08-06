@@ -19,7 +19,7 @@ const WordBox: React.FC<WordBoxProps> = ({
   isSelected = false,
   displayNumber,
   onPress,
-  variant = 'display'
+  variant = 'display',
 }) => {
   const handlePress = () => {
     if (onPress) {
@@ -31,9 +31,7 @@ const WordBox: React.FC<WordBoxProps> = ({
     return (
       <View style={styles.displayWordContainer}>
         <Text style={styles.displayWordNumber}>{index + 1}</Text>
-        <Text style={styles.displayWord}>
-          {isVisible ? word : '••••'}
-        </Text>
+        <Text style={styles.displayWord}>{isVisible ? word : '••••'}</Text>
       </View>
     );
   }
@@ -42,14 +40,16 @@ const WordBox: React.FC<WordBoxProps> = ({
     <TouchableOpacity
       style={[
         styles.verificationWordItem,
-        isSelected && styles.verificationWordItemSelected
+        isSelected && styles.verificationWordItemSelected,
       ]}
       onPress={handlePress}
     >
-      <Text style={[
-        styles.verificationWordText,
-        isSelected && styles.verificationWordTextSelected
-      ]}>
+      <Text
+        style={[
+          styles.verificationWordText,
+          isSelected && styles.verificationWordTextSelected,
+        ]}
+      >
         {isVisible ? word : '••••'}
       </Text>
       {isSelected && displayNumber && (
@@ -81,7 +81,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
-  
+
   // Verification variant styles (updated to match display styling)
   verificationWordItem: {
     flex: 1,

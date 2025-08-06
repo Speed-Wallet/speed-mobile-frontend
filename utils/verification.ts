@@ -30,14 +30,16 @@ export const validateDateOfBirth = (dateOfBirth: string): boolean => {
 };
 
 // Function to validate all personal info fields
-export const validatePersonalInfo = (personalInfo: PersonalInfo | null): {
+export const validatePersonalInfo = (
+  personalInfo: PersonalInfo | null,
+): {
   isValid: boolean;
   errors: { [key: string]: boolean };
 } => {
   if (!personalInfo) {
     return {
       isValid: false,
-      errors: {}
+      errors: {},
     };
   }
 
@@ -56,9 +58,10 @@ export const validatePersonalInfo = (personalInfo: PersonalInfo | null): {
     streetNumber: !validateStreetNumber(personalInfo.streetNumber),
   };
 
-  const isValid = !Object.values(errors).some(hasError => hasError) &&
-    firstName.trim().length > 0 && 
-    lastName.trim().length > 0 && 
+  const isValid =
+    !Object.values(errors).some((hasError) => hasError) &&
+    firstName.trim().length > 0 &&
+    lastName.trim().length > 0 &&
     personalInfo.email.trim().length > 0 &&
     personalInfo.phoneNumber.trim().length > 0 &&
     personalInfo.address.trim().length > 0 &&
@@ -68,7 +71,9 @@ export const validatePersonalInfo = (personalInfo: PersonalInfo | null): {
 };
 
 // Pure function to calculate verification level from personal info
-export const calculateVerificationLevel = (personalInfo: PersonalInfo | null): number => {
+export const calculateVerificationLevel = (
+  personalInfo: PersonalInfo | null,
+): number => {
   // Check Level 1 completion using proper validation
   const validation = validatePersonalInfo(personalInfo);
   const level1Complete = personalInfo && validation.isValid;
@@ -76,24 +81,24 @@ export const calculateVerificationLevel = (personalInfo: PersonalInfo | null): n
   // Check Level 2 completion (documents uploaded - simplified check)
   // In a real app, you'd check if documents are uploaded and verified
   const level2Complete = false; // This should check actual document upload status
-  
+
   // Check Level 3 completion
   const level3Complete = false; // This should check bank statements and video verification
-  
+
   let currentLevel = 0;
-  
+
   if (level1Complete) {
     currentLevel = 1;
-    
+
     if (level2Complete) {
       currentLevel = 2;
-      
+
       if (level3Complete) {
         currentLevel = 3;
       }
     }
   }
-  
+
   return currentLevel;
 };
 
@@ -101,7 +106,7 @@ export const calculateVerificationLevel = (personalInfo: PersonalInfo | null): n
 export const getCurrentVerificationLevel = async (): Promise<number> => {
   // Load personal info from storage
   const personalInfo = await StorageService.loadPersonalInfo();
-  
+
   // Calculate level using pure function
   return calculateVerificationLevel(personalInfo);
 };

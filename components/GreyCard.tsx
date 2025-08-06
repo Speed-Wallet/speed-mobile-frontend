@@ -15,21 +15,21 @@ const GreyCard: React.FC<GreyCardProps> = ({
   children,
   style,
   contentPaddingHorizontal = 16, // Default horizontal content padding
-  contentPaddingVertical = 16,   // Default vertical content padding
+  contentPaddingVertical = 16, // Default vertical content padding
   backgroundColor = colors.backgroundMedium,
   borderRadius = 16,
 }) => {
   return (
-    <View 
+    <View
       style={[
-        styles.cardContainer, 
-        { 
-          backgroundColor, 
+        styles.cardContainer,
+        {
+          backgroundColor,
           borderRadius,
           paddingHorizontal: contentPaddingHorizontal,
           paddingVertical: contentPaddingVertical,
-        }, 
-        style
+        },
+        style,
       ]}
     >
       {children}

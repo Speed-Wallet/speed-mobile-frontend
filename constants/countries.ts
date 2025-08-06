@@ -25,10 +25,20 @@ export const countries: Country[] = [
   { code: 'BI', name: 'Burundi', flag: '🇧🇮', dialCode: '+257' },
   { code: 'CM', name: 'Cameroon', flag: '🇨🇲', dialCode: '+237' },
   { code: 'CV', name: 'Cape Verde', flag: '🇨🇻', dialCode: '+238' },
-  { code: 'CF', name: 'Central African Republic', flag: '🇨🇫', dialCode: '+236' },
+  {
+    code: 'CF',
+    name: 'Central African Republic',
+    flag: '🇨🇫',
+    dialCode: '+236',
+  },
   { code: 'TD', name: 'Chad', flag: '🇹🇩', dialCode: '+235' },
   { code: 'KM', name: 'Comoros', flag: '🇰🇲', dialCode: '+269' },
-  { code: 'CD', name: 'Democratic Republic of the Congo', flag: '🇨🇩', dialCode: '+243' },
+  {
+    code: 'CD',
+    name: 'Democratic Republic of the Congo',
+    flag: '🇨🇩',
+    dialCode: '+243',
+  },
   { code: 'DJ', name: 'Djibouti', flag: '🇩🇯', dialCode: '+253' },
   { code: 'EG', name: 'Egypt', flag: '🇪🇬', dialCode: '+20' },
   { code: 'GQ', name: 'Equatorial Guinea', flag: '🇬🇶', dialCode: '+240' },
@@ -103,5 +113,5 @@ export const countries: Country[] = [
   { code: 'UA', name: 'Ukraine', flag: '🇺🇦', dialCode: '+380' },
   { code: 'AE', name: 'United Arab Emirates', flag: '🇦🇪', dialCode: '+971' },
   { code: 'GB', name: 'United Kingdom', flag: '🇬🇧', dialCode: '+44' },
-  { code: 'VN', name: 'Vietnam', flag: '🇻🇳', dialCode: '+84' }
+  { code: 'VN', name: 'Vietnam', flag: '🇻🇳', dialCode: '+84' },
 ];

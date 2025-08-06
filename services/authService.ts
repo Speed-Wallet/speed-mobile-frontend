@@ -36,7 +36,9 @@ export class AuthService {
    */
   private static getWallet(): Keypair {
     if (!this.walletProvider) {
-      throw new Error('Wallet provider not set. Please set wallet provider first.');
+      throw new Error(
+        'Wallet provider not set. Please set wallet provider first.',
+      );
     }
     const wallet = this.walletProvider();
     if (!wallet) {
@@ -52,7 +54,7 @@ export class AuthService {
     try {
       const token = SecureMMKVStorage.getItem(STORAGE_KEYS.JWT_TOKEN);
       const expiry = SecureMMKVStorage.getItem(STORAGE_KEYS.JWT_EXPIRY);
-      
+
       if (token && expiry) {
         this.jwtToken = token;
         this.jwtExpiry = parseInt(expiry);
@@ -67,20 +69,20 @@ export class AuthService {
    */
   static isAuthenticated(): boolean {
     this.initialize();
-    
+
     if (!this.jwtToken) {
       return false;
     }
 
     // Check if token is expired (with buffer - shorter in development for testing)
-    const bufferTime = 5 * 1000;  // 5 seconds buffer for testing (since backend token expires in 30s)
+    const bufferTime = 5 * 1000; // 5 seconds buffer for testing (since backend token expires in 30s)
     // const bufferTime = 12 * 60 * 60 * 1000; // 12 hours in production
-    
+
     try {
       const expiry = this.extractTokenExpiry(this.jwtToken);
       const now = Date.now();
       const expiryWithBuffer = expiry - bufferTime;
-      
+
       if (now >= expiryWithBuffer) {
         console.log('🔄 JWT token expired - refreshing auth');
         this.clearStoredAuth();
@@ -121,8 +123,8 @@ export class AuthService {
    * Sign a message with the wallet's private key
    */
   private static async signMessageForAuth(
-    message: Uint8Array, 
-    masterSolanaKeypair: Keypair
+    message: Uint8Array,
+    masterSolanaKeypair: Keypair,
   ): Promise<Uint8Array> {
     const privateKey = masterSolanaKeypair.secretKey.subarray(0, 32);
     return signAsync(message, privateKey);
@@ -131,7 +133,10 @@ export class AuthService {
   /**
    * Request login message from backend
    */
-  private static async requestLoginMessage(userName: string, publicKey: string): Promise<LoginRequestResponse> {
+  private static async requestLoginMessage(
+    userName: string,
+    publicKey: string,
+  ): Promise<LoginRequestResponse> {
     const response = await fetch(`${BASE_BACKEND_URL}/auth/loginRequest`, {
       method: 'POST',
       headers: {
@@ -145,7 +150,9 @@ export class AuthService {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+      throw new Error(
+        errorData.error || `HTTP ${response.status}: ${response.statusText}`,
+      );
     }
 
     return response.json();
@@ -154,7 +161,10 @@ export class AuthService {
   /**
    * Submit signed message to get JWT token
    */
-  private static async submitLogin(message: string, signature: string): Promise<void> {
+  private static async submitLogin(
+    message: string,
+    signature: string,
+  ): Promise<void> {
     const response = await fetch(`${BASE_BACKEND_URL}/auth/login`, {
       method: 'POST',
       headers: {
@@ -168,12 +178,14 @@ export class AuthService {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+      throw new Error(
+        errorData.error || `HTTP ${response.status}: ${response.statusText}`,
+      );
     }
 
     // Extract JWT token from Authorization header
     const authHeader = response.headers.get('Authorization');
-    
+
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       throw new Error('No JWT token in response');
     }
@@ -191,14 +203,14 @@ export class AuthService {
       if (parts.length !== 3) {
         throw new Error('Invalid JWT token format');
       }
-      
+
       // Decode the payload (middle part of JWT)
       const payload = JSON.parse(atob(parts[1]));
-      
+
       if (!payload.exp) {
         throw new Error('JWT token does not contain expiry information');
       }
-      
+
       return payload.exp * 1000; // Convert from seconds to milliseconds
     } catch (error) {
       console.error('Error extracting JWT expiry:', error);
@@ -264,10 +276,10 @@ export class AuthService {
   private static clearStoredAuth(): void {
     this.jwtToken = null;
     this.jwtExpiry = null;
-    
+
     SecureMMKVStorage.multiRemove([
       STORAGE_KEYS.JWT_TOKEN,
-      STORAGE_KEYS.JWT_EXPIRY
+      STORAGE_KEYS.JWT_EXPIRY,
     ]);
     // Note: USERNAME is preserved intentionally
   }
@@ -281,23 +293,30 @@ export class AuthService {
       const masterWalletKeypair = await getMasterWalletKeypair();
       const publicKey = masterWalletKeypair.publicKey.toBase58();
       const storedUsername = this.getStoredUsername();
-      
+
       if (!storedUsername) {
-        throw new Error('No username found. Please complete wallet setup first.');
+        throw new Error(
+          'No username found. Please complete wallet setup first.',
+        );
       }
 
       // Step 1: Request login message
-      const { authMessage } = await this.requestLoginMessage(storedUsername, publicKey);
+      const { authMessage } = await this.requestLoginMessage(
+        storedUsername,
+        publicKey,
+      );
 
       // Step 2: Sign the message with master wallet
       const messageBytes = new TextEncoder().encode(authMessage);
-      const signatureBytes = await this.signMessageForAuth(messageBytes, masterWalletKeypair);
+      const signatureBytes = await this.signMessageForAuth(
+        messageBytes,
+        masterWalletKeypair,
+      );
       const signature = Buffer.from(signatureBytes).toString('base64');
 
       // Step 3: Submit signed message and get JWT
       await this.submitLogin(authMessage, signature);
       console.log('✅ Authentication successful');
-
     } catch (error) {
       console.error('❌ Authentication failed:', error);
       await this.clearStoredAuth();
@@ -324,11 +343,14 @@ export class AuthService {
   /**
    * Check if a JWT token is expired
    */
-  private static isTokenExpired(token: string, bufferTimeMs: number = 30 * 1000): boolean {
+  private static isTokenExpired(
+    token: string,
+    bufferTimeMs: number = 30 * 1000,
+  ): boolean {
     try {
       const expiry = this.extractTokenExpiry(token);
       const now = Date.now();
-      return now >= (expiry - bufferTimeMs);
+      return now >= expiry - bufferTimeMs;
     } catch (error) {
       console.error('Error checking token expiry:', error);
       return true; // Treat invalid tokens as expired

@@ -10,12 +10,12 @@ interface ToastProps {
   duration?: number;
 }
 
-const Toast: React.FC<ToastProps> = ({ 
-  message, 
-  visible, 
-  onHide, 
+const Toast: React.FC<ToastProps> = ({
+  message,
+  visible,
+  onHide,
   type = 'success',
-  duration = 3000 
+  duration = 3000,
 }) => {
   const [opacity] = useState(new Animated.Value(0));
   const [translateY] = useState(new Animated.Value(-50));

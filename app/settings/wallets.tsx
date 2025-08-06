@@ -1,11 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal, TextInput } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Modal,
+  TextInput,
+} from 'react-native';
 import { useRouter } from 'expo-router';
-import { Plus, Key, Check, Copy, RefreshCw, Trash2, X } from 'lucide-react-native';
+import {
+  Plus,
+  Key,
+  Check,
+  Copy,
+  RefreshCw,
+  Trash2,
+  X,
+} from 'lucide-react-native';
 import { useAlert } from '@/providers/AlertProvider';
 import colors from '@/constants/colors';
 import SettingsScreen from '@/components/SettingsScreen';
-import { 
+import {
   generateSolanaWalletFromMaster,
   getAllStoredWallets,
   saveWalletWithAppPin,
@@ -45,15 +60,15 @@ export default function WalletsScreen() {
     try {
       const storedWallets = await getAllStoredWallets();
       const activeWalletId = await getActiveWalletId();
-      
-      const walletInfos: WalletInfo[] = storedWallets.map(wallet => ({
+
+      const walletInfos: WalletInfo[] = storedWallets.map((wallet) => ({
         id: wallet.id,
         name: wallet.name,
         publicKey: wallet.publicKey,
         isActive: wallet.id === activeWalletId,
-        isMasterWallet: wallet.isMasterWallet
+        isMasterWallet: wallet.isMasterWallet,
       }));
-      
+
       setWallets(walletInfos);
     } catch (error) {
       console.error('Error loading wallets:', error);
@@ -76,34 +91,34 @@ export default function WalletsScreen() {
 
   const validateWalletName = (name: string) => {
     const trimmedName = name.trim();
-    
+
     if (trimmedName.length < 3) {
       return 'Wallet name must be at least 3 characters long';
     }
-    
-    const existingWallet = wallets.find(wallet => 
-      wallet.name.toLowerCase() === trimmedName.toLowerCase()
+
+    const existingWallet = wallets.find(
+      (wallet) => wallet.name.toLowerCase() === trimmedName.toLowerCase(),
     );
-    
+
     if (existingWallet) {
       return 'Wallet name already exists';
     }
-    
+
     return '';
   };
 
   const validateSeedPhrase = (phrase: string) => {
     const trimmedPhrase = phrase.trim();
-    
+
     if (!trimmedPhrase) {
       return 'Seed phrase is required';
     }
-    
+
     const words = trimmedPhrase.split(/\s+/);
     if (words.length !== 12 && words.length !== 24) {
       return 'Seed phrase must be 12 or 24 words';
     }
-    
+
     return '';
   };
 
@@ -120,12 +135,12 @@ export default function WalletsScreen() {
   const isFormValid = () => {
     const nameError = validateWalletName(walletName);
     if (nameError) return false;
-    
+
     if (showImportModal) {
       const seedError = validateSeedPhrase(importPhrase);
       if (seedError) return false;
     }
-    
+
     return true;
   };
 
@@ -141,19 +156,22 @@ export default function WalletsScreen() {
       const wallet = await generateSolanaWalletFromMaster();
       const walletId = `wallet_${Date.now()}`;
       await saveWalletWithAppPin(
-        walletId, 
-        walletName.trim(), 
-        wallet.mnemonic, 
+        walletId,
+        walletName.trim(),
+        wallet.mnemonic,
         wallet.publicKey,
         wallet.accountIndex,
-        wallet.derivationPath
+        wallet.derivationPath,
       );
-      
+
       success('Success', 'Wallet created successfully!', [
-        { text: 'OK', onPress: () => {
-          setShowCreateModal(false);
-          loadWallets();
-        }}
+        {
+          text: 'OK',
+          onPress: () => {
+            setShowCreateModal(false);
+            loadWallets();
+          },
+        },
       ]);
     } catch (error) {
       showError('Error', 'Failed to create wallet. Please try again.');
@@ -165,7 +183,7 @@ export default function WalletsScreen() {
   const processImportWallet = async () => {
     const nameError = validateWalletName(walletName);
     const seedError = validateSeedPhrase(importPhrase);
-    
+
     if (nameError || seedError) {
       setWalletNameError(nameError);
       setSeedPhraseError(seedError);
@@ -179,13 +197,23 @@ export default function WalletsScreen() {
       const walletId = `wallet_${Date.now()}`;
       const accountIndex = 0; // Imported wallets use the first derivation (m/44'/501'/0'/0')
       const derivationPath = "m/44'/501'/0'/0'";
-      await saveWalletWithAppPin(walletId, walletName.trim(), wallet.mnemonic, wallet.publicKey, accountIndex, derivationPath);
-      
+      await saveWalletWithAppPin(
+        walletId,
+        walletName.trim(),
+        wallet.mnemonic,
+        wallet.publicKey,
+        accountIndex,
+        derivationPath,
+      );
+
       success('Success', 'Wallet imported successfully!', [
-        { text: 'OK', onPress: () => {
-          setShowImportModal(false);
-          loadWallets();
-        }}
+        {
+          text: 'OK',
+          onPress: () => {
+            setShowImportModal(false);
+            loadWallets();
+          },
+        },
       ]);
     } catch (error) {
       showError('Error', 'Failed to import wallet. Please try again.');
@@ -200,7 +228,7 @@ export default function WalletsScreen() {
         'Cannot Delete Main Wallet',
         'The main wallet cannot be deleted as it contains the master seed phrase for your account.',
         [{ text: 'OK', style: 'default' }],
-        'warning'
+        'warning',
       );
       return;
     }
@@ -208,7 +236,7 @@ export default function WalletsScreen() {
     confirm(
       'Delete Wallet',
       'Are you sure you want to delete this wallet? This action cannot be undone.',
-      () => deleteWallet(walletId)
+      () => deleteWallet(walletId),
     );
   };
 
@@ -243,7 +271,7 @@ export default function WalletsScreen() {
   const copyAddress = async (publicKey: string, walletId: string) => {
     await setStringAsync(publicKey);
     setCopiedAddressId(walletId);
-    
+
     // Reset the copied state after 2 seconds
     setTimeout(() => {
       setCopiedAddressId(null);
@@ -257,9 +285,11 @@ export default function WalletsScreen() {
           {showCreateModal ? 'Create New Wallet' : 'Import Wallet'}
         </Text>
         <Text style={styles.modalSubtitle}>
-          {showCreateModal ? 'Give your wallet a name' : 'Import your existing wallet'}
+          {showCreateModal
+            ? 'Give your wallet a name'
+            : 'Import your existing wallet'}
         </Text>
-        
+
         <TextInput
           style={[styles.input, walletNameError && styles.inputError]}
           placeholder="Wallet name (e.g. Wallet 2)"
@@ -281,7 +311,11 @@ export default function WalletsScreen() {
             <Text style={styles.inputLabel}>Seed Phrase</Text>
             <View style={styles.inputContainer}>
               <TextInput
-                style={[styles.input, styles.textArea, seedPhraseError && styles.inputError]}
+                style={[
+                  styles.input,
+                  styles.textArea,
+                  seedPhraseError && styles.inputError,
+                ]}
                 placeholder="Enter your 12 or 24 word seed phrase"
                 placeholderTextColor={colors.textSecondary}
                 value={importPhrase}
@@ -296,9 +330,13 @@ export default function WalletsScreen() {
               />
               {/* Dev Button */}
               {process.env.EXPO_PUBLIC_APP_ENV === 'development' && (
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.devButton}
-                  onPress={() => setImportPhrase(process.env.EXPO_PUBLIC_DEV_SEED_PHRASE || '')}
+                  onPress={() =>
+                    setImportPhrase(
+                      process.env.EXPO_PUBLIC_DEV_SEED_PHRASE || '',
+                    )
+                  }
                 >
                   <Text style={styles.devButtonText}>DEV</Text>
                 </TouchableOpacity>
@@ -319,18 +357,22 @@ export default function WalletsScreen() {
         {/* Current Wallets */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Your Wallets</Text>
-          
+
           {wallets.length === 0 ? (
             <View style={styles.emptyState}>
               <Text style={styles.emptyTitle}>No wallets found</Text>
-              <Text style={styles.emptySubtitle}>Create or import a wallet to get started</Text>
+              <Text style={styles.emptySubtitle}>
+                Create or import a wallet to get started
+              </Text>
             </View>
           ) : (
             wallets.map((wallet) => (
-              <TouchableOpacity 
-                key={wallet.id} 
+              <TouchableOpacity
+                key={wallet.id}
                 style={styles.walletCard}
-                onPress={() => !wallet.isActive && handleSwitchWallet(wallet.id)}
+                onPress={() =>
+                  !wallet.isActive && handleSwitchWallet(wallet.id)
+                }
                 activeOpacity={0.7}
               >
                 <View style={styles.walletInfo}>
@@ -343,7 +385,7 @@ export default function WalletsScreen() {
                       </View>
                     )}
                   </View>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.addressContainer}
                     onPress={(e) => {
                       e.stopPropagation();
@@ -351,7 +393,8 @@ export default function WalletsScreen() {
                     }}
                   >
                     <Text style={styles.walletAddress}>
-                      {wallet.publicKey.slice(0, 8)}...{wallet.publicKey.slice(-8)}
+                      {wallet.publicKey.slice(0, 8)}...
+                      {wallet.publicKey.slice(-8)}
                     </Text>
                     {copiedAddressId === wallet.id ? (
                       <Check size={14} color={colors.success} />
@@ -360,20 +403,17 @@ export default function WalletsScreen() {
                     )}
                   </TouchableOpacity>
                 </View>
-                
+
                 <View style={styles.walletActions}>
                   {!wallet.isMasterWallet && (
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       style={styles.deleteButton}
                       onPress={(e) => {
                         e.stopPropagation();
                         handleDeleteWallet(wallet.id, wallet.isMasterWallet);
                       }}
                     >
-                      <Trash2 
-                        size={18} 
-                        color={colors.error} 
-                      />
+                      <Trash2 size={18} color={colors.error} />
                     </TouchableOpacity>
                   )}
                 </View>
@@ -385,24 +425,38 @@ export default function WalletsScreen() {
         {/* Actions */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Add Wallet</Text>
-          
-          <TouchableOpacity style={styles.actionCard} onPress={handleCreateWallet}>
-            <View style={[styles.actionIcon, { backgroundColor: colors.primary }]}>
+
+          <TouchableOpacity
+            style={styles.actionCard}
+            onPress={handleCreateWallet}
+          >
+            <View
+              style={[styles.actionIcon, { backgroundColor: colors.primary }]}
+            >
               <Plus size={20} color={colors.white} />
             </View>
             <View style={styles.actionContent}>
               <Text style={styles.actionTitle}>Create New Wallet</Text>
-              <Text style={styles.actionSubtitle}>Generate a new wallet with seed phrase</Text>
+              <Text style={styles.actionSubtitle}>
+                Generate a new wallet with seed phrase
+              </Text>
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionCard} onPress={handleImportWallet}>
-            <View style={[styles.actionIcon, { backgroundColor: colors.success }]}>
+          <TouchableOpacity
+            style={styles.actionCard}
+            onPress={handleImportWallet}
+          >
+            <View
+              style={[styles.actionIcon, { backgroundColor: colors.success }]}
+            >
               <Key size={20} color={colors.white} />
             </View>
             <View style={styles.actionContent}>
               <Text style={styles.actionTitle}>Import Wallet</Text>
-              <Text style={styles.actionSubtitle}>Import existing wallet using seed phrase</Text>
+              <Text style={styles.actionSubtitle}>
+                Import existing wallet using seed phrase
+              </Text>
             </View>
           </TouchableOpacity>
         </View>
@@ -420,7 +474,7 @@ export default function WalletsScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.modalCloseButton}
               onPress={() => {
                 setShowCreateModal(false);
@@ -429,16 +483,18 @@ export default function WalletsScreen() {
             >
               <X size={24} color={colors.textSecondary} />
             </TouchableOpacity>
-            
+
             {renderModalContent()}
-            
+
             <View style={styles.modalActions}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[
-                  styles.primaryButton, 
-                  (loading || !isFormValid()) && styles.buttonDisabled
+                  styles.primaryButton,
+                  (loading || !isFormValid()) && styles.buttonDisabled,
                 ]}
-                onPress={showCreateModal ? processCreateWallet : processImportWallet}
+                onPress={
+                  showCreateModal ? processCreateWallet : processImportWallet
+                }
                 disabled={loading || !isFormValid()}
               >
                 <Text style={styles.primaryButtonText}>

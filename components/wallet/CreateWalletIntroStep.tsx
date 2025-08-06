@@ -1,4 +1,11 @@
-import { StyleSheet, View, Text, TouchableOpacity, Animated, SafeAreaView } from 'react-native';
+import {
+  StyleSheet,
+  View,
+  Text,
+  TouchableOpacity,
+  Animated,
+  SafeAreaView,
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import { useRef, useEffect } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -12,10 +19,14 @@ interface CreateWalletIntroStepProps {
   isLoading: boolean;
 }
 
-export default function CreateWalletIntroStep({ onCreateWallet, onImportWallet, isLoading }: CreateWalletIntroStepProps) {
+export default function CreateWalletIntroStep({
+  onCreateWallet,
+  onImportWallet,
+  isLoading,
+}: CreateWalletIntroStepProps) {
   const router = useRouter();
   useFrameworkReady();
-  
+
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(20)).current;
@@ -46,10 +57,12 @@ export default function CreateWalletIntroStep({ onCreateWallet, onImportWallet, 
               opacity: fadeAnim,
               transform: [{ translateY: translateY }],
             },
-          ]}>
+          ]}
+        >
           <LinearGradient
             colors={['#7c5cff', '#6446fe']}
-            style={styles.logoGradient}>
+            style={styles.logoGradient}
+          >
             <RefreshCw size={48} color="#fff" />
           </LinearGradient>
         </Animated.View>
@@ -62,7 +75,8 @@ export default function CreateWalletIntroStep({ onCreateWallet, onImportWallet, 
               opacity: fadeAnim,
               transform: [{ translateY: translateY }],
             },
-          ]}>
+          ]}
+        >
           <Text style={styles.welcomeText}>Welcome to Speed Wallet</Text>
         </Animated.View>
 
@@ -74,28 +88,32 @@ export default function CreateWalletIntroStep({ onCreateWallet, onImportWallet, 
               opacity: fadeAnim,
               transform: [{ translateY }],
             },
-          ]}>
+          ]}
+        >
           <TouchableOpacity
             style={styles.createButton}
             activeOpacity={0.8}
             onPress={onCreateWallet}
-            disabled={isLoading}>
+            disabled={isLoading}
+          >
             <LinearGradient
               colors={['#7c5cff', '#6446fe']}
               style={styles.buttonGradient}
               start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}>
+              end={{ x: 1, y: 1 }}
+            >
               <Text style={styles.buttonText}>Create new wallet</Text>
             </LinearGradient>
           </TouchableOpacity>
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.importLink}
             onPress={() => {
               if (onImportWallet) {
                 onImportWallet();
               }
-            }}>
+            }}
+          >
             <Text style={styles.importText}>I already have a wallet</Text>
           </TouchableOpacity>
         </Animated.View>

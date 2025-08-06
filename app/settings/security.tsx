@@ -1,5 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  ActivityIndicator,
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAlert } from '@/providers/AlertProvider';
 import colors from '@/constants/colors';
@@ -27,7 +34,7 @@ export default function SecuritySettingsScreen() {
 
   const handlePinSubmit = async () => {
     if (pin.length < 4) {
-      setError("PIN must be at least 4 digits.");
+      setError('PIN must be at least 4 digits.');
       return;
     }
     setIsLoading(true);
@@ -38,12 +45,12 @@ export default function SecuritySettingsScreen() {
         setSeedPhrase(wallet.mnemonic);
         setPinEntryVisible(false); // Hide PIN input after success
       } else {
-        setError("Incorrect PIN or unable to retrieve seed phrase.");
+        setError('Incorrect PIN or unable to retrieve seed phrase.');
         setSeedPhrase(null);
       }
     } catch (err) {
-      console.error("Error unlocking wallet:", err);
-      setError("An error occurred while trying to retrieve the seed phrase.");
+      console.error('Error unlocking wallet:', err);
+      setError('An error occurred while trying to retrieve the seed phrase.');
       setSeedPhrase(null);
     }
     setIsLoading(false);
@@ -61,24 +68,39 @@ export default function SecuritySettingsScreen() {
     <SettingsScreen title="Security">
       <View style={styles.content}>
         <Text style={styles.sectionTitle}>General Security</Text>
-        <TouchableOpacity style={styles.menuItem} onPress={() => alert("Navigate", "Navigate to 2FA settings")}>
-          <Text style={styles.menuItemText}>Two-Factor Authentication (2FA)</Text>
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => alert('Navigate', 'Navigate to 2FA settings')}
+        >
+          <Text style={styles.menuItemText}>
+            Two-Factor Authentication (2FA)
+          </Text>
           <Text style={styles.menuItemValue}>Off {'>'}</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem} onPress={() => alert("Navigate", "Navigate to Change Password")}>
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => alert('Navigate', 'Navigate to Change Password')}
+        >
           <Text style={styles.menuItemText}>Change PIN</Text>
           <Text style={styles.menuItemValue}>{'>'}</Text>
         </TouchableOpacity>
 
         <Text style={styles.sectionTitle}>Recovery</Text>
-        <TouchableOpacity style={styles.menuItem} onPress={handleShowSeedPhrase}>
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={handleShowSeedPhrase}
+        >
           <Text style={styles.menuItemText}>View Seed Phrase</Text>
-          <Text style={styles.menuItemValue}>{seedPhrase ? 'Hide' : 'Show'} {'>'}</Text>
+          <Text style={styles.menuItemValue}>
+            {seedPhrase ? 'Hide' : 'Show'} {'>'}
+          </Text>
         </TouchableOpacity>
 
         {pinEntryVisible && !seedPhrase && (
           <View style={styles.pinEntryContainer}>
-            <Text style={styles.pinPrompt}>Enter your PIN to view the seed phrase:</Text>
+            <Text style={styles.pinPrompt}>
+              Enter your PIN to view the seed phrase:
+            </Text>
             <View style={styles.pinInputContainer}>
               <TextInput
                 style={styles.pinInput}
@@ -91,11 +113,24 @@ export default function SecuritySettingsScreen() {
                 onChangeText={setPin}
                 autoFocus
               />
-              <TouchableOpacity onPress={() => setShowPin(!showPin)} style={styles.eyeIcon}>
-                {showPin ? <EyeOff color={colors.primary} size={24} /> : <Eye color={colors.primary} size={24} />}
+              <TouchableOpacity
+                onPress={() => setShowPin(!showPin)}
+                style={styles.eyeIcon}
+              >
+                {showPin ? (
+                  <EyeOff color={colors.primary} size={24} />
+                ) : (
+                  <Eye color={colors.primary} size={24} />
+                )}
               </TouchableOpacity>
             </View>
-            {isLoading && <ActivityIndicator size="small" color={colors.primary} style={{ marginTop: 10 }} />}
+            {isLoading && (
+              <ActivityIndicator
+                size="small"
+                color={colors.primary}
+                style={{ marginTop: 10 }}
+              />
+            )}
             {error && <Text style={styles.errorText}>{error}</Text>}
             <TouchableOpacity
               style={[styles.button, isLoading && styles.buttonDisabled]}
@@ -111,18 +146,24 @@ export default function SecuritySettingsScreen() {
           <View style={styles.seedPhraseContainer}>
             <Text style={styles.seedPhraseWarningTitle}>Your Seed Phrase</Text>
             <Text style={styles.seedPhraseWarning}>
-              Store this phrase securely. Do NOT share it with anyone.
-              This is the ONLY way to recover your wallet.
+              Store this phrase securely. Do NOT share it with anyone. This is
+              the ONLY way to recover your wallet.
             </Text>
             <View style={styles.mnemonicDisplay}>
               <Text style={styles.mnemonicText}>{seedPhrase}</Text>
             </View>
             <View style={styles.buttonRow}>
-              <TouchableOpacity style={[styles.button, styles.copyButton]} onPress={copySeedPhrase}>
+              <TouchableOpacity
+                style={[styles.button, styles.copyButton]}
+                onPress={copySeedPhrase}
+              >
                 <Copy size={18} color={colors.white} />
                 <Text style={[styles.buttonText, { marginLeft: 8 }]}>Copy</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.button, styles.hideButton]} onPress={() => setSeedPhrase(null)}>
+              <TouchableOpacity
+                style={[styles.button, styles.hideButton]}
+                onPress={() => setSeedPhrase(null)}
+              >
                 <Text style={styles.buttonText}>Hide</Text>
               </TouchableOpacity>
             </View>

@@ -9,10 +9,10 @@ interface ScreenContainerProps {
   edges?: ('top' | 'bottom' | 'left' | 'right')[];
 }
 
-export default function ScreenContainer({ 
-  children, 
-  style, 
-  edges = ['bottom'] 
+export default function ScreenContainer({
+  children,
+  style,
+  edges = ['bottom'],
 }: ScreenContainerProps) {
   return (
     <SafeAreaView edges={edges} style={[styles.container, style]}>

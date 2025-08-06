@@ -4,9 +4,9 @@ export interface USDTReceivedEventData {
   id: string;
   fees: string;
   hash: string;
-  type: "receive";
+  type: 'receive';
   chain: string;
-  action: "deposit";
+  action: 'deposit';
   amount: string;
   address: string;
   channel: string;
@@ -57,7 +57,12 @@ export interface KYCEventData {
 }
 
 export interface NotificationData {
-  type: 'usdt_received' | 'card_created' | 'card_creation_failed' | 'kyc_verified' | 'kyc_failed';
+  type:
+    | 'usdt_received'
+    | 'card_created'
+    | 'card_creation_failed'
+    | 'kyc_verified'
+    | 'kyc_failed';
   eventType: string;
   cardCode?: string; // Available for card_created notifications
   eventData?: USDTReceivedEventData | KYCEventData;

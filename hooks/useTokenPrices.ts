@@ -13,7 +13,7 @@ const useAllTokenPrices = () => {
     queryFn: async () => {
       try {
         const result = await getTokenPrices();
-        
+
         // Transform the response to a simple coingeckoId -> price mapping
         const prices: Record<string, number> = {};
         if (result.success && result.data) {
@@ -23,7 +23,7 @@ const useAllTokenPrices = () => {
             }
           });
         }
-        
+
         return prices;
       } catch (apiError) {
         console.error('Backend API error:', apiError);
@@ -35,21 +35,23 @@ const useAllTokenPrices = () => {
 };
 
 // Batch fetch prices for multiple tokens - now just filters from global cache
-export const useTokenPrices = (coingeckoIds: string[] = []): {
+export const useTokenPrices = (
+  coingeckoIds: string[] = [],
+): {
   prices: Record<string, number>;
   isLoading: boolean;
   error: Error | null;
 } => {
   // Filter out any undefined or empty IDs
   const validIds = coingeckoIds.filter(Boolean);
-  
+
   // Use the global query that fetches all prices
   const { data: allPrices, isLoading, error } = useAllTokenPrices();
-  
+
   // Filter the results to only include requested tokens
   const filteredPrices: Record<string, number> = {};
   if (allPrices && validIds.length > 0) {
-    validIds.forEach(id => {
+    validIds.forEach((id) => {
       if (allPrices[id] !== undefined) {
         filteredPrices[id] = allPrices[id];
       }
@@ -57,23 +59,27 @@ export const useTokenPrices = (coingeckoIds: string[] = []): {
   }
 
   return {
-    prices: validIds.length > 0 ? filteredPrices : (allPrices || {}),
+    prices: validIds.length > 0 ? filteredPrices : allPrices || {},
     isLoading,
-    error
+    error,
   };
 };
 
 // Single token price hook (backwards compatible) - now just a wrapper
-export const useTokenPrice = (coingeckoId: string | undefined): {
+export const useTokenPrice = (
+  coingeckoId: string | undefined,
+): {
   price: number | undefined;
   isLoading: boolean;
   error: Error | null;
 } => {
-  const { prices, isLoading, error } = useTokenPrices(coingeckoId ? [coingeckoId] : []);
-  
+  const { prices, isLoading, error } = useTokenPrices(
+    coingeckoId ? [coingeckoId] : [],
+  );
+
   return {
     price: coingeckoId ? prices[coingeckoId] : undefined,
     isLoading,
-    error
+    error,
   };
 };

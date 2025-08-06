@@ -10,7 +10,11 @@ interface DevStartupScreenProps {
   hasExistingWallet: boolean;
 }
 
-export default function DevStartupScreen({ onCreateWallet, onEnterApp, hasExistingWallet }: DevStartupScreenProps) {
+export default function DevStartupScreen({
+  onCreateWallet,
+  onEnterApp,
+  hasExistingWallet,
+}: DevStartupScreenProps) {
   const handleCreateWallet = async () => {
     Alert.alert(
       'Clear Wallet Data',
@@ -25,20 +29,20 @@ export default function DevStartupScreen({ onCreateWallet, onEnterApp, hasExisti
               // Clear all wallet-related data
               SecureMMKVStorage.multiRemove([
                 'solanaWalletsList',
-                'solanaActiveWallet', 
+                'solanaActiveWallet',
                 'appPin',
                 'appSalt',
                 'appIV',
-                'masterMnemonic'
+                'masterMnemonic',
               ]);
               onCreateWallet();
             } catch (error) {
               console.error('Error clearing wallet data:', error);
               Alert.alert('Error', 'Failed to clear wallet data');
             }
-          }
-        }
-      ]
+          },
+        },
+      ],
     );
   };
 
@@ -53,55 +57,57 @@ export default function DevStartupScreen({ onCreateWallet, onEnterApp, hasExisti
   return (
     <ScreenContainer>
       <View style={styles.content}>
-      <View style={styles.header}>
-        <View style={styles.iconContainer}>
-          <Settings size={32} color={colors.warning} strokeWidth={2} />
+        <View style={styles.header}>
+          <View style={styles.iconContainer}>
+            <Settings size={32} color={colors.warning} strokeWidth={2} />
+          </View>
+
+          <Text style={styles.title}>Development Mode</Text>
+          <Text style={styles.subtitle}>Choose an option to continue</Text>
         </View>
-        
-        <Text style={styles.title}>Development Mode</Text>
-        <Text style={styles.subtitle}>
-          Choose an option to continue
+
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity
+            style={styles.createButton}
+            onPress={handleCreateWallet}
+          >
+            <Plus size={24} color={colors.white} strokeWidth={2} />
+            <Text style={styles.createButtonText}>Create New Wallet</Text>
+            <Text style={styles.createButtonSubtext}>
+              Clears all existing data
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.enterButton,
+              !hasExistingWallet && styles.enterButtonDisabled,
+            ]}
+            onPress={handleEnterApp}
+            disabled={!hasExistingWallet}
+          >
+            <Text
+              style={[
+                styles.enterButtonText,
+                !hasExistingWallet && styles.enterButtonTextDisabled,
+              ]}
+            >
+              Enter App
+            </Text>
+            <Text
+              style={[
+                styles.enterButtonSubtext,
+                !hasExistingWallet && styles.enterButtonSubtextDisabled,
+              ]}
+            >
+              {hasExistingWallet ? 'Use existing wallet' : 'No wallet found'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <Text style={styles.devWarning}>
+          This screen only appears in development mode
         </Text>
-      </View>
-
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity
-          style={styles.createButton}
-          onPress={handleCreateWallet}
-        >
-          <Plus size={24} color={colors.white} strokeWidth={2} />
-          <Text style={styles.createButtonText}>Create New Wallet</Text>
-          <Text style={styles.createButtonSubtext}>
-            Clears all existing data
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.enterButton,
-            !hasExistingWallet && styles.enterButtonDisabled
-          ]}
-          onPress={handleEnterApp}
-          disabled={!hasExistingWallet}
-        >
-          <Text style={[
-            styles.enterButtonText,
-            !hasExistingWallet && styles.enterButtonTextDisabled
-          ]}>
-            Enter App
-          </Text>
-          <Text style={[
-            styles.enterButtonSubtext,
-            !hasExistingWallet && styles.enterButtonSubtextDisabled
-          ]}>
-            {hasExistingWallet ? 'Use existing wallet' : 'No wallet found'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      <Text style={styles.devWarning}>
-        This screen only appears in development mode
-      </Text>
       </View>
     </ScreenContainer>
   );

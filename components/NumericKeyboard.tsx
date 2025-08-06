@@ -7,61 +7,97 @@ interface NumericKeyboardProps {
   showDecimal?: boolean;
 }
 
-const NumericKeyboard: React.FC<NumericKeyboardProps> = ({ 
-  onKeyPress, 
-  showDecimal = false 
+const NumericKeyboard: React.FC<NumericKeyboardProps> = ({
+  onKeyPress,
+  showDecimal = false,
 }) => {
   return (
     <View style={styles.keyboard}>
       <View style={styles.keyboardGrid}>
         <View style={styles.keyboardRow}>
-          <TouchableOpacity style={styles.keyboardKey} onPress={() => onKeyPress('1')}>
+          <TouchableOpacity
+            style={styles.keyboardKey}
+            onPress={() => onKeyPress('1')}
+          >
             <Text style={styles.keyboardKeyText}>1</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.keyboardKey} onPress={() => onKeyPress('2')}>
+          <TouchableOpacity
+            style={styles.keyboardKey}
+            onPress={() => onKeyPress('2')}
+          >
             <Text style={styles.keyboardKeyText}>2</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.keyboardKey} onPress={() => onKeyPress('3')}>
+          <TouchableOpacity
+            style={styles.keyboardKey}
+            onPress={() => onKeyPress('3')}
+          >
             <Text style={styles.keyboardKeyText}>3</Text>
           </TouchableOpacity>
         </View>
-        
+
         <View style={styles.keyboardRow}>
-          <TouchableOpacity style={styles.keyboardKey} onPress={() => onKeyPress('4')}>
+          <TouchableOpacity
+            style={styles.keyboardKey}
+            onPress={() => onKeyPress('4')}
+          >
             <Text style={styles.keyboardKeyText}>4</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.keyboardKey} onPress={() => onKeyPress('5')}>
+          <TouchableOpacity
+            style={styles.keyboardKey}
+            onPress={() => onKeyPress('5')}
+          >
             <Text style={styles.keyboardKeyText}>5</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.keyboardKey} onPress={() => onKeyPress('6')}>
+          <TouchableOpacity
+            style={styles.keyboardKey}
+            onPress={() => onKeyPress('6')}
+          >
             <Text style={styles.keyboardKeyText}>6</Text>
           </TouchableOpacity>
         </View>
-        
+
         <View style={styles.keyboardRow}>
-          <TouchableOpacity style={styles.keyboardKey} onPress={() => onKeyPress('7')}>
+          <TouchableOpacity
+            style={styles.keyboardKey}
+            onPress={() => onKeyPress('7')}
+          >
             <Text style={styles.keyboardKeyText}>7</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.keyboardKey} onPress={() => onKeyPress('8')}>
+          <TouchableOpacity
+            style={styles.keyboardKey}
+            onPress={() => onKeyPress('8')}
+          >
             <Text style={styles.keyboardKeyText}>8</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.keyboardKey} onPress={() => onKeyPress('9')}>
+          <TouchableOpacity
+            style={styles.keyboardKey}
+            onPress={() => onKeyPress('9')}
+          >
             <Text style={styles.keyboardKeyText}>9</Text>
           </TouchableOpacity>
         </View>
-        
+
         <View style={styles.keyboardRow}>
           {showDecimal ? (
-            <TouchableOpacity style={styles.keyboardKey} onPress={() => onKeyPress('.')}>
+            <TouchableOpacity
+              style={styles.keyboardKey}
+              onPress={() => onKeyPress('.')}
+            >
               <Text style={styles.keyboardKeyText}>.</Text>
             </TouchableOpacity>
           ) : (
             <View style={styles.keyboardKeyEmpty} />
           )}
-          <TouchableOpacity style={styles.keyboardKey} onPress={() => onKeyPress('0')}>
+          <TouchableOpacity
+            style={styles.keyboardKey}
+            onPress={() => onKeyPress('0')}
+          >
             <Text style={styles.keyboardKeyText}>0</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.keyboardKey} onPress={() => onKeyPress('backspace')}>
+          <TouchableOpacity
+            style={styles.keyboardKey}
+            onPress={() => onKeyPress('backspace')}
+          >
             <Text style={styles.keyboardKeyText}>⌫</Text>
           </TouchableOpacity>
         </View>

@@ -43,7 +43,10 @@ export function getAllCreationSteps() {
  * Handle USDT received notification - advance to step 2 (KYC verification)
  */
 export function handleUSDTReceived(transactionSignature: string) {
-  console.log('📝 USDT received, advancing to step 2 (KYC verification)', transactionSignature);
+  console.log(
+    '📝 USDT received, advancing to step 2 (KYC verification)',
+    transactionSignature,
+  );
   updateCardCreationStep(transactionSignature, 2);
 }
 
@@ -52,7 +55,10 @@ export function handleUSDTReceived(transactionSignature: string) {
  * For now, this is simulated since KYC webhook isn't implemented yet
  */
 export function handleKYCVerificationComplete(transactionSignature: string) {
-  console.log('✅ KYC verification complete, advancing to step 3 (Card creation)', transactionSignature);
+  console.log(
+    '✅ KYC verification complete, advancing to step 3 (Card creation)',
+    transactionSignature,
+  );
   updateCardCreationStep(transactionSignature, 3);
 }
 
@@ -60,7 +66,10 @@ export function handleKYCVerificationComplete(transactionSignature: string) {
  * Handle card creation complete - remove from tracking
  */
 export function handleCardCreationComplete(transactionSignature: string) {
-  console.log('🎉 Card creation complete, removing from tracking', transactionSignature);
+  console.log(
+    '🎉 Card creation complete, removing from tracking',
+    transactionSignature,
+  );
   removeCardCreationStep(transactionSignature);
 }
 
@@ -68,7 +77,10 @@ export function handleCardCreationComplete(transactionSignature: string) {
  * Handle card creation failed - remove from tracking
  */
 export function handleCardCreationFailed(transactionSignature: string) {
-  console.log('❌ Card creation failed, removing from tracking', transactionSignature);
+  console.log(
+    '❌ Card creation failed, removing from tracking',
+    transactionSignature,
+  );
   removeCardCreationStep(transactionSignature);
 }
 
@@ -76,7 +88,10 @@ export function handleCardCreationFailed(transactionSignature: string) {
  * Simulate KYC verification completion after USDT is received
  * This will be replaced by actual KYC webhook handling
  */
-export function simulateKYCVerification(transactionSignature: string, delayMs: number = 3000) {
+export function simulateKYCVerification(
+  transactionSignature: string,
+  delayMs: number = 3000,
+) {
   console.log('🔄 Simulating KYC verification...', transactionSignature);
   setTimeout(() => {
     handleKYCVerificationComplete(transactionSignature);

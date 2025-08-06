@@ -9,15 +9,27 @@ type ActionButtonProps = {
   backgroundColor?: string; // Added backgroundColor prop
 };
 
-const ActionButton = ({ icon, label, onPress, backgroundColor }: ActionButtonProps) => {
+const ActionButton = ({
+  icon,
+  label,
+  onPress,
+  backgroundColor,
+}: ActionButtonProps) => {
   return (
     <TouchableOpacity style={styles.container} onPress={onPress}>
       {/* The View with styles.card is kept for layout purposes but will be made transparent */}
-      <View style={styles.card}> 
-        <View style={[styles.iconContainer, backgroundColor ? { backgroundColor } : {}]}>
+      <View style={styles.card}>
+        <View
+          style={[
+            styles.iconContainer,
+            backgroundColor ? { backgroundColor } : {},
+          ]}
+        >
           {icon}
         </View>
-        <Text numberOfLines={1} style={styles.label}>{label}</Text>
+        <Text numberOfLines={1} style={styles.label}>
+          {label}
+        </Text>
       </View>
     </TouchableOpacity>
   );

@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  FlatList,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { X } from 'lucide-react-native';
 import { router } from 'expo-router';
@@ -9,7 +15,7 @@ import { StorageService, PersonalInfo } from '@/utils/storage';
 export default function DatePickerScreen() {
   // Load current date from storage
   const [initialDate, setInitialDate] = useState<Date | null>(null);
-  
+
   useEffect(() => {
     const loadCurrentDate = async () => {
       try {
@@ -24,14 +30,14 @@ export default function DatePickerScreen() {
         console.error('Error loading current date:', error);
       }
     };
-    
+
     loadCurrentDate();
   }, []);
-  
+
   // Current year for reasonable defaults when user starts selecting
   const currentYear = new Date().getFullYear();
   const defaultYear = currentYear - 25; // 25 years ago as a reasonable default
-  
+
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
@@ -46,8 +52,18 @@ export default function DatePickerScreen() {
   }, [initialDate]);
 
   const months = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
   ];
 
   const getDaysInMonth = (month: number, year: number) => {
@@ -67,15 +83,19 @@ export default function DatePickerScreen() {
     // Always show days 1-31, but limit based on selected month if available
     let maxDays = 31;
     if (selectedMonth !== null) {
-      if (selectedMonth === 1) { // February (0-indexed)
+      if (selectedMonth === 1) {
+        // February (0-indexed)
         // For February, use year if available, otherwise default to 28 (non-leap year)
-        maxDays = selectedYear !== null ? getDaysInMonth(selectedMonth, selectedYear) : 28;
+        maxDays =
+          selectedYear !== null
+            ? getDaysInMonth(selectedMonth, selectedYear)
+            : 28;
       } else {
         // For all other months, we can determine days without needing the year
         maxDays = getDaysInMonth(selectedMonth, selectedYear || 2024); // Use any non-leap year as default
       }
     }
-    
+
     const days = [];
     for (let day = 1; day <= maxDays; day++) {
       days.push(day);
@@ -87,14 +107,18 @@ export default function DatePickerScreen() {
   useEffect(() => {
     if (selectedMonth !== null && selectedDay !== null) {
       let maxDaysInMonth;
-      if (selectedMonth === 1) { // February
+      if (selectedMonth === 1) {
+        // February
         // For February, use year if available, otherwise default to 28
-        maxDaysInMonth = selectedYear !== null ? getDaysInMonth(selectedMonth, selectedYear) : 28;
+        maxDaysInMonth =
+          selectedYear !== null
+            ? getDaysInMonth(selectedMonth, selectedYear)
+            : 28;
       } else {
         // For other months, year doesn't matter
         maxDaysInMonth = getDaysInMonth(selectedMonth, selectedYear || 2024);
       }
-      
+
       if (selectedDay > maxDaysInMonth) {
         setSelectedDay(maxDaysInMonth);
       }
@@ -103,45 +127,53 @@ export default function DatePickerScreen() {
 
   const handleDateConfirm = async () => {
     // Only confirm if all values are selected
-    if (selectedYear === null || selectedMonth === null || selectedDay === null) {
+    if (
+      selectedYear === null ||
+      selectedMonth === null ||
+      selectedDay === null
+    ) {
       return;
     }
-    
+
     const selectedDate = new Date(selectedYear, selectedMonth, selectedDay);
-    
+
     // Save to storage
     try {
       const currentInfo = await StorageService.loadPersonalInfo();
       if (currentInfo) {
-        const updatedInfo = { ...currentInfo, dateOfBirth: selectedDate.toISOString() };
+        const updatedInfo = {
+          ...currentInfo,
+          dateOfBirth: selectedDate.toISOString(),
+        };
         await StorageService.savePersonalInfo(updatedInfo);
       }
     } catch (error) {
       console.error('Error saving date to storage:', error);
     }
-    
+
     // Navigate back without parameters - KYC will reload from storage
     router.replace('/settings/kyc');
   };
 
-
-
-  const renderPickerItem = (item: any, type: 'day' | 'month' | 'year', isSelected: boolean) => (
+  const renderPickerItem = (
+    item: any,
+    type: 'day' | 'month' | 'year',
+    isSelected: boolean,
+  ) => (
     <TouchableOpacity
-      style={[
-        styles.pickerItem,
-        isSelected && styles.selectedPickerItem
-      ]}
+      style={[styles.pickerItem, isSelected && styles.selectedPickerItem]}
       onPress={() => {
         if (type === 'day') setSelectedDay(item);
         else if (type === 'month') setSelectedMonth(item);
         else if (type === 'year') setSelectedYear(item);
       }}
     >
-      <Text style={[
-        styles.pickerItemText,
-        isSelected && styles.selectedPickerItemText
-      ]}>
+      <Text
+        style={[
+          styles.pickerItemText,
+          isSelected && styles.selectedPickerItemText,
+        ]}
+      >
         {type === 'month' ? months[item] : item}
       </Text>
     </TouchableOpacity>
@@ -151,41 +183,50 @@ export default function DatePickerScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Select Date of Birth</Text>
-        <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.closeButton}
+        >
           <X size={24} color={colors.textPrimary} />
         </TouchableOpacity>
       </View>
-      
+
       <View style={styles.datePickerContainer}>
         <View style={styles.pickerColumn}>
           <Text style={styles.pickerColumnTitle}>Month</Text>
           <FlatList
             data={months.map((_, index) => index)}
-            renderItem={({ item }) => renderPickerItem(item, 'month', item === selectedMonth)}
+            renderItem={({ item }) =>
+              renderPickerItem(item, 'month', item === selectedMonth)
+            }
             keyExtractor={(item) => item.toString()}
             style={styles.pickerList}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.pickerListContent}
           />
         </View>
-        
+
         <View style={styles.pickerColumn}>
           <Text style={styles.pickerColumnTitle}>Day</Text>
           <FlatList
             data={generateDays()}
-            renderItem={({ item }) => renderPickerItem(item, 'day', item === selectedDay)}
+            renderItem={({ item }) =>
+              renderPickerItem(item, 'day', item === selectedDay)
+            }
             keyExtractor={(item) => item.toString()}
             style={styles.pickerList}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.pickerListContent}
           />
         </View>
-        
+
         <View style={styles.pickerColumn}>
           <Text style={styles.pickerColumnTitle}>Year</Text>
           <FlatList
             data={generateYears()}
-            renderItem={({ item }) => renderPickerItem(item, 'year', item === selectedYear)}
+            renderItem={({ item }) =>
+              renderPickerItem(item, 'year', item === selectedYear)
+            }
             keyExtractor={(item) => item.toString()}
             style={styles.pickerList}
             showsVerticalScrollIndicator={false}
@@ -198,15 +239,27 @@ export default function DatePickerScreen() {
         <TouchableOpacity
           style={[
             styles.confirmButton,
-            (selectedDay === null || selectedMonth === null || selectedYear === null) && styles.confirmButtonDisabled
+            (selectedDay === null ||
+              selectedMonth === null ||
+              selectedYear === null) &&
+              styles.confirmButtonDisabled,
           ]}
           onPress={handleDateConfirm}
-          disabled={selectedDay === null || selectedMonth === null || selectedYear === null}
+          disabled={
+            selectedDay === null ||
+            selectedMonth === null ||
+            selectedYear === null
+          }
         >
-          <Text style={[
-            styles.confirmButtonText,
-            (selectedDay === null || selectedMonth === null || selectedYear === null) && styles.confirmButtonTextDisabled
-          ]}>
+          <Text
+            style={[
+              styles.confirmButtonText,
+              (selectedDay === null ||
+                selectedMonth === null ||
+                selectedYear === null) &&
+                styles.confirmButtonTextDisabled,
+            ]}
+          >
             Confirm Date
           </Text>
         </TouchableOpacity>

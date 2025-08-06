@@ -19,7 +19,7 @@ export class WebSocketMonitor {
     lastDisconnectReason: null,
     lastDisconnectCode: null,
   };
-  
+
   private connectionStartTimes: Map<WebSocket, number> = new Map();
   private connectionDurations: number[] = [];
 
@@ -43,25 +43,28 @@ export class WebSocketMonitor {
       const duration = Date.now() - startTime;
       this.connectionDurations.push(duration);
       this.connectionStartTimes.delete(ws);
-      
+
       // Keep only last 10 durations for average calculation
       if (this.connectionDurations.length > 10) {
         this.connectionDurations.shift();
       }
-      
-      this.stats.averageConnectionDuration = 
-        this.connectionDurations.reduce((a, b) => a + b, 0) / this.connectionDurations.length;
+
+      this.stats.averageConnectionDuration =
+        this.connectionDurations.reduce((a, b) => a + b, 0) /
+        this.connectionDurations.length;
     }
-    
+
     this.stats.lastDisconnectCode = code;
     this.stats.lastDisconnectReason = reason;
-    
+
     // Log concerning disconnection patterns
     if (code !== 1000) {
-      console.warn(`WebSocket closed with non-normal code: ${code}, reason: ${reason}`);
+      console.warn(
+        `WebSocket closed with non-normal code: ${code}, reason: ${reason}`,
+      );
     }
-    
-    if (startTime && (Date.now() - startTime) < 30000) {
+
+    if (startTime && Date.now() - startTime < 30000) {
       console.warn('WebSocket connection was short-lived (< 30 seconds)');
     }
   }
@@ -72,7 +75,9 @@ export class WebSocketMonitor {
 
   getSuccessRate(): number {
     if (this.stats.connectionAttempts === 0) return 0;
-    return (this.stats.successfulConnections / this.stats.connectionAttempts) * 100;
+    return (
+      (this.stats.successfulConnections / this.stats.connectionAttempts) * 100
+    );
   }
 
   logReport() {
