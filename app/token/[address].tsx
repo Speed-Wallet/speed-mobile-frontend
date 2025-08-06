@@ -14,10 +14,10 @@ import {
   ArrowRightLeft,
   ArrowDownLeft,
 } from 'lucide-react-native';
-import { LineChart } from 'react-native-chart-kit';
 import { useState, useEffect } from 'react';
 import ScreenHeader from '@/components/ScreenHeader';
 import ScreenContainer from '@/components/ScreenContainer';
+import { TokenPriceChart } from '@/components/charts';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
   getHistoricalPrices,
@@ -25,33 +25,18 @@ import {
   TokenMetadata,
 } from '@/services/apis';
 import {
-  formatHistoricalDataForChart,
+  formatHistoricalDataForCustomChart,
   formatPriceChangeString,
   formatPrice,
   formatLargeNumber,
   formatSupply,
   calculatePriceChange,
   timeframeConfigs,
+  ChartDataPoint,
+  formatPriceChange,
 } from '@/utils/chartUtils';
 
 const screenWidth = Dimensions.get('window').width;
-
-const chartConfig = {
-  backgroundColor: '#2a2a2a',
-  backgroundGradientFrom: '#2a2a2a',
-  backgroundGradientTo: '#1a1a1a',
-  decimalPlaces: 2,
-  color: (opacity = 1) => `rgba(99, 102, 241, ${opacity})`,
-  labelColor: (opacity = 1) => `rgba(156, 163, 175, ${opacity})`,
-  style: {
-    borderRadius: 16,
-  },
-  propsForDots: {
-    r: '6',
-    strokeWidth: '2',
-    stroke: '#6366f1',
-  },
-};
 
 const timeframes = ['1D', '1W', '1M', '3M', '1Y', 'ALL'];
 
@@ -59,23 +44,26 @@ export default function TokenDetailScreen() {
   const [selectedTimeframe, setSelectedTimeframe] = useState('1D');
   const [tokenData, setTokenData] = useState<TokenMetadata | null>(null);
   const [historicalData, setHistoricalData] = useState<any>(null);
-  const [chartData, setChartData] = useState<any>(null);
+  const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [priceChange, setPriceChange] = useState({
     change: 0,
     changePercentage: 0,
   });
+  const [chartSelectedData, setChartSelectedData] = useState<{
+    priceChange: number;
+    percentageChange: number;
+    isInteracting: boolean;
+  } | null>(null);
 
   const router = useRouter();
   const { address } = useLocalSearchParams<{ address: string }>();
 
-  // Load token data on component mount
   useEffect(() => {
     loadTokenData();
   }, [address]);
 
-  // Load historical data when timeframe changes
   useEffect(() => {
     if (tokenData?.coingeckoId) {
       loadHistoricalData(selectedTimeframe);
@@ -93,7 +81,6 @@ export default function TokenDetailScreen() {
         throw new Error(response.error || 'Failed to load token data');
       }
 
-      // Find the token by address
       const token = response.data.find((t) => t.address === address);
 
       if (!token) {
@@ -129,11 +116,12 @@ export default function TokenDetailScreen() {
 
       setHistoricalData(response);
 
-      // Format data for chart
-      const formattedChart = formatHistoricalDataForChart(response, timeframe);
+      const formattedChart = formatHistoricalDataForCustomChart(
+        response,
+        timeframe,
+      );
       setChartData(formattedChart);
 
-      // Calculate price change
       const change = calculatePriceChange(response, timeframe);
       setPriceChange(change);
     } catch (err) {
@@ -150,7 +138,16 @@ export default function TokenDetailScreen() {
     setSelectedTimeframe(timeframe);
   };
 
-  // Show loading state
+  const handleChartInteraction = (
+    data: {
+      priceChange: number;
+      percentageChange: number;
+      isInteracting: boolean;
+    } | null,
+  ) => {
+    setChartSelectedData(data);
+  };
+
   if (loading && !tokenData) {
     return (
       <ScreenContainer edges={['top', 'bottom']}>
@@ -181,14 +178,18 @@ export default function TokenDetailScreen() {
     );
   }
 
-  // Show main content
   if (!tokenData) {
     return null;
   }
 
   const currentPrice = tokenData.priceData?.current_price || 0;
-  const currentChange = formatPriceChangeString(priceChange.changePercentage);
-  const isNegative = priceChange.changePercentage < 0;
+
+  const displayPriceChange = priceChange;
+
+  const currentChange = `${formatPriceChange(
+    displayPriceChange.change,
+  )} ${formatPriceChangeString(displayPriceChange.changePercentage)}`;
+  const isNegative = displayPriceChange.changePercentage < 0;
 
   const statsData = [
     {
@@ -233,14 +234,47 @@ export default function TokenDetailScreen() {
         {/* Price Section */}
         <View style={styles.priceSection}>
           <Text style={styles.price}>{formatPrice(currentPrice)}</Text>
-          <Text
-            style={[
-              styles.priceChange,
-              { color: isNegative ? '#ef4444' : '#10b981' },
-            ]}
-          >
-            {currentChange}
-          </Text>
+
+          {chartSelectedData?.isInteracting ? (
+            <View style={styles.chartSelectedDisplay}>
+              <Text
+                style={[
+                  styles.chartSelectedPrice,
+                  {
+                    color:
+                      chartSelectedData.percentageChange < 0
+                        ? '#ef4444'
+                        : '#10b981',
+                  },
+                ]}
+              >
+                {formatPriceChange(chartSelectedData.priceChange)}
+              </Text>
+              <Text
+                style={[
+                  styles.chartSelectedPercentage,
+                  {
+                    color:
+                      chartSelectedData.percentageChange < 0
+                        ? '#ef4444'
+                        : '#10b981',
+                  },
+                ]}
+              >
+                {chartSelectedData.percentageChange >= 0 ? '+' : ''}
+                {chartSelectedData.percentageChange.toFixed(2)}%
+              </Text>
+            </View>
+          ) : (
+            <Text
+              style={[
+                styles.priceChange,
+                { color: isNegative ? '#ef4444' : '#10b981' },
+              ]}
+            >
+              {currentChange}
+            </Text>
+          )}
         </View>
 
         {/* Chart */}
@@ -250,19 +284,14 @@ export default function TokenDetailScreen() {
               <ActivityIndicator size="large" color="#6366f1" />
               <Text style={styles.chartLoadingText}>Loading chart...</Text>
             </View>
-          ) : chartData && chartData.datasets[0].data.length > 0 ? (
-            <LineChart
+          ) : chartData && chartData.length > 0 ? (
+            <TokenPriceChart
               data={chartData}
               width={screenWidth - 32}
               height={200}
-              chartConfig={chartConfig}
-              bezier
-              style={styles.chart}
-              withInnerLines={false}
-              withOuterLines={false}
-              withVerticalLabels={true}
-              withHorizontalLabels={true}
-              fromZero={false}
+              timeframe={selectedTimeframe}
+              isPositive={priceChange.changePercentage >= 0}
+              onInteraction={handleChartInteraction}
             />
           ) : (
             <View style={styles.chartErrorContainer}>
@@ -400,6 +429,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  chartSelectedDisplay: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+    gap: 8,
+  },
+  chartSelectedPrice: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  chartSelectedPercentage: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
   chartContainer: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -428,9 +471,6 @@ const styles = StyleSheet.create({
   chartErrorText: {
     fontSize: 14,
     color: '#ef4444',
-  },
-  chart: {
-    borderRadius: 16,
   },
   timeframeContainer: {
     flexDirection: 'row',
