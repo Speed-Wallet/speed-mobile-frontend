@@ -51,6 +51,7 @@ export interface PrepareTransactionRequest {
 export interface PrepareTransactionResponse {
   success: boolean;
   transaction?: string; // base64 encoded unsigned transaction
+  signature?: string; // base64 encoded transaction signature for verification
   blockhash?: string;
   lastValidBlockHeight?: number;
   error?: string;
@@ -58,6 +59,7 @@ export interface PrepareTransactionResponse {
 
 export interface SubmitTransactionRequest {
   signedTransaction: string; // base64 encoded signed transaction
+  signature: string; // base64 encoded transaction signature for verification
   blockhash: string;
   lastValidBlockHeight: number;
 }
@@ -77,6 +79,7 @@ export interface SubmitTransactionResponse {
 
 export interface SubmitTransactionAndRegisterUsdtRequest {
   signedTransaction: string; // base64 encoded signed transaction
+  signature: string; // base64 encoded transaction signature for verification
   blockhash: string;
   lastValidBlockHeight: number;
   pushToken: string;
@@ -217,7 +220,6 @@ export async function submitSignedTransaction(
 ): Promise<SubmitTransactionResponse> {
   try {
     const authHeaders = await AuthService.getAuthHeader();
-
     const response = await fetch(`${BASE_BACKEND_URL}/api/transaction/submit`, {
       method: 'POST',
       headers: {

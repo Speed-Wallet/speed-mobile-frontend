@@ -44,6 +44,14 @@ export type CardStatus =
   | 'pending'
   | 'terminated';
 
+// Transaction status for pending cards
+export type TransactionStatus =
+  | 'confirming' // USDT payment pending
+  | 'verifying' // KYC verification in progress
+  | 'creating' // Card creation in progress
+  | 'created' // Card successfully created
+  | 'failed'; // Process failed at any step
+
 // Get Card API types (matching backend)
 export interface GetCardData {
   code: string;
@@ -98,7 +106,8 @@ export interface PaymentCard {
   isLoading?: boolean;
   isFailed?: boolean;
   status?: CardStatus;
+  transactionStatus?: TransactionStatus; // Status from pending transactions
   failureReason?: string;
   createdAt?: string; // Maps to createdOn from API or createdAt from pending transactions
-  creationStep?: number; // Current step in the creation process (1-3)
+  creationStep?: number; // Current step in the creation process (1-3) - derived from transactionStatus
 }

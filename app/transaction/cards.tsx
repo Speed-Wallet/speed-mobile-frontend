@@ -48,13 +48,7 @@ import { triggerShake } from '@/utils/animations';
 import * as Notifications from 'expo-notifications';
 import { useCards } from '@/hooks/useCards';
 import { useQueryClient } from '@tanstack/react-query';
-import {
-  updateCardCreationStep,
-  handleUSDTReceived,
-  handleKYCVerificationComplete,
-  simulateKYCVerification,
-  getAllCreationSteps,
-} from '@/services/cardCreationSteps';
+// Note: cardCreationSteps service simplified since we now use status-based polling
 
 // Constants
 const CASHWYRE_BASE_FEE = parseFloat(
@@ -465,31 +459,22 @@ export default function CardsScreen() {
   };
 
   // Development functions for simulating creation steps
+  // Note: With status-based polling, these now trigger backend simulation APIs
   const devSimulateUSDTReceived = (cardId: string) => {
     console.log('🧪 [DEV] Simulating USDT received for card:', cardId);
-    handleUSDTReceived(cardId);
-    simulateKYCVerification(cardId, 2000); // Auto-advance to step 3 after 2 seconds
+    // This would trigger a backend API to simulate USDT received
     refetchCards();
   };
 
   const advanceCreationStep = (cardId: string) => {
-    const currentStep = getAllCreationSteps()[cardId] || 1;
-    const nextStep = Math.min(currentStep + 1, 3);
-    console.log(
-      '🧪 [DEV] Advancing creation step from',
-      currentStep,
-      'to',
-      nextStep,
-      'for card:',
-      cardId,
-    );
-    updateCardCreationStep(cardId, nextStep);
+    console.log('🧪 [DEV] Advancing creation step for card:', cardId);
+    // This would trigger a backend API to advance the status
     refetchCards();
   };
 
   const resetCreationStep = (cardId: string) => {
     console.log('🧪 [DEV] Resetting creation step for card:', cardId);
-    updateCardCreationStep(cardId, 1);
+    // This would trigger a backend API to reset the status
     refetchCards();
   };
 
