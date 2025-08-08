@@ -5,7 +5,11 @@ import {
   convertApiCardToPaymentCard,
 } from '@/services/apis';
 import { PaymentCard } from '@/data/types';
-import { getCardCreationStep } from '@/services/cardCreationSteps';
+import {
+  getCreationStepFromStatus,
+  isTransactionLoading,
+  isTransactionFailed,
+} from '@/services/cardCreationSteps';
 
 // Demo cards for development mode
 const initialCards: PaymentCard[] = [
@@ -63,12 +67,15 @@ export const useCards = (email: string | null) => {
           allCards = paymentCards;
         }
 
-        // Add pending cards (loading state) with creation steps
+        // Add pending cards (loading state) with creation steps based on status
         if (pendingResponse.success && pendingResponse.data) {
           const pendingCardsWithSteps = pendingResponse.data.map(
-            (card: PaymentCard) => ({
+            (card: any) => ({
               ...card,
-              creationStep: getCardCreationStep(card.id),
+              transactionStatus: card.status, // Use status from backend
+              isLoading: isTransactionLoading(card.status),
+              isFailed: isTransactionFailed(card.status),
+              creationStep: getCreationStepFromStatus(card.status),
             }),
           );
           allCards = [...allCards, ...pendingCardsWithSteps];

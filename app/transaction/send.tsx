@@ -162,9 +162,7 @@ export default function SendScreen() {
 
     setSendResult(result);
     setIsSending(false);
-
     if (result.success) {
-      console.log('Transaction successful. Signature:', result.signature);
       // Clear inputs after successful send
       setAmount('');
       setRecipient('');
@@ -463,8 +461,7 @@ export default function SendScreen() {
                     </View>
                     <Text style={styles.errorTitle}>Send Failed</Text>
                     <Text style={styles.errorSubtitle}>
-                      {sendResult.error ||
-                        'Something went wrong. Please try again.'}
+                      {'Something went wrong. Please try again.'}
                     </Text>
                   </>
                 )}

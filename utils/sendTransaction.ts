@@ -1,4 +1,4 @@
-import { Transaction } from '@solana/web3.js';
+import { Transaction, VersionedTransaction } from '@solana/web3.js';
 import { WALLET, WSOL_MINT } from '@/services/walletService';
 import { registerForPushNotificationsAsync } from '@/services/notificationService';
 import {
@@ -84,9 +84,11 @@ export async function sendTokenTransaction(
       senderPublicKey: WALLET.publicKey.toBase58(),
     });
 
-    console.log('Prepare transaction result:', prepareResult);
-
-    if (!prepareResult.success || !prepareResult.transaction) {
+    if (
+      !prepareResult.success ||
+      !prepareResult.transaction ||
+      !prepareResult.signature
+    ) {
       return {
         success: false,
         error: prepareResult.error || 'Failed to prepare transaction',
@@ -95,16 +97,18 @@ export async function sendTokenTransaction(
 
     // Step 2: Sign transaction on frontend
     const transactionBuffer = Buffer.from(prepareResult.transaction, 'base64');
-    const transaction = Transaction.from(transactionBuffer);
-
+    const transaction = VersionedTransaction.deserialize(transactionBuffer);
     // Sign the transaction with the wallet
-    transaction.sign(WALLET);
-
+    transaction.sign([WALLET]);
+    const signedTransaction = Buffer.from(transaction.serialize()).toString(
+      'base64',
+    );
     // Step 3: Submit signed transaction to backend
     // If this is a Cashwyre transaction with card creation data, use the combined endpoint
     if (cashwyreData) {
       const submitResult = await submitSignedTransactionAndRegisterUsdt({
-        signedTransaction: transaction.serialize().toString('base64'),
+        signedTransaction: signedTransaction,
+        signature: prepareResult.signature,
         blockhash: prepareResult.blockhash!,
         lastValidBlockHeight: prepareResult.lastValidBlockHeight!,
         pushToken: cashwyreData.pushToken,
@@ -117,7 +121,8 @@ export async function sendTokenTransaction(
     } else {
       // Use regular transaction submission
       const submitResult = await submitSignedTransaction({
-        signedTransaction: transaction.serialize().toString('base64'),
+        signedTransaction: signedTransaction,
+        signature: prepareResult.signature,
         blockhash: prepareResult.blockhash!,
         lastValidBlockHeight: prepareResult.lastValidBlockHeight!,
       });
@@ -129,7 +134,7 @@ export async function sendTokenTransaction(
       error instanceof Error
         ? error.message
         : 'Transaction failed. Please try again.';
-    return { success: false, error: errorMessage };
+    return { success: false, error: 'errorMessage' };
   }
 }
 
@@ -177,13 +182,10 @@ export async function sendUsdtToCashwyre(
     const walletResponse = await getWalletAddress();
 
     if (!walletResponse.success || !walletResponse.data) {
-      console.log(walletResponse);
       return { success: false, error: 'Failed to get Cashwyre wallet address' };
     }
 
     const walletAddress = walletResponse.data.number;
-
-    console.log('Cashwyre wallet address:', walletAddress);
 
     // 2. Get push token for notifications
     let pushToken = await registerForPushNotificationsAsync();
@@ -195,7 +197,6 @@ export async function sendUsdtToCashwyre(
     }
 
     console.log('Using Cashwyre wallet address:', walletAddress);
-    console.log('Using push token:', pushToken);
 
     // 3. Send USDT transaction - for production, use the combined flow
     const sendResult = await sendTokenTransaction({

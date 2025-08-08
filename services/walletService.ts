@@ -662,6 +662,7 @@ export {
 // Type for prepared Jupiter swap transaction
 export interface PreparedJupiterSwap {
   signedTransaction: string;
+  signature: string;
   blockhash: string;
   lastValidBlockHeight: number;
   userPublicKey: string;
@@ -681,7 +682,7 @@ export const prepareJupiterSwapTransaction = async (
 
   try {
     // Step 1: Prepare the swap transaction on the backend
-    const { transaction, blockhash, lastValidBlockHeight } =
+    const { transaction, signature, blockhash, lastValidBlockHeight } =
       await prepareJupiterSwap(
         quoteResponse,
         platformFee,
@@ -703,6 +704,7 @@ export const prepareJupiterSwapTransaction = async (
 
     return {
       signedTransaction,
+      signature,
       blockhash,
       lastValidBlockHeight,
       userPublicKey: WALLET.publicKey.toBase58(),
@@ -724,9 +726,9 @@ export const confirmJupiterSwap = async (
     // Submit the signed transaction to the backend
     const { signature } = await submitSignedTransaction(
       preparedSwap.signedTransaction,
+      preparedSwap.signature,
       preparedSwap.blockhash,
       preparedSwap.lastValidBlockHeight,
-      preparedSwap.userPublicKey,
     );
 
     return signature;

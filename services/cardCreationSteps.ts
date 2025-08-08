@@ -1,4 +1,38 @@
-import { PaymentCard } from '@/data/types';
+import { PaymentCard, TransactionStatus } from '@/data/types';
+
+/**
+ * Convert transaction status to creation step number
+ */
+export function getCreationStepFromStatus(status: TransactionStatus): number {
+  switch (status) {
+    case 'confirming':
+      return 1; // Waiting for USDT confirmation
+    case 'verifying':
+      return 2; // KYC verification in progress
+    case 'creating':
+      return 3; // Card creation in progress
+    case 'created':
+      return 4; // Card successfully created (not shown as loading)
+    case 'failed':
+      return 0; // Failed state
+    default:
+      return 1;
+  }
+}
+
+/**
+ * Check if transaction is in a loading state
+ */
+export function isTransactionLoading(status: TransactionStatus): boolean {
+  return ['confirming', 'verifying', 'creating'].includes(status);
+}
+
+/**
+ * Check if transaction has failed
+ */
+export function isTransactionFailed(status: TransactionStatus): boolean {
+  return status === 'failed';
+}
 
 // In-memory storage for card creation steps
 // In a real app, this could be stored in async storage or managed by the query cache

@@ -37,6 +37,7 @@ export interface JupiterQuoteResponse {
 
 export interface JupiterSwapResponse {
   transaction: string;
+  signature: string;
   blockhash: string;
   lastValidBlockHeight: number;
   message: string;
@@ -118,9 +119,9 @@ export const prepareJupiterSwap = async (
  */
 export const submitSignedTransaction = async (
   signedTransaction: string,
+  signature: string,
   blockhash: string,
   lastValidBlockHeight: number,
-  userPublicKey: string,
 ): Promise<SubmitTransactionResponse> => {
   const token = await AuthService.getToken();
 
@@ -136,9 +137,9 @@ export const submitSignedTransaction = async (
     },
     body: JSON.stringify({
       signedTransaction,
+      signature,
       blockhash,
       lastValidBlockHeight,
-      userPublicKey,
     }),
   });
 
