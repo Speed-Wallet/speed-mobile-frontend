@@ -1,6 +1,19 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
-import { User, X, AlertTriangle } from 'lucide-react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Image,
+  StyleSheet,
+  Linking,
+} from 'react-native';
+import {
+  User,
+  X,
+  AlertTriangle,
+  MessageCircle,
+  Send,
+} from 'lucide-react-native';
 import { PaymentCard as PaymentCardType } from '@/utils/storage';
 
 interface FailedCardProps {
@@ -56,27 +69,28 @@ export const FailedCard: React.FC<FailedCardProps> = ({
 
       {/* Footer */}
       <View style={styles.cardFooter}>
-        <View style={styles.balanceSection}>
-          <Text style={[styles.cardLabel, styles.failedText]}>ERROR</Text>
-          <View style={styles.balanceRow}>
-            <Text
-              style={[styles.balanceValue, styles.failedText]}
-              numberOfLines={3}
+        <View style={styles.supportSection}>
+          <Text style={[styles.cardLabel, styles.failedText]}>SUPPORT</Text>
+          <View style={styles.supportButtons}>
+            <TouchableOpacity
+              style={styles.discordButton}
+              onPress={() => Linking.openURL('https://discord.gg/RX75b64z')}
             >
-              {card.failureReason ||
-                'Failed to create card. Please try again or contact support.'}
-            </Text>
+              <MessageCircle size={16} color="#5865F2" />
+              <Text style={styles.discordButtonText}>Discord Support</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.telegramButton}
+              onPress={() => {
+                // Will be made clickable later
+                console.log('Telegram support clicked');
+              }}
+            >
+              <Send size={16} color="#0088CC" />
+              <Text style={styles.telegramButtonText}>Telegram Support</Text>
+            </TouchableOpacity>
           </View>
-        </View>
-
-        <View style={styles.cvvSection}>
-          <Text style={[styles.cardLabel, styles.failedText]}>CVV</Text>
-          <Text style={[styles.cardValue, styles.failedText]}>N/A</Text>
-        </View>
-
-        <View style={styles.expirySection}>
-          <Text style={[styles.cardLabel, styles.failedText]}>EXPIRES</Text>
-          <Text style={[styles.cardValue, styles.failedText]}>N/A</Text>
         </View>
       </View>
     </View>
@@ -176,8 +190,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-end',
   },
-  balanceSection: {
+  supportSection: {
     flex: 1,
+  },
+  supportButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 4,
   },
   cardLabel: {
     fontSize: 10,
@@ -185,28 +204,38 @@ const styles = StyleSheet.create({
     color: '#9ca3af',
     marginBottom: 4,
   },
-  balanceRow: {
+  discordButton: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  balanceValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#10b981',
-    marginRight: 8,
-  },
-  cvvSection: {
-    alignItems: 'center',
-    minWidth: 60,
-    marginHorizontal: 20,
-  },
-  expirySection: {
-    alignItems: 'flex-end',
+    backgroundColor: 'rgba(88, 101, 242, 0.1)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#5865F2',
     flex: 1,
   },
-  cardValue: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#ffffff',
+  discordButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#5865F2',
+    marginLeft: 6,
+  },
+  telegramButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 136, 204, 0.1)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#0088CC',
+    flex: 1,
+  },
+  telegramButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#0088CC',
+    marginLeft: 6,
   },
 });

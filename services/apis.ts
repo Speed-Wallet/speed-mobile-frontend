@@ -111,7 +111,6 @@ export async function getWalletAddress(): Promise<GetWalletAddressResponse> {
     console.log('🔧 Clean BASE_BACKEND_URL:', BASE_BACKEND_URL);
 
     const authHeaders = await AuthService.getAuthHeader();
-    console.log('🔐 Auth headers:', authHeaders);
 
     const response = await fetch(url, {
       method: 'GET',

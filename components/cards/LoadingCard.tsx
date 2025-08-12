@@ -1,15 +1,23 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Image,
+  StyleSheet,
+  Animated,
+  Linking,
+} from 'react-native';
 import {
   User,
-  Eye,
   X,
   Clock,
   CheckCircle,
   AlertCircle,
+  MessageCircle,
+  Send,
 } from 'lucide-react-native';
 import { PaymentCard as PaymentCardType } from '@/data/types';
-import LoadingSkeleton from '@/components/LoadingSkeleton';
 
 interface LoadingCardProps {
   card: PaymentCardType;
@@ -35,6 +43,32 @@ export const LoadingCard: React.FC<LoadingCardProps> = ({
   onAdvanceCreationStep,
   onResetCreationStep,
 }) => {
+  // Animation for flashing effect
+  const flashAnim = React.useRef(new Animated.Value(1)).current;
+
+  // Constants
+  const NORMAL_PROCESSING_TIME_MINUTES = 10;
+
+  React.useEffect(() => {
+    const startFlashing = () => {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(flashAnim, {
+            toValue: 0.3,
+            duration: 1000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(flashAnim, {
+            toValue: 1,
+            duration: 1000,
+            useNativeDriver: true,
+          }),
+        ]),
+      ).start();
+    };
+
+    startFlashing();
+  }, [flashAnim]);
   // Determine the current step based on card status/state
   const getCreationStep = () => {
     // Check if we have creation step data in the card
@@ -93,6 +127,16 @@ export const LoadingCard: React.FC<LoadingCardProps> = ({
     return '#6b7280';
   };
 
+  // Check if card has been processing for longer than normal
+  const isProcessingTooLong = () => {
+    if (!card.createdAt) return false;
+    const createdTime = new Date(card.createdAt).getTime();
+    const currentTime = new Date().getTime();
+    const timeDifference = currentTime - createdTime;
+    const minutesDifference = timeDifference / (1000 * 60);
+    return minutesDifference > NORMAL_PROCESSING_TIME_MINUTES;
+  };
+
   return (
     <View style={[styles.paymentCard, styles.loadingCard]}>
       {/* Header */}
@@ -115,11 +159,18 @@ export const LoadingCard: React.FC<LoadingCardProps> = ({
           </View>
         </View>
         <View style={styles.cardHeaderActions}>
-          <Image
-            source={getBrandLogo(card.brand)}
-            style={[styles.brandLogo, styles.loadingOpacity]}
-            resizeMode="contain"
-          />
+          <View style={styles.creationTimeContainer}>
+            <Text style={styles.creationTimeLabel}>Created</Text>
+            <Text style={styles.creationTime}>
+              {card.createdAt
+                ? new Date(card.createdAt).toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true,
+                  })
+                : '--:--'}
+            </Text>
+          </View>
           {isDevelopment && (
             <TouchableOpacity
               style={styles.deleteButton}
@@ -128,14 +179,6 @@ export const LoadingCard: React.FC<LoadingCardProps> = ({
               <X size={16} color="#ef4444" />
             </TouchableOpacity>
           )}
-        </View>
-      </View>
-
-      {/* Card Number Section */}
-      <View style={styles.cardNumberSection}>
-        <LoadingSkeleton width="65%" height={22} borderRadius={4} />
-        <View style={styles.visibilityButton}>
-          <Eye size={20} color="#555555" />
         </View>
       </View>
 
@@ -170,28 +213,19 @@ export const LoadingCard: React.FC<LoadingCardProps> = ({
           </View>
         </View>
 
-        {/* Current Step Details */}
-        <View style={styles.currentStepContainer}>
-          <View style={styles.currentStepHeader}>
-            <CheckCircle size={16} color="#10b981" />
-            <Text style={styles.currentStepTitle}>
-              {steps[currentStep - 1]?.title}
-            </Text>
-          </View>
-          <Text style={styles.currentStepDescription}>
-            {steps[currentStep - 1]?.description}
-          </Text>
-        </View>
-
         {/* All Steps List */}
         <View style={styles.stepsList}>
           {steps.map((step) => {
             const Icon = getStepIcon(step.number);
             const color = getStepColor(step.number);
             const status = getStepStatus(step.number);
+            const isActive = status === 'active';
 
             return (
-              <View key={step.number} style={styles.stepItem}>
+              <Animated.View
+                key={step.number}
+                style={[styles.stepItem, isActive && { opacity: flashAnim }]}
+              >
                 <View style={styles.stepItemIcon}>
                   <Icon size={14} color={color} />
                 </View>
@@ -215,20 +249,67 @@ export const LoadingCard: React.FC<LoadingCardProps> = ({
                     {step.description}
                   </Text>
                 </View>
-              </View>
+              </Animated.View>
             );
           })}
         </View>
       </View>
 
       {/* Processing Time Notice */}
-      <View style={styles.processingNotice}>
-        <Clock size={16} color="#3182ce" />
+      <View
+        style={[
+          styles.processingNotice,
+          isProcessingTooLong() && styles.processingDelayedNotice,
+        ]}
+      >
+        {isProcessingTooLong() ? (
+          <AlertCircle size={16} color="#f59e0b" />
+        ) : (
+          <Clock size={16} color="#3182ce" />
+        )}
         <View style={styles.processingNoticeContent}>
-          <Text style={styles.processingNoticeTitle}>Processing Time</Text>
-          <Text style={styles.processingNoticeText}>
-            Card creation may take up to 10 minutes to complete.
-          </Text>
+          {isProcessingTooLong() ? (
+            <>
+              <Text
+                style={[styles.processingNoticeTitle, { color: '#f59e0b' }]}
+              >
+                Processing Delayed
+              </Text>
+              <Text style={styles.processingNoticeText}>
+                Your card has been processing for longer than{' '}
+                {NORMAL_PROCESSING_TIME_MINUTES} minutes. Please contact support
+                for assistance.
+              </Text>
+              <View style={styles.supportButtons}>
+                <TouchableOpacity
+                  style={styles.discordButton}
+                  onPress={() => Linking.openURL('https://discord.gg/RX75b64z')}
+                >
+                  <MessageCircle size={16} color="#5865F2" />
+                  <Text style={styles.discordButtonText}>Discord</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.telegramButton}
+                  onPress={() => {
+                    // Will be made clickable later
+                    console.log('Telegram support clicked');
+                  }}
+                >
+                  <Send size={16} color="#0088CC" />
+                  <Text style={styles.telegramButtonText}>Telegram</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          ) : (
+            <>
+              <Text style={styles.processingNoticeTitle}>Processing Time</Text>
+              <Text style={styles.processingNoticeText}>
+                Card creation may take up to {NORMAL_PROCESSING_TIME_MINUTES}{' '}
+                minutes to complete.
+              </Text>
+            </>
+          )}
         </View>
       </View>
 
@@ -326,6 +407,19 @@ const styles = StyleSheet.create({
   loadingOpacity: {
     opacity: 0.5,
   },
+  creationTimeContainer: {
+    alignItems: 'flex-end',
+  },
+  creationTimeLabel: {
+    fontSize: 10,
+    color: '#9ca3af',
+    marginBottom: 2,
+  },
+  creationTime: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#ffffff',
+  },
   deleteButton: {
     width: 24,
     height: 24,
@@ -333,15 +427,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(239, 68, 68, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  cardNumberSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-  },
-  visibilityButton: {
-    padding: 4,
   },
   stepsContainer: {
     marginBottom: 20,
@@ -367,30 +452,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 2,
     marginHorizontal: 8,
-  },
-  currentStepContainer: {
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#10b981',
-  },
-  currentStepHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  currentStepTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#10b981',
-    marginLeft: 8,
-  },
-  currentStepDescription: {
-    fontSize: 14,
-    color: '#9ca3af',
-    lineHeight: 20,
   },
   stepsList: {
     gap: 12,
@@ -430,6 +491,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#3182ce',
   },
+  processingDelayedNotice: {
+    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+    borderColor: '#f59e0b',
+  },
   processingNoticeContent: {
     flex: 1,
   },
@@ -443,6 +508,45 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#9ca3af',
     lineHeight: 18,
+  },
+  supportButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 12,
+  },
+  discordButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(88, 101, 242, 0.1)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#5865F2',
+    flex: 1,
+  },
+  discordButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#5865F2',
+    marginLeft: 6,
+  },
+  telegramButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 136, 204, 0.1)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#0088CC',
+    flex: 1,
+  },
+  telegramButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#0088CC',
+    marginLeft: 6,
   },
   // Development Control Styles
   devControls: {
