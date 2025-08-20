@@ -23,7 +23,7 @@ interface LoadingCardProps {
   card: PaymentCardType;
   onDeleteCard: (cardId: string) => void;
   getBrandLogo: (brand: 'mastercard' | 'visa') => any;
-  isDevelopment?: boolean;
+  hasExistingCards?: boolean; // New prop to determine if user already has cards (is KYC'd)
   // Development functions for simulating creation steps
   onSimulateUSDTReceived?: (cardId: string) => void;
   onAdvanceCreationStep?: (cardId: string) => void;
@@ -38,7 +38,7 @@ export const LoadingCard: React.FC<LoadingCardProps> = ({
   card,
   onDeleteCard,
   getBrandLogo,
-  isDevelopment = false,
+  hasExistingCards = false,
   onSimulateUSDTReceived,
   onAdvanceCreationStep,
   onResetCreationStep,
@@ -46,41 +46,78 @@ export const LoadingCard: React.FC<LoadingCardProps> = ({
   // Animation for flashing effect
   const flashAnim = React.useRef(new Animated.Value(1)).current;
 
+  // Timer state for active step
+  const [elapsedTime, setElapsedTime] = React.useState(0);
+
   // Constants
   const NORMAL_PROCESSING_TIME_MINUTES = 10;
 
+  // Determine the current step based on card status/state
+  const getCreationStep = () => {
+    // Check if we have creation step data in the card
+    if (card.creationStep) {
+      // If user has existing cards and we're on step 2 (KYC), auto-advance to step 3
+      if (hasExistingCards && card.creationStep === 2) {
+        return 3;
+      }
+      return card.creationStep;
+    }
+
+    // Default behavior: if user has existing cards, start at step 3 (skip KYC)
+    // Otherwise start at step 2 for testing (should be step 1 for backward compatibility in production)
+    return hasExistingCards ? 3 : 2;
+  };
+
+  const currentStep = getCreationStep();
+
+  // Start flashing animation when component mounts or current step changes
   React.useEffect(() => {
     const startFlashing = () => {
       Animated.loop(
         Animated.sequence([
           Animated.timing(flashAnim, {
-            toValue: 0.3,
-            duration: 1000,
+            toValue: 0.4,
+            duration: 800,
             useNativeDriver: true,
           }),
           Animated.timing(flashAnim, {
             toValue: 1,
-            duration: 1000,
+            duration: 800,
             useNativeDriver: true,
           }),
         ]),
       ).start();
     };
 
+    // Stop any existing animation and restart
+    flashAnim.stopAnimation();
     startFlashing();
-  }, [flashAnim]);
-  // Determine the current step based on card status/state
-  const getCreationStep = () => {
-    // Check if we have creation step data in the card
-    if (card.creationStep) {
-      return card.creationStep;
+  }, [flashAnim, currentStep]);
+
+  // Timer effect for current time display
+  React.useEffect(() => {
+    let interval: NodeJS.Timeout;
+
+    // Update every second to show current time
+    interval = setInterval(() => {
+      // This will trigger re-render to update current time display
+      setElapsedTime(Date.now()); // Use as trigger for re-render
+    }, 1000);
+
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, []);
+
+  // Log current step only when it changes
+  React.useEffect(() => {
+    console.log('⭐ Current step:', currentStep);
+    if (hasExistingCards && currentStep === 3) {
+      console.log('🚀 Auto-advanced past KYC step for existing card holder');
     }
-
-    // Default to step 1 for backward compatibility
-    return 1;
-  };
-
-  const currentStep = getCreationStep();
+  }, [currentStep, hasExistingCards]);
 
   // Step configuration
   const steps = [
@@ -137,6 +174,35 @@ export const LoadingCard: React.FC<LoadingCardProps> = ({
     return minutesDifference > NORMAL_PROCESSING_TIME_MINUTES;
   };
 
+  // Format current time as HH:MM:SS
+  const formatCurrentTime = () => {
+    const now = new Date();
+    const hours = now.getHours();
+    const minutes = now.getMinutes();
+    const seconds = now.getSeconds();
+    return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  // Get step timestamp (mock data for completed steps)
+  const getStepTimestamp = (stepNumber: number) => {
+    const status = getStepStatus(stepNumber);
+    if (status === 'completed') {
+      // For demo purposes, show completion time based on step
+      // In real implementation, this would come from backend data
+      const baseTime = new Date(card.createdAt || new Date());
+      const completionTime = new Date(
+        baseTime.getTime() + stepNumber * 2 * 60 * 1000,
+      ); // 2 minutes per step
+      return completionTime.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+      });
+    }
+    return null;
+  };
+
   return (
     <View style={[styles.paymentCard, styles.loadingCard]}>
       {/* Header */}
@@ -155,23 +221,28 @@ export const LoadingCard: React.FC<LoadingCardProps> = ({
             ]}
           >
             <Clock size={12} color="#ffffff" />
-            <Text style={styles.loadingBadgeText}>Creating...</Text>
+            <Text style={styles.loadingBadgeText}>
+              {card.status
+                ? card.status.charAt(0).toUpperCase() + card.status.slice(1)
+                : 'Creating...'}
+            </Text>
           </View>
         </View>
         <View style={styles.cardHeaderActions}>
           <View style={styles.creationTimeContainer}>
-            <Text style={styles.creationTimeLabel}>Created</Text>
+            <Text style={styles.creationTimeLabel}>Initiated</Text>
             <Text style={styles.creationTime}>
               {card.createdAt
                 ? new Date(card.createdAt).toLocaleTimeString([], {
                     hour: '2-digit',
                     minute: '2-digit',
-                    hour12: true,
+                    second: '2-digit',
+                    hour12: false,
                   })
-                : '--:--'}
+                : '--:--:--'}
             </Text>
           </View>
-          {isDevelopment && (
+          {process.env.EXPO_PUBLIC_APP_ENV === 'development' && (
             <TouchableOpacity
               style={styles.deleteButton}
               onPress={() => onDeleteCard(card.id)}
@@ -184,7 +255,7 @@ export const LoadingCard: React.FC<LoadingCardProps> = ({
 
       {/* Creation Steps Progress */}
       <View style={styles.stepsContainer}>
-        <View style={styles.stepsHeader}>
+        {/* <View style={styles.stepsHeader}>
           <View style={styles.stepIndicators}>
             {steps.map((step, index) => {
               const Icon = getStepIcon(step.number);
@@ -211,7 +282,7 @@ export const LoadingCard: React.FC<LoadingCardProps> = ({
               );
             })}
           </View>
-        </View>
+        </View> */}
 
         {/* All Steps List */}
         <View style={styles.stepsList}>
@@ -248,6 +319,17 @@ export const LoadingCard: React.FC<LoadingCardProps> = ({
                   <Text style={styles.stepItemDescription}>
                     {step.description}
                   </Text>
+                </View>
+                <View style={styles.stepItemTimer}>
+                  {status === 'active' ? (
+                    <Text style={styles.stepTimerText}>
+                      {formatCurrentTime()}
+                    </Text>
+                  ) : status === 'completed' ? (
+                    <Text style={styles.stepCompletedText}>
+                      {getStepTimestamp(step.number)}
+                    </Text>
+                  ) : null}
                 </View>
               </Animated.View>
             );
@@ -314,7 +396,7 @@ export const LoadingCard: React.FC<LoadingCardProps> = ({
       </View>
 
       {/* Development Simulation Controls */}
-      {isDevelopment && (
+      {process.env.EXPO_PUBLIC_APP_ENV === 'development' && (
         <View style={styles.devControls}>
           <Text style={styles.devTitle}>Development Controls</Text>
           <View style={styles.devButtonRow}>
@@ -470,6 +552,22 @@ const styles = StyleSheet.create({
   },
   stepItemContent: {
     flex: 1,
+  },
+  stepItemTimer: {
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    minWidth: 70, // Increased width to accommodate HH:MM:SS format
+  },
+  stepTimerText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#9ca3af',
+    fontVariant: ['tabular-nums'], // Monospace numbers for stable width
+  },
+  stepCompletedText: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: '#10b981',
   },
   stepItemTitle: {
     fontSize: 14,

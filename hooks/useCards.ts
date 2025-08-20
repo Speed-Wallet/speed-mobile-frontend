@@ -38,7 +38,21 @@ const initialCards: PaymentCard[] = [
     balance: 500.0,
     isLoading: true,
     creationStep: 2, // Show KYC verification step
-    createdAt: new Date().toISOString(),
+    createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 minutes ago
+  },
+  // Add a failed card for demo purposes
+  {
+    id: 'demo-failed',
+    type: 'virtual',
+    brand: 'mastercard',
+    last4: '0000',
+    holder: 'DEMO USER',
+    cardName: 'Demo Failed Card',
+    expires: '12/25',
+    balance: 100.0,
+    isFailed: true,
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), // 2 hours ago
+    updatedAt: new Date(Date.now() - 1000 * 60 * 10).toISOString(), // Failed 10 minutes ago
   },
 ];
 
@@ -89,20 +103,21 @@ export const useCards = (email: string | null) => {
           allCards = initialCards;
         }
 
-        // Sort cards: pending/loading cards first, then by createdAt (newest first)
+        // Sort cards by recency (most recent at the top), regardless of status
         allCards.sort((a, b) => {
-          // Pending cards should come first
-          if (a.isLoading && !b.isLoading) return -1;
-          if (!a.isLoading && b.isLoading) return 1;
+          // Use updatedAt if available (for status changes), otherwise fall back to createdAt
+          const timeA = a.updatedAt || a.createdAt;
+          const timeB = b.updatedAt || b.createdAt;
 
-          // If both are same type, sort by createdAt (newest first)
-          if (a.createdAt && b.createdAt) {
-            return (
-              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-            );
+          if (timeA && timeB) {
+            return new Date(timeB).getTime() - new Date(timeA).getTime();
           }
 
-          // Fallback to balance if no createdAt
+          // If one has a time and the other doesn't, prioritize the one with time
+          if (timeA && !timeB) return -1;
+          if (!timeA && timeB) return 1;
+
+          // Fallback to balance if no timestamps
           return (b.balance || 0) - (a.balance || 0);
         });
 

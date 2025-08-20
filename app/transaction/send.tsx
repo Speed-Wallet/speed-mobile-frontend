@@ -28,7 +28,11 @@ import ScreenHeader from '@/components/ScreenHeader';
 import ScreenContainer from '@/components/ScreenContainer';
 import AmountInputWithValue from '@/components/AmountInputWithValue';
 import TokenItem from '@/components/TokenItem';
-import { sendTokenTransaction } from '@/utils/sendTransaction';
+import {
+  prepareSendTransaction,
+  confirmSendTransaction,
+  type PreparedSendTransaction,
+} from '@/utils/sendTransaction';
 
 export default function SendScreen() {
   const { tokenAddress, selectedTokenAddress } = useLocalSearchParams<{
@@ -61,6 +65,12 @@ export default function SendScreen() {
     message: string;
     type: 'success' | 'error';
   } | null>(null);
+
+  // New state for prepared send workflow
+  const [preparedTransaction, setPreparedTransaction] =
+    useState<PreparedSendTransaction | null>(null);
+  const [isPreparingSend, setIsPreparingSend] = useState(false);
+  const [isConfirmingSend, setIsConfirmingSend] = useState(false);
 
   const renderBackdrop = useCallback(
     (props: any) => (
@@ -120,7 +130,7 @@ export default function SendScreen() {
     throw new Error('tokenAddress should not be an array');
   }
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!selectedToken) {
       setToast({ message: 'Please select a token to send.', type: 'error' });
       return;
@@ -134,16 +144,48 @@ export default function SendScreen() {
       return;
     }
 
+    // Open the bottom sheet immediately
     setIsPreviewSheetOpen(true);
     previewBottomSheetRef.current?.expand();
+
+    // Start preparing the transaction in the background
+    setIsPreparingSend(true);
+    setPreparedTransaction(null);
+
+    try {
+      const prepared = await prepareSendTransaction({
+        amount: amount || '',
+        recipient: recipient || selectedContact?.recipient || '',
+        tokenAddress: selectedToken.address,
+        tokenSymbol: selectedToken.symbol,
+        tokenDecimals: selectedToken.decimals,
+      });
+      setPreparedTransaction(prepared);
+      console.log('Send transaction prepared successfully');
+    } catch (err: any) {
+      console.error('Failed to prepare send transaction:', err);
+      setToast({
+        message: 'Failed to prepare transaction. Please try again.',
+        type: 'error',
+      });
+      previewBottomSheetRef.current?.close();
+      setIsPreviewSheetOpen(false);
+    } finally {
+      setIsPreparingSend(false);
+    }
   };
 
   const handleConfirmSend = async () => {
-    if (!selectedToken) {
+    if (!preparedTransaction) {
+      setToast({
+        message: 'Transaction not prepared. Please try again.',
+        type: 'error',
+      });
       return;
     }
 
     setIsSending(true);
+    setIsConfirmingSend(true);
     previewBottomSheetRef.current?.close();
     setIsPreviewSheetOpen(false);
 
@@ -152,22 +194,18 @@ export default function SendScreen() {
       setIsStatusSheetOpen(true);
     }, 300);
 
-    const result = await sendTokenTransaction({
-      amount: amount || '',
-      recipient: recipient || '',
-      tokenAddress: selectedToken.address,
-      tokenSymbol: selectedToken.symbol,
-      tokenDecimals: selectedToken.decimals,
-    });
+    const result = await confirmSendTransaction(preparedTransaction);
 
     setSendResult(result);
     setIsSending(false);
+    setIsConfirmingSend(false);
     if (result.success) {
       // Clear inputs after successful send
       setAmount('');
       setRecipient('');
       setNote('');
       setSelectedContact(null);
+      setPreparedTransaction(null);
     } else {
       console.error('Transaction failed:', result.error);
     }
@@ -334,23 +372,29 @@ export default function SendScreen() {
         </ScrollView>
 
         {/* Send Button */}
-        <Animated.View
-          entering={FadeInDown.duration(300)}
-          style={styles.bottomContainer}
-        >
+        <View style={styles.buttonContainer}>
           <TouchableOpacity
             style={[
               styles.sendButton,
               (!amount || (!recipient && !selectedContact)) &&
-                styles.sendButtonDisabled,
+                styles.buttonOpacityDisabled,
             ]}
             disabled={!amount || (!recipient && !selectedContact)}
             onPress={handleSend}
           >
-            <Text style={styles.sendButtonText}>Preview Send</Text>
-            <ArrowRight size={20} color={colors.white} />
+            <LinearGradient
+              colors={
+                !amount || (!recipient && !selectedContact)
+                  ? ['#4a4a4a', '#3a3a3a']
+                  : ['#3B82F6', '#2563EB']
+              }
+              style={styles.buttonGradient}
+            >
+              <Text style={styles.sendButtonText}>Preview Send</Text>
+              <ArrowRight size={20} color={colors.white} />
+            </LinearGradient>
           </TouchableOpacity>
-        </Animated.View>
+        </View>
 
         {/* Preview Bottom Sheet */}
         <BottomSheet
@@ -363,7 +407,7 @@ export default function SendScreen() {
           handleIndicatorStyle={styles.bottomSheetHandle}
         >
           <BottomSheetView style={styles.bottomSheetContent}>
-            <Text style={styles.bottomSheetTitle}>Preview Send</Text>
+            <Text style={styles.bottomSheetTitle}>Send Details</Text>
 
             {selectedToken && (
               <View style={styles.previewContainer}>
@@ -398,10 +442,31 @@ export default function SendScreen() {
             )}
 
             <TouchableOpacity
-              style={styles.confirmButton}
+              style={[
+                styles.confirmButton,
+                (!preparedTransaction || isPreparingSend) &&
+                  styles.buttonOpacityDisabled,
+              ]}
+              disabled={!preparedTransaction || isPreparingSend}
               onPress={handleConfirmSend}
             >
-              <Text style={styles.confirmButtonText}>Confirm Send</Text>
+              <LinearGradient
+                colors={
+                  !preparedTransaction || isPreparingSend
+                    ? ['#4a4a4a', '#3a3a3a']
+                    : ['#3B82F6', '#2563EB']
+                }
+                style={styles.buttonGradient}
+              >
+                {isPreparingSend ? (
+                  <>
+                    <ActivityIndicator size="small" color={colors.white} />
+                    <Text style={styles.confirmButtonText}>Preparing...</Text>
+                  </>
+                ) : (
+                  <Text style={styles.confirmButtonText}>Confirm Send</Text>
+                )}
+              </LinearGradient>
             </TouchableOpacity>
           </BottomSheetView>
         </BottomSheet>
@@ -427,10 +492,14 @@ export default function SendScreen() {
                   style={styles.loadingIndicator}
                 />
                 <Text style={styles.loadingText}>
-                  Processing Transaction...
+                  {isConfirmingSend
+                    ? 'Sending Transaction...'
+                    : 'Processing Transaction...'}
                 </Text>
                 <Text style={styles.loadingSubtext}>
-                  Please wait while we process your transaction
+                  {isConfirmingSend
+                    ? 'Please wait while we submit your transaction to the blockchain'
+                    : 'Please wait while we process your transaction'}
                 </Text>
               </>
             ) : sendResult ? (
@@ -716,29 +785,25 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   bottomContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: colors.backgroundMedium,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+  buttonContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
   },
   sendButton: {
-    flexDirection: 'row',
+    height: 54, // Match trade execute button height
+    borderRadius: 27, // Match trade execute button border radius (fully rounded)
+    overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primary,
-    borderRadius: 16,
-    height: 56,
   },
   sendButtonDisabled: {
-    backgroundColor: colors.backgroundLight,
-    opacity: 0.7,
+    opacity: 0.6,
   },
   sendButtonText: {
-    fontSize: 16,
+    fontSize: 17, // Match trade execute button font size
     fontFamily: 'Inter-SemiBold',
     color: colors.white,
     marginRight: 8,
@@ -788,15 +853,27 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   confirmButton: {
-    width: '100%',
-    backgroundColor: colors.primary,
-    borderRadius: 12,
-    height: 50,
+    height: 54, // Match the trade button height
+    borderRadius: 27, // Match the trade button border radius
+    overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
   },
+  buttonOpacityDisabled: {
+    opacity: 0.6, // Made less opaque
+  },
+  buttonGradient: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    width: '100%',
+    height: '100%',
+    gap: 8,
+  },
   confirmButtonText: {
-    fontSize: 16,
+    fontSize: 17, // Match the trade button font size
     fontFamily: 'Inter-SemiBold',
     color: colors.white,
   },

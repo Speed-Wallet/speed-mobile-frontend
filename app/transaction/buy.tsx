@@ -20,8 +20,6 @@ import {
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { WebView } from 'react-native-webview';
 
-// TODO: Replace 'YOUR_YELLOWCARD_API_KEY' with actual YellowCard API key
-// You can get your API key from YellowCard's developer dashboard
 import colors from '@/constants/colors';
 import { formatCurrency } from '@/utils/formatters';
 import { getAllTokenInfo, getTokenByAddress } from '@/data/tokens';
@@ -142,7 +140,7 @@ export default function BuyScreen() {
           </View>
           <WebView
             source={{
-              uri: 'https://sandbox--payments-widget.netlify.app/landing/YOUR_YELLOWCARD_API_KEY',
+              uri: 'https://sandbox--payments-widget.netlify.app/landing/d5bfaa148d8534514e478def46d2ffea',
             }}
             style={styles.webView}
             javaScriptEnabled={true}
@@ -156,16 +154,14 @@ export default function BuyScreen() {
               alert('Failed to load YellowCard widget. Please try again.');
             }}
             onLoadStart={() => {
-              console.log('WebView loading started');
               setWebViewLoading(true);
             }}
             onLoadEnd={() => {
-              console.log('WebView loading ended');
               setWebViewLoading(false);
             }}
             onNavigationStateChange={(navState) => {
               // Handle navigation changes if needed
-              console.log('WebView navigation:', navState.url);
+              // console.log('WebView navigation:', navState.url);
             }}
           />
         </View>

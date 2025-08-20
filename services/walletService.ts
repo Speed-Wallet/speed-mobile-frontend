@@ -18,6 +18,7 @@ import {
 } from '@solana/spl-token';
 import CryptoJS from 'crypto-js';
 import { useEffect, useState } from 'react';
+import { WSOL_ADDRESS } from '@/constants/tokens';
 import {
   getJupiterQuote,
   prepareJupiterSwap,
@@ -54,10 +55,7 @@ const APP_SALT_KEY = 'appSalt'; // Key for storing app-level salt
 const APP_IV_KEY = 'appIV'; // Key for storing app-level IV
 const MASTER_MNEMONIC_KEY = 'masterMnemonic'; // Key for storing encrypted master mnemonic
 
-export const PLATFORM_FEE_RATE = parseFloat(
-  process.env.EXPO_PUBLIC_SWAP_FEE_RATE!,
-);
-export const WSOL_MINT = 'So11111111111111111111111111111111111111112';
+export const WSOL_MINT = WSOL_ADDRESS;
 export let WALLET: Keypair | null = null; // Initialize WALLET to null
 
 // Helper function to set up AuthService with current wallet
@@ -249,7 +247,6 @@ export const verifyAppPin = async (pin: string): Promise<boolean> => {
 
     if (isValid) {
       setTempAppPin(pin);
-      console.log('App PIN verified successfully');
     }
 
     return isValid;
@@ -1199,7 +1196,6 @@ export const unlockApp = async (pin: string): Promise<boolean> => {
     WALLET = keypair;
     notifyWalletStateChange();
 
-    console.log('App unlocked and active wallet loaded');
     return true;
   } catch (error) {
     console.error('Failed to unlock app:', error);

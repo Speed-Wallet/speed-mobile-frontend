@@ -48,12 +48,12 @@ import { triggerShake } from '@/utils/animations';
 import * as Notifications from 'expo-notifications';
 import { useCards } from '@/hooks/useCards';
 import { useQueryClient } from '@tanstack/react-query';
+import { useConfig } from '@/hooks/useConfig';
+import CustomAlert from '@/components/CustomAlert';
+import { useTokenBalance } from '@/hooks/useTokenBalance';
+import { USDT_ADDRESS } from '@/constants/tokens';
 // Note: cardCreationSteps service simplified since we now use status-based polling
 
-// Constants
-const CASHWYRE_BASE_FEE = parseFloat(
-  process.env.EXPO_PUBLIC_CASHWYRE_BASE_FEE!,
-);
 const MIN_KYC_LEVEL = 1; // Minimum KYC level required for virtual cards
 
 // Configure notification handler
@@ -78,11 +78,41 @@ export default function CardsScreen() {
   );
   const [showValidationError, setShowValidationError] = useState(false);
   const [showNameValidationError, setShowNameValidationError] = useState(false);
+  const [showBalanceValidationError, setShowBalanceValidationError] =
+    useState(false);
   const [showDevButtons, setShowDevButtons] = useState(true);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [customAlert, setCustomAlert] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    type: 'success' | 'error' | 'warning' | 'info';
+    buttons?: Array<{
+      text: string;
+      onPress?: () => void;
+      style?: 'default' | 'cancel' | 'destructive';
+    }>;
+  }>({
+    visible: false,
+    title: '',
+    message: '',
+    type: 'info',
+  });
 
   // TanStack Query client for cache invalidation
   const queryClient = useQueryClient();
+
+  // Get config values - this is critical data that must be loaded
+  const {
+    data: config,
+    isLoading: isConfigLoading,
+    error: configError,
+  } = useConfig();
+  const virtualCardCreationFee = config?.virtualCardCreationFee;
+  const cashwyreBaseFee = config?.cashwyreBaseFee;
+
+  // Get USDT balance for validation
+  const { balance: usdtBalance } = useTokenBalance(USDT_ADDRESS);
 
   // Use TanStack Query for cards data
   const {
@@ -134,6 +164,91 @@ export default function CardsScreen() {
   const checkKYCLevel = async (minLevel: 1 | 2 | 3) => {
     const verificationLevel = await getCurrentVerificationLevel();
     return verificationLevel >= minLevel;
+  };
+
+  const showCustomAlert = (
+    title: string,
+    message: string,
+    type: 'success' | 'error' | 'warning' | 'info' = 'info',
+    buttons?: Array<{
+      text: string;
+      onPress?: () => void;
+      style?: 'default' | 'cancel' | 'destructive';
+    }>,
+  ) => {
+    setCustomAlert({
+      visible: true,
+      title,
+      message,
+      type,
+      buttons,
+    });
+  };
+
+  const hideCustomAlert = () => {
+    setCustomAlert((prev) => ({ ...prev, visible: false }));
+  };
+
+  const isInsufficientFundsError = (error: string, details?: string) => {
+    const errorText = (error + ' ' + (details || '')).toLowerCase();
+    return (
+      errorText.includes('insufficient funds') ||
+      errorText.includes('insufficient balance') ||
+      errorText.includes('program log: error: insufficient funds')
+    );
+  };
+
+  const validateCardBalance = (balance: string) => {
+    if (!balance || !virtualCardCreationFee || !cashwyreBaseFee) return false;
+
+    const amount = parseFloat(balance);
+    if (isNaN(amount) || amount <= 0) return false;
+
+    const totalRequired =
+      amount + virtualCardCreationFee * amount + cashwyreBaseFee;
+    return totalRequired > usdtBalance;
+  };
+
+  const handleBalanceChange = (text: string) => {
+    // Only allow numbers and one decimal point
+    const numericRegex = /^(\d*\.?\d{0,2})$/;
+
+    // Remove any non-numeric characters except decimal point
+    const cleanedText = text.replace(/[^0-9.]/g, '');
+
+    // Ensure only one decimal point and max 2 decimal places
+    const parts = cleanedText.split('.');
+    let validText = parts[0];
+    if (parts.length > 1) {
+      validText += '.' + parts[1].substring(0, 2);
+    }
+
+    // Only update if the text matches our numeric pattern
+    if (numericRegex.test(validText)) {
+      setCardBalance(validText);
+
+      // Clear balance validation error when user types (will be re-validated below)
+      setShowBalanceValidationError(false);
+
+      // Validate the numeric value for range (5-2500)
+      const balance = parseFloat(validText);
+      if (validText && !isNaN(balance) && balance > 0) {
+        setShowValidationError(balance < 5 || balance > 2500);
+
+        // Check for insufficient balance in real-time
+        const hasInsufficientBalance = validateCardBalance(validText);
+        setShowBalanceValidationError(hasInsufficientBalance);
+      } else {
+        setShowValidationError(false);
+        setShowBalanceValidationError(false);
+      }
+    }
+  };
+
+  const handleBalanceBlur = () => {
+    // Re-validate on blur to ensure validation is up-to-date
+    const hasInsufficientBalance = validateCardBalance(cardBalance);
+    setShowBalanceValidationError(hasInsufficientBalance);
   };
 
   const handleAddCardPress = async () => {
@@ -241,6 +356,36 @@ export default function CardsScreen() {
       return;
     }
 
+    // Check if user has sufficient USDT balance
+    if (validateCardBalance(cardBalance)) {
+      setShowBalanceValidationError(true);
+      showCustomAlert(
+        '💰 Insufficient USDT Balance',
+        `You need at least ${formatBalance(
+          balance +
+            (virtualCardCreationFee || 0) * balance +
+            (cashwyreBaseFee || 0),
+        )} USDT to create this card (including fees). You currently have ${usdtBalance.toFixed(2)} USDT.`,
+        'warning',
+        [
+          {
+            text: 'Add USDT',
+            onPress: () => {
+              hideCustomAlert();
+              router.push('/transaction/receive');
+            },
+            style: 'default',
+          },
+          {
+            text: 'Cancel',
+            onPress: hideCustomAlert,
+            style: 'cancel',
+          },
+        ],
+      );
+      return;
+    }
+
     setShowValidationError(false);
     setIsLoading(true);
 
@@ -274,19 +419,55 @@ export default function CardsScreen() {
           selectedBrand.slice(1).toLowerCase(),
       };
 
+      // Calculate total amount including fees (same as displayed to user)
+      const totalAmount =
+        virtualCardCreationFee && cashwyreBaseFee
+          ? parseFloat(cardBalance) +
+            virtualCardCreationFee * parseFloat(cardBalance) +
+            cashwyreBaseFee
+          : parseFloat(cardBalance);
+
       // Send USDT to Cashwyre and register for auto card creation first
       const sendResult =
         process.env.EXPO_PUBLIC_APP_ENV === 'development'
           ? await mockSendUsdtToCashwyre({
-              amount: cardBalance,
+              amount: totalAmount.toString(),
               cardData,
               simulationType,
             })
-          : await sendUsdtToCashwyre(cardBalance, cardData);
+          : await sendUsdtToCashwyre(totalAmount.toString(), cardData);
 
       if (!sendResult.success) {
         // USDT transaction failed - show specific error based on failure type
         setIsLoading(false);
+
+        // Check for insufficient funds error
+        if (
+          sendResult.errorType === 'TRANSACTION_SUBMISSION_FAILED' &&
+          isInsufficientFundsError(sendResult.error || '', sendResult.details)
+        ) {
+          showCustomAlert(
+            '💰 Insufficient USDT Balance',
+            `You don't have enough USDT to create this card. You need ${formatBalance(totalAmount)} total (including fees), but your wallet has insufficient funds.`,
+            'warning',
+            [
+              {
+                text: 'Add USDT',
+                onPress: () => {
+                  hideCustomAlert();
+                  router.push('/transaction/receive');
+                },
+                style: 'default',
+              },
+              {
+                text: 'Cancel',
+                onPress: hideCustomAlert,
+                style: 'cancel',
+              },
+            ],
+          );
+          return;
+        }
 
         let errorTitle = '💸 Transaction Failed';
         let errorMessage = `Failed to send USDT: ${sendResult.error}`;
@@ -301,7 +482,7 @@ export default function CardsScreen() {
           errorMessage = `USDT transaction was sent successfully, but failed to register for card creation. Please contact support. Transaction signature: ${sendResult.signature}}`;
         }
 
-        Alert.alert(errorTitle, errorMessage);
+        showCustomAlert(errorTitle, errorMessage, 'error');
         return;
       }
 
@@ -311,23 +492,31 @@ export default function CardsScreen() {
         sendResult.errorType === 'REGISTRATION_FAILED'
       ) {
         setIsLoading(false);
-        Alert.alert(
+        showCustomAlert(
           '⚠️ Partial Success',
           `Transaction sent successfully but card registration failed. Please contact support with this transaction signature: ${sendResult.signature}`,
+          'warning',
           [
             {
               text: 'Copy Signature',
               onPress: async () => {
                 if (sendResult.signature) {
                   await Clipboard.setStringAsync(sendResult.signature);
-                  Alert.alert(
+                  hideCustomAlert();
+                  showCustomAlert(
                     'Copied',
                     'Transaction signature copied to clipboard',
+                    'success',
                   );
                 }
               },
+              style: 'default',
             },
-            { text: 'OK', style: 'default' },
+            {
+              text: 'OK',
+              onPress: hideCustomAlert,
+              style: 'cancel',
+            },
           ],
         );
         return;
@@ -339,6 +528,7 @@ export default function CardsScreen() {
       setCardName('');
       setShowValidationError(false);
       setShowNameValidationError(false);
+      setShowBalanceValidationError(false);
       setIsLoading(false);
 
       // Refresh cards from API to show any new cards
@@ -365,11 +555,12 @@ export default function CardsScreen() {
       }
     } catch (error) {
       setIsLoading(false);
-      Alert.alert(
+      showCustomAlert(
         'Error',
         error instanceof Error
           ? error.message
           : 'Failed to create card. Please try again.',
+        'error',
       );
     }
   };
@@ -412,7 +603,8 @@ export default function CardsScreen() {
       parseFloat(cardBalance) <= 0 ||
       isLoading ||
       showValidationError ||
-      showNameValidationError;
+      showNameValidationError ||
+      showBalanceValidationError;
     if (isDisabled) {
       triggerShake(createButtonShakeAnim);
     } else {
@@ -428,7 +620,8 @@ export default function CardsScreen() {
       parseFloat(cardBalance) <= 0 ||
       isLoading ||
       showValidationError ||
-      showNameValidationError;
+      showNameValidationError ||
+      showBalanceValidationError;
     if (isDisabled) {
       triggerShake(devButton1ShakeAnim);
     } else {
@@ -444,7 +637,8 @@ export default function CardsScreen() {
       parseFloat(cardBalance) <= 0 ||
       isLoading ||
       showValidationError ||
-      showNameValidationError;
+      showNameValidationError ||
+      showBalanceValidationError;
     if (isDisabled) {
       triggerShake(devButton2ShakeAnim);
     } else {
@@ -466,10 +660,42 @@ export default function CardsScreen() {
     refetchCards();
   };
 
-  const advanceCreationStep = (cardId: string) => {
+  const advanceCreationStep = async (cardId: string) => {
     console.log('🧪 [DEV] Advancing creation step for card:', cardId);
-    // This would trigger a backend API to advance the status
-    refetchCards();
+
+    // Find the card being advanced
+    const cardToAdvance = cards.find((c) => c.id === cardId);
+    if (!cardToAdvance) {
+      console.log('🚫 Card not found for advancement:', cardId);
+      return;
+    }
+
+    // For development, simulate step advancement by updating the card locally
+    // In production, this would call a backend API to advance the step
+    try {
+      // Try to call simulateCardCreated if we're on step 2 or higher
+      const currentStep = cardToAdvance.creationStep || 2;
+
+      if (currentStep >= 2 && userEmail) {
+        console.log(
+          '🚀 Simulating card creation completion for step:',
+          currentStep,
+        );
+        await simulateCardCreated(userEmail, cardId);
+
+        // Wait a bit then refetch to see the changes
+        setTimeout(() => {
+          refetchCards();
+        }, 1000);
+      } else {
+        console.log('📝 Just refetching cards for step:', currentStep);
+        refetchCards();
+      }
+    } catch (error) {
+      console.error('❌ Error in advance creation step:', error);
+      // Fallback to just refetching
+      refetchCards();
+    }
   };
 
   const resetCreationStep = (cardId: string) => {
@@ -480,7 +706,19 @@ export default function CardsScreen() {
 
   const renderPaymentCard = (card: PaymentCard) => {
     const isVisible = visibleCards[card.id] || false;
-    const isDevelopment = process.env.EXPO_PUBLIC_APP_ENV === 'development';
+
+    // Determine if user has existing cards (non-loading cards)
+    const hasExistingCards = cards.some(
+      (c) =>
+        c.id !== card.id && // Don't count current card
+        !(c.isLoading || c.status === 'new' || c.status === 'pending') && // Not loading
+        !(
+          c.isFailed ||
+          c.status === 'inactive' ||
+          c.status === 'failed' ||
+          c.status === 'terminated'
+        ), // Not failed
+    );
 
     // Determine card state based on status
     const isLoading =
@@ -523,7 +761,7 @@ export default function CardsScreen() {
           card={card}
           onDeleteCard={handleDeleteCard}
           getBrandLogo={getBrandLogo}
-          isDevelopment={isDevelopment}
+          hasExistingCards={hasExistingCards}
           onSimulateUSDTReceived={devSimulateUSDTReceived}
           onAdvanceCreationStep={advanceCreationStep}
           onResetCreationStep={resetCreationStep}
@@ -541,7 +779,6 @@ export default function CardsScreen() {
         onDeleteCard={handleDeleteCard}
         formatBalance={formatBalance}
         getBrandLogo={getBrandLogo}
-        isDevelopment={isDevelopment}
       />
     );
   };
@@ -553,283 +790,313 @@ export default function CardsScreen() {
         onBack={() => router.push('/' as any)}
       />
 
-      <ScrollView
-        style={styles.content}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {/* Existing Cards */}
-        <View style={styles.cardsContainer}>
-          {isLoadingCards ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#10b981" />
-              <Text style={styles.loadingText}>Loading your cards...</Text>
-            </View>
-          ) : cards.length === 0 ? (
-            <View style={styles.emptyContainer}>
-              <CreditCard size={48} color="#6b7280" />
-              <Text style={styles.emptyTitle}>No Cards Yet</Text>
-              <Text style={styles.emptyText}>
-                Create your first virtual card to get started
-              </Text>
-            </View>
-          ) : (
-            cards.map(renderPaymentCard)
-          )}
+      {/* Config Loading/Error States */}
+      {isConfigLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#10b981" />
         </View>
-      </ScrollView>
-
-      {/* Sticky Add New Card Button */}
-      <View style={styles.stickyButtonContainer}>
-        <TouchableOpacity
-          style={styles.addCardButton}
-          onPress={handleAddCardPress}
-        >
-          <Plus size={24} color="#ffffff" />
-          <Text style={styles.addCardText}>ADD NEW CARD</Text>
-          <View style={styles.addCardIcon}>
-            <CreditCard size={20} color="#9ca3af" />
-          </View>
-        </TouchableOpacity>
-      </View>
-
-      {/* Add Card Modal */}
-      <Modal
-        visible={showAddCard}
-        animationType="slide"
-        presentationStyle="pageSheet"
-      >
-        <SafeAreaView style={styles.container}>
-          <View style={styles.header}>
-            <View style={styles.placeholder} />
-            <Text style={styles.title}>Create New Card</Text>
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={() => {
-                setShowAddCard(false);
-                setShowValidationError(false);
-                setShowNameValidationError(false);
-                setShowDevButtons(true); // Reset dev buttons visibility when closing modal
-              }}
-            >
-              <X size={24} color="#ffffff" />
-            </TouchableOpacity>
-          </View>
-
+      ) : configError ? (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorTitle}>Configuration Error</Text>
+          <Text style={styles.errorText}>
+            Failed to load app configuration. Please check your connection and
+            try again.
+          </Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={() => {
+              // Invalidate the config query to trigger a refetch
+              queryClient.invalidateQueries({ queryKey: ['app-config'] });
+            }}
+          >
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      ) : virtualCardCreationFee === undefined ||
+        cashwyreBaseFee === undefined ? (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorTitle}>Configuration Missing</Text>
+          <Text style={styles.errorText}>
+            Required configuration data is missing. Please contact support.
+          </Text>
+        </View>
+      ) : (
+        <>
           <ScrollView
             style={styles.content}
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.modalScrollContent}
+            contentContainerStyle={styles.scrollContent}
           >
-            {/* Card Brand Selection */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Card Brand</Text>
-              <View style={styles.brandSelector}>
+            {/* Existing Cards */}
+            <View style={styles.cardsContainer}>
+              {isLoadingCards ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="large" color="#10b981" />
+                  <Text style={styles.loadingText}>Loading your cards...</Text>
+                </View>
+              ) : cards.length === 0 ? (
+                <View style={styles.emptyContainer}>
+                  <CreditCard size={48} color="#6b7280" />
+                  <Text style={styles.emptyTitle}>No Cards Yet</Text>
+                  <Text style={styles.emptyText}>
+                    Create your first virtual card to get started
+                  </Text>
+                </View>
+              ) : (
+                cards.map(renderPaymentCard)
+              )}
+            </View>
+          </ScrollView>
+
+          {/* Sticky Add New Card Button */}
+          <View style={styles.stickyButtonContainer}>
+            <TouchableOpacity
+              style={styles.addCardButton}
+              onPress={handleAddCardPress}
+            >
+              <Plus size={24} color="#ffffff" />
+              <Text style={styles.addCardText}>ADD NEW CARD</Text>
+              <View style={styles.addCardIcon}>
+                <CreditCard size={20} color="#9ca3af" />
+              </View>
+            </TouchableOpacity>
+          </View>
+
+          {/* Add Card Modal */}
+          <Modal
+            visible={showAddCard}
+            animationType="slide"
+            presentationStyle="pageSheet"
+          >
+            <SafeAreaView style={styles.container}>
+              <View style={styles.header}>
+                <View style={styles.placeholder} />
+                <Text style={styles.title}>Create New Card</Text>
                 <TouchableOpacity
-                  style={[
-                    styles.brandOption,
-                    styles.brandOptionDisabled,
-                    selectedBrand === 'mastercard' &&
-                      styles.brandOptionSelected,
-                  ]}
-                  disabled={true}
+                  style={styles.closeButton}
+                  onPress={() => {
+                    setShowAddCard(false);
+                    setShowValidationError(false);
+                    setShowNameValidationError(false);
+                    setShowBalanceValidationError(false);
+                    setShowDevButtons(true); // Reset dev buttons visibility when closing modal
+                  }}
                 >
-                  <Image
-                    source={getBrandLogo('mastercard')}
-                    style={[
-                      styles.brandOptionLogo,
-                      styles.brandOptionLogoDisabled,
-                    ]}
-                    resizeMode="contain"
-                  />
+                  <X size={24} color="#ffffff" />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView
+                style={styles.content}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.modalScrollContent}
+              >
+                {/* Card Brand Selection */}
+                <View style={styles.section}>
+                  <Text style={styles.sectionTitle}>Card Brand</Text>
+                  <View style={styles.brandSelector}>
+                    <TouchableOpacity
+                      style={[
+                        styles.brandOption,
+                        styles.brandOptionDisabled,
+                        selectedBrand === 'mastercard' &&
+                          styles.brandOptionSelected,
+                      ]}
+                      disabled={true}
+                    >
+                      <Image
+                        source={getBrandLogo('mastercard')}
+                        style={[
+                          styles.brandOptionLogo,
+                          styles.brandOptionLogoDisabled,
+                        ]}
+                        resizeMode="contain"
+                      />
+                      <Text
+                        style={[
+                          styles.brandOptionText,
+                          styles.brandOptionTextDisabled,
+                        ]}
+                      >
+                        Mastercard
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[
+                        styles.brandOption,
+                        selectedBrand === 'visa' && styles.brandOptionSelected,
+                      ]}
+                      onPress={() => setSelectedBrand('visa')}
+                    >
+                      <Image
+                        source={getBrandLogo('visa')}
+                        style={styles.brandOptionLogo}
+                        resizeMode="contain"
+                      />
+                      <Text style={styles.brandOptionText}>Visa</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                {/* Card Name Input */}
+                <View style={styles.section}>
+                  <Text style={styles.sectionTitle}>Card Name</Text>
+                  <View style={styles.inputWrapper}>
+                    <CreditCard
+                      size={20}
+                      color="#9ca3af"
+                      style={styles.inputIcon}
+                    />
+                    <TextInput
+                      style={styles.balanceInput}
+                      placeholder="Enter card name (e.g., Personal Card)"
+                      placeholderTextColor="#6b7280"
+                      value={cardName}
+                      onChangeText={(text) => {
+                        // Only allow English letters (a-z, A-Z) and spaces
+                        const letterRegex = /^[a-zA-Z\s]*$/;
+
+                        // Remove any non-letter characters except spaces
+                        const cleanedText = text.replace(/[^a-zA-Z\s]/g, '');
+
+                        // Remove extra consecutive spaces and trim leading spaces
+                        const normalizedText = cleanedText
+                          .replace(/\s+/g, ' ')
+                          .replace(/^\s+/, '');
+
+                        // Only update if the text matches our letter pattern
+                        if (letterRegex.test(normalizedText)) {
+                          setCardName(normalizedText);
+                          // Check minimum length validation
+                          setShowNameValidationError(
+                            normalizedText.length > 0 &&
+                              normalizedText.length < 4,
+                          );
+                        }
+                      }}
+                    />
+                  </View>
                   <Text
                     style={[
-                      styles.brandOptionText,
-                      styles.brandOptionTextDisabled,
+                      styles.inputHint,
+                      showNameValidationError && styles.inputHintError,
                     ]}
                   >
-                    Mastercard
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[
-                    styles.brandOption,
-                    selectedBrand === 'visa' && styles.brandOptionSelected,
-                  ]}
-                  onPress={() => setSelectedBrand('visa')}
-                >
-                  <Image
-                    source={getBrandLogo('visa')}
-                    style={styles.brandOptionLogo}
-                    resizeMode="contain"
-                  />
-                  <Text style={styles.brandOptionText}>Visa</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {/* Card Name Input */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Card Name</Text>
-              <View style={styles.inputWrapper}>
-                <CreditCard
-                  size={20}
-                  color="#9ca3af"
-                  style={styles.inputIcon}
-                />
-                <TextInput
-                  style={styles.balanceInput}
-                  placeholder="Enter card name (e.g., Personal Card)"
-                  placeholderTextColor="#6b7280"
-                  value={cardName}
-                  onChangeText={(text) => {
-                    // Only allow English letters (a-z, A-Z) and spaces
-                    const letterRegex = /^[a-zA-Z\s]*$/;
-
-                    // Remove any non-letter characters except spaces
-                    const cleanedText = text.replace(/[^a-zA-Z\s]/g, '');
-
-                    // Remove extra consecutive spaces and trim leading spaces
-                    const normalizedText = cleanedText
-                      .replace(/\s+/g, ' ')
-                      .replace(/^\s+/, '');
-
-                    // Only update if the text matches our letter pattern
-                    if (letterRegex.test(normalizedText)) {
-                      setCardName(normalizedText);
-                      // Check minimum length validation
-                      setShowNameValidationError(
-                        normalizedText.length > 0 && normalizedText.length < 4,
-                      );
-                    }
-                  }}
-                />
-              </View>
-              <Text
-                style={[
-                  styles.inputHint,
-                  showNameValidationError && styles.inputHintError,
-                ]}
-              >
-                {showNameValidationError ? '*' : ''}Minimum 4 characters,
-                letters only{showNameValidationError ? ' *' : ''}
-              </Text>
-            </View>
-
-            {/* Balance Input */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Initial Balance</Text>
-              <View style={styles.inputWrapper}>
-                <DollarSign
-                  size={20}
-                  color="#9ca3af"
-                  style={styles.inputIcon}
-                />
-                <TextInput
-                  style={styles.balanceInput}
-                  placeholder="Enter amount (e.g., 500.00)"
-                  placeholderTextColor="#6b7280"
-                  value={cardBalance}
-                  onChangeText={(text) => {
-                    // Only allow numbers and one decimal point
-                    const numericRegex = /^(\d*\.?\d{0,2})$/;
-
-                    // Remove any non-numeric characters except decimal point
-                    const cleanedText = text.replace(/[^0-9.]/g, '');
-
-                    // Ensure only one decimal point and max 2 decimal places
-                    const parts = cleanedText.split('.');
-                    let validText = parts[0];
-                    if (parts.length > 1) {
-                      validText += '.' + parts[1].substring(0, 2);
-                    }
-
-                    // Only update if the text matches our numeric pattern
-                    if (numericRegex.test(validText)) {
-                      setCardBalance(validText);
-
-                      // Validate the numeric value
-                      const balance = parseFloat(validText);
-                      if (validText && !isNaN(balance) && balance > 0) {
-                        setShowValidationError(balance < 5 || balance > 2500);
-                      } else {
-                        setShowValidationError(false);
-                      }
-                    }
-                  }}
-                  keyboardType="decimal-pad"
-                />
-              </View>
-              <Text
-                style={[
-                  styles.inputHint,
-                  showValidationError && styles.inputHintError,
-                ]}
-              >
-                {showValidationError ? '*' : ''}Min: $5.00 • Max: $2,500.00
-                {showValidationError ? ' *' : ''}
-              </Text>
-            </View>
-
-            {/* Fee Breakdown */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Fee Breakdown</Text>
-              <View style={styles.feeBreakdownCard}>
-                <View style={styles.feeRow}>
-                  <Text style={styles.feeLabel}>Initial Balance</Text>
-                  <Text style={styles.feeValue}>
-                    {cardBalance
-                      ? formatBalance(parseFloat(cardBalance))
-                      : '$0.00'}
+                    {showNameValidationError ? '*' : ''}Minimum 4 characters,
+                    letters only{showNameValidationError ? ' *' : ''}
                   </Text>
                 </View>
-                <View style={styles.feeRow}>
-                  <Text style={styles.feeLabel}>Base Fee</Text>
-                  <Text style={styles.feeValue}>
-                    {formatBalance(CASHWYRE_BASE_FEE)}
-                  </Text>
-                </View>
-                <View style={styles.feeRow}>
-                  <Text style={styles.feeLabel}>Processing Fee (1%)</Text>
-                  <Text style={styles.feeValue}>
-                    {cardBalance
-                      ? formatBalance(parseFloat(cardBalance) * 0.01)
-                      : '$0.00'}
-                  </Text>
-                </View>
-                <View style={styles.feeDivider} />
-                <View style={styles.feeRow}>
-                  <Text style={styles.feeLabelTotal}>Total Fee</Text>
-                  <Text style={styles.feeValueTotal}>
-                    {cardBalance
-                      ? formatBalance(
-                          CASHWYRE_BASE_FEE + parseFloat(cardBalance) * 0.01,
-                        )
-                      : formatBalance(CASHWYRE_BASE_FEE)}
-                  </Text>
-                </View>
-              </View>
-            </View>
 
-            {/* Total to Pay */}
-            <View style={styles.section}>
-              <View style={styles.totalToPayCard}>
-                <Text style={styles.totalToPayLabel}>Total to Pay</Text>
-                <Text style={styles.totalToPayValue}>
-                  {cardBalance
-                    ? formatBalance(
-                        parseFloat(cardBalance) +
-                          CASHWYRE_BASE_FEE +
-                          parseFloat(cardBalance) * 0.01,
-                      )
-                    : formatBalance(CASHWYRE_BASE_FEE)}
-                </Text>
-              </View>
-            </View>
+                {/* Balance Input */}
+                <View style={styles.section}>
+                  <Text style={styles.sectionTitle}>Initial Balance</Text>
+                  <View
+                    style={[
+                      styles.inputWrapper,
+                      showBalanceValidationError && styles.inputWrapperError,
+                    ]}
+                  >
+                    <DollarSign
+                      size={20}
+                      color="#9ca3af"
+                      style={styles.inputIcon}
+                    />
+                    <TextInput
+                      style={styles.balanceInput}
+                      placeholder="Enter amount (e.g., 500.00)"
+                      placeholderTextColor="#6b7280"
+                      value={cardBalance}
+                      onChangeText={handleBalanceChange}
+                      onBlur={handleBalanceBlur}
+                      keyboardType="decimal-pad"
+                    />
+                  </View>
 
-            {/* Card Preview - Commented out for now */}
-            {/* <View style={styles.section}>
+                  {/* Balance validation error */}
+                  {showBalanceValidationError && (
+                    <Text style={[styles.inputHint, styles.inputHintError]}>
+                      * Insufficient USDT balance. You have{' '}
+                      {usdtBalance.toFixed(2)} USDT available *
+                    </Text>
+                  )}
+
+                  {/* Range validation error */}
+                  <Text
+                    style={[
+                      styles.inputHint,
+                      showValidationError && styles.inputHintError,
+                    ]}
+                  >
+                    {showValidationError ? '*' : ''}Min: $5.00 • Max: $2,500.00
+                    {showValidationError ? ' *' : ''}
+                  </Text>
+                </View>
+
+                {/* Fee Breakdown */}
+                <View style={styles.section}>
+                  <Text style={styles.sectionTitle}>Fee Breakdown</Text>
+                  <View style={styles.feeBreakdownCard}>
+                    <View style={styles.feeRow}>
+                      <Text style={styles.feeLabel}>Initial Balance</Text>
+                      <Text style={styles.feeValue}>
+                        {cardBalance
+                          ? formatBalance(parseFloat(cardBalance))
+                          : '$0.00'}
+                      </Text>
+                    </View>
+                    <View style={styles.feeRow}>
+                      <Text style={styles.feeLabel}>
+                        Processing Fee (
+                        {(virtualCardCreationFee * 100).toFixed(0)}%)
+                      </Text>
+                      <Text style={styles.feeValue}>
+                        {cardBalance
+                          ? formatBalance(
+                              virtualCardCreationFee * parseFloat(cardBalance),
+                            )
+                          : '$0.00'}
+                      </Text>
+                    </View>
+                    <View style={styles.feeRow}>
+                      <Text style={styles.feeLabel}>Provider Fee</Text>
+                      <Text style={styles.feeValue}>
+                        {formatBalance(cashwyreBaseFee)}
+                      </Text>
+                    </View>
+                    <View style={styles.feeDivider} />
+                    <View style={styles.feeRow}>
+                      <Text style={styles.feeLabelTotal}>Total Fee</Text>
+                      <Text style={styles.feeValueTotal}>
+                        {cardBalance
+                          ? formatBalance(
+                              virtualCardCreationFee * parseFloat(cardBalance) +
+                                cashwyreBaseFee,
+                            )
+                          : formatBalance(cashwyreBaseFee)}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Total to Pay */}
+                <View style={styles.section}>
+                  <View style={styles.totalToPayCard}>
+                    <Text style={styles.totalToPayLabel}>Total to Pay</Text>
+                    <Text style={styles.totalToPayValue}>
+                      {cardBalance
+                        ? formatBalance(
+                            parseFloat(cardBalance) +
+                              virtualCardCreationFee * parseFloat(cardBalance) +
+                              cashwyreBaseFee,
+                          )
+                        : formatBalance(cashwyreBaseFee)}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Card Preview - Commented out for now */}
+                {/* <View style={styles.section}>
               <Text style={styles.sectionTitle}>Card Preview</Text>
               <View style={styles.previewCard}>
                 <View style={styles.previewCardHeader}>
@@ -878,128 +1145,149 @@ export default function CardsScreen() {
                 </View>
               </View>
             </View> */}
-          </ScrollView>
+              </ScrollView>
 
-          {/* Sticky Button Container */}
-          <View style={styles.modalStickyButtonContainer}>
-            {/* Development Mode: Toggle and Simulation Buttons */}
-            {process.env.EXPO_PUBLIC_APP_ENV === 'development' &&
-              showDevButtons && (
-                <View style={styles.devSection}>
+              {/* Sticky Button Container */}
+              <View style={styles.modalStickyButtonContainer}>
+                {/* Development Mode: Toggle and Simulation Buttons */}
+                {process.env.EXPO_PUBLIC_APP_ENV === 'development' &&
+                  showDevButtons && (
+                    <View style={styles.devSection}>
+                      <TouchableOpacity
+                        style={styles.devToggleButton}
+                        onPress={() => setShowDevButtons(false)}
+                      >
+                        <Text style={styles.devToggleButtonText}>
+                          Hide Dev Buttons
+                        </Text>
+                      </TouchableOpacity>
+
+                      <View style={styles.devButtonsContainer}>
+                        <Animated.View
+                          style={{
+                            transform: [{ translateX: devButton1ShakeAnim }],
+                          }}
+                        >
+                          <TouchableOpacity
+                            style={[
+                              styles.devSimulateButton,
+                              (!cardName.trim() ||
+                                cardName.trim().length < 4 ||
+                                !cardBalance ||
+                                parseFloat(cardBalance) <= 0 ||
+                                isLoading ||
+                                showValidationError ||
+                                showNameValidationError ||
+                                showBalanceValidationError) &&
+                                styles.devSimulateButtonDisabled,
+                            ]}
+                            onPress={handleDevButton1Attempt}
+                          >
+                            <Text
+                              style={[
+                                styles.devSimulateButtonText,
+                                (!cardName.trim() ||
+                                  cardName.trim().length < 4 ||
+                                  !cardBalance ||
+                                  parseFloat(cardBalance) <= 0 ||
+                                  isLoading ||
+                                  showValidationError ||
+                                  showNameValidationError ||
+                                  showBalanceValidationError) &&
+                                  styles.devSimulateButtonTextDisabled,
+                              ]}
+                            >
+                              Simulate USDT Send Failed
+                            </Text>
+                          </TouchableOpacity>
+                        </Animated.View>
+
+                        <Animated.View
+                          style={{
+                            transform: [{ translateX: devButton2ShakeAnim }],
+                          }}
+                        >
+                          <TouchableOpacity
+                            style={[
+                              styles.devSimulateButton,
+                              (!cardName.trim() ||
+                                cardName.trim().length < 4 ||
+                                !cardBalance ||
+                                parseFloat(cardBalance) <= 0 ||
+                                isLoading ||
+                                showValidationError ||
+                                showNameValidationError ||
+                                showBalanceValidationError) &&
+                                styles.devSimulateButtonDisabled,
+                            ]}
+                            onPress={handleDevButton2Attempt}
+                          >
+                            <Text
+                              style={[
+                                styles.devSimulateButtonText,
+                                (!cardName.trim() ||
+                                  cardName.trim().length < 4 ||
+                                  !cardBalance ||
+                                  parseFloat(cardBalance) <= 0 ||
+                                  isLoading ||
+                                  showValidationError ||
+                                  showNameValidationError ||
+                                  showBalanceValidationError) &&
+                                  styles.devSimulateButtonTextDisabled,
+                              ]}
+                            >
+                              Simulate Card Creation Failed
+                            </Text>
+                          </TouchableOpacity>
+                        </Animated.View>
+                      </View>
+                    </View>
+                  )}
+
+                {/* Create Button */}
+                <Animated.View
+                  style={{ transform: [{ translateX: createButtonShakeAnim }] }}
+                >
                   <TouchableOpacity
-                    style={styles.devToggleButton}
-                    onPress={() => setShowDevButtons(false)}
+                    style={[
+                      styles.createButton,
+                      (!cardName.trim() ||
+                        cardName.trim().length < 4 ||
+                        !cardBalance ||
+                        parseFloat(cardBalance) <= 0 ||
+                        isLoading ||
+                        showValidationError ||
+                        showNameValidationError ||
+                        showBalanceValidationError) &&
+                        styles.createButtonDisabled,
+                    ]}
+                    onPress={handleCreateCardAttempt}
                   >
-                    <Text style={styles.devToggleButtonText}>
-                      Hide Dev Buttons
+                    {isLoading ? (
+                      <ActivityIndicator size="small" color="#ffffff" />
+                    ) : (
+                      <CreditCard size={20} color="#ffffff" />
+                    )}
+                    <Text style={styles.createButtonText}>
+                      {isLoading ? 'Creating Card...' : 'Create Virtual Card'}
                     </Text>
                   </TouchableOpacity>
+                </Animated.View>
+              </View>
+            </SafeAreaView>
+          </Modal>
+        </>
+      )}
 
-                  <View style={styles.devButtonsContainer}>
-                    <Animated.View
-                      style={{
-                        transform: [{ translateX: devButton1ShakeAnim }],
-                      }}
-                    >
-                      <TouchableOpacity
-                        style={[
-                          styles.devSimulateButton,
-                          (!cardName.trim() ||
-                            cardName.trim().length < 4 ||
-                            !cardBalance ||
-                            parseFloat(cardBalance) <= 0 ||
-                            isLoading ||
-                            showValidationError ||
-                            showNameValidationError) &&
-                            styles.devSimulateButtonDisabled,
-                        ]}
-                        onPress={handleDevButton1Attempt}
-                      >
-                        <Text
-                          style={[
-                            styles.devSimulateButtonText,
-                            (!cardName.trim() ||
-                              cardName.trim().length < 4 ||
-                              !cardBalance ||
-                              parseFloat(cardBalance) <= 0 ||
-                              isLoading ||
-                              showValidationError ||
-                              showNameValidationError) &&
-                              styles.devSimulateButtonTextDisabled,
-                          ]}
-                        >
-                          Simulate USDT Send Failed
-                        </Text>
-                      </TouchableOpacity>
-                    </Animated.View>
-
-                    <Animated.View
-                      style={{
-                        transform: [{ translateX: devButton2ShakeAnim }],
-                      }}
-                    >
-                      <TouchableOpacity
-                        style={[
-                          styles.devSimulateButton,
-                          (!cardName.trim() ||
-                            cardName.trim().length < 4 ||
-                            !cardBalance ||
-                            parseFloat(cardBalance) <= 0 ||
-                            isLoading ||
-                            showValidationError ||
-                            showNameValidationError) &&
-                            styles.devSimulateButtonDisabled,
-                        ]}
-                        onPress={handleDevButton2Attempt}
-                      >
-                        <Text
-                          style={[
-                            styles.devSimulateButtonText,
-                            (!cardName.trim() ||
-                              cardName.trim().length < 4 ||
-                              !cardBalance ||
-                              parseFloat(cardBalance) <= 0 ||
-                              isLoading ||
-                              showValidationError ||
-                              showNameValidationError) &&
-                              styles.devSimulateButtonTextDisabled,
-                          ]}
-                        >
-                          Simulate Card Creation Failed
-                        </Text>
-                      </TouchableOpacity>
-                    </Animated.View>
-                  </View>
-                </View>
-              )}
-
-            {/* Create Button */}
-            <Animated.View
-              style={{ transform: [{ translateX: createButtonShakeAnim }] }}
-            >
-              <TouchableOpacity
-                style={[
-                  styles.createButton,
-                  (!cardName.trim() ||
-                    cardName.trim().length < 4 ||
-                    !cardBalance ||
-                    parseFloat(cardBalance) <= 0 ||
-                    isLoading ||
-                    showValidationError ||
-                    showNameValidationError) &&
-                    styles.createButtonDisabled,
-                ]}
-                onPress={handleCreateCardAttempt}
-              >
-                <CreditCard size={20} color="#ffffff" />
-                <Text style={styles.createButtonText}>
-                  {isLoading ? 'Creating Card...' : 'Create Virtual Card'}
-                </Text>
-              </TouchableOpacity>
-            </Animated.View>
-          </View>
-        </SafeAreaView>
-      </Modal>
+      {/* Custom Alert */}
+      <CustomAlert
+        title={customAlert.title}
+        message={customAlert.message}
+        type={customAlert.type}
+        visible={customAlert.visible}
+        onDismiss={hideCustomAlert}
+        buttons={customAlert.buttons}
+      />
     </ScreenContainer>
   );
 }
@@ -1173,6 +1461,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderWidth: 1,
     borderColor: '#333333',
+  },
+  inputWrapperError: {
+    borderColor: '#ef4444',
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
   },
   inputIcon: {
     marginRight: 12,
@@ -1422,5 +1714,37 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#10b981',
     fontWeight: '700',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+    paddingHorizontal: 16,
+  },
+  errorTitle: {
+    fontSize: 20,
+    color: '#ef4444',
+    fontWeight: '600',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#9ca3af',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 24,
+  },
+  retryButton: {
+    backgroundColor: '#10b981',
+    borderRadius: 12,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+  },
+  retryButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#ffffff',
   },
 });

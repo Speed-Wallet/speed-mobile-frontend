@@ -1,3 +1,5 @@
+import { USDT_ADDRESS } from '@/constants/tokens';
+
 async function getTokenInfo(tokenAddress: string) {
   const tokenInfoResponse = await (
     await fetch(`https://lite-api.jup.ag/tokens/v1/token/${tokenAddress}`)
@@ -6,4 +8,4 @@ async function getTokenInfo(tokenAddress: string) {
   return tokenInfoResponse;
 }
 // getTokenInfo('3NZ9JMVBmGAqocybic2c7LQCJScmgsAZ6vQqTDzcqmJh')
-getTokenInfo('Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB');
+getTokenInfo(USDT_ADDRESS);

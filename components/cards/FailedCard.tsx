@@ -14,7 +14,8 @@ import {
   MessageCircle,
   Send,
 } from 'lucide-react-native';
-import { PaymentCard as PaymentCardType } from '@/utils/storage';
+import { PaymentCard as PaymentCardType } from '@/data/types';
+import { formatTimestamp } from '@/utils/timeUtils';
 
 interface FailedCardProps {
   card: PaymentCardType;
@@ -62,9 +63,17 @@ export const FailedCard: React.FC<FailedCardProps> = ({
 
       {/* Card Number Section */}
       <View style={styles.cardNumberSection}>
-        <Text style={[styles.cardNumberText, styles.failedText]}>
-          Card Creation Failed
-        </Text>
+        <View style={styles.failureInfoSection}>
+          <Text style={[styles.cardNumberText, styles.failedText]}>
+            Card Creation Failed
+          </Text>
+          {(card.updatedAt || card.createdAt) && (
+            <Text style={styles.failureTimestamp}>
+              Failed {formatTimestamp(card.updatedAt || card.createdAt!)} at{' '}
+              {new Date(card.updatedAt || card.createdAt!).toLocaleString()}
+            </Text>
+          )}
+        </View>
       </View>
 
       {/* Footer */}
@@ -176,11 +185,19 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 20,
   },
+  failureInfoSection: {
+    flex: 1,
+  },
   cardNumberText: {
     fontSize: 18,
     fontWeight: '500',
     color: '#ffffff',
     letterSpacing: 2,
+  },
+  failureTimestamp: {
+    fontSize: 12,
+    color: '#9ca3af',
+    marginTop: 4,
   },
   failedText: {
     color: '#ef4444',

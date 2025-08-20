@@ -1,6 +1,7 @@
 import { CONNECTION } from '@/services/walletService';
 import { getAccount, getAssociatedTokenAddressSync } from '@solana/spl-token';
 import { PublicKey } from '@solana/web3.js';
+import { USDC_ADDRESS, SOL_ADDRESS } from '@/constants/tokens';
 
 const fetchTokenBalance = async (
   token: { address: string; symbol: string; decimals: number },
@@ -39,7 +40,7 @@ const fetchTokenBalance = async (
 fetchTokenBalance(
   {
     symbol: 'USDC',
-    address: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+    address: USDC_ADDRESS,
     decimals: 6,
   },
   new PublicKey('CQo9Xb1Xk7E82etzmSsvpRvybnfh7oTi8EuEYibyKrzv'),
@@ -50,7 +51,7 @@ fetchTokenBalance(
 fetchTokenBalance(
   {
     symbol: 'SOL',
-    address: 'So11111111111111111111111111111111111111112',
+    address: SOL_ADDRESS,
     decimals: 9,
   },
   new PublicKey('CQo9Xb1Xk7E82etzmSsvpRvybnfh7oTi8EuEYibyKrzv'),

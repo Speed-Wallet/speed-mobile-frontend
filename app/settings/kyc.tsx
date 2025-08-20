@@ -54,6 +54,9 @@ import EmailVerificationSheet from '@/components/EmailVerificationSheet';
 
 const { width: screenWidth } = Dimensions.get('window');
 
+// Email editability control - set to true to always allow email editing
+const ALWAYS_ALLOW_EMAIL_EDIT = true;
+
 // Development default values
 const developmentInfo = {
   phoneNumber: '60 123 4567',
@@ -441,7 +444,19 @@ export default function AccountScreen() {
     if (emailStatus === 'needs_verification') {
       setIsSaving(true);
       try {
-        // Send OTP directly since we already checked verification status on mount
+        // First check if email is already verified in the backend
+        const statusResponse = await checkEmailStatus(email);
+        if (statusResponse.isVerified) {
+          // Email is already verified, update status and skip OTP
+          setEmailStatus('verified');
+          setToastMessage('Email is already verified ✅');
+          setToastType('success');
+          setShowToast(true);
+          setIsSaving(false);
+          return;
+        }
+
+        // Email not verified, proceed with OTP flow
         const response = await sendOtp(email);
         setOtpId(response.otpId || null);
         setOtpExpiresAt(response.expiresAt || null);
@@ -1141,6 +1156,7 @@ export default function AccountScreen() {
                     placeholderTextColor="#6b7280"
                     value={email}
                     editable={
+                      ALWAYS_ALLOW_EMAIL_EDIT ||
                       emailStatus === 'unverified' ||
                       emailStatus === 'needs_verification'
                     }
