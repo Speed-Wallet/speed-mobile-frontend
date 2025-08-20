@@ -108,7 +108,6 @@ export async function getWalletAddress(): Promise<GetWalletAddressResponse> {
   try {
     const url = `${BASE_BACKEND_URL}/api/cashwyre/wallet-address`;
     console.log('🌐 Calling URL:', url);
-    console.log('🔧 Clean BASE_BACKEND_URL:', BASE_BACKEND_URL);
 
     const authHeaders = await AuthService.getAuthHeader();
 
@@ -119,9 +118,6 @@ export async function getWalletAddress(): Promise<GetWalletAddressResponse> {
         ...authHeaders,
       },
     });
-
-    console.log('📨 Response status:', response.status);
-    console.log('📨 Response ok:', response.ok);
 
     if (!response.ok) {
       console.error('❌ HTTP Error:', response.status, response.statusText);
@@ -134,7 +130,6 @@ export async function getWalletAddress(): Promise<GetWalletAddressResponse> {
     }
 
     const data = await response.json();
-    console.log('📊 Response data:', data);
     return data;
   } catch (error) {
     console.error('💥 Error fetching wallet address:', error);
@@ -248,26 +243,33 @@ export async function submitSignedTransactionAndRegisterUsdt(
 ): Promise<SubmitTransactionResponse> {
   try {
     const authHeaders = await AuthService.getAuthHeader();
+    const url = `${BASE_BACKEND_URL}/api/cashwyre/submit-transaction-and-register-usdt`;
 
-    const response = await fetch(
-      `${BASE_BACKEND_URL}/api/cashwyre/submit-transaction-and-register-usdt`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...authHeaders,
-        },
-        body: JSON.stringify(requestData),
+    console.log('🌐 Making request to:', url);
+    console.log('📋 Request data:', requestData);
+    console.log('🔑 Auth headers:', authHeaders);
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...authHeaders,
       },
-    );
+      body: JSON.stringify(requestData),
+    });
 
+    console.log('📊 Response status:', response.status);
     const data = await response.json();
+    console.log('📊 Response data:', data);
     return data;
   } catch (error) {
-    console.error(
-      'Error in combined transaction submission and USDT registration:',
-      error,
-    );
+    console.error('💥 Network error details:', error);
+    // Log the actual error type
+    if (error instanceof Error) {
+      console.error('Error type:', error.constructor.name);
+      console.error('Error message:', error.message);
+    }
+
     return {
       success: false,
       error:

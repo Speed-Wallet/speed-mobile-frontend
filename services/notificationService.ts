@@ -44,11 +44,7 @@ export function showToast(message: string) {
 export async function registerForPushNotificationsAsync(): Promise<
   string | null
 > {
-  console.log('🔔 Starting push token registration...');
-  console.log('📱 Platform:', Platform.OS);
-
   if (Platform.OS === 'android') {
-    console.log('🤖 Setting up Android notification channel...');
     await Notifications.setNotificationChannelAsync('default', {
       name: 'default',
       importance: Notifications.AndroidImportance.MAX,
@@ -57,9 +53,7 @@ export async function registerForPushNotificationsAsync(): Promise<
     });
   }
 
-  console.log('🔑 Checking notification permissions...');
   const { status: existingStatus } = await Notifications.getPermissionsAsync();
-  console.log('📋 Existing permission status:', existingStatus);
 
   let finalStatus = existingStatus;
 
@@ -76,10 +70,8 @@ export async function registerForPushNotificationsAsync(): Promise<
   }
 
   try {
-    console.log('🎯 Getting Expo push token...');
     const tokenData = await Notifications.getExpoPushTokenAsync();
     const token = tokenData.data;
-    console.log('✅ Expo push token obtained:', token);
     return token;
   } catch (error) {
     console.error('❌ Error getting push token:', error);
@@ -185,8 +177,6 @@ async function handleCardCreationFailedNotification(
  * Set up notification listeners
  */
 export function setupNotificationListeners(onCardsUpdated?: () => void) {
-  console.log('🔔 Setting up notification listeners...');
-
   // Listener for notifications received while app is foregrounded
   const notificationListener = Notifications.addNotificationReceivedListener(
     (notification) => {

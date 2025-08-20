@@ -24,6 +24,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthService } from '@/services/authService';
 import { AlertProvider } from '@/providers/AlertProvider';
+import { prefetchAppConfig } from '@/utils/configPrefetch';
 import 'react-native-get-random-values';
 
 // Prevent splash screen from auto-hiding
@@ -97,6 +98,13 @@ export default function RootLayout() {
   }, [activeWalletPublicKey, subscribeToTokenBalances]);
 
   const [queryClient] = useState(() => new QueryClient());
+
+  // Prefetch app config as soon as QueryClient is available
+  useEffect(() => {
+    if (walletState === 'unlocked') {
+      prefetchAppConfig(queryClient);
+    }
+  }, [queryClient, walletState]);
 
   if (!fontsLoaded && !fontError) {
     return null;

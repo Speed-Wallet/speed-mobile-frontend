@@ -109,5 +109,6 @@ export interface PaymentCard {
   transactionStatus?: TransactionStatus; // Status from pending transactions
   failureReason?: string;
   createdAt?: string; // Maps to createdOn from API or createdAt from pending transactions
+  updatedAt?: string; // Maps to updatedAt from pending transactions
   creationStep?: number; // Current step in the creation process (1-3) - derived from transactionStatus
 }

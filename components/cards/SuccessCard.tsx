@@ -10,7 +10,6 @@ interface SuccessCardProps {
   onDeleteCard: (cardId: string) => void;
   formatBalance: (amount: number) => string;
   getBrandLogo: (brand: 'mastercard' | 'visa') => any;
-  isDevelopment?: boolean;
 }
 
 /**
@@ -24,7 +23,6 @@ export const SuccessCard: React.FC<SuccessCardProps> = ({
   onDeleteCard,
   formatBalance,
   getBrandLogo,
-  isDevelopment = false,
 }) => {
   return (
     <View style={[styles.paymentCard, styles.successCard]}>
@@ -46,7 +44,7 @@ export const SuccessCard: React.FC<SuccessCardProps> = ({
             style={styles.brandLogo}
             resizeMode="contain"
           />
-          {isDevelopment && (
+          {process.env.EXPO_PUBLIC_APP_ENV === 'development' && (
             <TouchableOpacity
               style={styles.deleteButton}
               onPress={() => onDeleteCard(card.id)}
