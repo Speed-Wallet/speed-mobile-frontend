@@ -16,6 +16,8 @@ import {
 } from '@/services/walletService';
 import SetupWalletScreen from '@/app/wallet/SetupWalletScreen';
 import EnterPinScreen from '@/app/wallet/EnterPinScreen';
+import WelcomeScreen from '@/app/wallet/WelcomeScreen';
+import OnboardingCarousel from '@/components/OnboardingCarousel';
 import DevStartupScreen from '@/components/DevStartupScreen';
 import colors from '@/constants/colors';
 import { useTokenBalanceStore } from '@/stores/tokenBalanceStore';
@@ -41,7 +43,13 @@ export default function RootLayout() {
   });
 
   const [walletState, setWalletState] = useState<
-    'loading' | 'dev_startup' | 'no_wallet' | 'locked' | 'unlocked'
+    | 'loading'
+    | 'welcome'
+    | 'onboarding'
+    | 'dev_startup'
+    | 'no_wallet'
+    | 'locked'
+    | 'unlocked'
   >('loading');
   const [storedPublicKey, setStoredPublicKey] = useState<string | null>(null);
   const [hasExistingWallet, setHasExistingWallet] = useState<boolean>(false);
@@ -66,14 +74,15 @@ export default function RootLayout() {
           setStoredPublicKey(walletInfo.publicKey);
           setWalletState('locked');
         } else {
-          setWalletState('no_wallet');
+          // First time user - show welcome screen
+          setWalletState('welcome');
         }
       } catch (e) {
         console.error('Failed to check wallet status:', e);
         setWalletState(
           process.env.EXPO_PUBLIC_APP_ENV === 'development'
             ? 'dev_startup'
-            : 'no_wallet',
+            : 'welcome',
         );
       }
     }
@@ -121,6 +130,32 @@ export default function RootLayout() {
     );
   }
 
+  if (walletState === 'welcome') {
+    return (
+      <SafeAreaProvider>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <AlertProvider>
+            <WelcomeScreen onGetStarted={() => setWalletState('onboarding')} />
+          </AlertProvider>
+        </GestureHandlerRootView>
+      </SafeAreaProvider>
+    );
+  }
+
+  if (walletState === 'onboarding') {
+    return (
+      <SafeAreaProvider>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <AlertProvider>
+            <OnboardingCarousel
+              onComplete={() => setWalletState('no_wallet')}
+            />
+          </AlertProvider>
+        </GestureHandlerRootView>
+      </SafeAreaProvider>
+    );
+  }
+
   if (walletState === 'dev_startup') {
     return (
       <SafeAreaProvider>
@@ -128,12 +163,12 @@ export default function RootLayout() {
           <AlertProvider>
             <DevStartupScreen
               hasExistingWallet={hasExistingWallet}
-              onCreateWallet={() => setWalletState('no_wallet')}
+              onCreateWallet={() => setWalletState('welcome')}
               onEnterApp={() => {
                 if (hasExistingWallet) {
                   setWalletState('locked');
                 } else {
-                  setWalletState('no_wallet');
+                  setWalletState('welcome');
                 }
               }}
             />
@@ -229,6 +264,10 @@ export default function RootLayout() {
               />
               <Stack.Screen
                 name="wallet/manage"
+                options={{ presentation: 'modal' }}
+              />
+              <Stack.Screen
+                name="wallet/WelcomeScreen"
                 options={{ presentation: 'modal' }}
               />
               <Stack.Screen
