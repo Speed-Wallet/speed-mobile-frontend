@@ -10,7 +10,6 @@ import {
 } from 'react-native';
 import { useState, useRef } from 'react';
 import { User, ArrowRight } from 'lucide-react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import colors from '@/constants/colors';
 import ScreenHeader from '@/components/ScreenHeader';
 import ScreenContainer from '@/components/ScreenContainer';
@@ -159,15 +158,15 @@ export default function CreateUsernameStep({
             disabled={!isValid || isLoading}
             activeOpacity={0.8}
           >
-            <LinearGradient
-              colors={
+            <View
+              style={[
+                styles.buttonBackground,
                 !isValid
-                  ? [colors.backgroundMedium, colors.backgroundMedium]
+                  ? { backgroundColor: colors.backgroundMedium }
                   : isUsernameTaken
-                    ? ['#ff5252', '#e53e3e']
-                    : ['#7c5cff', '#6446fe']
-              }
-              style={styles.buttonGradient}
+                    ? { backgroundColor: '#ff5252' }
+                    : { backgroundColor: '#00CFFF' },
+              ]}
             >
               <Text
                 style={[
@@ -184,11 +183,11 @@ export default function CreateUsernameStep({
               {!isUsernameTaken && (
                 <ArrowRight
                   size={20}
-                  color={isValid ? colors.white : colors.textSecondary}
+                  color={isValid ? '#000000' : colors.textSecondary}
                   strokeWidth={2}
                 />
               )}
-            </LinearGradient>
+            </View>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -256,7 +255,7 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     borderWidth: 2,
-    borderColor: colors.primary,
+    borderColor: '#00CFFF',
     borderRadius: 16,
     backgroundColor: colors.backgroundMedium,
     marginBottom: 12,
@@ -270,11 +269,11 @@ const styles = StyleSheet.create({
   atSymbol: {
     fontSize: 18,
     fontFamily: 'Inter-Medium',
-    color: colors.primary,
+    color: '#00CFFF',
     marginRight: 8,
   },
   inputValid: {
-    borderColor: '#10b981',
+    borderColor: '#00CFFF',
   },
   inputError: {
     borderColor: colors.error,
@@ -309,7 +308,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     height: 56,
   },
-  buttonGradient: {
+  buttonBackground: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
@@ -327,6 +326,6 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   continueButtonTextActive: {
-    color: colors.white,
+    color: '#000000',
   },
 });

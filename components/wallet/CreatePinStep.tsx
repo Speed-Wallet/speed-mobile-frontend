@@ -7,7 +7,6 @@ import {
   Animated,
   Platform,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowRight, Lock, Shield } from 'lucide-react-native';
 import PinInputCard from './PinInputCard';
 import ScreenContainer from '@/components/ScreenContainer';
@@ -85,15 +84,9 @@ const CreatePinStep: React.FC<CreatePinStepProps> = ({
         >
           <View style={styles.headerContent}>
             <View style={styles.iconContainer}>
-              <LinearGradient
-                colors={[
-                  'rgba(124, 92, 255, 0.15)',
-                  'rgba(124, 92, 255, 0.05)',
-                ]}
-                style={styles.iconBadge}
-              >
-                <Lock size={24} color="#7c5cff" />
-              </LinearGradient>
+              <View style={styles.iconBadge}>
+                <Lock size={24} color="#00CFFF" />
+              </View>
             </View>
             <Text style={styles.title}>Create Your PIN</Text>
             <Text style={styles.subtitle}>
@@ -116,7 +109,7 @@ const CreatePinStep: React.FC<CreatePinStepProps> = ({
           <PinInputCard
             pin={pin}
             onPinChange={onPinChange}
-            headerIcon={<Shield size={20} color="#7c5cff" />}
+            headerIcon={<Shield size={20} color="#00CFFF" />}
             headerText="Security PIN"
             instruction={{
               empty: 'Use the keypad below to enter PIN',
@@ -142,13 +135,11 @@ const CreatePinStep: React.FC<CreatePinStepProps> = ({
               onPress={onNext}
               disabled={isLoading || pin.length < 4}
             >
-              <LinearGradient
-                colors={
-                  pin.length === 4
-                    ? ['#7c5cff', '#6446fe']
-                    : ['#4a4a4a', '#3a3a3a']
-                }
-                style={styles.buttonGradient}
+              <View
+                style={[
+                  styles.buttonBackground,
+                  { backgroundColor: pin.length === 4 ? '#00CFFF' : '#333333' },
+                ]}
               >
                 <Text
                   style={[
@@ -160,9 +151,9 @@ const CreatePinStep: React.FC<CreatePinStepProps> = ({
                 </Text>
                 <ArrowRight
                   size={20}
-                  color={pin.length === 4 ? '#fff' : '#9ca3af'}
+                  color={pin.length === 4 ? '#000' : '#9ca3af'}
                 />
-              </LinearGradient>
+              </View>
             </TouchableOpacity>
           </View>
         </View>
@@ -202,6 +193,7 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
+    backgroundColor: 'rgba(0, 207, 255, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -235,7 +227,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   pinHeaderText: {
-    color: '#7c5cff',
+    color: '#00CFFF',
     fontSize: 14,
     fontWeight: '600',
     marginLeft: 8,
@@ -260,11 +252,11 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#7c5cff',
+    borderColor: '#00CFFF',
   },
   pinInputAreaFocused: {
-    borderColor: 'rgba(124, 92, 255, 0.3)',
-    backgroundColor: 'rgba(124, 92, 255, 0.05)',
+    borderColor: 'rgba(0, 207, 255, 0.3)',
+    backgroundColor: 'rgba(0, 207, 255, 0.05)',
   },
   pinDot: {
     width: 18,
@@ -273,13 +265,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     marginHorizontal: 10,
     borderWidth: 2,
-    borderColor: '#7c5cff',
+    borderColor: '#00CFFF',
     alignItems: 'center',
     justifyContent: 'center',
   },
   pinDotFilled: {
-    backgroundColor: '#7c5cff',
-    borderColor: '#7c5cff',
+    backgroundColor: '#00CFFF',
+    borderColor: '#00CFFF',
   },
   pinDigit: {
     color: '#ffffff',
@@ -314,7 +306,7 @@ const styles = StyleSheet.create({
   },
   securityText: {
     flex: 1,
-    color: '#7c5cff',
+    color: '#00CFFF',
     fontSize: 14,
     marginLeft: 12,
     opacity: 0.9,
@@ -333,7 +325,7 @@ const styles = StyleSheet.create({
   continueButtonDisabled: {
     opacity: 0.6,
   },
-  buttonGradient: {
+  buttonBackground: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
@@ -342,7 +334,7 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#ffffff',
+    color: '#000000',
     marginRight: 8,
   },
   buttonTextDisabled: {

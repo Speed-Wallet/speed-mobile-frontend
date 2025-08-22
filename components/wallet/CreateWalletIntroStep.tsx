@@ -8,7 +8,6 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useRef, useEffect } from 'react';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import { RefreshCw } from 'lucide-react-native';
 import 'react-native-get-random-values';
@@ -59,12 +58,9 @@ export default function CreateWalletIntroStep({
             },
           ]}
         >
-          <LinearGradient
-            colors={['#7c5cff', '#6446fe']}
-            style={styles.logoGradient}
-          >
-            <RefreshCw size={48} color="#fff" />
-          </LinearGradient>
+          <View style={styles.logoBackground}>
+            <RefreshCw size={48} color="#000" />
+          </View>
         </Animated.View>
 
         {/* Welcome Text */}
@@ -96,14 +92,9 @@ export default function CreateWalletIntroStep({
             onPress={onCreateWallet}
             disabled={isLoading}
           >
-            <LinearGradient
-              colors={['#7c5cff', '#6446fe']}
-              style={styles.buttonGradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-            >
+            <View style={styles.buttonBackground}>
               <Text style={styles.buttonText}>Create new wallet</Text>
-            </LinearGradient>
+            </View>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -138,14 +129,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 60,
   },
-  logoGradient: {
+  logoBackground: {
     width: 120,
     height: 120,
     borderRadius: 60,
+    backgroundColor: '#00CFFF',
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 8,
-    shadowColor: '#6446fe',
+    shadowColor: '#00CFFF',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 6,
@@ -171,15 +163,11 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     overflow: 'hidden',
     marginBottom: 16,
-    elevation: 6,
-    shadowColor: '#7c5cff',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
   },
-  buttonGradient: {
+  buttonBackground: {
     width: '100%',
     height: '100%',
+    backgroundColor: '#00CFFF',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -187,7 +175,8 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 17,
     fontFamily: 'Inter-SemiBold',
-    color: '#ffffff',
+    color: '#000000',
+    fontWeight: '600',
   },
   importLink: {
     alignItems: 'center',
@@ -195,7 +184,7 @@ const styles = StyleSheet.create({
   },
   importText: {
     fontSize: 18,
-    color: '#7c5cff',
+    color: '#00CFFF',
     fontWeight: '500',
   },
   disabledLink: {
