@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { ArrowRight } from 'lucide-react-native';
 import colors from '@/constants/colors';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -39,14 +40,14 @@ const WaveBackground = () => {
           strokeOpacity="0.6"
         />
         <Path
-          d="M-100,750 C20,630 80,520 140,420 C200,320 260,220 375,150"
+          d="M-120,780 C0,660 60,550 120,450 C180,350 240,250 375,150"
           stroke="#4a90e2"
           strokeWidth="1.5"
           fill="none"
           strokeOpacity="0.5"
         />
         <Path
-          d="M-150,850 C-20,710 40,600 120,480 C180,380 240,280 375,250"
+          d="M-190,910 C-60,770 0,660 80,540 C140,440 200,340 375,280"
           stroke="#00CFFF"
           strokeWidth="1.5"
           fill="none"
@@ -119,7 +120,7 @@ const SlideToUnlock = ({ onUnlock }: { onUnlock: () => void }) => {
           ]}
           {...panResponder.panHandlers}
         >
-          <Text style={styles.arrowText}>→</Text>
+          <ArrowRight size={24} color="#E5E5E5" strokeWidth={2} />
         </Animated.View>
       </View>
     </View>
