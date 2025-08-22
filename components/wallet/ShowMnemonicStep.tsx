@@ -90,7 +90,7 @@ const ShowMnemonicStep: React.FC<ShowMnemonicStepProps> = ({
             {/* <LinearGradient
               colors={['rgba(124, 92, 255, 0.15)', 'rgba(124, 92, 255, 0.05)']}
               style={styles.headerBadge}>
-              <ShieldCheck size={20} color="#7c5cff" />
+              <ShieldCheck size={20} color="#00CFFF" />
               <Text style={styles.headerBadgeText}>SECURE BACKUP</Text>
             </LinearGradient> */}
             <Text style={styles.title}>Your Seed Phrase</Text>
@@ -123,7 +123,7 @@ const ShowMnemonicStep: React.FC<ShowMnemonicStepProps> = ({
                 style={[styles.copyButton, copied && styles.copyButtonActive]}
                 onPress={handleCopy}
               >
-                <Copy size={20} color={copied ? '#7c5cff' : '#9ca3af'} />
+                <Copy size={20} color={copied ? '#00CFFF' : '#9ca3af'} />
                 <Text
                   style={[styles.copyText, copied && styles.copyTextActive]}
                 >
@@ -188,13 +188,10 @@ const ShowMnemonicStep: React.FC<ShowMnemonicStepProps> = ({
             onPress={onNext}
             disabled={isLoading}
           >
-            <LinearGradient
-              colors={['#7c5cff', '#6446fe']}
-              style={styles.buttonGradient}
-            >
+            <View style={styles.buttonBackground}>
               <Text style={styles.buttonText}>I've Saved My Phrase</Text>
-              <ArrowRight size={20} color="#fff" />
-            </LinearGradient>
+              <ArrowRight size={20} color="#000" />
+            </View>
           </TouchableOpacity>
         </View>
       </View>
@@ -227,7 +224,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   headerBadgeText: {
-    color: '#7c5cff',
+    color: '#00CFFF',
     fontSize: 13,
     fontWeight: '600',
     marginLeft: 6,
@@ -277,7 +274,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   copyTextActive: {
-    color: '#7c5cff',
+    color: '#00CFFF',
   },
   phraseGrid: {
     flexDirection: 'row',
@@ -326,7 +323,8 @@ const styles = StyleSheet.create({
     borderRadius: 27,
     overflow: 'hidden',
   },
-  buttonGradient: {
+  buttonBackground: {
+    backgroundColor: '#00CFFF',
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
@@ -335,7 +333,7 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#ffffff',
+    color: '#000000',
     marginRight: 8,
   },
   skipButton: {

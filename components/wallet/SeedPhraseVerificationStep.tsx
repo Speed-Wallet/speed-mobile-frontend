@@ -309,21 +309,24 @@ const SeedPhraseVerificationStep: React.FC<SeedPhraseVerificationStepProps> = ({
                 disabled={isLoading || buttonState === 'disabled'}
                 activeOpacity={0.8}
               >
-                <LinearGradient
-                  colors={
-                    buttonState === 'disabled'
-                      ? [colors.backgroundMedium, colors.backgroundMedium]
-                      : buttonState === 'try-again'
-                        ? ['#ff5252', '#e53e3e']
-                        : ['#7c5cff', '#6446fe']
-                  }
-                  style={styles.buttonGradient}
+                <View
+                  style={[
+                    styles.buttonBackground,
+                    {
+                      backgroundColor:
+                        buttonState === 'disabled'
+                          ? colors.backgroundMedium
+                          : buttonState === 'try-again'
+                            ? '#ff5252'
+                            : '#00CFFF',
+                    },
+                  ]}
                 >
                   <Text style={getButtonTextStyle()}>{getButtonText()}</Text>
                   {buttonState === 'continue' && (
-                    <ArrowRight size={20} color="#fff" />
+                    <ArrowRight size={20} color="#000" />
                   )}
-                </LinearGradient>
+                </View>
               </TouchableOpacity>
             </Animated.View>
 
@@ -452,7 +455,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     overflow: 'hidden',
   },
-  buttonGradient: {
+  buttonBackground: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
@@ -490,7 +493,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   backTextButtonText: {
-    color: '#7c5cff',
+    color: '#00CFFF',
     fontSize: 16,
     fontWeight: '500',
   },

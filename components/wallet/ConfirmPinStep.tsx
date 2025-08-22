@@ -134,7 +134,7 @@ const ConfirmPinStep: React.FC<ConfirmPinStepProps> = ({
                 ]}
                 style={styles.iconBadge}
               >
-                <ShieldCheck size={24} color="#7c5cff" />
+                <ShieldCheck size={24} color="#00CFFF" />
               </LinearGradient>
             </View>
             <Text style={styles.title}>Confirm Your PIN</Text>
@@ -160,7 +160,7 @@ const ConfirmPinStep: React.FC<ConfirmPinStepProps> = ({
             style={styles.pinCard}
           >
             <View style={styles.pinHeader}>
-              <CheckCircle size={20} color="#7c5cff" />
+              <CheckCircle size={20} color="#00CFFF" />
               <Text style={styles.pinHeaderText}>Confirm PIN</Text>
               <TouchableOpacity
                 style={styles.visibilityButton}
@@ -239,13 +239,14 @@ const ConfirmPinStep: React.FC<ConfirmPinStepProps> = ({
               onPress={onConfirm}
               disabled={isLoading || confirmPin.length < 4}
             >
-              <LinearGradient
-                colors={
-                  confirmPin.length === 4
-                    ? ['#7c5cff', '#6446fe']
-                    : ['#4a4a4a', '#3a3a3a']
-                }
-                style={styles.buttonGradient}
+              <View
+                style={[
+                  styles.buttonBackground,
+                  {
+                    backgroundColor:
+                      confirmPin.length === 4 ? '#00CFFF' : '#4a4a4a',
+                  },
+                ]}
               >
                 <Animated.View
                   style={{
@@ -265,10 +266,10 @@ const ConfirmPinStep: React.FC<ConfirmPinStepProps> = ({
                   </Text>
                   <ArrowRight
                     size={20}
-                    color={confirmPin.length === 4 ? '#fff' : '#9ca3af'}
+                    color={confirmPin.length === 4 ? '#000' : '#9ca3af'}
                   />
                 </Animated.View>
-              </LinearGradient>
+              </View>
             </TouchableOpacity>
           </View>
         </View>
@@ -341,7 +342,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   pinHeaderText: {
-    color: '#7c5cff',
+    color: '#00CFFF',
     fontSize: 14,
     fontWeight: '600',
     marginLeft: 8,
@@ -372,11 +373,11 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#7c5cff',
+    borderColor: '#00CFFF',
   },
   pinInputAreaFocused: {
-    borderColor: 'rgba(124, 92, 255, 0.3)',
-    backgroundColor: 'rgba(124, 92, 255, 0.05)',
+    borderColor: 'rgba(0, 207, 255, 0.3)',
+    backgroundColor: 'rgba(0, 207, 255, 0.05)',
   },
   pinDot: {
     width: 18,
@@ -385,13 +386,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     marginHorizontal: 10,
     borderWidth: 2,
-    borderColor: '#7c5cff',
+    borderColor: '#00CFFF',
     alignItems: 'center',
     justifyContent: 'center',
   },
   pinDotFilled: {
-    backgroundColor: '#7c5cff',
-    borderColor: '#7c5cff',
+    backgroundColor: '#00CFFF',
+    borderColor: '#00CFFF',
   },
   pinDigit: {
     color: '#ffffff',
@@ -399,7 +400,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   pinDigitLarge: {
-    color: '#7c5cff',
+    color: '#00CFFF',
     fontSize: 24,
     fontWeight: 'bold',
   },
@@ -454,7 +455,7 @@ const styles = StyleSheet.create({
   continueButtonDisabled: {
     opacity: 0.6,
   },
-  buttonGradient: {
+  buttonBackground: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
@@ -463,7 +464,7 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#ffffff',
+    color: '#000000',
     marginRight: 8,
   },
   buttonTextDisabled: {
@@ -475,7 +476,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   backTextButtonText: {
-    color: '#7c5cff',
+    color: '#00CFFF',
     fontSize: 16,
     fontWeight: '500',
   },
