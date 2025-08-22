@@ -208,7 +208,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 24,
     paddingTop: 20,
-    paddingBottom: 40,
   },
   header: {
     alignItems: 'center',
@@ -302,11 +301,12 @@ const styles = StyleSheet.create({
   },
   buttonWrapper: {
     marginTop: 'auto',
+    paddingBottom: Platform.OS === 'ios' ? 34 : 24,
   },
   continueButton: {
-    borderRadius: 25,
+    height: 54,
+    borderRadius: 27,
     overflow: 'hidden',
-    height: 56,
   },
   buttonBackground: {
     flex: 1,

@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   pinHeaderText: {
-    color: '#7c5cff',
+    color: '#00CFFF',
     fontSize: 14,
     fontWeight: '600',
     marginLeft: 8,
@@ -125,11 +125,11 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#7c5cff',
+    borderColor: '#00CFFF',
   },
   pinInputAreaFocused: {
-    borderColor: 'rgba(124, 92, 255, 0.3)',
-    backgroundColor: 'rgba(124, 92, 255, 0.05)',
+    borderColor: 'rgba(0, 207, 255, 0.3)',
+    backgroundColor: 'rgba(0, 207, 255, 0.05)',
   },
   pinDot: {
     width: 18,
@@ -138,13 +138,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     marginHorizontal: 10,
     borderWidth: 2,
-    borderColor: '#7c5cff',
+    borderColor: '#00CFFF',
     alignItems: 'center',
     justifyContent: 'center',
   },
   pinDotFilled: {
-    backgroundColor: '#7c5cff',
-    borderColor: '#7c5cff',
+    backgroundColor: '#00CFFF',
+    borderColor: '#00CFFF',
   },
   pinDigit: {
     color: '#ffffff',
@@ -152,7 +152,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   pinDigitLarge: {
-    color: '#7c5cff',
+    color: '#00CFFF',
     fontSize: 24,
     fontWeight: 'bold',
   },

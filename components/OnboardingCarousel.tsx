@@ -21,6 +21,7 @@ import {
 import colors from '@/constants/colors';
 
 const { width: screenWidth } = Dimensions.get('window');
+const TRANSITION_DISTANCE = screenWidth * 0.8;
 
 interface OnboardingCarouselProps {
   onComplete: () => void;
@@ -132,8 +133,9 @@ export default function OnboardingCarousel({
 
     setIsAnimating(true);
 
-    // Animate out current screen
-    const exitValue = direction === 'right' ? -screenWidth : screenWidth;
+    // Animate out current screen (reduced distance for smaller gap)
+    const exitValue =
+      direction === 'right' ? -TRANSITION_DISTANCE : TRANSITION_DISTANCE;
 
     Animated.timing(slideAnim, {
       toValue: exitValue,
@@ -142,7 +144,8 @@ export default function OnboardingCarousel({
     }).start(() => {
       // Update slide and reset position for entrance
       setCurrentSlide(slideIndex);
-      const entryValue = direction === 'right' ? screenWidth : -screenWidth;
+      const entryValue =
+        direction === 'right' ? TRANSITION_DISTANCE : -TRANSITION_DISTANCE;
       slideAnim.setValue(entryValue);
 
       // Animate in new screen

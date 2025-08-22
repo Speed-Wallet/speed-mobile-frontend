@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   Animated,
   SafeAreaView,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useRef, useEffect } from 'react';
@@ -62,53 +63,40 @@ export default function CreateWalletIntroStep({
             <RefreshCw size={48} color="#000" />
           </View>
         </Animated.View>
-
-        {/* Welcome Text */}
-        <Animated.View
-          style={[
-            styles.welcomeTextContainer,
-            {
-              opacity: fadeAnim,
-              transform: [{ translateY: translateY }],
-            },
-          ]}
-        >
-          <Text style={styles.welcomeText}>Welcome to Speed Wallet</Text>
-        </Animated.View>
-
-        {/* Create wallet button */}
-        <Animated.View
-          style={[
-            styles.buttonContainer,
-            {
-              opacity: fadeAnim,
-              transform: [{ translateY }],
-            },
-          ]}
-        >
-          <TouchableOpacity
-            style={styles.createButton}
-            activeOpacity={0.8}
-            onPress={onCreateWallet}
-            disabled={isLoading}
-          >
-            <View style={styles.buttonBackground}>
-              <Text style={styles.buttonText}>Create new wallet</Text>
-            </View>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.importLink}
-            onPress={() => {
-              if (onImportWallet) {
-                onImportWallet();
-              }
-            }}
-          >
-            <Text style={styles.importText}>I already have a wallet</Text>
-          </TouchableOpacity>
-        </Animated.View>
       </View>
+
+      {/* Create wallet button */}
+      <Animated.View
+        style={[
+          styles.buttonContainer,
+          {
+            opacity: fadeAnim,
+            transform: [{ translateY }],
+          },
+        ]}
+      >
+        <TouchableOpacity
+          style={styles.createButton}
+          activeOpacity={0.8}
+          onPress={onCreateWallet}
+          disabled={isLoading}
+        >
+          <View style={styles.buttonBackground}>
+            <Text style={styles.buttonText}>Create new wallet</Text>
+          </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.importLink}
+          onPress={() => {
+            if (onImportWallet) {
+              onImportWallet();
+            }
+          }}
+        >
+          <Text style={styles.importText}>I already have a wallet</Text>
+        </TouchableOpacity>
+      </Animated.View>
     </SafeAreaView>
   );
 }
@@ -120,13 +108,13 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: 24,
-    justifyContent: 'center',
+    paddingHorizontal: 24,
     alignItems: 'center',
   },
   logoContainer: {
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: 100,
     marginBottom: 60,
   },
   logoBackground: {
@@ -142,25 +130,16 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 6,
   },
-  welcomeTextContainer: {
-    alignItems: 'center',
-    marginBottom: 40,
-  },
-  welcomeText: {
-    fontSize: 28,
-    fontFamily: 'Inter-Bold',
-    color: '#ffffff',
-    textAlign: 'center',
-  },
   buttonContainer: {
     width: '100%',
     alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 24,
   },
   createButton: {
     width: '100%',
-    maxWidth: 320,
-    height: 60,
-    borderRadius: 30,
+    height: 54,
+    borderRadius: 27,
     overflow: 'hidden',
     marginBottom: 16,
   },

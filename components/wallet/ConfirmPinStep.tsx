@@ -128,10 +128,7 @@ const ConfirmPinStep: React.FC<ConfirmPinStepProps> = ({
           <View style={styles.headerContent}>
             <View style={styles.iconContainer}>
               <LinearGradient
-                colors={[
-                  'rgba(124, 92, 255, 0.15)',
-                  'rgba(124, 92, 255, 0.05)',
-                ]}
+                colors={['rgba(0, 207, 255, 0.15)', 'rgba(0, 207, 255, 0.05)']}
                 style={styles.iconBadge}
               >
                 <ShieldCheck size={24} color="#00CFFF" />
@@ -226,10 +223,6 @@ const ConfirmPinStep: React.FC<ConfirmPinStepProps> = ({
 
           {/* Action Buttons */}
           <View style={styles.buttonContainer}>
-            <TouchableOpacity style={styles.backTextButton} onPress={onBack}>
-              <Text style={styles.backTextButtonText}>Back to Create PIN</Text>
-            </TouchableOpacity>
-
             <TouchableOpacity
               style={[
                 styles.continueButton,
@@ -271,6 +264,10 @@ const ConfirmPinStep: React.FC<ConfirmPinStepProps> = ({
                 </Animated.View>
               </View>
             </TouchableOpacity>
+
+            <TouchableOpacity style={styles.backTextButton} onPress={onBack}>
+              <Text style={styles.backTextButtonText}>Back to Create PIN</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </View>
@@ -296,7 +293,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   header: {
-    paddingTop: Platform.OS === 'ios' ? 10 : 20,
+    paddingTop: Platform.OS === 'ios' ? 20 : 40,
     marginBottom: 32,
   },
   headerContent: {
@@ -450,7 +447,6 @@ const styles = StyleSheet.create({
     height: 54,
     borderRadius: 27,
     overflow: 'hidden',
-    marginBottom: 16,
   },
   continueButtonDisabled: {
     opacity: 0.6,
@@ -473,7 +469,7 @@ const styles = StyleSheet.create({
   backTextButton: {
     alignItems: 'center',
     paddingVertical: 12,
-    marginBottom: 16,
+    marginTop: 8,
   },
   backTextButtonText: {
     color: '#00CFFF',
