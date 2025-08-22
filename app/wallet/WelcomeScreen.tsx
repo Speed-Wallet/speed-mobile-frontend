@@ -6,6 +6,7 @@ import {
   Dimensions,
   PanResponder,
   Animated,
+  Platform,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -155,7 +156,9 @@ export default function WelcomeScreen({ onGetStarted }: WelcomeScreenProps) {
             Have control of your crypto, trusted{'\n'}secure and decentralised
           </Text>
         </View>
+      </View>
 
+      <View style={styles.sliderWrapper}>
         <SlideToUnlock onUnlock={onGetStarted} />
       </View>
     </SafeAreaView>
@@ -184,9 +187,9 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
     paddingHorizontal: 20,
-    paddingVertical: 40,
+    paddingTop: 40,
     alignItems: 'center',
   },
   logoContainer: {
@@ -224,9 +227,14 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Regular',
     opacity: 0.8,
   },
+  sliderWrapper: {
+    width: '100%',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 24,
+  },
   sliderContainer: {
     width: SLIDER_WIDTH,
-    marginBottom: 40,
   },
   sliderTrack: {
     height: SLIDER_HEIGHT,

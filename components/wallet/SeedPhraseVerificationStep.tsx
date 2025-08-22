@@ -292,49 +292,49 @@ const SeedPhraseVerificationStep: React.FC<SeedPhraseVerificationStepProps> = ({
               </Text>
             </View>
           </Animated.View>
-
-          {/* Action Buttons */}
-          <View style={styles.buttonContainer}>
-            <Animated.View
-              style={[
-                styles.animatedButtonWrapper,
-                {
-                  transform: [{ translateX: shakeAnimationValue }],
-                },
-              ]}
-            >
-              <TouchableOpacity
-                style={styles.actionButton}
-                onPress={handleButtonPress}
-                disabled={isLoading || buttonState === 'disabled'}
-                activeOpacity={0.8}
-              >
-                <View
-                  style={[
-                    styles.buttonBackground,
-                    {
-                      backgroundColor:
-                        buttonState === 'disabled'
-                          ? colors.backgroundMedium
-                          : buttonState === 'try-again'
-                            ? '#ff5252'
-                            : '#00CFFF',
-                    },
-                  ]}
-                >
-                  <Text style={getButtonTextStyle()}>{getButtonText()}</Text>
-                  {buttonState === 'continue' && (
-                    <ArrowRight size={20} color="#000" />
-                  )}
-                </View>
-              </TouchableOpacity>
-            </Animated.View>
-
-            <TouchableOpacity style={styles.backTextButton} onPress={onBack}>
-              <Text style={styles.backTextButtonText}>Back to Seed Phrase</Text>
-            </TouchableOpacity>
-          </View>
         </ScrollView>
+
+        {/* Action Buttons */}
+        <View style={styles.buttonContainer}>
+          <Animated.View
+            style={[
+              styles.animatedButtonWrapper,
+              {
+                transform: [{ translateX: shakeAnimationValue }],
+              },
+            ]}
+          >
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={handleButtonPress}
+              disabled={isLoading || buttonState === 'disabled'}
+              activeOpacity={0.8}
+            >
+              <View
+                style={[
+                  styles.buttonBackground,
+                  {
+                    backgroundColor:
+                      buttonState === 'disabled'
+                        ? colors.backgroundMedium
+                        : buttonState === 'try-again'
+                          ? '#ff5252'
+                          : '#00CFFF',
+                  },
+                ]}
+              >
+                <Text style={getButtonTextStyle()}>{getButtonText()}</Text>
+                {buttonState === 'continue' && (
+                  <ArrowRight size={20} color="#000" />
+                )}
+              </View>
+            </TouchableOpacity>
+          </Animated.View>
+
+          <TouchableOpacity style={styles.backTextButton} onPress={onBack}>
+            <Text style={styles.backTextButtonText}>Back to Seed Phrase</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </ScreenContainer>
   );
@@ -443,7 +443,8 @@ const styles = StyleSheet.create({
     color: colors.backgroundDark,
   },
   buttonContainer: {
-    paddingBottom: 34,
+    marginTop: 'auto',
+    paddingBottom: Platform.OS === 'ios' ? 34 : 24,
   },
   animatedButtonWrapper: {
     width: '100%',
