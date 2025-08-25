@@ -90,9 +90,7 @@ export default function CreateUsernameStep({
       >
         {/* Header Section */}
         <View style={styles.header}>
-          <View style={styles.iconContainer}>
-            <User size={32} color={colors.primary} strokeWidth={2} />
-          </View>
+          <View style={styles.spacer} />
 
           <Text style={styles.title}>
             Welcome
@@ -214,14 +212,8 @@ const styles = StyleSheet.create({
     marginBottom: 32,
     marginTop: 20,
   },
-  iconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: colors.primary + '20',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 24,
+  spacer: {
+    height: 104, // 80px height + 24px marginBottom from iconContainer
   },
   title: {
     fontSize: 32,
@@ -231,7 +223,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   usernameText: {
-    color: colors.primary,
+    color: '#00CFFF',
   },
   subtitle: {
     fontSize: 16,

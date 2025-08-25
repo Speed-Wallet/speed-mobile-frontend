@@ -10,7 +10,6 @@ import {
   ScrollView,
   Animated,
   ActivityIndicator,
-  Platform,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
@@ -939,65 +938,52 @@ export default function TradeScreen() {
                     </View>
                   </View>
                 )}
-              </View>
-            </View>
 
-            {/* Preview Swap Button - Moved outside mainContent for proper positioning */}
-            <View style={styles.buttonContainer}>
-              <TouchableOpacity
-                style={[
-                  styles.tradeExecuteButton,
-                  isButtonDisabled && styles.buttonOpacityDisabled,
-                ]}
-                onPress={handlePreviewSwapClick}
-              >
-                <View
-                  style={[
-                    styles.buttonBackground,
-                    {
-                      backgroundColor: isButtonDisabled ? '#4a4a4a' : '#00CFFF',
-                    },
-                  ]}
-                >
-                  <Animated.View
-                    style={{
-                      transform: [{ translateX: shakeAnimationValue }],
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
+                {/* Preview Swap Button */}
+                <View style={styles.buttonContainer}>
+                  <TouchableOpacity
+                    style={[
+                      styles.tradeExecuteButton,
+                      isButtonDisabled && styles.buttonOpacityDisabled,
+                    ]}
+                    onPress={handlePreviewSwapClick}
                   >
-                    {isButtonDisabled ? (
-                      <View
+                    <LinearGradient
+                      colors={
+                        isButtonDisabled
+                          ? ['#4a4a4a', '#3a3a3a']
+                          : ['#3B82F6', '#2563EB']
+                      }
+                      style={styles.buttonGradient}
+                    >
+                      <Animated.View
                         style={{
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          gap: 8,
+                          transform: [{ translateX: shakeAnimationValue }],
                         }}
                       >
-                        <Lock size={20} color="#9ca3af" />
-                        <Text
-                          style={[
-                            styles.tradeExecuteButtonText,
-                            { color: '#9ca3af' },
-                          ]}
-                        >
-                          Preview Swap
-                        </Text>
-                      </View>
-                    ) : (
-                      <Text
-                        style={[
-                          styles.tradeExecuteButtonText,
-                          { color: '#000' },
-                        ]}
-                      >
-                        Preview Swap
-                      </Text>
-                    )}
-                  </Animated.View>
+                        {isButtonDisabled ? (
+                          <View
+                            style={{
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              gap: 8,
+                            }}
+                          >
+                            <Lock size={20} color={colors.white} />
+                            <Text style={styles.tradeExecuteButtonText}>
+                              Preview Swap
+                            </Text>
+                          </View>
+                        ) : (
+                          <Text style={styles.tradeExecuteButtonText}>
+                            Preview Swap
+                          </Text>
+                        )}
+                      </Animated.View>
+                    </LinearGradient>
+                  </TouchableOpacity>
                 </View>
-              </TouchableOpacity>
+              </View>
             </View>
 
             {/* Bottom Sheet for Swap Details */}
@@ -1079,40 +1065,27 @@ export default function TradeScreen() {
                   onPress={handleConfirmSwap}
                   disabled={!preparedSwap || isPreparingSwap}
                 >
-                  <View
-                    style={[
-                      styles.buttonBackground,
-                      {
-                        backgroundColor:
-                          !preparedSwap || isPreparingSwap
-                            ? '#4a4a4a'
-                            : '#00CFFF',
-                      },
-                    ]}
+                  <LinearGradient
+                    colors={
+                      !preparedSwap || isPreparingSwap
+                        ? ['#4a4a4a', '#3a3a3a']
+                        : ['#3B82F6', '#2563EB']
+                    }
+                    style={styles.buttonGradient}
                   >
                     {isPreparingSwap ? (
                       <>
-                        <ActivityIndicator size="small" color="#9ca3af" />
-                        <Text
-                          style={[
-                            styles.confirmSwapButtonText,
-                            { color: '#9ca3af' },
-                          ]}
-                        >
+                        <ActivityIndicator size="small" color={colors.white} />
+                        <Text style={styles.confirmSwapButtonText}>
                           Preparing...
                         </Text>
                       </>
                     ) : (
-                      <Text
-                        style={[
-                          styles.confirmSwapButtonText,
-                          { color: '#000' },
-                        ]}
-                      >
+                      <Text style={styles.confirmSwapButtonText}>
                         Confirm Swap
                       </Text>
                     )}
-                  </View>
+                  </LinearGradient>
                 </TouchableOpacity>
               </BottomSheetView>
             </BottomSheet>
@@ -1225,9 +1198,8 @@ const styles = StyleSheet.create({
     paddingBottom: 34, // Safe area padding
   },
   buttonContainer: {
-    marginTop: 'auto',
     paddingHorizontal: 20,
-    paddingBottom: Platform.OS === 'ios' ? 34 : 24,
+    paddingVertical: 16,
   },
   // New SwapBox styles
   swapBoxContainer: {
@@ -1426,28 +1398,38 @@ const styles = StyleSheet.create({
     opacity: 0.9, // Added or adjust opacity if needed for further greying out
   },
   tradeExecuteButton: {
-    height: 54,
-    borderRadius: 27,
+    height: 54, // Match SeedPhraseVerificationStep height
+    borderRadius: 27, // Match SeedPhraseVerificationStep border radius (fully rounded)
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
+    // iOS Shadow (kept commented as per last file state)
+    // shadowColor: '#000',
+    // shadowOffset: { width: 0, height: 2 },
+    // shadowOpacity: 0.25,
+    // shadowRadius: 3.84,
+    // Android Shadow (kept commented as per last file state)
+    // elevation: 5,
   },
   buttonOpacityDisabled: {
-    opacity: 0.6,
+    // New style for TouchableOpacity's disabled state when wrapping a gradient
+    opacity: 0.6, // Made less opaque
   },
-  buttonBackground: {
+  buttonGradient: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 16,
-    width: '100%',
-    height: '100%',
+    width: '100%', // Match SeedPhraseVerificationStep width
+    height: '100%', // Match SeedPhraseVerificationStep height
+    gap: 8, // Match SeedPhraseVerificationStep gap
   },
   tradeExecuteButtonText: {
-    fontSize: 17,
+    fontSize: 17, // Match SeedPhraseVerificationStep font size
     fontFamily: 'Inter-SemiBold',
     color: colors.white,
+    // Remove marginLeft since we're using gap in the gradient container
   },
   // Bottom Sheet Styles
   bottomSheetBackground: {
