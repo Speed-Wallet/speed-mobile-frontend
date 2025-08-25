@@ -24,6 +24,8 @@ import SeedPhraseVerificationStep from '@/components/wallet/SeedPhraseVerificati
 import CreateUsernameStep from '@/components/wallet/CreateUsernameStep';
 import CreatePinStep from '@/components/wallet/CreatePinStep';
 import ConfirmPinStep from '@/components/wallet/ConfirmPinStep';
+import WalletSetupSuccessStep from '@/components/wallet/WalletSetupSuccessStep';
+import ProgressBar from '@/components/ProgressBar';
 import { X } from 'lucide-react-native';
 import 'react-native-get-random-values';
 
@@ -216,7 +218,7 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
         'Success',
         'Your wallet has been created and secured with a PIN. Keep your seed phrase and PIN safe!',
       );
-      onWalletSetupComplete();
+      setStep(8); // Go to success screen instead of completing directly
     } catch (error) {
       showError('Error', 'Could not save wallet. Please try again.');
     }
@@ -230,8 +232,40 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
     setStep(5);
   };
 
+  // Helper function to get progress bar info
+  const getProgressInfo = () => {
+    if (step === 1 || step === 7) return { current: 0, total: 6 }; // Initial or import screen - no progress bar
+    if (step === 8) return { current: 6, total: 6 }; // Success screen - full progress (step 6 of 6)
+
+    // Normal flow: steps 2-6 map to progress 1-5
+    const progressMap: { [key: number]: number } = {
+      2: 1, // Show Mnemonic
+      3: 2, // Verify Mnemonic
+      4: 3, // Username
+      5: 4, // Create PIN
+      6: 5, // Confirm PIN
+    };
+
+    return {
+      current: progressMap[step] || 0,
+      total: 6,
+    };
+  };
+
+  const progressInfo = getProgressInfo();
+  const showProgressBar = step > 1 && step !== 7; // Show on all steps except initial and import
+
   return (
     <View style={{ flex: 1 }}>
+      {/* Progress Bar */}
+      {showProgressBar && (
+        <View style={{ backgroundColor: '#121212' }}>
+          <ProgressBar
+            currentStep={progressInfo.current}
+            totalSteps={progressInfo.total}
+          />
+        </View>
+      )}
       {isLoading && (
         <ActivityIndicator
           size="large"
@@ -298,6 +332,13 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
           onBack={handleBackToCreatePin}
           isLoading={isLoading}
           pinError={pinError}
+        />
+      )}
+
+      {step === 8 && (
+        <WalletSetupSuccessStep
+          username={username}
+          onComplete={onWalletSetupComplete}
         />
       )}
 
