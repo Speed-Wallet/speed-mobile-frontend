@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { unlockApp } from '@/services/walletService';
 import PinInputCard from '@/components/wallet/PinInputCard';
-import NumericKeyboard from '@/components/NumericKeyboard';
+import NumericKeyboard from '@/components/keyboard/NumericKeyboard';
 import { Lock } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { triggerShake } from '@/utils/animations';

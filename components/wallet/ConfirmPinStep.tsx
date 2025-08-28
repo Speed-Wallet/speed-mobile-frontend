@@ -10,7 +10,7 @@ import {
 import { triggerShake } from '@/utils/animations';
 import ScreenContainer from '@/components/ScreenContainer';
 import BackButton from '@/components/BackButton';
-import CircularNumericKeyboard from '@/components/CircularNumericKeyboard';
+import CircularNumericKeyboard from '@/components/keyboard/CircularNumericKeyboard';
 import CustomAlert from '@/components/CustomAlert';
 
 interface ConfirmPinStepProps {

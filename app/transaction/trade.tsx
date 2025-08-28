@@ -710,15 +710,6 @@ export default function TradeScreen() {
                 {/* Custom Keyboard */}
                 {showCustomKeyboard && (
                   <View style={styles.inlineKeyboard}>
-                    {/* Active input indicator */}
-                    {activeInput && (
-                      <View style={styles.keyboardHeader}>
-                        <Text style={styles.keyboardHeaderText}>
-                          Entering {activeInput === 'from' ? 'Send' : 'Receive'}{' '}
-                          Amount
-                        </Text>
-                      </View>
-                    )}
                     <View style={styles.keyboardGrid}>
                       <View style={styles.keyboardRow}>
                         <TouchableOpacity
@@ -1623,8 +1614,8 @@ const styles = StyleSheet.create({
   },
   keyboardKey: {
     flex: 1,
-    height: 50,
-    backgroundColor: colors.backgroundLight,
+    height: 80,
+    backgroundColor: 'transparent',
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1635,7 +1626,7 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   keyboardKeyDisabled: {
-    backgroundColor: colors.backgroundMedium,
+    backgroundColor: 'transparent',
     opacity: 0.5,
   },
   keyboardKeyTextDisabled: {
