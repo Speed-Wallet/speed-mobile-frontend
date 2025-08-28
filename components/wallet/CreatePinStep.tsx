@@ -7,7 +7,7 @@ import {
   Platform,
 } from 'react-native';
 import ScreenContainer from '@/components/ScreenContainer';
-import CircularNumericKeyboard from '@/components/CircularNumericKeyboard';
+import CircularNumericKeyboard from '@/components/keyboard/CircularNumericKeyboard';
 
 interface CreatePinStepProps {
   pin: string;
