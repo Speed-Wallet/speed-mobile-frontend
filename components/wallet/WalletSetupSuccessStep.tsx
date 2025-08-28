@@ -44,7 +44,7 @@ const WalletSetupSuccessStep: React.FC<WalletSetupSuccessStepProps> = ({
   }, []);
 
   return (
-    <ScreenContainer>
+    <ScreenContainer edges={['top', 'bottom']}>
       <View style={styles.content}>
         {/* Success Icon */}
         <Animated.View
@@ -73,8 +73,9 @@ const WalletSetupSuccessStep: React.FC<WalletSetupSuccessStepProps> = ({
         >
           <Text style={styles.title}>Wallet Created Successfully!</Text>
           <Text style={styles.subtitle}>
-            Welcome {username}! Your wallet has been created and secured with a
-            PIN. Keep your seed phrase and PIN safe!
+            Welcome <Text style={styles.username}>{username}</Text>! Your wallet
+            has been created and secured with a PIN. Keep your seed phrase and
+            PIN safe!
           </Text>
         </Animated.View>
 
@@ -142,6 +143,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 24,
     paddingHorizontal: 20,
+  },
+  username: {
+    fontWeight: '700',
+    color: '#ffffff',
   },
   buttonContainer: {
     position: 'absolute',

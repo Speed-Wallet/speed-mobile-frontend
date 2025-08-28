@@ -185,16 +185,19 @@ export default function RootLayout() {
           <AlertProvider>
             <SetupWalletScreen
               onWalletSetupComplete={async () => {
-                setWalletState('unlocked');
-                // Trigger authentication after wallet setup
-                try {
-                  await AuthService.authenticate();
-                } catch (error) {
-                  console.error(
-                    'Authentication failed after wallet setup:',
-                    error,
-                  );
-                }
+                // Small delay to allow success screen to be visible and prevent layout shift
+                setTimeout(async () => {
+                  setWalletState('unlocked');
+                  // Trigger authentication after wallet setup
+                  try {
+                    await AuthService.authenticate();
+                  } catch (error) {
+                    console.error(
+                      'Authentication failed after wallet setup:',
+                      error,
+                    );
+                  }
+                }, 1000); // 1 second delay
               }}
             />
           </AlertProvider>

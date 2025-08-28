@@ -1,11 +1,5 @@
 import React, { useCallback } from 'react';
-import {
-  StyleSheet,
-  View,
-  Text,
-  TouchableOpacity,
-  Platform,
-} from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import ScreenContainer from '@/components/ScreenContainer';
 import CircularNumericKeyboard from '@/components/CircularNumericKeyboard';
 
@@ -36,7 +30,7 @@ const CreatePinStep: React.FC<CreatePinStepProps> = ({
   );
 
   return (
-    <ScreenContainer edges={['top', 'bottom']}>
+    <ScreenContainer>
       <View style={styles.container}>
         {/* Title */}
         <Text style={styles.title}>Create Your PIN</Text>
@@ -59,26 +53,24 @@ const CreatePinStep: React.FC<CreatePinStepProps> = ({
         {/* Circular Numeric Keyboard */}
         <CircularNumericKeyboard onKeyPress={handleKeyPress} />
 
-        {/* Button Container */}
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
+        {/* Continue Button */}
+        <TouchableOpacity
+          style={[
+            styles.continueButton,
+            pin.length === 4 && styles.continueButtonActive,
+          ]}
+          onPress={onNext}
+          disabled={isLoading || pin.length < 4}
+        >
+          <Text
             style={[
-              styles.continueButton,
-              pin.length === 4 && styles.continueButtonActive,
+              styles.continueButtonText,
+              pin.length === 4 && styles.continueButtonTextActive,
             ]}
-            onPress={onNext}
-            disabled={isLoading || pin.length < 4}
           >
-            <Text
-              style={[
-                styles.continueButtonText,
-                pin.length === 4 && styles.continueButtonTextActive,
-              ]}
-            >
-              {isLoading ? 'Creating...' : 'Continue'}
-            </Text>
-          </TouchableOpacity>
-        </View>
+            {isLoading ? 'Creating...' : 'Continue'}
+          </Text>
+        </TouchableOpacity>
       </View>
     </ScreenContainer>
   );
@@ -118,15 +110,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#00CFFF',
     borderColor: '#00CFFF',
   },
-  buttonContainer: {
+  continueButton: {
     position: 'absolute',
-    bottom: 0,
+    bottom: 50,
     left: 20,
     right: 20,
-    paddingBottom: Platform.OS === 'ios' ? 34 : 24,
-  },
-  continueButton: {
-    width: '100%',
     height: 56,
     backgroundColor: '#333333',
     borderRadius: 28,
