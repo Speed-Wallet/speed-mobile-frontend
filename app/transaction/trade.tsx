@@ -938,51 +938,48 @@ export default function TradeScreen() {
                     </View>
                   </View>
                 )}
+              </View>
 
-                {/* Preview Swap Button */}
-                <View style={styles.buttonContainer}>
-                  <TouchableOpacity
+              {/* Preview Swap Button */}
+              <View style={styles.buttonContainer}>
+                <TouchableOpacity
+                  style={styles.tradeExecuteButton}
+                  onPress={handlePreviewSwapClick}
+                  disabled={isButtonDisabled}
+                  activeOpacity={0.8}
+                >
+                  <View
                     style={[
-                      styles.tradeExecuteButton,
-                      isButtonDisabled && styles.buttonOpacityDisabled,
+                      styles.buttonBackground,
+                      {
+                        backgroundColor: isButtonDisabled
+                          ? colors.backgroundMedium
+                          : '#3B82F6',
+                      },
                     ]}
-                    onPress={handlePreviewSwapClick}
                   >
-                    <LinearGradient
-                      colors={
-                        isButtonDisabled
-                          ? ['#4a4a4a', '#3a3a3a']
-                          : ['#3B82F6', '#2563EB']
-                      }
-                      style={styles.buttonGradient}
+                    <Animated.View
+                      style={{
+                        transform: [{ translateX: shakeAnimationValue }],
+                      }}
                     >
-                      <Animated.View
-                        style={{
-                          transform: [{ translateX: shakeAnimationValue }],
-                        }}
-                      >
-                        {isButtonDisabled ? (
-                          <View
-                            style={{
-                              flexDirection: 'row',
-                              alignItems: 'center',
-                              gap: 8,
-                            }}
-                          >
-                            <Lock size={20} color={colors.white} />
-                            <Text style={styles.tradeExecuteButtonText}>
-                              Preview Swap
-                            </Text>
-                          </View>
-                        ) : (
-                          <Text style={styles.tradeExecuteButtonText}>
-                            Preview Swap
-                          </Text>
-                        )}
-                      </Animated.View>
-                    </LinearGradient>
-                  </TouchableOpacity>
-                </View>
+                      {isButtonDisabled ? (
+                        <Text
+                          style={[
+                            styles.tradeExecuteButtonText,
+                            styles.tradeExecuteButtonTextDisabled,
+                          ]}
+                        >
+                          Preview Swap
+                        </Text>
+                      ) : (
+                        <Text style={styles.tradeExecuteButtonText}>
+                          Preview Swap
+                        </Text>
+                      )}
+                    </Animated.View>
+                  </View>
+                </TouchableOpacity>
               </View>
             </View>
 
@@ -1064,28 +1061,51 @@ export default function TradeScreen() {
                   ]}
                   onPress={handleConfirmSwap}
                   disabled={!preparedSwap || isPreparingSwap}
+                  activeOpacity={0.8}
                 >
-                  <LinearGradient
-                    colors={
-                      !preparedSwap || isPreparingSwap
-                        ? ['#4a4a4a', '#3a3a3a']
-                        : ['#3B82F6', '#2563EB']
-                    }
-                    style={styles.buttonGradient}
+                  <View
+                    style={[
+                      styles.buttonBackground,
+                      {
+                        backgroundColor:
+                          !preparedSwap || isPreparingSwap
+                            ? colors.backgroundMedium
+                            : '#3B82F6',
+                      },
+                    ]}
                   >
                     {isPreparingSwap ? (
                       <>
-                        <ActivityIndicator size="small" color={colors.white} />
-                        <Text style={styles.confirmSwapButtonText}>
+                        <ActivityIndicator
+                          size="small"
+                          color={
+                            !preparedSwap || isPreparingSwap
+                              ? colors.textSecondary
+                              : colors.white
+                          }
+                        />
+                        <Text
+                          style={[
+                            styles.confirmSwapButtonText,
+                            (!preparedSwap || isPreparingSwap) &&
+                              styles.confirmSwapButtonTextDisabled,
+                          ]}
+                        >
                           Preparing...
                         </Text>
                       </>
                     ) : (
-                      <Text style={styles.confirmSwapButtonText}>
+                      <Text
+                        style={[
+                          styles.confirmSwapButtonText,
+                          (!preparedSwap || isPreparingSwap) &&
+                            styles.confirmSwapButtonTextDisabled,
+                        ]}
+                      >
                         Confirm Swap
                       </Text>
                     )}
-                  </LinearGradient>
+                  </View>
                 </TouchableOpacity>
               </BottomSheetView>
             </BottomSheet>
@@ -1415,21 +1435,25 @@ const styles = StyleSheet.create({
     // New style for TouchableOpacity's disabled state when wrapping a gradient
     opacity: 0.6, // Made less opaque
   },
-  buttonGradient: {
+  buttonBackground: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 16,
-    width: '100%', // Match SeedPhraseVerificationStep width
-    height: '100%', // Match SeedPhraseVerificationStep height
-    gap: 8, // Match SeedPhraseVerificationStep gap
+    width: '100%',
+    height: '100%',
+    gap: 8,
   },
   tradeExecuteButtonText: {
     fontSize: 17, // Match SeedPhraseVerificationStep font size
     fontFamily: 'Inter-SemiBold',
     color: colors.white,
     // Remove marginLeft since we're using gap in the gradient container
+  },
+  tradeExecuteButtonTextDisabled: {
+    color: colors.textSecondary,
+    opacity: 0.5,
   },
   // Bottom Sheet Styles
   bottomSheetBackground: {
@@ -1490,6 +1514,10 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontFamily: 'Inter-SemiBold',
     color: colors.white,
+  },
+  confirmSwapButtonTextDisabled: {
+    color: colors.textSecondary,
+    opacity: 0.5,
   },
   // Loading Bottom Sheet Styles
   loadingBottomSheetContent: {

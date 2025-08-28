@@ -139,11 +139,7 @@ export default function MarketScreen() {
             Name
           </Text>
           {sortBy === 'name' && (
-            <ArrowUpDown
-              size={14}
-              color={colors.primary}
-              style={{ marginLeft: 4 }}
-            />
+            <ArrowUpDown size={14} color="#00CFFF" style={{ marginLeft: 4 }} />
           )}
         </TouchableOpacity>
 
@@ -163,11 +159,7 @@ export default function MarketScreen() {
             Price
           </Text>
           {sortBy === 'price' && (
-            <ArrowUpDown
-              size={14}
-              color={colors.primary}
-              style={{ marginLeft: 4 }}
-            />
+            <ArrowUpDown size={14} color="#00CFFF" style={{ marginLeft: 4 }} />
           )}
         </TouchableOpacity>
 
@@ -188,15 +180,11 @@ export default function MarketScreen() {
           </Text>
           {sortBy === 'change' &&
             (sortDirection === 'asc' ? (
-              <TrendingUp
-                size={14}
-                color={colors.primary}
-                style={{ marginLeft: 4 }}
-              />
+              <TrendingUp size={14} color="#00CFFF" style={{ marginLeft: 4 }} />
             ) : (
               <TrendingDown
                 size={14}
-                color={colors.primary}
+                color="#00CFFF"
                 style={{ marginLeft: 4 }}
               />
             ))}
@@ -271,7 +259,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   activeSortOptionText: {
-    color: colors.primaryLight,
+    color: '#00CFFF',
   },
   listContent: {
     paddingHorizontal: 16,
