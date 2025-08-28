@@ -8,10 +8,11 @@ import {
   Animated,
   Platform,
 } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Path, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowRight } from 'lucide-react-native';
 import colors from '@/constants/colors';
+import SpeedLogo from '@/components/SpeedLogo';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const SLIDER_WIDTH = SCREEN_WIDTH - 40;
@@ -32,27 +33,60 @@ const WaveBackground = () => {
         viewBox="0 0 375 812"
         style={styles.waveBackground}
       >
-        {/* Diagonal flowing lines from bottom left to top right - 3 lines with spacing */}
+        <Defs>
+          {/* Gradient from teal to purple */}
+          <LinearGradient id="gradient1" x1="0%" y1="0%" x2="100%" y2="0%">
+            <Stop offset="0%" stopColor="#00CFFF" stopOpacity="0.6" />
+            <Stop offset="100%" stopColor="#8B5CF6" stopOpacity="0.6" />
+          </LinearGradient>
+          <LinearGradient id="gradient2" x1="0%" y1="0%" x2="100%" y2="0%">
+            <Stop offset="0%" stopColor="#00CFFF" stopOpacity="0.5" />
+            <Stop offset="100%" stopColor="#A855F7" stopOpacity="0.5" />
+          </LinearGradient>
+          <LinearGradient id="gradient3" x1="0%" y1="0%" x2="100%" y2="0%">
+            <Stop offset="0%" stopColor="#00CFFF" stopOpacity="0.4" />
+            <Stop offset="100%" stopColor="#9333EA" stopOpacity="0.4" />
+          </LinearGradient>
+          <LinearGradient id="gradient4" x1="0%" y1="0%" x2="100%" y2="0%">
+            <Stop offset="0%" stopColor="#00CFFF" stopOpacity="0.3" />
+            <Stop offset="100%" stopColor="#7C3AED" stopOpacity="0.3" />
+          </LinearGradient>
+          <LinearGradient id="gradient5" x1="0%" y1="0%" x2="100%" y2="0%">
+            <Stop offset="0%" stopColor="#00CFFF" stopOpacity="0.5" />
+            <Stop offset="100%" stopColor="#8B5CF6" stopOpacity="0.5" />
+          </LinearGradient>
+        </Defs>
+
+        {/* Diagonal flowing lines from bottom left to top right - 5 lines with 200 unit separation */}
         <Path
-          d="M-50,650 C50,550 100,450 150,350 C200,250 250,150 375,50"
-          stroke="#00CFFF"
+          d="M-50,350 C50,250 100,150 150,50 C200,-50 250,-150 375,-250"
+          stroke="url(#gradient1)"
+          strokeWidth="1.5"
+          fill="none"
+        />
+        <Path
+          d="M-50,550 C50,450 100,350 150,250 C200,150 250,50 375,-50"
+          stroke="url(#gradient2)"
           strokeWidth="2"
           fill="none"
-          strokeOpacity="0.6"
         />
         <Path
-          d="M-120,780 C0,660 60,550 120,450 C180,350 240,250 375,150"
-          stroke="#4a90e2"
+          d="M-50,750 C50,650 100,550 150,450 C200,350 250,250 375,150"
+          stroke="url(#gradient3)"
           strokeWidth="1.5"
           fill="none"
-          strokeOpacity="0.5"
         />
         <Path
-          d="M-190,910 C-60,770 0,660 80,540 C140,440 200,340 375,280"
-          stroke="#00CFFF"
+          d="M-50,950 C50,850 100,750 150,650 C200,550 250,450 375,350"
+          stroke="url(#gradient4)"
           strokeWidth="1.5"
           fill="none"
-          strokeOpacity="0.4"
+        />
+        <Path
+          d="M-50,1150 C50,1050 100,950 150,850 C200,750 250,650 375,550"
+          stroke="url(#gradient5)"
+          strokeWidth="1.5"
+          fill="none"
         />
       </Svg>
     </View>
@@ -121,26 +155,12 @@ const SlideToUnlock = ({ onUnlock }: { onUnlock: () => void }) => {
           ]}
           {...panResponder.panHandlers}
         >
-          <ArrowRight size={24} color="#E5E5E5" strokeWidth={2} />
+          <ArrowRight size={24} color="#CCCCCC" strokeWidth={2} />
         </Animated.View>
       </View>
     </View>
   );
 };
-
-const SpeedLogo = () => (
-  <View style={styles.logoContainer}>
-    <View style={styles.logoCircle}>
-      <Svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-        <Path
-          d="M8 12L22 4L32 12L24 28L16 20L8 28V12Z"
-          fill="#121212"
-          stroke="none"
-        />
-      </Svg>
-    </View>
-  </View>
-);
 
 export default function WelcomeScreen({ onGetStarted }: WelcomeScreenProps) {
   return (
@@ -148,7 +168,9 @@ export default function WelcomeScreen({ onGetStarted }: WelcomeScreenProps) {
       <WaveBackground />
 
       <View style={styles.content}>
-        <SpeedLogo />
+        <View style={styles.logoContainer}>
+          <SpeedLogo size={150} />
+        </View>
 
         <View style={styles.textContainer}>
           <Text style={styles.title}>SPEED WALLET</Text>
@@ -195,14 +217,6 @@ const styles = StyleSheet.create({
   logoContainer: {
     alignItems: 'center',
     marginTop: 100,
-  },
-  logoCircle: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: '#00CFFF',
-    justifyContent: 'center',
-    alignItems: 'center',
     marginBottom: 60,
   },
   textContainer: {
