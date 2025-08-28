@@ -16,8 +16,8 @@ import SpeedLogo from '@/components/SpeedLogo';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const SLIDER_WIDTH = SCREEN_WIDTH - 40;
-const SLIDER_HEIGHT = 60;
-const THUMB_SIZE = 50;
+const SLIDER_HEIGHT = 65;
+const THUMB_SIZE = 55;
 const SLIDER_TRACK_WIDTH = SLIDER_WIDTH - THUMB_SIZE;
 
 interface WelcomeScreenProps {
@@ -155,7 +155,7 @@ const SlideToUnlock = ({ onUnlock }: { onUnlock: () => void }) => {
           ]}
           {...panResponder.panHandlers}
         >
-          <ArrowRight size={24} color="#CCCCCC" strokeWidth={2} />
+          <ArrowRight size={26} color="#CCCCCC" strokeWidth={2} />
         </Animated.View>
       </View>
     </View>
@@ -169,7 +169,7 @@ export default function WelcomeScreen({ onGetStarted }: WelcomeScreenProps) {
 
       <View style={styles.content}>
         <View style={styles.logoContainer}>
-          <SpeedLogo size={150} />
+          <SpeedLogo size={180} />
         </View>
 
         <View style={styles.textContainer}>
@@ -177,11 +177,11 @@ export default function WelcomeScreen({ onGetStarted }: WelcomeScreenProps) {
           <Text style={styles.subtitle}>
             Have control of your crypto, trusted{'\n'}secure and decentralised
           </Text>
-        </View>
-      </View>
 
-      <View style={styles.sliderWrapper}>
-        <SlideToUnlock onUnlock={onGetStarted} />
+          <View style={styles.sliderWrapper}>
+            <SlideToUnlock onUnlock={onGetStarted} />
+          </View>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -223,7 +223,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 1,
     justifyContent: 'center',
-    marginTop: -100,
   },
   title: {
     fontSize: 48,
@@ -244,8 +243,7 @@ const styles = StyleSheet.create({
   sliderWrapper: {
     width: '100%',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingBottom: Platform.OS === 'ios' ? 34 : 24,
+    marginTop: 40,
   },
   sliderContainer: {
     width: SLIDER_WIDTH,

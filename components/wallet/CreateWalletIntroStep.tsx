@@ -10,7 +10,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useRef, useEffect } from 'react';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
-import { RefreshCw } from 'lucide-react-native';
+import SpeedLogo from '@/components/SpeedLogo';
 import 'react-native-get-random-values';
 
 interface CreateWalletIntroStepProps {
@@ -59,9 +59,7 @@ export default function CreateWalletIntroStep({
             },
           ]}
         >
-          <View style={styles.logoBackground}>
-            <RefreshCw size={48} color="#000" />
-          </View>
+          <SpeedLogo size={180} />
         </Animated.View>
       </View>
 
@@ -114,21 +112,8 @@ const styles = StyleSheet.create({
   logoContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 100,
+    marginTop: 180,
     marginBottom: 60,
-  },
-  logoBackground: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: '#00CFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 8,
-    shadowColor: '#00CFFF',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
   },
   buttonContainer: {
     width: '100%',
