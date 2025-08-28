@@ -8,6 +8,7 @@ import {
   ScrollView,
   Image,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Search, ArrowRight, Check, DollarSign } from 'lucide-react-native';
@@ -374,25 +375,32 @@ export default function SendScreen() {
         {/* Send Button */}
         <View style={styles.buttonContainer}>
           <TouchableOpacity
-            style={[
-              styles.sendButton,
-              (!amount || (!recipient && !selectedContact)) &&
-                styles.buttonOpacityDisabled,
-            ]}
+            style={styles.sendButton}
             disabled={!amount || (!recipient && !selectedContact)}
             onPress={handleSend}
+            activeOpacity={0.8}
           >
-            <LinearGradient
-              colors={
-                !amount || (!recipient && !selectedContact)
-                  ? ['#4a4a4a', '#3a3a3a']
-                  : ['#3B82F6', '#2563EB']
-              }
-              style={styles.buttonGradient}
+            <View
+              style={[
+                styles.buttonBackground,
+                {
+                  backgroundColor:
+                    !amount || (!recipient && !selectedContact)
+                      ? colors.backgroundMedium
+                      : '#3B82F6',
+                },
+              ]}
             >
-              <Text style={styles.sendButtonText}>Preview Send</Text>
-              <ArrowRight size={20} color={colors.white} />
-            </LinearGradient>
+              <Text
+                style={[
+                  styles.sendButtonText,
+                  (!amount || (!recipient && !selectedContact)) &&
+                    styles.sendButtonTextDisabled,
+                ]}
+              >
+                Preview Send
+              </Text>
+            </View>
           </TouchableOpacity>
         </View>
 
@@ -442,21 +450,21 @@ export default function SendScreen() {
             )}
 
             <TouchableOpacity
-              style={[
-                styles.confirmButton,
-                (!preparedTransaction || isPreparingSend) &&
-                  styles.buttonOpacityDisabled,
-              ]}
+              style={styles.confirmButton}
               disabled={!preparedTransaction || isPreparingSend}
               onPress={handleConfirmSend}
+              activeOpacity={0.8}
             >
-              <LinearGradient
-                colors={
-                  !preparedTransaction || isPreparingSend
-                    ? ['#4a4a4a', '#3a3a3a']
-                    : ['#3B82F6', '#2563EB']
-                }
-                style={styles.buttonGradient}
+              <View
+                style={[
+                  styles.buttonBackground,
+                  {
+                    backgroundColor:
+                      !preparedTransaction || isPreparingSend
+                        ? colors.backgroundMedium
+                        : '#3B82F6',
+                  },
+                ]}
               >
                 {isPreparingSend ? (
                   <>
@@ -466,7 +474,7 @@ export default function SendScreen() {
                 ) : (
                   <Text style={styles.confirmButtonText}>Confirm Send</Text>
                 )}
-              </LinearGradient>
+              </View>
             </TouchableOpacity>
           </BottomSheetView>
         </BottomSheet>
@@ -789,24 +797,34 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   buttonContainer: {
+    marginTop: 'auto',
+    paddingBottom: Platform.OS === 'ios' ? 34 : 24,
     paddingHorizontal: 20,
-    paddingVertical: 16,
   },
   sendButton: {
-    height: 54, // Match trade execute button height
-    borderRadius: 27, // Match trade execute button border radius (fully rounded)
+    height: 54,
+    borderRadius: 27,
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  sendButtonDisabled: {
-    opacity: 0.6,
+  buttonBackground: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    height: '100%',
+    gap: 8,
   },
   sendButtonText: {
-    fontSize: 17, // Match trade execute button font size
+    fontSize: 17,
     fontFamily: 'Inter-SemiBold',
     color: colors.white,
-    marginRight: 8,
+  },
+  sendButtonTextDisabled: {
+    color: colors.textSecondary,
+    opacity: 0.5,
   },
   // Bottom sheet styles
   bottomSheetBackground: {
@@ -853,27 +871,14 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   confirmButton: {
-    height: 54, // Match the trade button height
-    borderRadius: 27, // Match the trade button border radius
+    height: 54,
+    borderRadius: 27,
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  buttonOpacityDisabled: {
-    opacity: 0.6, // Made less opaque
-  },
-  buttonGradient: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 16,
-    width: '100%',
-    height: '100%',
-    gap: 8,
-  },
   confirmButtonText: {
-    fontSize: 17, // Match the trade button font size
+    fontSize: 17,
     fontFamily: 'Inter-SemiBold',
     color: colors.white,
   },
