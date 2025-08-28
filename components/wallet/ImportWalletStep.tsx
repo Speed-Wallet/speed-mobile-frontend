@@ -106,9 +106,7 @@ export default function ImportWalletStep({
       >
         {/* Header Section */}
         <View style={styles.header}>
-          <View style={styles.iconContainer}>
-            <Key size={32} color="#00CFFF" strokeWidth={1.5} />
-          </View>
+          <View style={styles.spacer} />
 
           <Text style={styles.title}>Import Wallet</Text>
           <Text style={styles.subtitle}>
@@ -225,6 +223,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 32,
     marginTop: 20,
+  },
+  spacer: {
+    height: 104, // 80px height + 24px marginBottom from iconContainer
   },
   iconContainer: {
     width: 80,
