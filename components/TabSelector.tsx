@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
     marginLeft: 2,
   },
   activeTab: {
-    backgroundColor: colors.primary,
+    backgroundColor: '#00CFFF',
   },
   tabText: {
     fontSize: 14,
@@ -106,7 +106,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   activeTabText: {
-    color: colors.textPrimary,
+    color: colors.backgroundDark,
   },
 });
 

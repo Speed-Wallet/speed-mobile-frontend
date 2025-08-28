@@ -296,30 +296,23 @@ const styles = StyleSheet.create({
     marginBottom: 6, // Reduced from 10
   },
   sectionContent: {
-    // Remove gap to make items touch
+    // Container removed - items will be displayed without background containers
   },
   settingItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10, // Reduced from 12
-    paddingHorizontal: 16,
-    backgroundColor: colors.backgroundMedium,
-    borderWidth: 1,
-    borderColor: colors.backgroundLight,
-    borderTopWidth: 0, // Remove top border for connected look
+    paddingVertical: 6, // Adjusted to 6 for better spacing
+    paddingHorizontal: 0, // Removed to align with section titles
+    // Removed all background and border styles
   },
   firstItem: {
-    borderTopWidth: 1, // Only first item gets top border
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
+    // Removed all border radius and border styles
   },
   lastItem: {
-    borderBottomLeftRadius: 12,
-    borderBottomRightRadius: 12,
+    // Removed all border radius styles
   },
   onlyItem: {
-    borderTopWidth: 1,
-    borderRadius: 12,
+    // Removed all border and radius styles
   },
   iconContainer: {
     width: 32, // Reduced from 36

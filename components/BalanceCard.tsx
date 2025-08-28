@@ -1,5 +1,5 @@
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import ActionButton from '@/components/ActionButton';
 import {
   ArrowUp,
@@ -7,6 +7,8 @@ import {
   CreditCard,
   ArrowRightLeft,
   ShoppingCart,
+  Eye,
+  EyeOff,
 } from 'lucide-react-native';
 import colors from '@/constants/colors';
 import GradientCard from './GradientCard';
@@ -22,11 +24,16 @@ const BalanceCard: React.FC<BalanceCardProps> = ({
   onActionPress,
 }) => {
   const { portfolioValue } = usePortfolioValue();
+  const [isBalanceVisible, setIsBalanceVisible] = useState(true);
 
   const formattedBalance = portfolioValue.toLocaleString('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
+
+  const toggleBalanceVisibility = () => {
+    setIsBalanceVisible(!isBalanceVisible);
+  };
 
   const actions = [
     { label: 'SEND', icon: ArrowUp, bgColor: '#5B68F6', actionId: 'send' },
@@ -50,10 +57,23 @@ const BalanceCard: React.FC<BalanceCardProps> = ({
     <GradientCard style={styles.balanceCardSpecificContainer}>
       <View style={styles.upperContent}>
         {/* <Text style={styles.balanceLabel}>TOTAL BALANCE</Text> */}
-        <Text style={styles.balanceAmount}>
-          {currencySymbol}
-          {formattedBalance}
-        </Text>
+        <View style={styles.balanceContainer}>
+          <Text style={styles.balanceAmount}>
+            {isBalanceVisible
+              ? `${currencySymbol}${formattedBalance}`
+              : '••••••'}
+          </Text>
+          <TouchableOpacity
+            style={styles.visibilityButton}
+            onPress={toggleBalanceVisibility}
+          >
+            {isBalanceVisible ? (
+              <Eye size={20} color="#FFFFFF" opacity={0.7} />
+            ) : (
+              <EyeOff size={20} color="#FFFFFF" opacity={0.7} />
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.actionButtonsContainer}>
@@ -79,6 +99,12 @@ const styles = StyleSheet.create({
   upperContent: {
     marginBottom: 24,
   },
+  balanceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
   balanceLabel: {
     fontSize: 14,
     fontWeight: '500',
@@ -97,12 +123,14 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     fontFamily: 'Inter-Bold', // Example: using your existing font family
   },
+  visibilityButton: {
+    padding: 4,
+  },
   actionButtonsContainer: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     justifyContent: 'center',
     alignItems: 'center',
-    rowGap: 16,
+    gap: 4,
   },
 });
 
