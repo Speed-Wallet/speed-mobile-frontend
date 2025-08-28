@@ -7,11 +7,11 @@ import {
   Animated,
   Platform,
 } from 'react-native';
-import { AlertTriangle } from 'lucide-react-native';
 import { triggerShake } from '@/utils/animations';
 import ScreenContainer from '@/components/ScreenContainer';
 import BackButton from '@/components/BackButton';
 import CircularNumericKeyboard from '@/components/CircularNumericKeyboard';
+import CustomAlert from '@/components/CustomAlert';
 
 interface ConfirmPinStepProps {
   confirmPin: string;
@@ -20,6 +20,7 @@ interface ConfirmPinStepProps {
   onBack: () => void;
   isLoading: boolean;
   pinError?: string;
+  onClearError?: () => void;
 }
 
 const ConfirmPinStep: React.FC<ConfirmPinStepProps> = ({
@@ -29,6 +30,7 @@ const ConfirmPinStep: React.FC<ConfirmPinStepProps> = ({
   onBack,
   isLoading,
   pinError,
+  onClearError,
 }) => {
   const shakeAnimationValue = useRef(new Animated.Value(0)).current;
 
@@ -50,8 +52,16 @@ const ConfirmPinStep: React.FC<ConfirmPinStepProps> = ({
     }
   }, [pinError]);
 
+  // Handler for "Try Again" button
+  const handleTryAgain = useCallback(() => {
+    onConfirmPinChange(''); // Reset the confirm PIN to empty
+    if (onClearError) {
+      onClearError(); // Clear the error
+    }
+  }, [onConfirmPinChange, onClearError]);
+
   return (
-    <ScreenContainer>
+    <ScreenContainer edges={['top', 'bottom']}>
       {/* Development Back Button */}
       {process.env.EXPO_PUBLIC_APP_ENV === 'development' && (
         <BackButton onPress={onBack} style={styles.devBackButton} />
@@ -74,40 +84,52 @@ const ConfirmPinStep: React.FC<ConfirmPinStepProps> = ({
           ))}
         </View>
 
-        {/* Error Message */}
-        {pinError && (
-          <View style={styles.errorContainer}>
-            <AlertTriangle size={18} color="#ef4444" />
-            <Text style={styles.errorText}>{pinError}</Text>
-          </View>
-        )}
-
         {/* Keyboard */}
         <CircularNumericKeyboard onKeyPress={handleKeyPress} />
 
-        {/* Action Buttons with absolute positioning */}
-        <TouchableOpacity
-          style={[
-            styles.continueButton,
-            confirmPin.length === 4 && styles.continueButtonActive,
-          ]}
-          onPress={onConfirm}
-          disabled={isLoading || confirmPin.length < 4}
-        >
-          <Text
+        {/* Button Container */}
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity
             style={[
-              styles.continueButtonText,
-              confirmPin.length === 4 && styles.continueButtonTextActive,
+              styles.continueButton,
+              confirmPin.length === 4 && styles.continueButtonActive,
             ]}
+            onPress={onConfirm}
+            disabled={isLoading || confirmPin.length < 4}
           >
-            {isLoading ? 'Confirming...' : 'Confirm'}
-          </Text>
-        </TouchableOpacity>
+            <Text
+              style={[
+                styles.continueButtonText,
+                confirmPin.length === 4 && styles.continueButtonTextActive,
+              ]}
+            >
+              {isLoading ? 'Confirming...' : 'Confirm'}
+            </Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity style={styles.backTextButton} onPress={onBack}>
-          <Text style={styles.backTextButtonText}>Back to Create PIN</Text>
-        </TouchableOpacity>
+          <TouchableOpacity style={styles.backTextButton} onPress={onBack}>
+            <Text style={styles.backTextButtonText}>Back to Create PIN</Text>
+          </TouchableOpacity>
+        </View>
       </View>
+
+      {/* Custom Alert for PIN Error */}
+      {pinError && (
+        <CustomAlert
+          visible={true}
+          type="error"
+          title="PIN Mismatch"
+          message={pinError}
+          onDismiss={handleTryAgain}
+          buttons={[
+            {
+              text: 'Try Again',
+              onPress: handleTryAgain,
+              style: 'default',
+            },
+          ]}
+        />
+      )}
     </ScreenContainer>
   );
 };
@@ -124,8 +146,8 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'ios' ? 140 : 160, // Fixed keyboard overlap
     alignItems: 'center',
+    justifyContent: 'center',
   },
   title: {
     fontSize: 28,
@@ -152,31 +174,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#00CFFF',
     borderColor: '#00CFFF',
   },
-  errorContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginBottom: 20,
-  },
-  errorText: {
-    color: '#ef4444',
-    fontSize: 14,
-    fontWeight: '500',
-    marginLeft: 8,
-  },
-  continueButton: {
+  buttonContainer: {
     position: 'absolute',
-    bottom: 100,
+    bottom: 0,
     left: 20,
     right: 20,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 24,
+  },
+  continueButton: {
+    width: '100%',
     height: 56,
     backgroundColor: '#333333',
     borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 16,
   },
   continueButtonActive: {
     backgroundColor: '#00CFFF',
@@ -190,13 +202,8 @@ const styles = StyleSheet.create({
     color: '#000000',
   },
   backTextButton: {
-    position: 'absolute',
-    bottom: 40,
-    left: 20,
-    right: 20,
-    height: 44,
-    justifyContent: 'center',
     alignItems: 'center',
+    paddingVertical: 8,
   },
   backTextButtonText: {
     fontSize: 16,

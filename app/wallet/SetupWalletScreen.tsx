@@ -1,13 +1,5 @@
 import React, { useState } from 'react';
-import {
-  View,
-  ActivityIndicator,
-  Modal,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-} from 'react-native';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import {
   generateInitialSolanaWallet,
   saveWalletToList,
@@ -25,8 +17,8 @@ import CreateUsernameStep from '@/components/wallet/CreateUsernameStep';
 import CreatePinStep from '@/components/wallet/CreatePinStep';
 import ConfirmPinStep from '@/components/wallet/ConfirmPinStep';
 import WalletSetupSuccessStep from '@/components/wallet/WalletSetupSuccessStep';
+import ImportWalletStep from '@/components/wallet/ImportWalletStep';
 import ProgressBar from '@/components/ProgressBar';
-import { X } from 'lucide-react-native';
 import 'react-native-get-random-values';
 
 interface SetupWalletScreenProps {
@@ -37,7 +29,7 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
   onWalletSetupComplete,
 }) => {
   const { alert, error: showError, success } = useAlert();
-  const [step, setStep] = useState(1); // 1: Initial, 2: Show Mnemonic, 3: Verify Mnemonic, 4: Username, 5: Create PIN, 6: Confirm PIN
+  const [step, setStep] = useState(1); // 1: Initial, 2: Show Mnemonic, 3: Verify Mnemonic, 4: Username, 5: Create PIN, 6: Confirm PIN, 7: Success, 9: Import
   const [mnemonic, setMnemonic] = useState<string | null>(null);
   const [publicKey, setPublicKey] = useState<string | null>(null);
   const [accountIndex, setAccountIndex] = useState<number | undefined>(
@@ -51,10 +43,6 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
   const [pin, setPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
   const [pinError, setPinError] = useState<string>('');
-
-  // Import wallet states
-  const [showImportModal, setShowImportModal] = useState(false);
-  const [importPhrase, setImportPhrase] = useState('');
   const [isImporting, setIsImporting] = useState(false);
 
   const handleCreateWallet = async () => {
@@ -146,31 +134,21 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
   };
 
   const handleImportWallet = () => {
-    setShowImportModal(true);
+    setStep(9); // Move to import step
   };
 
-  const processImportWallet = async () => {
-    if (!importPhrase.trim()) {
-      showError('Invalid Phrase', 'Please enter a valid seed phrase.');
-      return;
-    }
-
+  const processImportWallet = async (seedPhrase: string) => {
     setIsImporting(true);
     try {
-      const cleanPhrase = importPhrase.trim().toLowerCase();
-      const wallet = await importWalletFromMnemonic(cleanPhrase);
+      const wallet = await importWalletFromMnemonic(seedPhrase);
 
       // Set the imported wallet data and proceed to verification
       setMnemonic(wallet.mnemonic);
       setPublicKey(wallet.publicKey);
-      setShowImportModal(false);
       setStep(3); // Move to verification
     } catch (error) {
-      showError(
-        'Error',
-        'Failed to import wallet. Please check your seed phrase and try again.',
-      );
-      console.error('Error importing wallet:', error);
+      setIsImporting(false);
+      throw error; // Let the ImportWalletStep handle the error display
     }
     setIsImporting(false);
   };
@@ -214,11 +192,7 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
         derivationPath,
       );
 
-      success(
-        'Success',
-        'Your wallet has been created and secured with a PIN. Keep your seed phrase and PIN safe!',
-      );
-      setStep(8); // Go to success screen instead of completing directly
+      setStep(7); // Go to success screen
     } catch (error) {
       showError('Error', 'Could not save wallet. Please try again.');
     }
@@ -234,8 +208,8 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
 
   // Helper function to get progress bar info
   const getProgressInfo = () => {
-    if (step === 1 || step === 7) return { current: 0, total: 6 }; // Initial or import screen - no progress bar
-    if (step === 8) return { current: 6, total: 6 }; // Success screen - full progress (step 6 of 6)
+    if (step === 1 || step === 9) return { current: 0, total: 6 }; // Initial or import screen - no progress bar
+    if (step === 7) return { current: 6, total: 6 }; // Success screen - full progress (step 6 of 6)
 
     // Normal flow: steps 2-6 map to progress 1-5
     const progressMap: { [key: number]: number } = {
@@ -253,7 +227,7 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
   };
 
   const progressInfo = getProgressInfo();
-  const showProgressBar = step > 1 && step !== 7; // Show on all steps except initial and import
+  const showProgressBar = (step > 1 && step !== 9) || step === 7; // Show on all steps except initial and import, but include success screen
 
   return (
     <View style={{ flex: 1 }}>
@@ -335,169 +309,24 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
         />
       )}
 
-      {step === 8 && (
+      {step === 7 && (
         <WalletSetupSuccessStep
           username={username}
           onComplete={onWalletSetupComplete}
         />
       )}
 
-      {/* Import Wallet Modal */}
-      <Modal
-        visible={showImportModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowImportModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <TouchableOpacity
-              style={styles.modalCloseButton}
-              onPress={() => setShowImportModal(false)}
-            >
-              <X size={24} color={colors.textSecondary} />
-            </TouchableOpacity>
-
-            <Text style={styles.modalTitle}>Import Wallet</Text>
-            <Text style={styles.modalSubtitle}>
-              Enter your existing wallet's seed phrase
-            </Text>
-
-            <Text style={styles.inputLabel}>Seed Phrase</Text>
-            <TextInput
-              style={[styles.input, styles.textArea]}
-              placeholder="Enter your 12 or 24 word seed phrase"
-              placeholderTextColor={colors.textSecondary}
-              value={importPhrase}
-              onChangeText={setImportPhrase}
-              multiline
-              numberOfLines={4}
-              textAlignVertical="top"
-              autoFocus
-            />
-
-            {/* Dev Button */}
-            {process.env.EXPO_PUBLIC_APP_ENV === 'development' && (
-              <TouchableOpacity
-                style={styles.devButton}
-                onPress={() =>
-                  setImportPhrase(process.env.EXPO_PUBLIC_DEV_SEED_PHRASE || '')
-                }
-              >
-                <Text style={styles.devButtonText}>DEV</Text>
-              </TouchableOpacity>
-            )}
-
-            <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={[
-                  styles.primaryButton,
-                  isImporting && styles.buttonDisabled,
-                ]}
-                onPress={processImportWallet}
-                disabled={isImporting}
-              >
-                <Text style={styles.primaryButtonText}>
-                  {isImporting ? 'Importing...' : 'Import Wallet'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      {step === 9 && (
+        <ImportWalletStep
+          onNext={processImportWallet}
+          onBack={() => setStep(1)}
+          isLoading={isImporting}
+        />
+      )}
     </View>
   );
 };
 
-const styles = StyleSheet.create({
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContainer: {
-    backgroundColor: colors.backgroundDark,
-    borderRadius: 16,
-    padding: 24,
-    width: '90%',
-    maxWidth: 400,
-    position: 'relative',
-  },
-  modalCloseButton: {
-    position: 'absolute',
-    top: 16,
-    right: 16,
-    width: 32,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 1,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontFamily: 'Inter-Bold',
-    color: colors.textPrimary,
-    marginBottom: 8,
-  },
-  modalSubtitle: {
-    fontSize: 14,
-    fontFamily: 'Inter-Regular',
-    color: colors.textSecondary,
-    marginBottom: 24,
-  },
-  inputLabel: {
-    fontSize: 14,
-    fontFamily: 'Inter-Medium',
-    color: colors.textPrimary,
-    marginBottom: 8,
-  },
-  input: {
-    backgroundColor: colors.backgroundMedium,
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    fontFamily: 'Inter-Regular',
-    color: colors.textPrimary,
-    marginBottom: 16,
-  },
-  textArea: {
-    height: 100,
-    textAlignVertical: 'top',
-  },
-  modalActions: {
-    marginTop: 24,
-  },
-  primaryButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 8,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-  },
-  primaryButtonText: {
-    fontSize: 16,
-    fontFamily: 'Inter-SemiBold',
-    color: colors.white,
-    textAlign: 'center',
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-  devButton: {
-    position: 'absolute',
-    top: 8,
-    left: 8,
-    backgroundColor: colors.primary,
-    borderRadius: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    zIndex: 1,
-  },
-  devButtonText: {
-    fontSize: 10,
-    fontFamily: 'Inter-Bold',
-    color: colors.white,
-  },
-});
+const styles = StyleSheet.create({});
 
 export default SetupWalletScreen;

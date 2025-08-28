@@ -9,69 +9,71 @@ import {
   Animated,
 } from 'react-native';
 import { useState, useRef } from 'react';
-import { User, ArrowRight } from 'lucide-react-native';
+import { ArrowRight, Key } from 'lucide-react-native';
 import colors from '@/constants/colors';
 import ScreenHeader from '@/components/ScreenHeader';
 import ScreenContainer from '@/components/ScreenContainer';
 import BackButton from '@/components/BackButton';
 import { triggerShake } from '@/utils/animations';
 
-interface CreateUsernameStepProps {
-  onNext: (username: string) => Promise<void>;
+interface ImportWalletStepProps {
+  onNext: (seedPhrase: string) => Promise<void>;
   onBack?: () => void;
   isLoading?: boolean;
 }
 
-export default function CreateUsernameStep({
+export default function ImportWalletStep({
   onNext,
   onBack,
   isLoading = false,
-}: CreateUsernameStepProps) {
-  const [username, setUsername] = useState('');
+}: ImportWalletStepProps) {
+  const [seedPhrase, setSeedPhrase] = useState('');
   const [isValid, setIsValid] = useState(false);
   const [error, setError] = useState('');
-  const [isUsernameTaken, setIsUsernameTaken] = useState(false);
   const shakeAnimationValue = useRef(new Animated.Value(0)).current;
 
-  const validateUsername = (text: string) => {
-    // Match backend validation exactly
-    const regex = /^[a-zA-Z0-9_]+$/;
-    const isValidFormat = regex.test(text);
+  const validateSeedPhrase = (text: string) => {
+    const cleanPhrase = text.trim().toLowerCase();
+    const words = cleanPhrase.split(/\s+/).filter((word) => word.length > 0);
 
     if (text.length === 0) {
       setError('');
       setIsValid(false);
-    } else if (text.length < 3) {
-      setError('Username must be between 3 and 20 characters');
+    } else if (words.length < 12) {
+      setError('Seed phrase must contain at least 12 words');
       setIsValid(false);
-    } else if (text.length > 20) {
-      setError('Username must be between 3 and 20 characters');
-      setIsValid(false);
-    } else if (!isValidFormat) {
-      setError('Username can only contain letters, numbers, and underscores');
+    } else if (words.length !== 12 && words.length !== 24) {
+      setError('Seed phrase must contain 12 or 24 words');
       setIsValid(false);
     } else {
-      setError('');
-      setIsValid(true);
+      // Basic validation - could be enhanced with BIP39 word list validation
+      const hasInvalidChars = cleanPhrase.match(/[^a-z\s]/);
+      if (hasInvalidChars) {
+        setError(
+          'Seed phrase should only contain lowercase letters and spaces',
+        );
+        setIsValid(false);
+      } else {
+        setError('');
+        setIsValid(true);
+      }
     }
   };
 
-  const handleUsernameChange = (text: string) => {
-    setUsername(text);
-    setIsUsernameTaken(false); // Reset username taken state on text change
-    validateUsername(text);
+  const handleSeedPhraseChange = (text: string) => {
+    setSeedPhrase(text);
+    validateSeedPhrase(text);
   };
 
   const handleContinue = async () => {
     if (isValid && !isLoading) {
       try {
-        await onNext(username);
-        // If we get here, the username was accepted
-        setIsUsernameTaken(false);
+        const cleanPhrase = seedPhrase.trim().toLowerCase();
+        await onNext(cleanPhrase);
       } catch (error) {
-        // If there's an error, assume it's because username is taken
-        setIsUsernameTaken(true);
-        setError('* Username is already taken');
+        setError(
+          'Failed to import wallet. Please check your seed phrase and try again.',
+        );
         triggerShake(shakeAnimationValue);
       }
     }
@@ -84,34 +86,45 @@ export default function CreateUsernameStep({
         <BackButton onPress={onBack} style={styles.devBackButton} />
       )}
 
+      {/* Dev Button - Top Right */}
+      {process.env.EXPO_PUBLIC_APP_ENV === 'development' && (
+        <TouchableOpacity
+          style={styles.devButton}
+          onPress={() =>
+            handleSeedPhraseChange(
+              process.env.EXPO_PUBLIC_DEV_SEED_PHRASE || '',
+            )
+          }
+        >
+          <Text style={styles.devButtonText}>DEV</Text>
+        </TouchableOpacity>
+      )}
+
       <KeyboardAvoidingView
         style={styles.content}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         {/* Header Section */}
         <View style={styles.header}>
-          <View style={styles.spacer} />
+          <View style={styles.iconContainer}>
+            <Key size={32} color="#00CFFF" strokeWidth={1.5} />
+          </View>
 
-          <Text style={styles.title}>
-            Welcome
-            {username.length > 0 && (
-              <Text style={styles.usernameText}> {username}</Text>
-            )}
-          </Text>
+          <Text style={styles.title}>Import Wallet</Text>
           <Text style={styles.subtitle}>
-            Please enter your username to get started with your wallet setup
+            Enter your existing wallet's seed phrase to recover your wallet
           </Text>
         </View>
 
         {/* Form Section */}
         <View style={styles.form}>
-          <Text style={styles.label}>Username</Text>
+          <Text style={styles.label}>Seed Phrase</Text>
 
           <Animated.View
             style={[
               styles.inputContainer,
-              username.length > 0 &&
-                (isUsernameTaken || (!isValid && error)
+              seedPhrase.length > 0 &&
+                (error
                   ? styles.inputError
                   : isValid
                     ? styles.inputValid
@@ -121,20 +134,19 @@ export default function CreateUsernameStep({
               },
             ]}
           >
-            <View style={styles.inputWrapper}>
-              <Text style={styles.atSymbol}>@</Text>
-              <TextInput
-                style={styles.input}
-                value={username}
-                onChangeText={handleUsernameChange}
-                placeholder="username"
-                placeholderTextColor={colors.textSecondary}
-                autoCapitalize="none"
-                autoCorrect={false}
-                maxLength={20}
-                editable={!isLoading}
-              />
-            </View>
+            <TextInput
+              style={styles.input}
+              value={seedPhrase}
+              onChangeText={handleSeedPhraseChange}
+              placeholder="Enter your 12 or 24 word seed phrase"
+              placeholderTextColor={colors.textSecondary}
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
+              autoCapitalize="none"
+              autoCorrect={false}
+              editable={!isLoading}
+            />
           </Animated.View>
 
           <View style={styles.helperContainer}>
@@ -142,7 +154,17 @@ export default function CreateUsernameStep({
               <Text style={styles.errorText}>{error}</Text>
             ) : (
               <Text style={styles.helperText}>
-                3-20 characters, letters, numbers, and underscores only
+                {seedPhrase
+                  .trim()
+                  .split(/\s+/)
+                  .filter((word) => word.length > 0).length > 0
+                  ? `${
+                      seedPhrase
+                        .trim()
+                        .split(/\s+/)
+                        .filter((word) => word.length > 0).length
+                    } words entered`
+                  : 'Enter each word separated by a space'}
               </Text>
             )}
           </View>
@@ -161,9 +183,7 @@ export default function CreateUsernameStep({
                 styles.buttonBackground,
                 !isValid
                   ? { backgroundColor: colors.backgroundMedium }
-                  : isUsernameTaken
-                    ? { backgroundColor: '#ff5252' }
-                    : { backgroundColor: '#00CFFF' },
+                  : { backgroundColor: '#00CFFF' },
               ]}
             >
               <Text
@@ -172,19 +192,13 @@ export default function CreateUsernameStep({
                   isValid && styles.continueButtonTextActive,
                 ]}
               >
-                {isLoading
-                  ? 'Loading...'
-                  : isUsernameTaken
-                    ? 'Username Taken'
-                    : 'Continue'}
+                {isLoading ? 'Importing...' : 'Import Wallet'}
               </Text>
-              {!isUsernameTaken && (
-                <ArrowRight
-                  size={20}
-                  color={isValid ? '#000000' : colors.textSecondary}
-                  strokeWidth={2}
-                />
-              )}
+              <ArrowRight
+                size={20}
+                color={isValid ? '#000000' : colors.textSecondary}
+                strokeWidth={2}
+              />
             </View>
           </TouchableOpacity>
         </View>
@@ -212,8 +226,14 @@ const styles = StyleSheet.create({
     marginBottom: 32,
     marginTop: 20,
   },
-  spacer: {
-    height: 104, // 80px height + 24px marginBottom from iconContainer
+  iconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(0, 207, 255, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
   },
   title: {
     fontSize: 32,
@@ -221,9 +241,6 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     marginBottom: 12,
     textAlign: 'center',
-  },
-  usernameText: {
-    color: '#00CFFF',
   },
   subtitle: {
     fontSize: 16,
@@ -250,18 +267,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     backgroundColor: colors.backgroundMedium,
     marginBottom: 12,
-  },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 18,
-  },
-  atSymbol: {
-    fontSize: 18,
-    fontFamily: 'Inter-Medium',
-    color: '#00CFFF',
-    marginRight: 8,
+    minHeight: 120,
   },
   inputValid: {
     borderColor: '#00CFFF',
@@ -271,9 +277,27 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    fontSize: 18,
+    fontSize: 16,
     fontFamily: 'Inter-Medium',
     color: colors.textPrimary,
+    paddingHorizontal: 20,
+    paddingVertical: 18,
+    lineHeight: 24,
+  },
+  devButton: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 50 : 20,
+    right: 20,
+    zIndex: 1000,
+    backgroundColor: '#FFB800',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  devButtonText: {
+    fontSize: 12,
+    fontFamily: 'Inter-Bold',
+    color: '#000000',
   },
   helperContainer: {
     minHeight: 24,
@@ -308,9 +332,6 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     gap: 12,
-  },
-  continueButtonActive: {
-    backgroundColor: colors.primary,
   },
   continueButtonText: {
     fontSize: 18,
