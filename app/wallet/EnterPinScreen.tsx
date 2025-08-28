@@ -4,14 +4,11 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  ActivityIndicator,
+  Platform,
   Animated,
 } from 'react-native';
 import { unlockApp } from '@/services/walletService';
-import PinInputCard from '@/components/wallet/PinInputCard';
-import NumericKeyboard from '@/components/keyboard/NumericKeyboard';
-import { Lock } from 'lucide-react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import CircularNumericKeyboard from '@/components/keyboard/CircularNumericKeyboard';
 import { triggerShake } from '@/utils/animations';
 import ScreenContainer from '@/components/ScreenContainer';
 
@@ -103,74 +100,60 @@ const EnterPinScreen: React.FC<EnterPinScreenProps> = ({
   };
 
   return (
-    <ScreenContainer>
-      <View style={styles.content}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.logoContainer}>
-            <LinearGradient
-              colors={['rgba(124, 92, 255, 0.15)', 'rgba(124, 92, 255, 0.05)']}
-              style={styles.logoBadge}
-            >
-              <Lock size={32} color="#7c5cff" />
-            </LinearGradient>
-          </View>
-          <Text style={styles.title}>Enter Your PIN</Text>
-        </View>
+    <ScreenContainer edges={['top', 'bottom']}>
+      <View style={styles.container}>
+        {/* Title */}
+        <Text style={styles.title}>Enter Your PIN</Text>
 
-        {/* PIN Input */}
-        <View style={styles.pinContainer}>
-          <PinInputCard
-            pin={pin}
-            onPinChange={(newPin) => {
-              setPin(newPin);
-              if (error) setError(null);
-            }}
-            headerIcon={<Lock size={20} color="#7c5cff" />}
-            headerText="Enter PIN"
-            instruction={{
-              empty: 'Use the keypad below to enter PIN',
-              incomplete: '{count} more digits',
-              complete: 'PIN complete',
-            }}
-          />
-        </View>
-
-        {/* Error Message - Fixed height container to prevent layout shift */}
-        <View style={styles.errorContainer}>
-          {error ? (
+        {/* Error Message */}
+        {error && (
+          <Animated.View
+            style={[
+              styles.errorContainer,
+              { transform: [{ translateX: shakeAnimationValue }] },
+            ]}
+          >
             <Text style={styles.errorText}>{error}</Text>
-          ) : (
-            <Text style={styles.errorTextPlaceholder}> </Text>
-          )}
+          </Animated.View>
+        )}
+
+        {/* PIN Dots Container */}
+        <View style={styles.pinDotsContainer}>
+          <View style={styles.pinDots}>
+            {Array.from({ length: 4 }, (_, index) => (
+              <View
+                key={index}
+                style={[
+                  styles.pinDot,
+                  index < pin.length && styles.pinDotFilled,
+                ]}
+              />
+            ))}
+          </View>
         </View>
 
-        {/* Bottom Section - Keyboard and Button */}
-        <View style={styles.bottomSection}>
-          {/* Numeric Keyboard */}
-          <NumericKeyboard onKeyPress={handleKeyPress} />
+        {/* Circular Numeric Keyboard */}
+        <CircularNumericKeyboard onKeyPress={handleKeyPress} />
 
-          {/* Unlock Button */}
-          <View style={styles.buttonContainer}>
-            <Animated.View
-              style={{ transform: [{ translateX: shakeAnimationValue }] }}
+        {/* Button Container */}
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity
+            style={[
+              styles.unlockButton,
+              pin.length === 4 && styles.unlockButtonActive,
+            ]}
+            onPress={handleUnlockWallet}
+            disabled={isLoading || pin.length < 4}
+          >
+            <Text
+              style={[
+                styles.unlockButtonText,
+                pin.length === 4 && styles.unlockButtonTextActive,
+              ]}
             >
-              <TouchableOpacity
-                style={[
-                  styles.unlockButton,
-                  (isLoading || pin.length < 4) && styles.unlockButtonDisabled,
-                ]}
-                onPress={handleUnlockWallet}
-                disabled={isLoading || pin.length < 4}
-              >
-                {isLoading ? (
-                  <ActivityIndicator size={20} color="#ffffff" />
-                ) : (
-                  <Text style={styles.buttonText}>Unlock Wallet</Text>
-                )}
-              </TouchableOpacity>
-            </Animated.View>
-          </View>
+              {isLoading ? 'Unlocking...' : 'Unlock Wallet'}
+            </Text>
+          </TouchableOpacity>
         </View>
       </View>
     </ScreenContainer>
@@ -180,73 +163,71 @@ const EnterPinScreen: React.FC<EnterPinScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#121212',
-  },
-  content: {
-    flex: 1,
-    padding: 24,
-    justifyContent: 'center',
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  logoContainer: {
-    marginBottom: 24,
-  },
-  logoBadge: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 20,
   },
   title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#ffffff',
+    fontSize: 28,
+    fontWeight: '600',
+    color: '#FFFFFF',
     textAlign: 'center',
-  },
-  pinContainer: {
-    marginBottom: 32,
-  },
-  bottomSection: {
-    marginTop: 'auto',
-  },
-  buttonContainer: {
-    paddingBottom: 24,
+    marginBottom: 40, // First easily adjustable gap
   },
   errorContainer: {
-    marginTop: 16,
+    marginBottom: 20,
     paddingHorizontal: 16,
-    minHeight: 40, // Reserve space to prevent layout shift
-    justifyContent: 'center',
   },
   errorText: {
     color: '#ef4444',
     fontSize: 14,
     textAlign: 'center',
   },
-  errorTextPlaceholder: {
-    color: 'transparent',
-    fontSize: 14,
-    textAlign: 'center',
+  pinDotsContainer: {
+    marginBottom: 40, // Second easily adjustable gap
+    alignItems: 'center',
+  },
+  pinDots: {
+    flexDirection: 'row',
+    gap: 15,
+  },
+  pinDot: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#333333',
+    borderWidth: 1,
+    borderColor: '#555555',
+  },
+  pinDotFilled: {
+    backgroundColor: '#00CFFF',
+    borderColor: '#00CFFF',
+  },
+  buttonContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 20,
+    right: 20,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 24,
   },
   unlockButton: {
-    backgroundColor: '#7c5cff',
-    height: 50,
-    borderRadius: 25,
-    alignItems: 'center',
+    width: '100%',
+    height: 56,
+    backgroundColor: '#333333',
+    borderRadius: 28,
     justifyContent: 'center',
+    alignItems: 'center',
   },
-  unlockButtonDisabled: {
-    backgroundColor: '#4a4a4a',
-    opacity: 0.6,
+  unlockButtonActive: {
+    backgroundColor: '#00CFFF',
   },
-  buttonText: {
-    color: '#ffffff',
-    fontSize: 16,
+  unlockButtonText: {
+    fontSize: 18,
     fontWeight: '600',
+    color: '#999999',
+  },
+  unlockButtonTextActive: {
+    color: '#000000',
   },
 });
 
