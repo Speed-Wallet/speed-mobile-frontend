@@ -38,7 +38,7 @@ const ActionButton = ({
 const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
-    width: '23%', // Keeps the button spacing
+    width: '18%', // Reduced from 23% to fit 5 buttons (5 × 18% = 90%)
   },
   card: {
     width: '100%',

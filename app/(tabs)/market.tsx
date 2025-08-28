@@ -139,7 +139,11 @@ export default function MarketScreen() {
             Name
           </Text>
           {sortBy === 'name' && (
-            <ArrowUpDown size={14} color="#00CFFF" style={{ marginLeft: 4 }} />
+            <ArrowUpDown
+              size={14}
+              color={colors.backgroundDark}
+              style={{ marginLeft: 4 }}
+            />
           )}
         </TouchableOpacity>
 
@@ -159,7 +163,11 @@ export default function MarketScreen() {
             Price
           </Text>
           {sortBy === 'price' && (
-            <ArrowUpDown size={14} color="#00CFFF" style={{ marginLeft: 4 }} />
+            <ArrowUpDown
+              size={14}
+              color={colors.backgroundDark}
+              style={{ marginLeft: 4 }}
+            />
           )}
         </TouchableOpacity>
 
@@ -180,11 +188,15 @@ export default function MarketScreen() {
           </Text>
           {sortBy === 'change' &&
             (sortDirection === 'asc' ? (
-              <TrendingUp size={14} color="#00CFFF" style={{ marginLeft: 4 }} />
+              <TrendingUp
+                size={14}
+                color={colors.backgroundDark}
+                style={{ marginLeft: 4 }}
+              />
             ) : (
               <TrendingDown
                 size={14}
-                color="#00CFFF"
+                color={colors.backgroundDark}
                 style={{ marginLeft: 4 }}
               />
             ))}
@@ -240,26 +252,30 @@ const styles = StyleSheet.create({
   sortOptionsContainer: {
     flexDirection: 'row',
     paddingHorizontal: 16,
-    marginBottom: 8,
+    marginBottom: 16,
+    gap: 12,
   },
   sortOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    marginRight: 8,
-    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 25,
+    backgroundColor: colors.backgroundMedium,
+    minHeight: 44,
   },
   activeSortOption: {
-    backgroundColor: colors.backgroundLight,
+    backgroundColor: '#00CFFF',
   },
   sortOptionText: {
     color: colors.textSecondary,
     fontFamily: 'Inter-Medium',
-    fontSize: 14,
+    fontSize: 15,
+    fontWeight: '600',
   },
   activeSortOptionText: {
-    color: '#00CFFF',
+    color: colors.backgroundDark,
+    fontWeight: '600',
   },
   listContent: {
     paddingHorizontal: 16,
