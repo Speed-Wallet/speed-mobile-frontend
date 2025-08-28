@@ -163,18 +163,23 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
 
   const handleConfirmSave = async () => {
     if (!mnemonic || !publicKey) return;
+
+    // Set loading immediately before any validation
+    setIsLoading(true);
+
     if (pin !== confirmPin) {
+      setIsLoading(false);
       setPinError(
         'Incorrect PIN entered. The PINs do not match. Please try again.',
       );
       return;
     }
     if (pin.length < 4) {
+      setIsLoading(false);
       setPinError('Invalid PIN. PIN must be at least 4 digits.');
       return;
     }
 
-    setIsLoading(true);
     try {
       // Create the app-level PIN first (this is the first wallet)
       await createAppPin(pin);

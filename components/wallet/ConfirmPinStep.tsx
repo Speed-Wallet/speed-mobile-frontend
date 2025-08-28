@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useCallback } from 'react';
+import React, { useRef, useEffect, useCallback, useState } from 'react';
 import {
   StyleSheet,
   View,
@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Animated,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { triggerShake } from '@/utils/animations';
 import ScreenContainer from '@/components/ScreenContainer';
@@ -33,6 +34,31 @@ const ConfirmPinStep: React.FC<ConfirmPinStepProps> = ({
   onClearError,
 }) => {
   const shakeAnimationValue = useRef(new Animated.Value(0)).current;
+  const [isLocalLoading, setIsLocalLoading] = useState(false);
+
+  // Combined loading state
+  const loading = isLoading || isLocalLoading;
+
+  const handleConfirm = useCallback(() => {
+    setIsLocalLoading(true);
+    // Use requestAnimationFrame to ensure UI updates before calling parent
+    requestAnimationFrame(() => {
+      onConfirm();
+    });
+  }, [onConfirm]);
+
+  // Reset local loading when external loading changes or error occurs
+  useEffect(() => {
+    if (pinError) {
+      setIsLocalLoading(false);
+    }
+  }, [pinError]);
+
+  useEffect(() => {
+    if (!isLoading) {
+      setIsLocalLoading(false);
+    }
+  }, [isLoading]);
 
   const handleKeyPress = useCallback(
     (key: string) => {
@@ -93,18 +119,37 @@ const ConfirmPinStep: React.FC<ConfirmPinStepProps> = ({
             style={[
               styles.continueButton,
               confirmPin.length === 4 && styles.continueButtonActive,
+              loading && styles.continueButtonLoading,
             ]}
-            onPress={onConfirm}
-            disabled={isLoading || confirmPin.length < 4}
+            onPress={handleConfirm}
+            disabled={loading || confirmPin.length < 4}
           >
-            <Text
-              style={[
-                styles.continueButtonText,
-                confirmPin.length === 4 && styles.continueButtonTextActive,
-              ]}
-            >
-              {isLoading ? 'Confirming...' : 'Confirm'}
-            </Text>
+            {loading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator
+                  size="small"
+                  color="#000"
+                  style={styles.spinner}
+                />
+                <Text
+                  style={[
+                    styles.continueButtonText,
+                    styles.continueButtonTextActive,
+                  ]}
+                >
+                  Confirming...
+                </Text>
+              </View>
+            ) : (
+              <Text
+                style={[
+                  styles.continueButtonText,
+                  confirmPin.length === 4 && styles.continueButtonTextActive,
+                ]}
+              >
+                Confirm
+              </Text>
+            )}
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.backTextButton} onPress={onBack}>
@@ -192,6 +237,18 @@ const styles = StyleSheet.create({
   },
   continueButtonActive: {
     backgroundColor: '#00CFFF',
+  },
+  continueButtonLoading: {
+    backgroundColor: '#00CFFF',
+    opacity: 0.8,
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  spinner: {
+    marginRight: 8,
   },
   continueButtonText: {
     fontSize: 18,

@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import {
   StyleSheet,
   View,
@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Animated,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { CheckCircle, ArrowRight } from 'lucide-react-native';
 import ScreenContainer from '@/components/ScreenContainer';
@@ -22,6 +23,14 @@ const WalletSetupSuccessStep: React.FC<WalletSetupSuccessStepProps> = ({
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.95)).current;
   const translateY = useRef(new Animated.Value(20)).current;
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleComplete = useCallback(() => {
+    setIsLoading(true);
+    requestAnimationFrame(() => {
+      onComplete();
+    });
+  }, [onComplete]);
 
   useEffect(() => {
     Animated.parallel([
@@ -57,7 +66,7 @@ const WalletSetupSuccessStep: React.FC<WalletSetupSuccessStepProps> = ({
           ]}
         >
           <View style={styles.iconBackground}>
-            <CheckCircle size={64} color="#00CFFF" />
+            <CheckCircle size={64} color="#22C55E" />
           </View>
         </Animated.View>
 
@@ -90,13 +99,30 @@ const WalletSetupSuccessStep: React.FC<WalletSetupSuccessStepProps> = ({
           ]}
         >
           <TouchableOpacity
-            style={styles.continueButton}
+            style={[
+              styles.continueButton,
+              isLoading && styles.continueButtonLoading,
+            ]}
             activeOpacity={0.8}
-            onPress={onComplete}
+            onPress={handleComplete}
+            disabled={isLoading}
           >
             <View style={styles.buttonBackground}>
-              <Text style={styles.buttonText}>Get Started</Text>
-              <ArrowRight size={20} color="#000000" />
+              {isLoading ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator
+                    size="small"
+                    color="#000"
+                    style={styles.spinner}
+                  />
+                  <Text style={styles.buttonText}>Loading...</Text>
+                </View>
+              ) : (
+                <>
+                  <Text style={styles.buttonText}>Go to Wallet</Text>
+                  <ArrowRight size={20} color="#000000" />
+                </>
+              )}
             </View>
           </TouchableOpacity>
         </Animated.View>
@@ -120,11 +146,11 @@ const styles = StyleSheet.create({
     width: 140,
     height: 140,
     borderRadius: 70,
-    backgroundColor: 'rgba(0, 207, 255, 0.1)',
+    backgroundColor: 'rgba(34, 197, 94, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: 'rgba(0, 207, 255, 0.3)',
+    borderColor: 'rgba(34, 197, 94, 0.3)',
   },
   messageContainer: {
     alignItems: 'center',
@@ -158,6 +184,17 @@ const styles = StyleSheet.create({
     height: 54,
     borderRadius: 27,
     overflow: 'hidden',
+  },
+  continueButtonLoading: {
+    opacity: 0.8,
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  spinner: {
+    marginRight: 8,
   },
   buttonBackground: {
     flex: 1,
