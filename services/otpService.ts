@@ -29,13 +29,17 @@ export interface CheckEmailStatusResponse {
 
 export async function sendOtp(email: string): Promise<SendOtpResponse> {
   try {
-    const authHeaders = await AuthService.getAuthHeader();
+    const token = await AuthService.getToken();
+
+    if (!token) {
+      throw new Error('No authentication token available');
+    }
 
     const response = await fetch(`${BASE_BACKEND_URL}/email/request-otp`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...authHeaders,
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({ email }),
     });
@@ -70,13 +74,17 @@ export async function verifyOtp(
   code: string,
 ): Promise<VerifyOtpResponse> {
   try {
-    const authHeaders = await AuthService.getAuthHeader();
+    const token = await AuthService.getToken();
+
+    if (!token) {
+      throw new Error('No authentication token available');
+    }
 
     const response = await fetch(`${BASE_BACKEND_URL}/email/verify-otp`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...authHeaders,
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
         email,
@@ -113,13 +121,17 @@ export async function checkEmailStatus(
   email: string,
 ): Promise<CheckEmailStatusResponse> {
   try {
-    const authHeaders = await AuthService.getAuthHeader();
+    const token = await AuthService.getToken();
+
+    if (!token) {
+      throw new Error('No authentication token available');
+    }
 
     const response = await fetch(`${BASE_BACKEND_URL}/email/check-status`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...authHeaders,
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({ email }),
     });

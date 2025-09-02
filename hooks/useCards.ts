@@ -124,10 +124,6 @@ export const useCards = (email: string | null) => {
         return allCards;
       } catch (error) {
         console.error('Error fetching cards:', error);
-        // In development mode, show demo cards if API fails
-        if (process.env.EXPO_PUBLIC_APP_ENV === 'development') {
-          return initialCards;
-        }
         return [];
       }
     },

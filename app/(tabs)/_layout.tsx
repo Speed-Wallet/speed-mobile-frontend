@@ -70,6 +70,11 @@ export default function TabLayout() {
           title: 'Rewards',
           tabBarIcon: ({ color, size }) => <Gift size={size} color={color} />,
         }}
+        listeners={{
+          tabPress: (e) => {
+            e.preventDefault();
+          },
+        }}
       />
       <Tabs.Screen
         name="settings"
