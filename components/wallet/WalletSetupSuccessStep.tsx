@@ -7,9 +7,11 @@ import {
   Animated,
   Platform,
   ActivityIndicator,
+  SafeAreaView,
 } from 'react-native';
-import { CheckCircle, ArrowRight } from 'lucide-react-native';
-import ScreenContainer from '@/components/ScreenContainer';
+import { CheckCircle } from 'lucide-react-native';
+import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
+import PrimaryActionButton from '@/components/buttons/PrimaryActionButton';
 
 interface WalletSetupSuccessStepProps {
   onComplete: () => void;
@@ -53,99 +55,78 @@ const WalletSetupSuccessStep: React.FC<WalletSetupSuccessStepProps> = ({
   }, []);
 
   return (
-    <ScreenContainer edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        {/* Success Icon */}
+        {/* Success Icon and Message */}
         <Animated.View
           style={[
-            styles.iconContainer,
+            styles.messageArea,
             {
               opacity: fadeAnim,
               transform: [{ scale: scaleAnim }, { translateY }],
             },
           ]}
         >
-          <View style={styles.iconBackground}>
-            <CheckCircle size={64} color="#22C55E" />
+          <View style={styles.iconContainer}>
+            <View style={styles.iconBackground}>
+              <CheckCircle size={scale(64)} color="#22C55E" />
+            </View>
+          </View>
+
+          <View style={styles.messageContainer}>
+            <Text style={styles.title}>Wallet Created Successfully!</Text>
+            <Text style={styles.subtitle}>
+              Welcome <Text style={styles.username}>{username}</Text>! Your
+              wallet has been created and secured with a PIN. Keep your seed
+              phrase and PIN safe!
+            </Text>
           </View>
         </Animated.View>
-
-        {/* Success Message */}
-        <Animated.View
-          style={[
-            styles.messageContainer,
-            {
-              opacity: fadeAnim,
-              transform: [{ translateY }],
-            },
-          ]}
-        >
-          <Text style={styles.title}>Wallet Created Successfully!</Text>
-          <Text style={styles.subtitle}>
-            Welcome <Text style={styles.username}>{username}</Text>! Your wallet
-            has been created and secured with a PIN. Keep your seed phrase and
-            PIN safe!
-          </Text>
-        </Animated.View>
-
-        {/* Continue Button */}
-        <Animated.View
-          style={[
-            styles.buttonContainer,
-            {
-              opacity: fadeAnim,
-              transform: [{ translateY }],
-            },
-          ]}
-        >
-          <TouchableOpacity
-            style={[
-              styles.continueButton,
-              isLoading && styles.continueButtonLoading,
-            ]}
-            activeOpacity={0.8}
-            onPress={handleComplete}
-            disabled={isLoading}
-          >
-            <View style={styles.buttonBackground}>
-              {isLoading ? (
-                <View style={styles.loadingContainer}>
-                  <ActivityIndicator
-                    size="small"
-                    color="#000"
-                    style={styles.spinner}
-                  />
-                  <Text style={styles.buttonText}>Loading...</Text>
-                </View>
-              ) : (
-                <>
-                  <Text style={styles.buttonText}>Go to Wallet</Text>
-                  <ArrowRight size={20} color="#000000" />
-                </>
-              )}
-            </View>
-          </TouchableOpacity>
-        </Animated.View>
       </View>
-    </ScreenContainer>
+
+      {/* Continue Button */}
+      <Animated.View
+        style={[
+          styles.buttonContainer,
+          {
+            opacity: fadeAnim,
+            transform: [{ translateY }],
+          },
+        ]}
+      >
+        <PrimaryActionButton
+          title={isLoading ? 'Loading...' : 'Go to Wallet'}
+          onPress={handleComplete}
+          disabled={isLoading}
+          loading={isLoading}
+          showArrow={!isLoading}
+        />
+      </Animated.View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#121212',
+  },
   content: {
     flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: Platform.OS === 'ios' ? 120 : 140,
+    paddingHorizontal: scale(24),
+    paddingTop: Platform.OS === 'ios' ? verticalScale(60) : verticalScale(80),
+  },
+  messageArea: {
     alignItems: 'center',
   },
   iconContainer: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: verticalScale(40),
   },
   iconBackground: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
+    width: scale(140),
+    height: scale(140),
+    borderRadius: scale(70),
     backgroundColor: 'rgba(34, 197, 94, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -154,60 +135,31 @@ const styles = StyleSheet.create({
   },
   messageContainer: {
     alignItems: 'center',
-    marginBottom: 60,
   },
   title: {
-    fontSize: 28,
+    fontSize: moderateScale(28),
     fontWeight: '900',
     color: '#ffffff',
     textAlign: 'center',
-    marginBottom: 16,
+    marginBottom: verticalScale(16),
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: moderateScale(16),
     color: '#9ca3af',
     textAlign: 'center',
-    lineHeight: 24,
-    paddingHorizontal: 20,
+    lineHeight: verticalScale(24),
+    paddingHorizontal: scale(20),
   },
   username: {
     fontWeight: '700',
     color: '#ffffff',
   },
   buttonContainer: {
-    position: 'absolute',
-    bottom: Platform.OS === 'ios' ? 34 : 24,
-    left: 24,
-    right: 24,
-  },
-  continueButton: {
-    height: 54,
-    borderRadius: 27,
-    overflow: 'hidden',
-  },
-  continueButtonLoading: {
-    opacity: 0.8,
-  },
-  loadingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  spinner: {
-    marginRight: 8,
-  },
-  buttonBackground: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#00CFFF',
-    gap: 8,
-  },
-  buttonText: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#000000',
+    width: '100%',
+    paddingHorizontal: scale(24),
+    paddingBottom:
+      Platform.OS === 'ios' ? verticalScale(34) : verticalScale(24),
+    paddingTop: verticalScale(20),
   },
 });
 

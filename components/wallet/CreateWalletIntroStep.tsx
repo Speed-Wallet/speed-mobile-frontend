@@ -9,8 +9,10 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useRef, useEffect } from 'react';
+import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import SpeedLogo from '@/components/SpeedLogo';
+import ActionButtonGroup from '@/components/buttons/ActionButtonGroup';
 import 'react-native-get-random-values';
 
 interface CreateWalletIntroStepProps {
@@ -59,7 +61,7 @@ export default function CreateWalletIntroStep({
             },
           ]}
         >
-          <SpeedLogo size={180} />
+          <SpeedLogo size={scale(140)} />
         </Animated.View>
       </View>
 
@@ -73,27 +75,19 @@ export default function CreateWalletIntroStep({
           },
         ]}
       >
-        <TouchableOpacity
-          style={styles.createButton}
-          activeOpacity={0.8}
-          onPress={onCreateWallet}
-          disabled={isLoading}
-        >
-          <View style={styles.buttonBackground}>
-            <Text style={styles.buttonText}>Create new wallet</Text>
-          </View>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.importLink}
-          onPress={() => {
+        <ActionButtonGroup
+          primaryTitle="Create new wallet"
+          onPrimaryPress={onCreateWallet}
+          primaryDisabled={isLoading}
+          primaryLoading={isLoading}
+          secondaryTitle="Import wallet"
+          onSecondaryPress={() => {
             if (onImportWallet) {
               onImportWallet();
             }
           }}
-        >
-          <Text style={styles.importText}>I already have a wallet</Text>
-        </TouchableOpacity>
+          secondaryStyle="text"
+        />
       </Animated.View>
     </SafeAreaView>
   );
@@ -106,55 +100,20 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: 24,
+    paddingHorizontal: scale(24),
     alignItems: 'center',
+    justifyContent: 'center',
   },
   logoContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 180,
-    marginBottom: 60,
+    flex: 1,
   },
   buttonContainer: {
     width: '100%',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingBottom: Platform.OS === 'ios' ? 34 : 24,
-  },
-  createButton: {
-    width: '100%',
-    height: 54,
-    borderRadius: 27,
-    overflow: 'hidden',
-    marginBottom: 16,
-  },
-  buttonBackground: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#00CFFF',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  buttonText: {
-    fontSize: 17,
-    fontFamily: 'Inter-SemiBold',
-    color: '#000000',
-    fontWeight: '600',
-  },
-  importLink: {
-    alignItems: 'center',
-    paddingVertical: 12,
-  },
-  importText: {
-    fontSize: 18,
-    color: '#00CFFF',
-    fontWeight: '500',
-  },
-  disabledLink: {
-    opacity: 0.5,
-  },
-  disabledText: {
-    color: '#888888',
+    paddingHorizontal: scale(24),
+    paddingBottom:
+      Platform.OS === 'ios' ? verticalScale(34) : verticalScale(24),
+    paddingTop: verticalScale(20),
   },
 });

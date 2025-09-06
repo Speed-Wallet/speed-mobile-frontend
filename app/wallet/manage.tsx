@@ -1,9 +1,9 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Plus, Wallet, Key } from 'lucide-react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import colors from '@/constants/colors';
-import BackButton from '@/components/BackButton';
+import BackButton from '@/components/buttons/BackButton';
 
 const walletOptions = [
   {
@@ -45,15 +45,16 @@ export default function WalletManageScreen() {
 
         {walletOptions.map((option, index) => (
           <Animated.View key={option.id} entering={FadeIn.delay(index * 100)}>
-            <BackButton
+            <TouchableOpacity
               style={styles.optionCard}
-              onPress={() => router.push(option.route)}
-            />
-            <View style={styles.iconContainer}>{option.icon}</View>
-            <View style={styles.optionInfo}>
-              <Text style={styles.optionTitle}>{option.title}</Text>
-              <Text style={styles.optionSubtitle}>{option.subtitle}</Text>
-            </View>
+              onPress={() => router.push(option.route as any)}
+            >
+              <View style={styles.iconContainer}>{option.icon}</View>
+              <View style={styles.optionInfo}>
+                <Text style={styles.optionTitle}>{option.title}</Text>
+                <Text style={styles.optionSubtitle}>{option.subtitle}</Text>
+              </View>
+            </TouchableOpacity>
           </Animated.View>
         ))}
 

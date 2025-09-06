@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
+import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 
 interface CircularNumericKeyboardProps {
   onKeyPress: (key: string) => void;
@@ -50,21 +51,21 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 20,
+    marginBottom: verticalScale(15),
   },
   row: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginVertical: 15,
+    marginVertical: verticalScale(8),
   },
   key: {
-    width: 85,
-    height: 85,
-    borderRadius: 42.5,
+    width: scale(65),
+    height: scale(65),
+    borderRadius: scale(32.5),
     backgroundColor: '#2A2A2A',
     justifyContent: 'center',
     alignItems: 'center',
-    marginHorizontal: 15,
+    marginHorizontal: scale(10),
     borderWidth: 1,
     borderColor: '#3A3A3A',
   },
@@ -73,12 +74,12 @@ const styles = StyleSheet.create({
     borderWidth: 0,
   },
   keyText: {
-    fontSize: 28,
+    fontSize: moderateScale(22),
     fontWeight: '400',
     color: '#FFFFFF',
   },
   backspaceText: {
-    fontSize: 24,
+    fontSize: moderateScale(20),
     color: '#FFFFFF',
   },
 });

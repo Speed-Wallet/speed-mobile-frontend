@@ -9,11 +9,12 @@ import {
   Animated,
 } from 'react-native';
 import { useState, useRef } from 'react';
-import { ArrowRight, Key } from 'lucide-react-native';
+import { Key } from 'lucide-react-native';
 import colors from '@/constants/colors';
 import ScreenHeader from '@/components/ScreenHeader';
 import ScreenContainer from '@/components/ScreenContainer';
-import BackButton from '@/components/BackButton';
+import BackButton from '@/components/buttons/BackButton';
+import PrimaryActionButton from '@/components/buttons/PrimaryActionButton';
 import { triggerShake } from '@/utils/animations';
 
 interface ImportWalletStepProps {
@@ -170,35 +171,13 @@ export default function ImportWalletStep({
 
         {/* Continue Button */}
         <View style={styles.buttonWrapper}>
-          <TouchableOpacity
-            style={styles.continueButton}
+          <PrimaryActionButton
+            title={isLoading ? 'Importing...' : 'Import Wallet'}
             onPress={handleContinue}
-            disabled={!isValid || isLoading}
-            activeOpacity={0.8}
-          >
-            <View
-              style={[
-                styles.buttonBackground,
-                !isValid
-                  ? { backgroundColor: colors.backgroundMedium }
-                  : { backgroundColor: '#00CFFF' },
-              ]}
-            >
-              <Text
-                style={[
-                  styles.continueButtonText,
-                  isValid && styles.continueButtonTextActive,
-                ]}
-              >
-                {isLoading ? 'Importing...' : 'Import Wallet'}
-              </Text>
-              <ArrowRight
-                size={20}
-                color={isValid ? '#000000' : colors.textSecondary}
-                strokeWidth={2}
-              />
-            </View>
-          </TouchableOpacity>
+            disabled={!isValid}
+            loading={isLoading}
+            showArrow={true}
+          />
         </View>
       </KeyboardAvoidingView>
     </ScreenContainer>
@@ -319,27 +298,5 @@ const styles = StyleSheet.create({
   buttonWrapper: {
     marginTop: 'auto',
     paddingBottom: Platform.OS === 'ios' ? 34 : 24,
-  },
-  continueButton: {
-    height: 54,
-    borderRadius: 27,
-    overflow: 'hidden',
-  },
-  buttonBackground: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-    height: '100%',
-    gap: 12,
-  },
-  continueButtonText: {
-    fontSize: 18,
-    fontFamily: 'Inter-SemiBold',
-    color: colors.textSecondary,
-  },
-  continueButtonTextActive: {
-    color: '#000000',
   },
 });

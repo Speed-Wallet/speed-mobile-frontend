@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
 import colors from '@/constants/colors';
-import BackButton from './BackButton';
+import BackButton from './buttons/BackButton';
 
 interface ScreenHeaderProps {
   title?: string;

@@ -8,12 +8,14 @@ import {
   Animated,
   Platform,
 } from 'react-native';
-import { Eye, EyeOff, RotateCcw, ArrowRight } from 'lucide-react-native';
+import { Eye, EyeOff, RotateCcw } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import colors from '@/constants/colors';
 import ScreenContainer from '@/components/ScreenContainer';
-import BackButton from '@/components/BackButton';
+import BackButton from '@/components/buttons/BackButton';
 import WordBox from '@/components/wallet/WordBox';
+import ActionButtonGroup from '@/components/buttons/ActionButtonGroup';
 import { triggerShake } from '@/utils/animations';
 
 interface SeedPhraseVerificationStepProps {
@@ -153,28 +155,6 @@ const SeedPhraseVerificationStep: React.FC<SeedPhraseVerificationStepProps> = ({
     return rows;
   };
 
-  const getButtonStyle = () => {
-    switch (buttonState) {
-      case 'try-again':
-        return [styles.actionButton, styles.actionButtonError];
-      case 'continue':
-        return [styles.actionButton, styles.actionButtonSuccess];
-      default:
-        return [styles.actionButton, styles.actionButtonDisabled];
-    }
-  };
-
-  const getButtonTextStyle = () => {
-    switch (buttonState) {
-      case 'try-again':
-        return [styles.actionButtonText, styles.actionButtonTextError];
-      case 'continue':
-        return [styles.actionButtonText, styles.actionButtonTextSuccess];
-      default:
-        return [styles.actionButtonText, styles.actionButtonTextDisabled];
-    }
-  };
-
   const getButtonText = () => {
     switch (buttonState) {
       case 'try-again':
@@ -249,7 +229,7 @@ const SeedPhraseVerificationStep: React.FC<SeedPhraseVerificationStepProps> = ({
                   style={styles.iconButton}
                   onPress={shuffleWords}
                 >
-                  <RotateCcw size={20} color="#9ca3af" />
+                  <RotateCcw size={scale(20)} color="#9ca3af" />
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -257,84 +237,62 @@ const SeedPhraseVerificationStep: React.FC<SeedPhraseVerificationStepProps> = ({
                   onPress={() => setIsVisible(!isVisible)}
                 >
                   {isVisible ? (
-                    <EyeOff size={20} color="#9ca3af" />
+                    <EyeOff size={scale(20)} color="#9ca3af" />
                   ) : (
-                    <Eye size={20} color="#9ca3af" />
+                    <Eye size={scale(20)} color="#9ca3af" />
                   )}
                 </TouchableOpacity>
               </View>
               {renderWordGrid()}
-            </LinearGradient>
 
-            {/* Controls Row */}
-            <View style={styles.controlsRow}>
-              <TouchableOpacity
-                style={[
-                  styles.backspaceButton,
-                  selectedWords.length === 0 && styles.backspaceButtonDisabled,
-                ]}
-                onPress={handleBackspace}
-                disabled={selectedWords.length === 0}
-              >
-                <Text
+              {/* Controls Row */}
+              <View style={styles.controlsRow}>
+                <TouchableOpacity
                   style={[
-                    styles.backspaceButtonText,
+                    styles.backspaceButton,
                     selectedWords.length === 0 &&
-                      styles.backspaceButtonTextDisabled,
+                      styles.backspaceButtonDisabled,
                   ]}
+                  onPress={handleBackspace}
+                  disabled={selectedWords.length === 0}
                 >
-                  ← Backspace
-                </Text>
-              </TouchableOpacity>
+                  <Text
+                    style={[
+                      styles.backspaceButtonText,
+                      selectedWords.length === 0 &&
+                        styles.backspaceButtonTextDisabled,
+                    ]}
+                  >
+                    ← Backspace
+                  </Text>
+                </TouchableOpacity>
 
-              <Text style={styles.wordCounter}>
-                {selectedWords.length}/{words.length} words
-              </Text>
-            </View>
+                <Text style={styles.wordCounter}>
+                  {selectedWords.length}/{words.length} words
+                </Text>
+              </View>
+            </LinearGradient>
           </Animated.View>
         </ScrollView>
 
         {/* Action Buttons */}
-        <View style={styles.buttonContainer}>
-          <Animated.View
-            style={[
-              styles.animatedButtonWrapper,
-              {
-                transform: [{ translateX: shakeAnimationValue }],
-              },
-            ]}
-          >
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={handleButtonPress}
-              disabled={isLoading || buttonState === 'disabled'}
-              activeOpacity={0.8}
-            >
-              <View
-                style={[
-                  styles.buttonBackground,
-                  {
-                    backgroundColor:
-                      buttonState === 'disabled'
-                        ? colors.backgroundMedium
-                        : buttonState === 'try-again'
-                          ? '#ff5252'
-                          : '#00CFFF',
-                  },
-                ]}
-              >
-                <Text style={getButtonTextStyle()}>{getButtonText()}</Text>
-                {buttonState === 'continue' && (
-                  <ArrowRight size={20} color="#000" />
-                )}
-              </View>
-            </TouchableOpacity>
-          </Animated.View>
-
-          <TouchableOpacity style={styles.backTextButton} onPress={onBack}>
-            <Text style={styles.backTextButtonText}>Back to Seed Phrase</Text>
-          </TouchableOpacity>
-        </View>
+        <ActionButtonGroup
+          primaryTitle={getButtonText()}
+          onPrimaryPress={handleButtonPress}
+          primaryDisabled={isLoading || buttonState === 'disabled'}
+          primaryLoading={isLoading}
+          primaryVariant={
+            buttonState === 'disabled'
+              ? 'primary'
+              : buttonState === 'try-again'
+                ? 'error'
+                : 'primary'
+          }
+          primaryShowArrow={buttonState === 'continue'}
+          secondaryTitle="Back to Seed Phrase"
+          onSecondaryPress={onBack}
+          secondaryStyle="text"
+        />
       </View>
     </ScreenContainer>
   );
@@ -343,11 +301,11 @@ const SeedPhraseVerificationStep: React.FC<SeedPhraseVerificationStepProps> = ({
 const styles = StyleSheet.create({
   devBackButton: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 50 : 20,
-    left: 20,
+    top: Platform.OS === 'ios' ? verticalScale(50) : verticalScale(20),
+    left: scale(20),
     zIndex: 1000,
     backgroundColor: '#FFB800',
-    borderRadius: 20,
+    borderRadius: moderateScale(20),
   },
   container: {
     flex: 1,
@@ -356,65 +314,67 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: 20,
+    paddingHorizontal: scale(20),
   },
   scrollView: {
-    flex: 1,
+    flexGrow: 1,
   },
   titleSection: {
-    paddingTop: Platform.OS === 'ios' ? 20 : 40,
-    marginBottom: 24,
+    paddingTop: Platform.OS === 'ios' ? verticalScale(10) : verticalScale(20),
+    marginBottom: verticalScale(24),
   },
   title: {
-    fontSize: 28,
+    fontSize: moderateScale(24),
     fontFamily: 'Inter-Bold',
     color: colors.textPrimary,
-    marginBottom: 22,
+    marginBottom: verticalScale(8),
     textAlign: 'left',
   },
   description: {
-    fontSize: 16,
+    fontSize: moderateScale(16),
     fontFamily: 'Inter-Regular',
     color: colors.textSecondary,
-    lineHeight: 22,
+    lineHeight: moderateScale(22),
     textAlign: 'left',
   },
   seedPhraseContainer: {
-    marginBottom: 32,
+    marginBottom: verticalScale(16),
   },
   seedPhraseBox: {
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 16,
+    borderRadius: scale(12),
+    padding: scale(12),
+    marginBottom: verticalScale(16),
   },
   seedPhraseHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: verticalScale(4),
   },
   iconButton: {
-    padding: 8,
+    padding: scale(8),
   },
   wordRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 12,
-    height: 44, // Fixed height to prevent expansion
+    marginBottom: verticalScale(12),
+    height: verticalScale(44), // Fixed height to prevent expansion
   },
   controlsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginTop: verticalScale(2),
   },
   backspaceButton: {
-    padding: 8,
+    padding: scale(8),
+    marginRight: 4,
   },
   backspaceButtonDisabled: {
     opacity: 0.5,
   },
   backspaceButtonText: {
-    fontSize: 14,
+    fontSize: moderateScale(14),
     fontFamily: 'Inter-Medium',
     color: colors.textSecondary,
   },
@@ -422,81 +382,26 @@ const styles = StyleSheet.create({
     color: colors.textSecondary + '50',
   },
   wordCounter: {
-    fontSize: 14,
+    fontSize: moderateScale(14),
     fontFamily: 'Inter-Medium',
     color: colors.textSecondary,
+    marginRight: 4,
   },
   skipButton: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 50 : 20,
-    right: 20,
+    top: Platform.OS === 'ios' ? verticalScale(50) : verticalScale(20),
+    right: scale(20),
     zIndex: 1000,
     backgroundColor: colors.warning,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
+    paddingVertical: verticalScale(12),
+    paddingHorizontal: scale(16),
+    borderRadius: moderateScale(8),
     alignItems: 'center',
   },
   skipButtonText: {
-    fontSize: 14,
+    fontSize: moderateScale(14),
     fontFamily: 'Inter-SemiBold',
     color: colors.backgroundDark,
-  },
-  buttonContainer: {
-    marginTop: 'auto',
-    paddingBottom: Platform.OS === 'ios' ? 34 : 24,
-  },
-  animatedButtonWrapper: {
-    width: '100%',
-  },
-  actionButton: {
-    height: 54,
-    borderRadius: 27,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  buttonBackground: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-    height: '100%',
-    gap: 8,
-  },
-  actionButtonSuccess: {
-    backgroundColor: colors.primary,
-  },
-  actionButtonError: {
-    backgroundColor: colors.error,
-  },
-  actionButtonDisabled: {
-    backgroundColor: colors.backgroundMedium,
-  },
-  actionButtonText: {
-    fontSize: 17,
-    fontFamily: 'Inter-SemiBold',
-    color: colors.white,
-  },
-  actionButtonTextSuccess: {
-    color: colors.white,
-  },
-  actionButtonTextError: {
-    color: colors.white,
-  },
-  actionButtonTextDisabled: {
-    color: colors.textSecondary,
-  },
-  backTextButton: {
-    alignItems: 'center',
-    paddingVertical: 8,
-    marginTop: 12,
-  },
-  backTextButtonText: {
-    color: '#00CFFF',
-    fontSize: 16,
-    fontWeight: '500',
   },
 });
 

@@ -2,7 +2,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Bluetooth, Zap } from 'lucide-react-native';
 import colors from '@/constants/colors';
-import BackButton from '@/components/BackButton';
+import BackButton from '@/components/buttons/BackButton';
 
 export default function ConnectHardwareScreen() {
   const router = useRouter();

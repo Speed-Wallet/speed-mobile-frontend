@@ -8,11 +8,13 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
+import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import { triggerShake } from '@/utils/animations';
 import ScreenContainer from '@/components/ScreenContainer';
-import BackButton from '@/components/BackButton';
+import BackButton from '@/components/buttons/BackButton';
 import CircularNumericKeyboard from '@/components/keyboard/CircularNumericKeyboard';
 import CustomAlert from '@/components/CustomAlert';
+import ActionButtonGroup from '@/components/buttons/ActionButtonGroup';
 
 interface ConfirmPinStepProps {
   confirmPin: string;
@@ -95,67 +97,41 @@ const ConfirmPinStep: React.FC<ConfirmPinStepProps> = ({
 
       <View style={styles.content}>
         {/* Header */}
-        <Text style={styles.title}>Confirm Your PIN</Text>
-
-        {/* PIN Dots */}
-        <View style={styles.pinDotsContainer}>
-          {[...Array(4)].map((_, index) => (
-            <View
-              key={index}
-              style={[
-                styles.pinDot,
-                index < confirmPin.length && styles.pinDotFilled,
-              ]}
-            />
-          ))}
+        <View style={styles.header}>
+          <Text style={styles.title}>Confirm Your PIN</Text>
         </View>
 
-        {/* Keyboard */}
-        <CircularNumericKeyboard onKeyPress={handleKeyPress} />
+        {/* Main Content */}
+        <View style={styles.mainContent}>
+          {/* PIN Dots Container */}
+          <View style={styles.pinDotsContainer}>
+            <View style={styles.pinDots}>
+              {Array.from({ length: 4 }, (_, index) => (
+                <View
+                  key={index}
+                  style={[
+                    styles.pinDot,
+                    index < confirmPin.length && styles.pinDotFilled,
+                  ]}
+                />
+              ))}
+            </View>
+          </View>
+
+          {/* Circular Numeric Keyboard */}
+          <CircularNumericKeyboard onKeyPress={handleKeyPress} />
+        </View>
 
         {/* Button Container */}
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={[
-              styles.continueButton,
-              confirmPin.length === 4 && styles.continueButtonActive,
-              loading && styles.continueButtonLoading,
-            ]}
-            onPress={handleConfirm}
-            disabled={loading || confirmPin.length < 4}
-          >
-            {loading ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator
-                  size="small"
-                  color="#000"
-                  style={styles.spinner}
-                />
-                <Text
-                  style={[
-                    styles.continueButtonText,
-                    styles.continueButtonTextActive,
-                  ]}
-                >
-                  Confirming...
-                </Text>
-              </View>
-            ) : (
-              <Text
-                style={[
-                  styles.continueButtonText,
-                  confirmPin.length === 4 && styles.continueButtonTextActive,
-                ]}
-              >
-                Confirm
-              </Text>
-            )}
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.backTextButton} onPress={onBack}>
-            <Text style={styles.backTextButtonText}>Back to Create PIN</Text>
-          </TouchableOpacity>
-        </View>
+        <ActionButtonGroup
+          primaryTitle={loading ? 'Confirming...' : 'Confirm'}
+          onPrimaryPress={handleConfirm}
+          primaryDisabled={loading || confirmPin.length < 4}
+          primaryLoading={loading}
+          secondaryTitle="Back to Create PIN"
+          onSecondaryPress={onBack}
+          secondaryStyle="text"
+        />
       </View>
 
       {/* Custom Alert for PIN Error */}
@@ -182,90 +158,51 @@ const ConfirmPinStep: React.FC<ConfirmPinStepProps> = ({
 const styles = StyleSheet.create({
   devBackButton: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 50 : 20,
-    left: 20,
+    top: Platform.OS === 'ios' ? verticalScale(50) : verticalScale(20),
+    left: scale(20),
     zIndex: 1000,
     backgroundColor: '#FFB800',
-    borderRadius: 20,
+    borderRadius: moderateScale(20),
   },
   content: {
     flex: 1,
-    paddingHorizontal: 20,
+    paddingHorizontal: scale(20),
+  },
+  header: {
+    paddingTop: Platform.OS === 'ios' ? verticalScale(10) : verticalScale(20),
+    marginBottom: verticalScale(24),
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: moderateScale(28),
+    fontWeight: '600',
+    color: '#FFFFFF',
+    textAlign: 'center',
+  },
+  mainContent: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  title: {
-    fontSize: 28,
-    fontWeight: '600',
-    color: '#ffffff',
-    textAlign: 'center',
-    marginBottom: 40, // Gap 1: easily adjustable
-  },
   pinDotsContainer: {
+    marginBottom: verticalScale(30),
+    alignItems: 'center',
+  },
+  pinDots: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    marginBottom: 40, // Gap 2: easily adjustable
+    gap: scale(15),
   },
   pinDot: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
+    width: scale(16),
+    height: scale(16),
+    borderRadius: scale(8),
     backgroundColor: '#333333',
-    marginHorizontal: 10,
     borderWidth: 1,
     borderColor: '#555555',
   },
   pinDotFilled: {
     backgroundColor: '#00CFFF',
     borderColor: '#00CFFF',
-  },
-  buttonContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 20,
-    right: 20,
-    paddingBottom: Platform.OS === 'ios' ? 34 : 24,
-  },
-  continueButton: {
-    width: '100%',
-    height: 56,
-    backgroundColor: '#333333',
-    borderRadius: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  continueButtonActive: {
-    backgroundColor: '#00CFFF',
-  },
-  continueButtonLoading: {
-    backgroundColor: '#00CFFF',
-    opacity: 0.8,
-  },
-  loadingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  spinner: {
-    marginRight: 8,
-  },
-  continueButtonText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#999999',
-  },
-  continueButtonTextActive: {
-    color: '#000000',
-  },
-  backTextButton: {
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  backTextButtonText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#00CFFF',
   },
 });
 
