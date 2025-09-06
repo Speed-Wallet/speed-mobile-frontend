@@ -11,14 +11,16 @@ import {
 import Svg, { Path, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowRight } from 'lucide-react-native';
+import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import colors from '@/constants/colors';
 import SpeedLogo from '@/components/SpeedLogo';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const SLIDER_WIDTH = SCREEN_WIDTH - 40;
-const SLIDER_HEIGHT = 65;
-const THUMB_SIZE = 55;
-const SLIDER_TRACK_WIDTH = SLIDER_WIDTH - THUMB_SIZE;
+const SLIDER_WIDTH = SCREEN_WIDTH - scale(40);
+const THUMB_SIZE = scale(55);
+const THUMB_MARGIN = scale(3);
+const SLIDER_HEIGHT = THUMB_SIZE + THUMB_MARGIN * 2;
+const SLIDER_TRACK_WIDTH = SLIDER_WIDTH - THUMB_SIZE - THUMB_MARGIN * 2;
 
 interface WelcomeScreenProps {
   onGetStarted: () => void;
@@ -155,7 +157,7 @@ const SlideToUnlock = ({ onUnlock }: { onUnlock: () => void }) => {
           ]}
           {...panResponder.panHandlers}
         >
-          <ArrowRight size={26} color="#CCCCCC" strokeWidth={2} />
+          <ArrowRight size={scale(26)} color="#CCCCCC" strokeWidth={2} />
         </Animated.View>
       </View>
     </View>
@@ -169,7 +171,7 @@ export default function WelcomeScreen({ onGetStarted }: WelcomeScreenProps) {
 
       <View style={styles.content}>
         <View style={styles.logoContainer}>
-          <SpeedLogo size={180} />
+          <SpeedLogo size={scale(140)} />
         </View>
 
         <View style={styles.textContainer}>
@@ -209,41 +211,45 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    justifyContent: 'flex-start',
-    paddingHorizontal: 20,
-    paddingTop: 40,
+    justifyContent: 'space-between',
+    paddingHorizontal: scale(20),
+    paddingTop: verticalScale(20),
+    paddingBottom: verticalScale(40),
     alignItems: 'center',
   },
   logoContainer: {
     alignItems: 'center',
-    marginTop: 100,
-    marginBottom: 60,
+    flex: 1,
+    justifyContent: 'center',
+    marginTop: verticalScale(40),
   },
   textContainer: {
     alignItems: 'center',
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-end',
+    paddingBottom: verticalScale(20),
   },
   title: {
-    fontSize: 48,
+    fontSize: moderateScale(48),
     fontWeight: '700',
     color: '#00CFFF',
     fontFamily: 'Inter-Bold',
-    letterSpacing: 2,
-    marginBottom: 20,
+    letterSpacing: scale(2),
+    marginBottom: verticalScale(20),
+    textAlign: 'center',
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: moderateScale(16),
     color: colors.textPrimary,
     textAlign: 'center',
-    lineHeight: 24,
+    lineHeight: moderateScale(24),
     fontFamily: 'Inter-Regular',
     opacity: 0.8,
+    marginBottom: verticalScale(40),
   },
   sliderWrapper: {
     width: '100%',
     alignItems: 'center',
-    marginTop: 40,
   },
   sliderContainer: {
     width: SLIDER_WIDTH,
@@ -251,24 +257,25 @@ const styles = StyleSheet.create({
   sliderTrack: {
     height: SLIDER_HEIGHT,
     backgroundColor: '#00CFFF',
-    borderRadius: 30,
+    borderRadius: verticalScale(30),
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
   },
   sliderText: {
-    fontSize: 16,
+    fontSize: moderateScale(16),
     fontWeight: '600',
     color: '#121212',
     fontFamily: 'Inter-SemiBold',
   },
   sliderThumb: {
     position: 'absolute',
-    left: 5,
+    left: THUMB_MARGIN,
+    top: THUMB_MARGIN,
     width: THUMB_SIZE,
     height: THUMB_SIZE,
     backgroundColor: '#121212',
-    borderRadius: 25,
+    borderRadius: scale(25),
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 3,
@@ -278,10 +285,10 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   arrowText: {
-    fontSize: 28,
+    fontSize: moderateScale(28),
     color: '#FFFFFF',
     fontWeight: 'bold',
     textAlign: 'center',
-    lineHeight: 28,
+    lineHeight: moderateScale(28),
   },
 });

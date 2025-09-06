@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
-import ActionButton from '@/components/ActionButton';
+import ActionButton from '@/components/buttons/ActionButton';
 import {
   ArrowUp,
   ArrowDown,

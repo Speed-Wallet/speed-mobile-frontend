@@ -18,10 +18,12 @@ import {
   CreditCard,
   Rocket,
 } from 'lucide-react-native';
+import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import colors from '@/constants/colors';
 
-const { width: screenWidth } = Dimensions.get('window');
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const TRANSITION_DISTANCE = screenWidth * 0.8;
+const ORBITAL_SIZE = Math.min(screenWidth * 0.8, screenHeight * 0.4);
 
 interface OnboardingCarouselProps {
   onComplete: () => void;
@@ -57,7 +59,11 @@ const slides: OnboardingSlide[] = [
 
 const OrbitalDesign = ({ icon }: { icon: 'chart' | 'card' | 'rocket' }) => {
   const renderIcon = () => {
-    const iconProps = { size: 50, color: '#FFFFFF', strokeWidth: 2.5 };
+    const iconProps = {
+      size: ORBITAL_SIZE * 0.125,
+      color: '#FFFFFF',
+      strokeWidth: 2.5,
+    };
 
     switch (icon) {
       case 'chart':
@@ -74,8 +80,8 @@ const OrbitalDesign = ({ icon }: { icon: 'chart' | 'card' | 'rocket' }) => {
   return (
     <View style={styles.orbitalContainer}>
       <Svg
-        height="400"
-        width="400"
+        height={ORBITAL_SIZE}
+        width={ORBITAL_SIZE}
         viewBox="0 0 400 400"
         style={styles.orbitalSvg}
       >
@@ -254,7 +260,7 @@ export default function OnboardingCarousel({
           disabled={currentSlide === 0 || isAnimating}
         >
           <ChevronLeft
-            size={24}
+            size={scale(24)}
             color={currentSlide === 0 || isAnimating ? '#666' : '#CCCCCC'}
           />
         </TouchableOpacity>
@@ -269,7 +275,10 @@ export default function OnboardingCarousel({
           onPress={goToNextSlide}
           disabled={isAnimating}
         >
-          <ChevronRight size={24} color={isAnimating ? '#666' : '#CCCCCC'} />
+          <ChevronRight
+            size={scale(24)}
+            color={isAnimating ? '#666' : '#CCCCCC'}
+          />
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -283,26 +292,29 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 40,
+    paddingHorizontal: scale(20),
+    paddingTop: verticalScale(20),
+    paddingBottom: verticalScale(20),
   },
   orbitalContainer: {
     position: 'relative',
-    width: 400,
-    height: 400,
+    width: ORBITAL_SIZE,
+    height: ORBITAL_SIZE,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 80,
+    flex: 2,
+    maxHeight: '50%',
+    marginBottom: verticalScale(-40),
   },
   orbitalSvg: {
     position: 'absolute',
   },
   centralIcon: {
-    width: 150,
-    height: 150,
-    borderRadius: 75,
+    width: ORBITAL_SIZE * 0.375,
+    height: ORBITAL_SIZE * 0.375,
+    borderRadius: ORBITAL_SIZE * 0.1875,
     backgroundColor: '#00CFFF',
     justifyContent: 'center',
     alignItems: 'center',
@@ -314,35 +326,38 @@ const styles = StyleSheet.create({
   },
   textContainer: {
     alignItems: 'center',
-    marginBottom: 60,
-    marginTop: 20,
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: scale(10),
+    minHeight: '25%',
   },
   title: {
-    fontSize: 32,
+    fontSize: moderateScale(32),
     fontWeight: 'bold',
     color: '#00CFFF',
     textAlign: 'center',
-    marginBottom: 16,
+    marginBottom: verticalScale(16),
     fontFamily: 'Inter-Bold',
-    letterSpacing: 1,
+    letterSpacing: scale(1),
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: moderateScale(16),
     color: colors.textSecondary,
     textAlign: 'center',
-    lineHeight: 24,
+    lineHeight: moderateScale(24),
     fontFamily: 'Inter-Regular',
   },
   navigation: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingBottom: 40,
+    paddingHorizontal: scale(20),
+    paddingVertical: verticalScale(20),
+    minHeight: scale(70),
   },
   navButton: {
-    width: 50,
-    height: 50,
+    width: scale(50),
+    height: scale(50),
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -354,15 +369,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: scale(8),
+    height: scale(8),
+    borderRadius: scale(4),
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    marginHorizontal: 4,
+    marginHorizontal: scale(4),
   },
   activeDot: {
     backgroundColor: '#00CFFF',
-    width: 24,
-    borderRadius: 4,
+    width: scale(24),
+    borderRadius: scale(4),
   },
 });

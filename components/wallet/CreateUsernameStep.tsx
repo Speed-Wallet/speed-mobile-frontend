@@ -9,11 +9,13 @@ import {
   Animated,
 } from 'react-native';
 import { useState, useRef } from 'react';
-import { User, ArrowRight } from 'lucide-react-native';
+import { User } from 'lucide-react-native';
+import { verticalScale, scale } from 'react-native-size-matters';
 import colors from '@/constants/colors';
 import ScreenHeader from '@/components/ScreenHeader';
 import ScreenContainer from '@/components/ScreenContainer';
-import BackButton from '@/components/BackButton';
+import PrimaryActionButton from '@/components/buttons/PrimaryActionButton';
+import BackButton from '@/components/buttons/BackButton';
 import { triggerShake } from '@/utils/animations';
 
 interface CreateUsernameStepProps {
@@ -84,111 +86,88 @@ export default function CreateUsernameStep({
         <BackButton onPress={onBack} style={styles.devBackButton} />
       )}
 
-      <KeyboardAvoidingView
-        style={styles.content}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
-        {/* Header Section */}
-        <View style={styles.header}>
-          <View style={styles.spacer} />
-
-          <Text style={styles.title}>
-            Welcome
-            {username.length > 0 && (
-              <Text style={styles.usernameText}> {username}</Text>
-            )}
-          </Text>
-          <Text style={styles.subtitle}>
-            Please enter your username to get started with your wallet setup
-          </Text>
-        </View>
-
-        {/* Form Section */}
-        <View style={styles.form}>
-          <Text style={styles.label}>Username</Text>
-
-          <Animated.View
-            style={[
-              styles.inputContainer,
-              username.length > 0 &&
-                (isUsernameTaken || (!isValid && error)
-                  ? styles.inputError
-                  : isValid
-                    ? styles.inputValid
-                    : styles.inputContainer),
-              {
-                transform: [{ translateX: shakeAnimationValue }],
-              },
-            ]}
-          >
-            <View style={styles.inputWrapper}>
-              <Text style={styles.atSymbol}>@</Text>
-              <TextInput
-                style={styles.input}
-                value={username}
-                onChangeText={handleUsernameChange}
-                placeholder="username"
-                placeholderTextColor={colors.textSecondary}
-                autoCapitalize="none"
-                autoCorrect={false}
-                maxLength={20}
-                editable={!isLoading}
-              />
-            </View>
-          </Animated.View>
-
-          <View style={styles.helperContainer}>
-            {error ? (
-              <Text style={styles.errorText}>{error}</Text>
-            ) : (
-              <Text style={styles.helperText}>
-                3-20 characters, letters, numbers, and underscores only
-              </Text>
-            )}
+      <View style={styles.content}>
+        <KeyboardAvoidingView
+          style={styles.keyboardView}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          {/* Header Section */}
+          <View style={styles.header}>
+            <Text style={styles.title}>
+              Welcome
+              {username.length > 0 && (
+                <Text style={styles.usernameText}> {username}</Text>
+              )}
+            </Text>
+            <Text style={styles.subtitle}>
+              Please enter your username to get started with your wallet setup
+            </Text>
           </View>
-        </View>
 
-        {/* Continue Button */}
-        <View style={styles.buttonWrapper}>
-          <TouchableOpacity
-            style={styles.continueButton}
-            onPress={handleContinue}
-            disabled={!isValid || isLoading}
-            activeOpacity={0.8}
-          >
-            <View
+          {/* Form Section */}
+          <View style={styles.form}>
+            <Text style={styles.label}>Username</Text>
+
+            <Animated.View
               style={[
-                styles.buttonBackground,
-                !isValid
-                  ? { backgroundColor: colors.backgroundMedium }
-                  : isUsernameTaken
-                    ? { backgroundColor: '#ff5252' }
-                    : { backgroundColor: '#00CFFF' },
+                styles.inputContainer,
+                username.length > 0 &&
+                  (isUsernameTaken || (!isValid && error)
+                    ? styles.inputError
+                    : isValid
+                      ? styles.inputValid
+                      : styles.inputContainer),
+                {
+                  transform: [{ translateX: shakeAnimationValue }],
+                },
               ]}
             >
-              <Text
-                style={[
-                  styles.continueButtonText,
-                  isValid && styles.continueButtonTextActive,
-                ]}
-              >
-                {isLoading
+              <View style={styles.inputWrapper}>
+                <Text style={styles.atSymbol}>@</Text>
+                <TextInput
+                  style={styles.input}
+                  value={username}
+                  onChangeText={handleUsernameChange}
+                  placeholder="username"
+                  placeholderTextColor={colors.textSecondary}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  maxLength={20}
+                  editable={!isLoading}
+                />
+              </View>
+            </Animated.View>
+
+            <View style={styles.helperContainer}>
+              {error ? (
+                <Text style={styles.errorText}>{error}</Text>
+              ) : (
+                <Text style={styles.helperText}>
+                  3-20 characters, letters, numbers, and underscores only
+                </Text>
+              )}
+            </View>
+          </View>
+
+          {/* Continue Button */}
+          <View style={styles.buttonWrapper}>
+            <PrimaryActionButton
+              title={
+                isLoading
                   ? 'Loading...'
                   : isUsernameTaken
                     ? 'Username Taken'
-                    : 'Continue'}
-              </Text>
-              {!isUsernameTaken && (
-                <ArrowRight
-                  size={20}
-                  color={isValid ? '#000000' : colors.textSecondary}
-                  strokeWidth={2}
-                />
-              )}
-            </View>
-          </TouchableOpacity>
-        </View>
-      </KeyboardAvoidingView>
+                    : 'Continue'
+              }
+              onPress={handleContinue}
+              disabled={!isValid || isLoading}
+              loading={isLoading}
+              variant={isUsernameTaken ? 'error' : 'primary'}
+              showArrow={!isUsernameTaken && isValid}
+            />
+          </View>
+        </KeyboardAvoidingView>
+      </View>
     </ScreenContainer>
   );
 }
@@ -204,23 +183,22 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 20,
+    paddingHorizontal: scale(20),
+  },
+  keyboardView: {
+    flex: 1,
   },
   header: {
-    alignItems: 'center',
-    marginBottom: 32,
-    marginTop: 20,
-  },
-  spacer: {
-    height: 104, // 80px height + 24px marginBottom from iconContainer
+    alignItems: 'flex-start',
+    paddingTop: Platform.OS === 'ios' ? verticalScale(10) : verticalScale(20),
+    marginBottom: verticalScale(24),
   },
   title: {
     fontSize: 32,
     fontFamily: 'Inter-Bold',
     color: colors.textPrimary,
     marginBottom: 12,
-    textAlign: 'center',
+    textAlign: 'left',
   },
   usernameText: {
     color: '#00CFFF',
@@ -230,8 +208,8 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Regular',
     color: colors.textSecondary,
     lineHeight: 24,
-    textAlign: 'center',
-    paddingHorizontal: 20,
+    textAlign: 'left',
+    paddingHorizontal: 0,
     marginBottom: 8,
   },
   form: {
@@ -294,30 +272,5 @@ const styles = StyleSheet.create({
   buttonWrapper: {
     marginTop: 'auto',
     paddingBottom: Platform.OS === 'ios' ? 34 : 24,
-  },
-  continueButton: {
-    height: 54,
-    borderRadius: 27,
-    overflow: 'hidden',
-  },
-  buttonBackground: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-    height: '100%',
-    gap: 12,
-  },
-  continueButtonActive: {
-    backgroundColor: colors.primary,
-  },
-  continueButtonText: {
-    fontSize: 18,
-    fontFamily: 'Inter-SemiBold',
-    color: colors.textSecondary,
-  },
-  continueButtonTextActive: {
-    color: '#000000',
   },
 });

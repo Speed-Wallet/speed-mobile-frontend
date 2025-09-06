@@ -6,8 +6,10 @@ import {
   TouchableOpacity,
   Platform,
 } from 'react-native';
+import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import ScreenContainer from '@/components/ScreenContainer';
 import CircularNumericKeyboard from '@/components/keyboard/CircularNumericKeyboard';
+import PrimaryActionButton from '@/components/buttons/PrimaryActionButton';
 
 interface CreatePinStepProps {
   pin: string;
@@ -37,47 +39,41 @@ const CreatePinStep: React.FC<CreatePinStepProps> = ({
 
   return (
     <ScreenContainer edges={['top', 'bottom']}>
-      <View style={styles.container}>
-        {/* Title */}
-        <Text style={styles.title}>Create Your PIN</Text>
-
-        {/* PIN Dots Container */}
-        <View style={styles.pinDotsContainer}>
-          <View style={styles.pinDots}>
-            {Array.from({ length: 4 }, (_, index) => (
-              <View
-                key={index}
-                style={[
-                  styles.pinDot,
-                  index < pin.length && styles.pinDotFilled,
-                ]}
-              />
-            ))}
-          </View>
+      <View style={styles.content}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.title}>Create Your PIN</Text>
         </View>
 
-        {/* Circular Numeric Keyboard */}
-        <CircularNumericKeyboard onKeyPress={handleKeyPress} />
+        {/* Main Content */}
+        <View style={styles.mainContent}>
+          {/* PIN Dots Container */}
+          <View style={styles.pinDotsContainer}>
+            <View style={styles.pinDots}>
+              {Array.from({ length: 4 }, (_, index) => (
+                <View
+                  key={index}
+                  style={[
+                    styles.pinDot,
+                    index < pin.length && styles.pinDotFilled,
+                  ]}
+                />
+              ))}
+            </View>
+          </View>
+
+          {/* Circular Numeric Keyboard */}
+          <CircularNumericKeyboard onKeyPress={handleKeyPress} />
+        </View>
 
         {/* Button Container */}
         <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={[
-              styles.continueButton,
-              pin.length === 4 && styles.continueButtonActive,
-            ]}
+          <PrimaryActionButton
+            title={isLoading ? 'Creating...' : 'Continue'}
             onPress={onNext}
             disabled={isLoading || pin.length < 4}
-          >
-            <Text
-              style={[
-                styles.continueButtonText,
-                pin.length === 4 && styles.continueButtonTextActive,
-              ]}
-            >
-              {isLoading ? 'Creating...' : 'Continue'}
-            </Text>
-          </TouchableOpacity>
+            loading={isLoading}
+          />
         </View>
       </View>
     </ScreenContainer>
@@ -85,31 +81,38 @@ const CreatePinStep: React.FC<CreatePinStepProps> = ({
 };
 
 const styles = StyleSheet.create({
-  container: {
+  content: {
     flex: 1,
+    paddingHorizontal: scale(20),
+  },
+  header: {
+    paddingTop: Platform.OS === 'ios' ? verticalScale(10) : verticalScale(20),
+    marginBottom: verticalScale(24),
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
   },
   title: {
-    fontSize: 28,
+    fontSize: moderateScale(28),
     fontWeight: '600',
     color: '#FFFFFF',
     textAlign: 'center',
-    marginBottom: 40, // First easily adjustable gap
+  },
+  mainContent: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   pinDotsContainer: {
-    marginBottom: 40, // Second easily adjustable gap
+    marginBottom: verticalScale(30),
     alignItems: 'center',
   },
   pinDots: {
     flexDirection: 'row',
-    gap: 15,
+    gap: scale(15),
   },
   pinDot: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
+    width: scale(16),
+    height: scale(16),
+    borderRadius: scale(8),
     backgroundColor: '#333333',
     borderWidth: 1,
     borderColor: '#555555',
@@ -119,30 +122,8 @@ const styles = StyleSheet.create({
     borderColor: '#00CFFF',
   },
   buttonContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 20,
-    right: 20,
-    paddingBottom: Platform.OS === 'ios' ? 34 : 24,
-  },
-  continueButton: {
-    width: '100%',
-    height: 56,
-    backgroundColor: '#333333',
-    borderRadius: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  continueButtonActive: {
-    backgroundColor: '#00CFFF',
-  },
-  continueButtonText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#999999',
-  },
-  continueButtonTextActive: {
-    color: '#000000',
+    paddingBottom:
+      Platform.OS === 'ios' ? verticalScale(34) : verticalScale(24),
   },
 });
 

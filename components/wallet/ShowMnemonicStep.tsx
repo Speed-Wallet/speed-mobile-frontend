@@ -11,14 +11,15 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
-  ArrowRight,
   Copy,
   Eye,
   EyeOff,
   ShieldCheck,
   AlertTriangle,
 } from 'lucide-react-native';
+import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import WordBox from './WordBox';
+import PrimaryActionButton from '../buttons/PrimaryActionButton';
 
 interface ShowMnemonicStepProps {
   mnemonic: string;
@@ -97,7 +98,7 @@ const ShowMnemonicStep: React.FC<ShowMnemonicStepProps> = ({
             <Text style={styles.subtitle}>
               Write down these 12 words in order and keep them in a safe place.
               Never share them with anyone.{' '}
-              <Text style={{ fontWeight: 'bold', color: '#ffffff' }}>
+              <Text style={{ fontWeight: 'bold', color: '#d1d5db' }}>
                 Anyone with these words can access the funds in your wallet.
               </Text>
             </Text>
@@ -123,7 +124,7 @@ const ShowMnemonicStep: React.FC<ShowMnemonicStepProps> = ({
                 style={[styles.copyButton, copied && styles.copyButtonActive]}
                 onPress={handleCopy}
               >
-                <Copy size={20} color={copied ? '#00CFFF' : '#9ca3af'} />
+                <Copy size={scale(20)} color={copied ? '#00CFFF' : '#9ca3af'} />
                 <Text
                   style={[styles.copyText, copied && styles.copyTextActive]}
                 >
@@ -135,9 +136,9 @@ const ShowMnemonicStep: React.FC<ShowMnemonicStepProps> = ({
                 onPress={() => setIsVisible(!isVisible)}
               >
                 {isVisible ? (
-                  <EyeOff size={20} color="#9ca3af" />
+                  <EyeOff size={scale(20)} color="#9ca3af" />
                 ) : (
-                  <Eye size={20} color="#9ca3af" />
+                  <Eye size={scale(20)} color="#9ca3af" />
                 )}
               </TouchableOpacity>
             </View>
@@ -182,17 +183,13 @@ const ShowMnemonicStep: React.FC<ShowMnemonicStepProps> = ({
 
         {/* Action Button */}
         <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={styles.continueButton}
-            activeOpacity={0.8}
+          <PrimaryActionButton
+            title="I've Saved My Phrase"
             onPress={onNext}
             disabled={isLoading}
-          >
-            <View style={styles.buttonBackground}>
-              <Text style={styles.buttonText}>I've Saved My Phrase</Text>
-              <ArrowRight size={20} color="#000" />
-            </View>
-          </TouchableOpacity>
+            loading={isLoading}
+            showArrow={true}
+          />
         </View>
       </View>
     </SafeAreaView>
@@ -206,11 +203,14 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: 20,
+    paddingHorizontal: scale(20),
+    justifyContent: 'space-between',
   },
   header: {
-    paddingTop: Platform.OS === 'ios' ? 20 : 40,
-    marginBottom: 24,
+    paddingTop: Platform.OS === 'ios' ? verticalScale(10) : verticalScale(20),
+    flex: 0,
+    minHeight: '25%',
+    justifyContent: 'center',
   },
   headerContent: {
     alignItems: 'flex-start',
@@ -231,47 +231,49 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   title: {
-    fontSize: 28,
+    fontSize: moderateScale(24),
     fontWeight: '900',
     color: '#ffffff',
-    marginBottom: 22,
+    marginBottom: verticalScale(8),
     textAlign: 'left',
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: moderateScale(16),
     color: '#9ca3af',
     textAlign: 'left',
-    lineHeight: 22,
+    lineHeight: moderateScale(22),
   },
   seedPhraseContainer: {
-    marginTop: 20,
-    marginBottom: 24,
+    flex: 1,
+    justifyContent: 'center',
+    paddingVertical: verticalScale(10),
+    maxHeight: '50%',
   },
   seedPhraseCard: {
-    borderRadius: 12,
-    padding: 12,
+    borderRadius: scale(12),
+    padding: scale(12),
   },
   seedPhraseHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: verticalScale(16),
   },
   visibilityButton: {
-    padding: 8,
+    padding: scale(8),
   },
   copyButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 8,
+    padding: scale(8),
   },
   copyButtonActive: {
     opacity: 0.8,
   },
   copyText: {
     color: '#9ca3af',
-    marginLeft: 6,
-    fontSize: 14,
+    marginLeft: scale(6),
+    fontSize: moderateScale(14),
   },
   copyTextActive: {
     color: '#00CFFF',
@@ -280,7 +282,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    paddingHorizontal: 2,
+    paddingHorizontal: scale(2),
   },
   warningContainer: {
     marginBottom: 24,
@@ -315,40 +317,26 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   buttonContainer: {
-    marginTop: 'auto',
-    paddingBottom: Platform.OS === 'ios' ? 34 : 24,
-  },
-  continueButton: {
-    height: 54,
-    borderRadius: 27,
-    overflow: 'hidden',
-  },
-  buttonBackground: {
-    backgroundColor: '#00CFFF',
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  buttonText: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#000000',
-    marginRight: 8,
+    flex: 0,
+    paddingTop: verticalScale(20),
+    paddingBottom:
+      Platform.OS === 'ios' ? verticalScale(34) : verticalScale(24),
+    minHeight: '15%',
+    justifyContent: 'flex-end',
   },
   skipButton: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 50 : 20,
-    right: 20,
+    top: Platform.OS === 'ios' ? verticalScale(50) : verticalScale(20),
+    right: scale(20),
     zIndex: 1000,
     backgroundColor: '#FFB800',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
+    paddingVertical: verticalScale(12),
+    paddingHorizontal: scale(16),
+    borderRadius: scale(8),
     alignItems: 'center',
   },
   skipButtonText: {
-    fontSize: 14,
+    fontSize: moderateScale(14),
     fontWeight: '600',
     color: '#121212',
   },
