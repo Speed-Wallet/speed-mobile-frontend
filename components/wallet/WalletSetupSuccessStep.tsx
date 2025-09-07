@@ -99,7 +99,6 @@ const WalletSetupSuccessStep: React.FC<WalletSetupSuccessStepProps> = ({
           onPress={handleComplete}
           disabled={isLoading}
           loading={isLoading}
-          showArrow={!isLoading}
         />
       </Animated.View>
     </SafeAreaView>

@@ -163,7 +163,6 @@ export default function CreateUsernameStep({
               disabled={!isValid || isLoading}
               loading={isLoading}
               variant={isUsernameTaken ? 'error' : 'primary'}
-              showArrow={!isUsernameTaken && isValid}
             />
           </View>
         </KeyboardAvoidingView>

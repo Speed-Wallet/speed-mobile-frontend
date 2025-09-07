@@ -288,7 +288,6 @@ const SeedPhraseVerificationStep: React.FC<SeedPhraseVerificationStepProps> = ({
                 ? 'error'
                 : 'primary'
           }
-          primaryShowArrow={buttonState === 'continue'}
           secondaryTitle="Back to Seed Phrase"
           onSecondaryPress={onBack}
           secondaryStyle="text"
