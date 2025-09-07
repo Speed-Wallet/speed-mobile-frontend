@@ -15,6 +15,7 @@ import {
   ArrowDownLeft,
 } from 'lucide-react-native';
 import { useState, useEffect } from 'react';
+import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import ScreenHeader from '@/components/ScreenHeader';
 import ScreenContainer from '@/components/ScreenContainer';
 import { TokenPriceChart } from '@/components/charts';
@@ -222,7 +223,7 @@ export default function TokenDetailScreen() {
         onBack={() => router.back()}
         rightElement={
           <TouchableOpacity style={styles.headerButton}>
-            <Star size={24} color="#fff" />
+            <Star size={scale(20)} color="#fff" />
           </TouchableOpacity>
         }
       />
@@ -354,16 +355,25 @@ export default function TokenDetailScreen() {
 
       {/* Bottom Action Buttons */}
       <View style={styles.bottomActionContainer}>
-        <TouchableOpacity style={styles.actionButton}>
-          <ArrowRightLeft size={20} color="#fff" />
+        <TouchableOpacity
+          style={styles.actionButton}
+          onPress={() => router.push(`/transaction/trade?fromToken=${address}`)}
+        >
+          <ArrowRightLeft size={scale(18)} color="#fff" />
           <Text style={styles.actionButtonText}>Trade</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.actionButton}>
-          <ArrowUpRight size={20} color="#fff" />
+        <TouchableOpacity
+          style={styles.actionButton}
+          onPress={() => router.push(`/transaction/send?token=${address}`)}
+        >
+          <ArrowUpRight size={scale(18)} color="#fff" />
           <Text style={styles.actionButtonText}>Send</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.actionButton}>
-          <ArrowDownLeft size={20} color="#fff" />
+        <TouchableOpacity
+          style={styles.actionButton}
+          onPress={() => router.push('/transaction/receive')}
+        >
+          <ArrowDownLeft size={scale(18)} color="#fff" />
           <Text style={styles.actionButtonText}>Receive</Text>
         </TouchableOpacity>
       </View>
@@ -385,69 +395,69 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: scale(16),
   },
   loadingText: {
-    fontSize: 16,
+    fontSize: scale(14),
     color: '#9ca3af',
-    marginTop: 12,
+    marginTop: verticalScale(10),
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: scale(16),
   },
   errorText: {
-    fontSize: 16,
+    fontSize: scale(14),
     color: '#ef4444',
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: verticalScale(16),
   },
   retryButton: {
     backgroundColor: '#6366f1',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingHorizontal: scale(16),
+    paddingVertical: verticalScale(10),
+    borderRadius: scale(8),
   },
   retryButtonText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: scale(14),
     fontWeight: '600',
   },
   priceSection: {
     alignItems: 'center',
-    paddingVertical: 20,
+    paddingVertical: verticalScale(4),
   },
   price: {
-    fontSize: 36,
+    fontSize: scale(30),
     fontWeight: '700',
     color: '#fff',
-    marginBottom: 4,
+    marginBottom: verticalScale(3),
   },
   priceChange: {
-    fontSize: 16,
+    fontSize: scale(14),
     fontWeight: '600',
   },
   chartSelectedDisplay: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 4,
-    gap: 8,
+    marginTop: verticalScale(3),
+    gap: scale(6),
   },
   chartSelectedPrice: {
-    fontSize: 14,
+    fontSize: scale(12),
     fontWeight: '600',
   },
   chartSelectedPercentage: {
-    fontSize: 12,
+    fontSize: scale(10),
     fontWeight: '500',
   },
   chartContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 20,
-    paddingVertical: 10,
+    marginBottom: verticalScale(8),
+    paddingVertical: verticalScale(4),
   },
   chartLoadingContainer: {
     alignItems: 'center',
@@ -456,9 +466,9 @@ const styles = StyleSheet.create({
     width: screenWidth - 32,
   },
   chartLoadingText: {
-    fontSize: 14,
+    fontSize: scale(12),
     color: '#9ca3af',
-    marginTop: 8,
+    marginTop: verticalScale(6),
   },
   chartErrorContainer: {
     alignItems: 'center',
@@ -466,30 +476,29 @@ const styles = StyleSheet.create({
     height: 200,
     width: screenWidth - 32,
     backgroundColor: '#2a2a2a',
-    borderRadius: 16,
+    borderRadius: scale(16),
   },
   chartErrorText: {
-    fontSize: 14,
+    fontSize: scale(12),
     color: '#ef4444',
   },
   timeframeContainer: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
-    marginBottom: 32,
-    gap: 8,
-    justifyContent: 'center',
+    paddingHorizontal: scale(16),
+    marginBottom: verticalScale(16),
+    justifyContent: 'space-between',
   },
   timeframeButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingHorizontal: scale(16),
+    paddingVertical: verticalScale(6),
+    borderRadius: scale(16),
     backgroundColor: '#2a2a2a',
   },
   timeframeButtonActive: {
     backgroundColor: '#6366f1',
   },
   timeframeText: {
-    fontSize: 14,
+    fontSize: scale(12),
     color: '#9ca3af',
     fontWeight: '500',
   },
@@ -497,35 +506,35 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   section: {
-    paddingHorizontal: 16,
-    marginBottom: 32,
+    paddingHorizontal: scale(16),
+    marginBottom: verticalScale(20),
   },
   aboutSection: {
-    paddingHorizontal: 16,
-    marginBottom: 120, // Extra space for bottom buttons
+    paddingHorizontal: scale(16),
+    marginBottom: verticalScale(80), // Extra space for bottom buttons
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: scale(16),
     fontWeight: '600',
     color: '#fff',
-    marginBottom: 12,
+    marginBottom: verticalScale(10),
   },
   description: {
-    fontSize: 14,
+    fontSize: scale(13),
     color: '#9ca3af',
-    lineHeight: 20,
-    marginBottom: 20,
+    lineHeight: scale(18),
+    marginBottom: verticalScale(16),
   },
   statsContainer: {
     backgroundColor: '#2a2a2a',
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: scale(12),
+    padding: scale(12),
   },
   statRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: verticalScale(10),
     borderBottomWidth: 1,
     borderBottomColor: '#333',
   },
@@ -533,11 +542,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0,
   },
   statLabel: {
-    fontSize: 14,
+    fontSize: scale(13),
     color: '#9ca3af',
   },
   statValue: {
-    fontSize: 14,
+    fontSize: scale(13),
     fontWeight: '600',
     color: '#fff',
   },
@@ -548,12 +557,12 @@ const styles = StyleSheet.create({
     right: 0,
     flexDirection: 'row',
     backgroundColor: '#1a1a1a',
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    paddingBottom: 12,
+    paddingHorizontal: scale(12),
+    paddingVertical: verticalScale(12),
+    paddingBottom: verticalScale(12),
     borderTopWidth: 1,
     borderTopColor: '#333',
-    gap: 8,
+    gap: scale(8),
   },
   actionButton: {
     flex: 1,
@@ -561,12 +570,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    borderRadius: 12,
-    gap: 8,
+    paddingVertical: verticalScale(12),
+    borderRadius: scale(12),
+    gap: scale(6),
   },
   actionButtonText: {
-    fontSize: 16,
+    fontSize: scale(15),
     fontWeight: '600',
     color: '#fff',
   },
