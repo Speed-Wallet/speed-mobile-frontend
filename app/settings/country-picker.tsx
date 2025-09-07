@@ -13,6 +13,7 @@ import { router } from 'expo-router';
 import colors from '@/constants/colors';
 import { countries, Country } from '@/constants/countries';
 import { StorageService, PersonalInfo } from '@/utils/storage';
+import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 
 export default function CountryPickerScreen() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -84,13 +85,13 @@ export default function CountryPickerScreen() {
           onPress={() => router.back()}
           style={styles.closeButton}
         >
-          <X size={24} color={colors.textPrimary} />
+          <X size={scale(22)} color={colors.textPrimary} />
         </TouchableOpacity>
       </View>
 
       <View style={styles.searchContainer}>
         <Search
-          size={20}
+          size={scale(20)}
           color={colors.textSecondary}
           style={styles.searchIcon}
         />
@@ -123,8 +124,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingHorizontal: scale(15),
+    paddingVertical: verticalScale(15),
   },
   title: {
     fontSize: 18,
@@ -132,9 +133,9 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   closeButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: scale(36),
+    height: scale(36),
+    borderRadius: scale(18),
     backgroundColor: colors.backgroundMedium,
     alignItems: 'center',
     justifyContent: 'center',
@@ -142,54 +143,54 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: scale(15),
+    paddingVertical: verticalScale(11),
     borderColor: colors.backgroundMedium,
     borderWidth: 1,
-    borderRadius: 12,
-    marginHorizontal: 16,
-    marginBottom: 16,
+    borderRadius: scale(11),
+    marginHorizontal: scale(15),
+    marginBottom: verticalScale(15),
   },
   searchIcon: {
-    marginRight: 8,
+    marginRight: scale(7),
   },
   searchInput: {
     flex: 1,
-    fontSize: 16,
+    fontSize: moderateScale(15),
     fontFamily: 'Inter-Regular',
     color: colors.textPrimary,
   },
   listContent: {
-    paddingHorizontal: 16,
-    paddingBottom: 24,
+    paddingHorizontal: scale(15),
+    paddingBottom: verticalScale(22),
   },
   countryItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    borderRadius: 12,
-    marginBottom: 8,
+    paddingHorizontal: scale(15),
+    paddingVertical: verticalScale(14),
+    borderRadius: scale(11),
+    marginBottom: 4,
     backgroundColor: colors.backgroundMedium,
   },
   selectedCountryItem: {
     backgroundColor: '#3b82f6',
   },
   countryFlag: {
-    fontSize: 24,
-    marginRight: 16,
+    fontSize: moderateScale(22),
+    marginRight: scale(14),
   },
   countryName: {
     flex: 1,
-    fontSize: 16,
+    fontSize: moderateScale(15),
     fontFamily: 'Inter-Medium',
     color: colors.textPrimary,
   },
   countryCode: {
-    fontSize: 14,
+    fontSize: moderateScale(13),
     fontFamily: 'Inter-Regular',
     color: colors.textPrimary,
     opacity: 0.8,
-    marginRight: 8,
+    marginRight: scale(7),
   },
 });

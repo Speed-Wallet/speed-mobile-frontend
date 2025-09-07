@@ -91,38 +91,38 @@ const SwapBox: React.FC<SwapBoxProps> = ({
 
   return (
     <View style={styles.swapBoxContainer}>
-      <View style={styles.swapBoxHeader}>
-        <Text style={styles.swapBoxLabel}>{labelText}</Text>
-        {showBalance && token && (
-          <Text style={styles.balanceText}>
-            {tokenBalance.toFixed(token.decimalsShown)} {token.symbol}
-          </Text>
-        )}
-      </View>
-
       <View style={styles.swapBoxContent}>
-        {/* Left side - Token selector */}
-        <TouchableOpacity
-          onPress={onTokenPress}
-          style={styles.tokenSelectorInBox}
-        >
-          {token ? (
-            <View style={styles.tokenDisplay}>
-              <TokenLogo
-                logoURI={token.logoURI}
-                size={24}
-                style={styles.tokenLogo}
-              />
-              <Text style={styles.tokenSymbolText}>{token.symbol}</Text>
-            </View>
-          ) : (
-            <Text style={styles.tokenPlaceholderText}>Select</Text>
+        {/* Row 1: Label on left, Balance on right */}
+        <View style={styles.headerRow}>
+          <Text style={styles.swapBoxLabel}>{labelText}</Text>
+          {showBalance && token && (
+            <Text style={styles.balanceText}>
+              {tokenBalance.toFixed(token.decimalsShown)} {token.symbol}
+            </Text>
           )}
-          <ChevronDown color={colors.textSecondary} size={16} />
-        </TouchableOpacity>
+        </View>
 
-        {/* Right side - Amount input/output */}
-        <View style={styles.amountSection}>
+        {/* Row 2: Token selector on left, Amount on right */}
+        <View style={styles.tokenAmountRow}>
+          <TouchableOpacity
+            onPress={onTokenPress}
+            style={styles.tokenSelectorInBox}
+          >
+            {token ? (
+              <View style={styles.tokenDisplay}>
+                <TokenLogo
+                  logoURI={token.logoURI}
+                  size={scale(24)}
+                  style={styles.tokenLogo}
+                />
+                <Text style={styles.tokenSymbolText}>{token.symbol}</Text>
+              </View>
+            ) : (
+              <Text style={styles.tokenPlaceholderText}>Select</Text>
+            )}
+            <ChevronDown color={colors.textSecondary} size={scale(16)} />
+          </TouchableOpacity>
+
           <TouchableOpacity
             onPress={onInputFocus}
             style={styles.amountInputTouchable}
@@ -136,6 +136,10 @@ const SwapBox: React.FC<SwapBoxProps> = ({
               {amount || '0'}
             </Text>
           </TouchableOpacity>
+        </View>
+
+        {/* Row 3: USD Value on right - No gap above */}
+        <View style={styles.usdValueRowTight}>
           <Text style={styles.usdValue}>{usdValue}</Text>
         </View>
       </View>
@@ -1124,8 +1128,8 @@ const styles = StyleSheet.create({
   },
   scrollViewContent: {
     flexGrow: 1,
-    paddingHorizontal: scale(20),
-    paddingTop: verticalScale(8), // Reduced from 20 to 8
+    paddingHorizontal: 20,
+    paddingTop: moderateScale(8, 2.5),
   },
   // Bottom section for keyboard and button
   bottomSection: {
@@ -1133,24 +1137,24 @@ const styles = StyleSheet.create({
     paddingBottom: verticalScale(34), // Safe area padding
   },
   buttonContainer: {
-    paddingHorizontal: scale(20),
-    paddingTop: verticalScale(4), // Reduced top padding to bring button closer to keyboard
-    paddingBottom: verticalScale(16), // Keep original bottom padding
-    marginTop: verticalScale(-8), // Pull button up closer to keyboard
+    paddingHorizontal: moderateScale(20, 2.0),
+    paddingTop: moderateScale(4, 2.0),
+    paddingBottom: verticalScale(16),
+    marginTop: moderateScale(-8, 0.05),
   },
   // New SwapBox styles
   swapBoxContainer: {
-    backgroundColor: 'transparent', // Remove box background
-    borderRadius: 0, // Remove border radius
-    paddingVertical: verticalScale(8),
-    paddingHorizontal: scale(4), // Minimal horizontal padding
-    marginBottom: verticalScale(6), // Reduced spacing between sections
+    backgroundColor: 'transparent',
+    borderRadius: 0,
+    paddingVertical: moderateScale(4, 4.0),
+    paddingHorizontal: moderateScale(4, 2.5),
+    marginBottom: moderateScale(6, 4.5),
   },
   swapBoxHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: verticalScale(6), // Reduced from 12 to 6
+    marginBottom: moderateScale(6, 3.0),
   },
   swapBoxLabel: {
     fontSize: moderateScale(14),
@@ -1158,27 +1162,23 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   swapBoxContent: {
-    flexDirection: 'row',
-    alignItems: 'center', // This ensures horizontal alignment
-    justifyContent: 'space-between',
-    minHeight: verticalScale(40), // Reduced to match token selector
+    flexDirection: 'column',
+    justifyContent: 'flex-start',
   },
   tokenSelectorInBox: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.backgroundLight,
-    borderRadius: scale(6), // Reduced from 8
-    paddingHorizontal: scale(10), // Reduced from 12
-    paddingVertical: verticalScale(8), // Reduced from 12
-    minWidth: scale(85), // Reduced from 100
-    height: verticalScale(40), // Reduced from 48
+    borderRadius: scale(6),
+    paddingHorizontal: moderateScale(10, 1.8),
+    paddingVertical: moderateScale(10, 2.2),
+    minWidth: scale(85),
   },
   amountSection: {
     flex: 1,
     alignItems: 'flex-end',
-    justifyContent: 'center', // Center vertically
-    marginLeft: scale(16),
-    height: verticalScale(40), // Match token selector height
+    justifyContent: 'center',
+    marginLeft: moderateScale(16, 2.5),
   },
   amountInput: {
     fontSize: moderateScale(32), // Apply responsive scaling
@@ -1198,7 +1198,28 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(16), // Apply responsive scaling
     fontFamily: 'Inter-Medium',
     color: colors.textSecondary,
-    marginTop: verticalScale(4),
+  },
+  usdValueRow: {
+    width: '100%',
+    alignItems: 'flex-end',
+  },
+  usdValueRowTight: {
+    width: '100%',
+    alignItems: 'flex-end',
+    marginTop: moderateScale(-16, 0.1),
+  },
+  headerRow: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  tokenAmountRow: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: moderateScale(-4, 0.05),
   },
   // Keep existing styles
   label: {
@@ -1247,24 +1268,23 @@ const styles = StyleSheet.create({
   },
   swapButtonContainer: {
     alignItems: 'center',
-    marginVertical: -18, // Increased negative margin to overlap more
-    zIndex: 1, // Ensure button appears above the boxes
+    marginVertical: moderateScale(-24, 0.05),
+    zIndex: 1,
   },
   swapButton: {
-    width: 36, // Reduced from 48
-    height: 36, // Reduced from 48
-    borderRadius: 18, // Half of width/height
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: colors.backgroundLight,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2, // Increased border width
-    borderColor: colors.backgroundDark, // Use a darker border to make it stand out
-    // Add shadow for better visibility
+    borderWidth: 2,
+    borderColor: colors.backgroundDark,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
-    elevation: 5, // Android shadow
+    elevation: 5,
   },
   balanceText: {
     fontSize: 12,
@@ -1471,13 +1491,13 @@ const styles = StyleSheet.create({
   },
   // SwapBox custom input styles
   amountInputTouchable: {
-    paddingVertical: 12, // Reduced padding
-    paddingHorizontal: 8, // Reduced padding
-    borderRadius: 0, // Remove border radius
-    backgroundColor: 'transparent', // Make background transparent
-    borderWidth: 0, // Remove border
-    borderColor: 'transparent', // Make border color transparent
-    minHeight: 48, // Slightly reduced height
+    paddingVertical: moderateScale(12, 2.0),
+    paddingHorizontal: moderateScale(8, 2.5),
+    borderRadius: 0,
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    borderColor: 'transparent',
+    minHeight: moderateScale(48, 1.8),
     justifyContent: 'center',
   },
   amountPlaceholder: {

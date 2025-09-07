@@ -3,6 +3,7 @@ import { Settings, Plus } from 'lucide-react-native';
 import colors from '@/constants/colors';
 import { SecureMMKVStorage } from '@/utils/mmkvStorage';
 import ScreenContainer from '@/components/ScreenContainer';
+import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 
 interface DevStartupScreenProps {
   onCreateWallet: () => void;
@@ -56,10 +57,10 @@ export default function DevStartupScreen({
 
   return (
     <ScreenContainer>
-      <View style={styles.content}>
+      <View style={styles.container}>
         <View style={styles.header}>
           <View style={styles.iconContainer}>
-            <Settings size={32} color={colors.warning} strokeWidth={2} />
+            <Settings size={scale(28)} color={colors.warning} strokeWidth={2} />
           </View>
 
           <Text style={styles.title}>Development Mode</Text>
@@ -71,7 +72,7 @@ export default function DevStartupScreen({
             style={styles.createButton}
             onPress={handleCreateWallet}
           >
-            <Plus size={24} color={colors.white} strokeWidth={2} />
+            <Plus size={scale(20)} color={colors.white} strokeWidth={2} />
             <Text style={styles.createButtonText}>Create New Wallet</Text>
             <Text style={styles.createButtonSubtext}>
               Clears all existing data
@@ -114,77 +115,80 @@ export default function DevStartupScreen({
 }
 
 const styles = StyleSheet.create({
-  content: {
+  container: {
     flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 80,
-    paddingBottom: 40,
+    paddingHorizontal: scale(20), // Reduced from 24
+    paddingTop: verticalScale(60), // Reduced from 80
+    paddingBottom: verticalScale(32), // Reduced from 40
     justifyContent: 'space-between',
   },
   header: {
     alignItems: 'center',
-    marginBottom: 60,
+    flex: 1,
+    justifyContent: 'center',
+    marginBottom: verticalScale(40), // Reduced from 60
   },
   iconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: scale(64), // Reduced from 80
+    height: scale(64), // Reduced from 80
+    borderRadius: scale(32), // Half of width/height
     backgroundColor: colors.warning + '20',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 32,
+    marginBottom: verticalScale(24), // Reduced from 32
   },
   title: {
-    fontSize: 32,
+    fontSize: moderateScale(28), // Reduced from 32
     fontFamily: 'Inter-Bold',
     color: colors.textPrimary,
-    marginBottom: 16,
+    marginBottom: verticalScale(12), // Reduced from 16
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: moderateScale(14), // Reduced from 16
     fontFamily: 'Inter-Regular',
     color: colors.textSecondary,
-    lineHeight: 24,
+    lineHeight: verticalScale(20), // Reduced from 24
     textAlign: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: scale(16), // Reduced from 20
   },
   buttonContainer: {
-    gap: 20,
+    gap: verticalScale(16), // Reduced from 20
+    marginBottom: verticalScale(20),
   },
   createButton: {
     backgroundColor: colors.error,
-    borderRadius: 16,
-    paddingVertical: 24,
-    paddingHorizontal: 24,
+    borderRadius: scale(14), // Reduced from 16
+    paddingVertical: verticalScale(20), // Reduced from 24
+    paddingHorizontal: scale(20), // Reduced from 24
     alignItems: 'center',
-    gap: 8,
+    gap: verticalScale(6), // Reduced from 8
   },
   createButtonText: {
-    fontSize: 20,
+    fontSize: moderateScale(18), // Reduced from 20
     fontFamily: 'Inter-Bold',
     color: colors.white,
     textAlign: 'center',
   },
   createButtonSubtext: {
-    fontSize: 14,
+    fontSize: moderateScale(12), // Reduced from 14
     fontFamily: 'Inter-Regular',
     color: colors.white + '80',
     textAlign: 'center',
   },
   enterButton: {
     backgroundColor: colors.primary,
-    borderRadius: 16,
-    paddingVertical: 24,
-    paddingHorizontal: 24,
+    borderRadius: scale(14), // Reduced from 16
+    paddingVertical: verticalScale(20), // Reduced from 24
+    paddingHorizontal: scale(20), // Reduced from 24
     alignItems: 'center',
-    gap: 8,
+    gap: verticalScale(6), // Reduced from 8
   },
   enterButtonDisabled: {
     backgroundColor: colors.backgroundMedium,
   },
   enterButtonText: {
-    fontSize: 20,
+    fontSize: moderateScale(18), // Reduced from 20
     fontFamily: 'Inter-Bold',
     color: colors.white,
     textAlign: 'center',
@@ -193,7 +197,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   enterButtonSubtext: {
-    fontSize: 14,
+    fontSize: moderateScale(12), // Reduced from 14
     fontFamily: 'Inter-Regular',
     color: colors.white + '80',
     textAlign: 'center',
@@ -202,7 +206,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   devWarning: {
-    fontSize: 12,
+    fontSize: moderateScale(10), // Reduced from 12
     fontFamily: 'Inter-Regular',
     color: colors.warning,
     textAlign: 'center',

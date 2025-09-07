@@ -154,7 +154,7 @@ const TokenItem = ({
 const styles = StyleSheet.create({
   cardStyle: {
     // Style for the GreyCard itself
-    marginBottom: verticalScale(6),
+    marginBottom: 4,
   },
   touchableContent: {
     // Style for the TouchableOpacity wrapping the content inside GreyCard

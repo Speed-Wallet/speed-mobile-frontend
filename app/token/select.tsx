@@ -14,6 +14,7 @@ import colors from '@/constants/colors';
 import { getAllTokenInfo } from '@/data/tokens';
 import { EnrichedTokenEntry, TokenEntry } from '@/data/types';
 import TokenItemAlt from '@/components/TokenItemAlt';
+import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 
 export default function TokenSelectScreen() {
   const { excludeAddress, selectedAddress, returnParam } =
@@ -62,7 +63,7 @@ export default function TokenSelectScreen() {
           onPress={() => router.back()}
           style={styles.closeButton}
         >
-          <X size={24} color={colors.textPrimary} />
+          <X size={scale(20)} color={colors.textPrimary} />
         </TouchableOpacity>
       </View>
 
@@ -116,9 +117,9 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   closeButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: scale(32), // Reduced from 40
+    height: scale(32), // Reduced from 40
+    borderRadius: scale(16), // Half of width/height
     backgroundColor: colors.backgroundMedium,
     alignItems: 'center',
     justifyContent: 'center',
