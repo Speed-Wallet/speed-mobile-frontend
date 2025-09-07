@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
+import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import ActionButton from '@/components/buttons/ActionButton';
 import {
   ArrowUp,
@@ -68,9 +69,9 @@ const BalanceCard: React.FC<BalanceCardProps> = ({
             onPress={toggleBalanceVisibility}
           >
             {isBalanceVisible ? (
-              <Eye size={20} color="#FFFFFF" opacity={0.7} />
+              <Eye size={scale(18)} color="#FFFFFF" opacity={0.7} />
             ) : (
-              <EyeOff size={20} color="#FFFFFF" opacity={0.7} />
+              <EyeOff size={scale(18)} color="#FFFFFF" opacity={0.7} />
             )}
           </TouchableOpacity>
         </View>
@@ -93,30 +94,29 @@ const BalanceCard: React.FC<BalanceCardProps> = ({
 
 const styles = StyleSheet.create({
   balanceCardSpecificContainer: {
-    // Style for the GradientCard instance if needed
-    marginBottom: 24,
+    // This style is specific to the balance card and overlays on GradientCard
   },
   upperContent: {
-    marginBottom: 24,
+    marginBottom: verticalScale(18),
   },
   balanceContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
+    gap: scale(10),
   },
   balanceLabel: {
-    fontSize: 14,
+    fontSize: moderateScale(12),
     fontWeight: '500',
     color: '#FFFFFF',
     opacity: 0.7,
     textAlign: 'center',
     letterSpacing: 1,
-    marginBottom: 8,
+    marginBottom: verticalScale(6),
     fontFamily: 'Inter-Medium', // Example: using your existing font family
   },
   balanceAmount: {
-    fontSize: 36,
+    fontSize: moderateScale(28),
     fontWeight: '700',
     color: '#FFFFFF',
     textAlign: 'center',
@@ -124,13 +124,13 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Bold', // Example: using your existing font family
   },
   visibilityButton: {
-    padding: 4,
+    padding: scale(3),
   },
   actionButtonsContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 4,
+    gap: scale(3),
   },
 });
 

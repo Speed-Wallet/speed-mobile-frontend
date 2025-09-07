@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Animated,
 } from 'react-native';
+import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import colors from '@/constants/colors';
 import { triggerShake } from '@/utils/animations';
 
@@ -79,29 +80,29 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     backgroundColor: colors.backgroundMedium,
-    borderRadius: 8,
-    padding: 4,
-    marginBottom: 16,
+    borderRadius: scale(6),
+    padding: scale(3),
+    marginBottom: verticalScale(12),
   },
   tab: {
     flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
+    paddingVertical: verticalScale(8),
+    paddingHorizontal: scale(12),
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 6,
+    borderRadius: scale(4),
   },
   leftTab: {
-    marginRight: 2,
+    marginRight: scale(1),
   },
   rightTab: {
-    marginLeft: 2,
+    marginLeft: scale(1),
   },
   activeTab: {
     backgroundColor: '#00CFFF',
   },
   tabText: {
-    fontSize: 14,
+    fontSize: moderateScale(12),
     fontFamily: 'Inter-Medium',
     color: colors.textSecondary,
   },
