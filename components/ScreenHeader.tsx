@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
+import { scale, verticalScale } from 'react-native-size-matters';
 import colors from '@/constants/colors';
 import BackButton from './buttons/BackButton';
 
@@ -42,22 +43,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    minHeight: 56,
+    paddingHorizontal: scale(12),
+    paddingVertical: verticalScale(10),
+    minHeight: scale(48),
   },
   title: {
-    fontSize: 18,
+    fontSize: scale(16),
     fontFamily: 'Inter-SemiBold',
     color: colors.textPrimary,
     flex: 1,
     textAlign: 'center',
   },
   placeholder: {
-    width: 60,
+    width: scale(48),
   },
   rightElement: {
-    minWidth: 60,
+    minWidth: scale(48),
     alignItems: 'flex-end',
   },
 });

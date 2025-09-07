@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import { scale, verticalScale } from 'react-native-size-matters';
 import {
   PanGestureHandler,
   PanGestureHandlerGestureEvent,
@@ -59,11 +60,11 @@ const TokenPriceChart: React.FC<TokenPriceChartProps> = ({
   }
 
   // Chart dimensions
-  const padding = 20;
-  const rightPadding = 60; // Extra space for Y-axis labels
-  const topPadding = 20; // Reduced since we're showing info at the top now
+  const padding = scale(20);
+  const rightPadding = scale(60); // Extra space for Y-axis labels
+  const topPadding = scale(20); // Reduced since we're showing info at the top now
   const chartWidth = width - padding - rightPadding;
-  const chartHeight = height - padding - topPadding - 30; // Extra space for x-axis labels
+  const chartHeight = height - padding - topPadding - scale(30); // Extra space for x-axis labels
 
   // Get min/max values for scaling
   const prices = data.map((d) => d.price);
@@ -344,8 +345,8 @@ const TokenPriceChart: React.FC<TokenPriceChartProps> = ({
           style={[
             styles.timeDisplay,
             {
-              left: padding + scaleX(selectedIndex) - 40,
-              top: topPadding - 25,
+              left: padding + scaleX(selectedIndex) - scale(40),
+              top: topPadding - scale(25),
             },
           ]}
         >
@@ -391,7 +392,7 @@ const TokenPriceChart: React.FC<TokenPriceChartProps> = ({
                   x2={chartWidth}
                   y2={label.y}
                   stroke="#333"
-                  strokeWidth="0.5"
+                  strokeWidth={scale(0.5)}
                   opacity="0.3"
                 />
               ))}
@@ -404,7 +405,7 @@ const TokenPriceChart: React.FC<TokenPriceChartProps> = ({
                     <Path
                       d={paths.beforePath}
                       stroke={beforeColor}
-                      strokeWidth="2"
+                      strokeWidth={scale(2)}
                       fill="none"
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -415,7 +416,7 @@ const TokenPriceChart: React.FC<TokenPriceChartProps> = ({
                     <Path
                       d={paths.afterPath}
                       stroke={afterColor}
-                      strokeWidth="2"
+                      strokeWidth={scale(2)}
                       fill="none"
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -425,10 +426,10 @@ const TokenPriceChart: React.FC<TokenPriceChartProps> = ({
                   <Circle
                     cx={scaleX(selectedIndex)}
                     cy={scaleY(data[selectedIndex].price)}
-                    r="4"
+                    r={scale(4)}
                     fill={beforeColor}
                     stroke="#fff"
-                    strokeWidth="2"
+                    strokeWidth={scale(2)}
                   />
 
                   <Line
@@ -437,7 +438,7 @@ const TokenPriceChart: React.FC<TokenPriceChartProps> = ({
                     x2={scaleX(selectedIndex)}
                     y2={chartHeight}
                     stroke={beforeColor}
-                    strokeWidth="1"
+                    strokeWidth={scale(1)}
                     opacity="0.5"
                     strokeDasharray="4,4"
                   />
@@ -446,7 +447,7 @@ const TokenPriceChart: React.FC<TokenPriceChartProps> = ({
                 <Path
                   d={paths.fullPath}
                   stroke={displayColor}
-                  strokeWidth="2"
+                  strokeWidth={scale(2)}
                   fill="none"
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -456,9 +457,9 @@ const TokenPriceChart: React.FC<TokenPriceChartProps> = ({
               {yAxisLabels.map((label, index) => (
                 <SvgText
                   key={index}
-                  x={chartWidth + 10}
-                  y={label.y + 4} // Slight vertical offset for better alignment
-                  fontSize="11"
+                  x={chartWidth + scale(10)}
+                  y={label.y + scale(4)} // Slight vertical offset for better alignment
+                  fontSize={scale(11)}
                   fill="#9ca3af"
                   textAnchor="start"
                 >
@@ -470,8 +471,8 @@ const TokenPriceChart: React.FC<TokenPriceChartProps> = ({
                 <SvgText
                   key={index}
                   x={scaleX(dataIndex)}
-                  y={chartHeight + 20}
-                  fontSize="11"
+                  y={chartHeight + scale(20)}
+                  fontSize={scale(11)}
                   fill="#9ca3af"
                   textAnchor="middle"
                 >
@@ -488,28 +489,26 @@ const TokenPriceChart: React.FC<TokenPriceChartProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#1a1a1a',
-    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
   },
   noDataText: {
     color: '#9ca3af',
-    fontSize: 14,
+    fontSize: scale(14),
   },
   timeDisplay: {
     position: 'absolute',
     backgroundColor: '#2a2a2a',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+    paddingHorizontal: scale(8),
+    paddingVertical: verticalScale(4),
+    borderRadius: scale(6),
     borderWidth: 1,
     borderColor: '#444',
     zIndex: 10,
   },
   timeText: {
-    fontSize: 11,
+    fontSize: scale(11),
     color: '#fff',
     fontWeight: '500',
   },
