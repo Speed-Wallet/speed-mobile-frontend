@@ -26,6 +26,7 @@ import BottomSheet, {
   BottomSheetBackdrop,
 } from '@gorhom/bottom-sheet';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import Toast from '@/components/Toast';
 import colors from '@/constants/colors';
 import { formatCurrency } from '@/utils/formatters';
@@ -42,6 +43,7 @@ import {
 import { useConfig } from '@/hooks/useConfig';
 import ScreenHeader from '@/components/ScreenHeader';
 import ScreenContainer from '@/components/ScreenContainer';
+import PrimaryActionButton from '@/components/buttons/PrimaryActionButton';
 import { useTokenValue } from '@/hooks/useTokenValue';
 import { useTokenPrice } from '@/hooks/useTokenPrices';
 import { triggerShake } from '@/utils/animations';
@@ -646,11 +648,13 @@ export default function TradeScreen() {
             </Text>
           </View>
         ) : (
-          <>
+          <View style={{ flex: 1 }}>
+            {/* Main Content */}
             <View style={styles.mainContent}>
               <ScrollView
                 style={styles.scrollView}
                 contentContainerStyle={styles.scrollViewContent}
+                showsVerticalScrollIndicator={false}
               >
                 {/* From Token Box */}
                 <SwapBox
@@ -933,44 +937,11 @@ export default function TradeScreen() {
 
               {/* Preview Swap Button */}
               <View style={styles.buttonContainer}>
-                <TouchableOpacity
-                  style={styles.tradeExecuteButton}
+                <PrimaryActionButton
+                  title="Preview Swap"
                   onPress={handlePreviewSwapClick}
                   disabled={isButtonDisabled}
-                  activeOpacity={0.8}
-                >
-                  <View
-                    style={[
-                      styles.buttonBackground,
-                      {
-                        backgroundColor: isButtonDisabled
-                          ? colors.backgroundMedium
-                          : '#3B82F6',
-                      },
-                    ]}
-                  >
-                    <Animated.View
-                      style={{
-                        transform: [{ translateX: shakeAnimationValue }],
-                      }}
-                    >
-                      {isButtonDisabled ? (
-                        <Text
-                          style={[
-                            styles.tradeExecuteButtonText,
-                            styles.tradeExecuteButtonTextDisabled,
-                          ]}
-                        >
-                          Preview Swap
-                        </Text>
-                      ) : (
-                        <Text style={styles.tradeExecuteButtonText}>
-                          Preview Swap
-                        </Text>
-                      )}
-                    </Animated.View>
-                  </View>
-                </TouchableOpacity>
+                />
               </View>
             </View>
 
@@ -1044,60 +1015,12 @@ export default function TradeScreen() {
                   </View>
                 )}
 
-                <TouchableOpacity
-                  style={[
-                    styles.confirmSwapButton,
-                    (!preparedSwap || isPreparingSwap) &&
-                      styles.buttonOpacityDisabled,
-                  ]}
+                <PrimaryActionButton
+                  title={isPreparingSwap ? 'Preparing...' : 'Confirm Swap'}
                   onPress={handleConfirmSwap}
                   disabled={!preparedSwap || isPreparingSwap}
-                  activeOpacity={0.8}
-                >
-                  <View
-                    style={[
-                      styles.buttonBackground,
-                      {
-                        backgroundColor:
-                          !preparedSwap || isPreparingSwap
-                            ? colors.backgroundMedium
-                            : '#3B82F6',
-                      },
-                    ]}
-                  >
-                    {isPreparingSwap ? (
-                      <>
-                        <ActivityIndicator
-                          size="small"
-                          color={
-                            !preparedSwap || isPreparingSwap
-                              ? colors.textSecondary
-                              : colors.white
-                          }
-                        />
-                        <Text
-                          style={[
-                            styles.confirmSwapButtonText,
-                            (!preparedSwap || isPreparingSwap) &&
-                              styles.confirmSwapButtonTextDisabled,
-                          ]}
-                        >
-                          Preparing...
-                        </Text>
-                      </>
-                    ) : (
-                      <Text
-                        style={[
-                          styles.confirmSwapButtonText,
-                          (!preparedSwap || isPreparingSwap) &&
-                            styles.confirmSwapButtonTextDisabled,
-                        ]}
-                      >
-                        Confirm Swap
-                      </Text>
-                    )}
-                  </View>
-                </TouchableOpacity>
+                  loading={isPreparingSwap}
+                />
               </BottomSheetView>
             </BottomSheet>
 
@@ -1182,7 +1105,7 @@ export default function TradeScreen() {
               onHide={() => setShowToast(false)}
               type={toastType}
             />
-          </>
+          </View>
         )}
       </ScreenContainer>
     </GestureHandlerRootView>
@@ -1200,76 +1123,82 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollViewContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 20, // Reduced padding since button is no longer sticky
+    flexGrow: 1,
+    paddingHorizontal: scale(20),
+    paddingTop: verticalScale(8), // Reduced from 20 to 8
   },
   // Bottom section for keyboard and button
   bottomSection: {
     backgroundColor: colors.backgroundDark,
-    paddingBottom: 34, // Safe area padding
+    paddingBottom: verticalScale(34), // Safe area padding
   },
   buttonContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: scale(20),
+    paddingTop: verticalScale(4), // Reduced top padding to bring button closer to keyboard
+    paddingBottom: verticalScale(16), // Keep original bottom padding
+    marginTop: verticalScale(-8), // Pull button up closer to keyboard
   },
   // New SwapBox styles
   swapBoxContainer: {
     backgroundColor: 'transparent', // Remove box background
     borderRadius: 0, // Remove border radius
-    paddingVertical: 16,
-    paddingHorizontal: 4, // Minimal horizontal padding
-    marginBottom: 8, // Increased spacing between sections
+    paddingVertical: verticalScale(8),
+    paddingHorizontal: scale(4), // Minimal horizontal padding
+    marginBottom: verticalScale(6), // Reduced spacing between sections
   },
   swapBoxHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: verticalScale(6), // Reduced from 12 to 6
   },
   swapBoxLabel: {
-    fontSize: 14,
+    fontSize: moderateScale(14),
     fontFamily: 'Inter-Medium',
     color: colors.textSecondary,
   },
   swapBoxContent: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'center', // This ensures horizontal alignment
     justifyContent: 'space-between',
+    minHeight: verticalScale(40), // Reduced to match token selector
   },
   tokenSelectorInBox: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.backgroundLight,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    minWidth: 100,
+    borderRadius: scale(6), // Reduced from 8
+    paddingHorizontal: scale(10), // Reduced from 12
+    paddingVertical: verticalScale(8), // Reduced from 12
+    minWidth: scale(85), // Reduced from 100
+    height: verticalScale(40), // Reduced from 48
   },
   amountSection: {
     flex: 1,
     alignItems: 'flex-end',
-    marginLeft: 16, // Increased from 12 for more space
-    paddingVertical: 8, // Added padding for better touch targets
+    justifyContent: 'center', // Center vertically
+    marginLeft: scale(16),
+    height: verticalScale(40), // Match token selector height
   },
   amountInput: {
-    fontSize: 32, // Increased from 24 for better visibility
-    fontFamily: 'Inter-Bold', // Changed from SemiBold to Bold for more prominence
+    fontSize: moderateScale(32), // Apply responsive scaling
+    fontFamily: 'Inter-Bold',
     color: colors.white,
     textAlign: 'right',
-    minWidth: 120, // Increased minimum width
+    minWidth: scale(120),
   },
   amountOutput: {
-    fontSize: 32, // Increased from 24 for better visibility
-    fontFamily: 'Inter-Bold', // Changed from SemiBold to Bold for more prominence
+    fontSize: moderateScale(32), // Apply responsive scaling
+    fontFamily: 'Inter-Bold',
     color: colors.white,
     textAlign: 'right',
-    minWidth: 120, // Increased minimum width
+    minWidth: scale(120),
   },
   usdValue: {
-    fontSize: 16, // Increased from 14 for better visibility
-    fontFamily: 'Inter-Medium', // Changed from Regular for more prominence
+    fontSize: moderateScale(16), // Apply responsive scaling
+    fontFamily: 'Inter-Medium',
     color: colors.textSecondary,
-    marginTop: 4,
+    marginTop: verticalScale(4),
   },
   // Keep existing styles
   label: {
@@ -1408,43 +1337,9 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     opacity: 0.9, // Added or adjust opacity if needed for further greying out
   },
-  tradeExecuteButton: {
-    height: 54, // Match SeedPhraseVerificationStep height
-    borderRadius: 27, // Match SeedPhraseVerificationStep border radius (fully rounded)
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
-    // iOS Shadow (kept commented as per last file state)
-    // shadowColor: '#000',
-    // shadowOffset: { width: 0, height: 2 },
-    // shadowOpacity: 0.25,
-    // shadowRadius: 3.84,
-    // Android Shadow (kept commented as per last file state)
-    // elevation: 5,
-  },
-  buttonOpacityDisabled: {
-    // New style for TouchableOpacity's disabled state when wrapping a gradient
-    opacity: 0.6, // Made less opaque
-  },
-  buttonBackground: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 16,
-    width: '100%',
-    height: '100%',
-    gap: 8,
-  },
-  tradeExecuteButtonText: {
-    fontSize: 17, // Match SeedPhraseVerificationStep font size
-    fontFamily: 'Inter-SemiBold',
-    color: colors.white,
-    // Remove marginLeft since we're using gap in the gradient container
-  },
-  tradeExecuteButtonTextDisabled: {
-    color: colors.textSecondary,
-    opacity: 0.5,
+  swapBoxAmountTextDisabled: {
+    flexShrink: 1,
+    opacity: 0.9, // Added or adjust opacity if needed for further greying out
   },
   // Bottom Sheet Styles
   bottomSheetBackground: {
@@ -1455,8 +1350,8 @@ const styles = StyleSheet.create({
   },
   bottomSheetContent: {
     flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingHorizontal: scale(20),
+    paddingTop: verticalScale(20),
     paddingBottom: 20, // Normal padding, not extra for absolute button
   },
   bottomSheetTitle: {
@@ -1592,36 +1487,38 @@ const styles = StyleSheet.create({
   },
   // Custom keyboard styles
   inlineKeyboard: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: scale(14),
+    paddingTop: verticalScale(2),
+    paddingBottom: verticalScale(0), // Remove bottom padding to move keyboard closer to button
   },
   keyboardHeader: {
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: verticalScale(6),
   },
   keyboardHeaderText: {
-    fontSize: 14,
+    fontSize: moderateScale(12),
     fontFamily: 'Inter-Medium',
     color: colors.textSecondary,
   },
   keyboardGrid: {
-    gap: 12,
+    gap: scale(6),
+    marginBottom: 0, // Ensure no bottom margin
   },
   keyboardRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 12,
+    gap: scale(6),
   },
   keyboardKey: {
     flex: 1,
-    height: 80,
+    height: verticalScale(56),
     backgroundColor: 'transparent',
-    borderRadius: 8,
+    borderRadius: scale(6),
     alignItems: 'center',
     justifyContent: 'center',
   },
   keyboardKeyText: {
-    fontSize: 20,
+    fontSize: moderateScale(18),
     fontFamily: 'Inter-SemiBold',
     color: colors.textPrimary,
   },

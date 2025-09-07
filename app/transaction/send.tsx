@@ -18,6 +18,7 @@ import BottomSheet, {
   BottomSheetBackdrop,
 } from '@gorhom/bottom-sheet';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import { LinearGradient } from 'expo-linear-gradient';
 import Toast from '@/components/Toast';
 import colors from '@/constants/colors';
@@ -27,6 +28,7 @@ import RecentContacts from '@/data/contacts';
 import { EnrichedTokenEntry } from '@/data/types';
 import ScreenHeader from '@/components/ScreenHeader';
 import ScreenContainer from '@/components/ScreenContainer';
+import PrimaryActionButton from '@/components/buttons/PrimaryActionButton';
 import AmountInputWithValue from '@/components/AmountInputWithValue';
 import TokenItem from '@/components/TokenItem';
 import {
@@ -225,77 +227,79 @@ export default function SendScreen() {
           onBack={() => router.push('/' as any)}
         />
 
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.content}
-        >
-          {selectedToken && (
-            <>
-              <Text style={styles.inputLabel}>Token</Text>
-              <TokenItem
-                token={selectedToken}
-                onPress={() =>
-                  router.push({
-                    pathname: '/token/select',
-                    params: {
-                      selectedAddress: selectedToken?.address,
-                    },
-                  })
-                }
-                showSelectorIcon={true}
-              />
-              <Text style={styles.inputLabel}>Amount</Text>
-              <AmountInputWithValue
-                address={selectedToken.address}
-                amount={amount || ''}
-                setAmount={setAmount}
-              />
+        <View style={{ flex: 1 }}>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.scrollContent}
+            style={styles.scrollView}
+          >
+            {selectedToken && (
+              <>
+                <Text style={styles.inputLabel}>Token</Text>
+                <TokenItem
+                  token={selectedToken}
+                  onPress={() =>
+                    router.push({
+                      pathname: '/token/select',
+                      params: {
+                        selectedAddress: selectedToken?.address,
+                      },
+                    })
+                  }
+                  showSelectorIcon={true}
+                />
+                <Text style={styles.inputLabel}>Amount</Text>
+                <AmountInputWithValue
+                  address={selectedToken.address}
+                  amount={amount || ''}
+                  setAmount={setAmount}
+                />
 
-              {/* Recipient Section */}
-              <Animated.View
-                entering={FadeIn.delay(200)}
-                style={styles.recipientSection}
-              >
-                <Text style={styles.inputLabel}>Send To</Text>
+                {/* Recipient Section */}
+                <Animated.View
+                  entering={FadeIn.delay(200)}
+                  style={styles.recipientSection}
+                >
+                  <Text style={styles.inputLabel}>Send To</Text>
 
-                {selectedContact ? (
-                  <View style={styles.selectedContactContainer}>
-                    <Image
-                      source={{ uri: selectedContact.avatar }}
-                      style={styles.contactAvatar}
-                    />
-                    <View style={styles.contactInfo}>
-                      <Text style={styles.contactName}>
-                        {selectedContact.name}
-                      </Text>
-                      <Text style={styles.contactUsername}>
-                        @{selectedContact.username}
-                      </Text>
-                    </View>
-                    <TouchableOpacity
-                      style={styles.changeButton}
-                      onPress={() => setSelectedContact(null)}
-                    >
-                      <Text style={styles.changeButtonText}>Change</Text>
-                    </TouchableOpacity>
-                  </View>
-                ) : (
-                  <>
-                    <View style={styles.searchContainer}>
-                      <Search size={20} color={colors.textSecondary} />
-                      <TextInput
-                        style={styles.searchInput}
-                        placeholder="Search contacts or paste recipient"
-                        placeholderTextColor={colors.textSecondary}
-                        value={searchQuery}
-                        onChangeText={(value) => {
-                          setSearchQuery(value);
-                          setRecipient(value);
-                        }}
+                  {selectedContact ? (
+                    <View style={styles.selectedContactContainer}>
+                      <Image
+                        source={{ uri: selectedContact.avatar }}
+                        style={styles.contactAvatar}
                       />
+                      <View style={styles.contactInfo}>
+                        <Text style={styles.contactName}>
+                          {selectedContact.name}
+                        </Text>
+                        <Text style={styles.contactUsername}>
+                          @{selectedContact.username}
+                        </Text>
+                      </View>
+                      <TouchableOpacity
+                        style={styles.changeButton}
+                        onPress={() => setSelectedContact(null)}
+                      >
+                        <Text style={styles.changeButtonText}>Change</Text>
+                      </TouchableOpacity>
                     </View>
+                  ) : (
+                    <>
+                      <View style={styles.searchContainer}>
+                        <Search size={20} color={colors.textSecondary} />
+                        <TextInput
+                          style={styles.searchInput}
+                          placeholder="Search contacts or paste recipient"
+                          placeholderTextColor={colors.textSecondary}
+                          value={searchQuery}
+                          onChangeText={(value) => {
+                            setSearchQuery(value);
+                            setRecipient(value);
+                          }}
+                        />
+                      </View>
 
-                    {/* <View style={styles.optionsRow}>
+                      {/* <View style={styles.optionsRow}>
                       <TouchableOpacity style={styles.optionButton}>
                         <View style={styles.optionIconContainer}>
                           <User size={20} color={colors.textPrimary} />
@@ -336,268 +340,228 @@ export default function SendScreen() {
                       ) : null
                     )} */}
 
-                    {/* <AddressInput
+                      {/* <AddressInput
                       recipient={recipient}
                       onChangeAddress={setRecipient}
                       selectedToken={selectedToken}
                     /> */}
-                  </>
-                )}
-              </Animated.View>
+                    </>
+                  )}
+                </Animated.View>
 
-              {/* Note Input */}
-              <Animated.View
-                entering={FadeIn.delay(300)}
-                style={styles.inputGroup}
-              >
-                <Text style={styles.inputLabel}>Note (Optional)</Text>
-                <TextInput
-                  style={styles.noteInput}
-                  placeholder="Add a note"
-                  placeholderTextColor={colors.textSecondary}
-                  value={note}
-                  onChangeText={setNote}
-                  multiline
-                />
-              </Animated.View>
+                {/* Note Input */}
+                <Animated.View
+                  entering={FadeIn.delay(300)}
+                  style={styles.inputGroup}
+                >
+                  <Text style={styles.inputLabel}>Note (Optional)</Text>
+                  <TextInput
+                    style={styles.noteInput}
+                    placeholder="Add a note"
+                    placeholderTextColor={colors.textSecondary}
+                    value={note}
+                    onChangeText={setNote}
+                    multiline
+                  />
+                </Animated.View>
 
-              {/* Network Fee info */}
-              {/* <Animated.View entering={FadeIn.delay(400)} style={styles.feeContainer}>
+                {/* Network Fee info */}
+                {/* <Animated.View entering={FadeIn.delay(400)} style={styles.feeContainer}>
                 <Text style={styles.feeLabel}>Network Fee</Text>
                 <Text style={styles.feeValue}>
                   0.00005 {selectedToken.symbol} (~{formatCurrency(0.00005 * selectedToken.price)})
                 </Text>
               </Animated.View> */}
-            </>
-          )}
-        </ScrollView>
-
-        {/* Send Button */}
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={styles.sendButton}
-            disabled={!amount || (!recipient && !selectedContact)}
-            onPress={handleSend}
-            activeOpacity={0.8}
-          >
-            <View
-              style={[
-                styles.buttonBackground,
-                {
-                  backgroundColor:
-                    !amount || (!recipient && !selectedContact)
-                      ? colors.backgroundMedium
-                      : '#3B82F6',
-                },
-              ]}
-            >
-              <Text
-                style={[
-                  styles.sendButtonText,
-                  (!amount || (!recipient && !selectedContact)) &&
-                    styles.sendButtonTextDisabled,
-                ]}
-              >
-                Preview Send
-              </Text>
-            </View>
-          </TouchableOpacity>
-        </View>
-
-        {/* Preview Bottom Sheet */}
-        <BottomSheet
-          ref={previewBottomSheetRef}
-          index={-1}
-          backdropComponent={renderBackdrop}
-          enablePanDownToClose={true}
-          onClose={() => setIsPreviewSheetOpen(false)}
-          backgroundStyle={styles.bottomSheetBackground}
-          handleIndicatorStyle={styles.bottomSheetHandle}
-        >
-          <BottomSheetView style={styles.bottomSheetContent}>
-            <Text style={styles.bottomSheetTitle}>Send Details</Text>
-
-            {selectedToken && (
-              <View style={styles.previewContainer}>
-                <View style={styles.previewRow}>
-                  <Text style={styles.previewLabel}>Amount</Text>
-                  <Text style={styles.previewValue}>
-                    {amount} {selectedToken.symbol}
-                  </Text>
-                </View>
-
-                <View style={styles.previewRow}>
-                  <Text style={styles.previewLabel}>To</Text>
-                  <Text style={styles.previewValue} numberOfLines={1}>
-                    {selectedContact
-                      ? selectedContact.name
-                      : recipient?.slice(0, 6) + '...' + recipient?.slice(-4)}
-                  </Text>
-                </View>
-
-                <View style={styles.previewRow}>
-                  <Text style={styles.previewLabel}>Network Fee</Text>
-                  <Text style={styles.previewValue}>~0.000005 SOL</Text>
-                </View>
-
-                {note && (
-                  <View style={styles.previewRow}>
-                    <Text style={styles.previewLabel}>Note</Text>
-                    <Text style={styles.previewValue}>{note}</Text>
-                  </View>
-                )}
-              </View>
+              </>
             )}
+          </ScrollView>
 
-            <TouchableOpacity
-              style={styles.confirmButton}
-              disabled={!preparedTransaction || isPreparingSend}
-              onPress={handleConfirmSend}
-              activeOpacity={0.8}
-            >
-              <View
-                style={[
-                  styles.buttonBackground,
-                  {
-                    backgroundColor:
-                      !preparedTransaction || isPreparingSend
-                        ? colors.backgroundMedium
-                        : '#3B82F6',
-                  },
-                ]}
-              >
-                {isPreparingSend ? (
-                  <>
-                    <ActivityIndicator size="small" color={colors.white} />
-                    <Text style={styles.confirmButtonText}>Preparing...</Text>
-                  </>
-                ) : (
-                  <Text style={styles.confirmButtonText}>Confirm Send</Text>
-                )}
-              </View>
-            </TouchableOpacity>
-          </BottomSheetView>
-        </BottomSheet>
+          {/* Send Button */}
+          <View style={styles.buttonContainer}>
+            <PrimaryActionButton
+              title="Preview Send"
+              onPress={handleSend}
+              disabled={!amount || (!recipient && !selectedContact)}
+            />
+          </View>
 
-        {/* Status Bottom Sheet */}
-        <BottomSheet
-          ref={statusBottomSheetRef}
-          index={-1}
-          backdropComponent={renderBackdrop}
-          enablePanDownToClose={!isSending}
-          onClose={() => setIsStatusSheetOpen(false)}
-          backgroundStyle={styles.bottomSheetBackground}
-          handleIndicatorStyle={styles.bottomSheetHandle}
-        >
-          <BottomSheetView
-            style={[styles.bottomSheetContent, { alignItems: 'center' }]}
+          {/* Preview Bottom Sheet */}
+          <BottomSheet
+            ref={previewBottomSheetRef}
+            index={-1}
+            backdropComponent={renderBackdrop}
+            enablePanDownToClose={true}
+            onClose={() => setIsPreviewSheetOpen(false)}
+            backgroundStyle={styles.bottomSheetBackground}
+            handleIndicatorStyle={styles.bottomSheetHandle}
           >
-            {isSending ? (
-              <>
-                <ActivityIndicator
-                  size="large"
-                  color={colors.primary}
-                  style={styles.loadingIndicator}
-                />
-                <Text style={styles.loadingText}>
-                  {isConfirmingSend
-                    ? 'Sending Transaction...'
-                    : 'Processing Transaction...'}
-                </Text>
-                <Text style={styles.loadingSubtext}>
-                  {isConfirmingSend
-                    ? 'Please wait while we submit your transaction to the blockchain'
-                    : 'Please wait while we process your transaction'}
-                </Text>
-              </>
-            ) : sendResult ? (
-              <>
-                {sendResult.success ? (
-                  <>
-                    <LinearGradient
-                      colors={['#4CAF50', '#45a049']}
-                      style={styles.successIcon}
-                    >
-                      <Check size={32} color={colors.white} />
-                    </LinearGradient>
-                    <Text style={styles.successTitle}>Send Successful!</Text>
-                    <Text style={styles.successSubtitle}>
-                      Your transaction has been sent successfully
+            <BottomSheetView style={styles.bottomSheetContent}>
+              <Text style={styles.bottomSheetTitle}>Send Details</Text>
+
+              {selectedToken && (
+                <View style={styles.previewContainer}>
+                  <View style={styles.previewRow}>
+                    <Text style={styles.previewLabel}>Amount</Text>
+                    <Text style={styles.previewValue}>
+                      {amount} {selectedToken.symbol}
                     </Text>
-                    {sendResult.signature && (
-                      <Text style={styles.transactionId} numberOfLines={1}>
-                        Transaction ID: {sendResult.signature.slice(0, 8)}...
-                        {sendResult.signature.slice(-8)}
-                      </Text>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <View style={styles.errorIcon}>
-                      <Text style={styles.errorIconText}>✕</Text>
+                  </View>
+
+                  <View style={styles.previewRow}>
+                    <Text style={styles.previewLabel}>To</Text>
+                    <Text style={styles.previewValue} numberOfLines={1}>
+                      {selectedContact
+                        ? selectedContact.name
+                        : recipient?.slice(0, 6) + '...' + recipient?.slice(-4)}
+                    </Text>
+                  </View>
+
+                  <View style={styles.previewRow}>
+                    <Text style={styles.previewLabel}>Network Fee</Text>
+                    <Text style={styles.previewValue}>~0.000005 SOL</Text>
+                  </View>
+
+                  {note && (
+                    <View style={styles.previewRow}>
+                      <Text style={styles.previewLabel}>Note</Text>
+                      <Text style={styles.previewValue}>{note}</Text>
                     </View>
-                    <Text style={styles.errorTitle}>Send Failed</Text>
-                    <Text style={styles.errorSubtitle}>
-                      {'Something went wrong. Please try again.'}
-                    </Text>
-                  </>
-                )}
+                  )}
+                </View>
+              )}
 
-                <TouchableOpacity
-                  style={styles.doneButton}
-                  onPress={() => {
-                    statusBottomSheetRef.current?.close();
-                    if (sendResult.success) {
-                      router.push('/' as any);
-                    }
-                  }}
-                >
-                  <Text style={styles.doneButtonText}>
-                    {sendResult.success ? 'Done' : 'Try Again'}
+              <PrimaryActionButton
+                title={isPreparingSend ? 'Preparing...' : 'Confirm Send'}
+                onPress={handleConfirmSend}
+                disabled={!preparedTransaction || isPreparingSend}
+                loading={isPreparingSend}
+              />
+            </BottomSheetView>
+          </BottomSheet>
+
+          {/* Status Bottom Sheet */}
+          <BottomSheet
+            ref={statusBottomSheetRef}
+            index={-1}
+            backdropComponent={renderBackdrop}
+            enablePanDownToClose={!isSending}
+            onClose={() => setIsStatusSheetOpen(false)}
+            backgroundStyle={styles.bottomSheetBackground}
+            handleIndicatorStyle={styles.bottomSheetHandle}
+          >
+            <BottomSheetView
+              style={[styles.bottomSheetContent, { alignItems: 'center' }]}
+            >
+              {isSending ? (
+                <>
+                  <ActivityIndicator
+                    size="large"
+                    color={colors.primary}
+                    style={styles.loadingIndicator}
+                  />
+                  <Text style={styles.loadingText}>
+                    {isConfirmingSend
+                      ? 'Sending Transaction...'
+                      : 'Processing Transaction...'}
                   </Text>
-                </TouchableOpacity>
-              </>
-            ) : null}
-          </BottomSheetView>
-        </BottomSheet>
+                  <Text style={styles.loadingSubtext}>
+                    {isConfirmingSend
+                      ? 'Please wait while we submit your transaction to the blockchain'
+                      : 'Please wait while we process your transaction'}
+                  </Text>
+                </>
+              ) : sendResult ? (
+                <>
+                  {sendResult.success ? (
+                    <>
+                      <LinearGradient
+                        colors={['#4CAF50', '#45a049']}
+                        style={styles.successIcon}
+                      >
+                        <Check size={32} color={colors.white} />
+                      </LinearGradient>
+                      <Text style={styles.successTitle}>Send Successful!</Text>
+                      <Text style={styles.successSubtitle}>
+                        Your transaction has been sent successfully
+                      </Text>
+                      {sendResult.signature && (
+                        <Text style={styles.transactionId} numberOfLines={1}>
+                          Transaction ID: {sendResult.signature.slice(0, 8)}...
+                          {sendResult.signature.slice(-8)}
+                        </Text>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <View style={styles.errorIcon}>
+                        <Text style={styles.errorIconText}>✕</Text>
+                      </View>
+                      <Text style={styles.errorTitle}>Send Failed</Text>
+                      <Text style={styles.errorSubtitle}>
+                        {'Something went wrong. Please try again.'}
+                      </Text>
+                    </>
+                  )}
 
-        {/* Toast */}
-        {toast && (
-          <Toast
-            message={toast.message}
-            type={toast.type}
-            visible={!!toast}
-            onHide={() => setToast(null)}
-          />
-        )}
+                  <PrimaryActionButton
+                    title={sendResult.success ? 'Done' : 'Try Again'}
+                    onPress={() => {
+                      statusBottomSheetRef.current?.close();
+                      if (sendResult.success) {
+                        router.push('/' as any);
+                      }
+                    }}
+                  />
+                </>
+              ) : null}
+            </BottomSheetView>
+          </BottomSheet>
+
+          {/* Toast */}
+          {toast && (
+            <Toast
+              message={toast.message}
+              type={toast.type}
+              visible={!!toast}
+              onHide={() => setToast(null)}
+            />
+          )}
+        </View>
       </ScreenContainer>
     </GestureHandlerRootView>
   );
 }
 
 const styles = StyleSheet.create({
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: scale(16),
+    paddingBottom: verticalScale(20),
+  },
   content: {
-    padding: 16,
+    padding: scale(16),
   },
   tokenIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 12,
+    width: scale(36),
+    height: scale(36),
+    borderRadius: scale(18),
+    marginRight: scale(10),
   },
   tokenInfo: {
     flex: 1,
   },
   tokenName: {
-    fontSize: 16,
+    fontSize: moderateScale(16),
     fontFamily: 'Inter-SemiBold',
     color: colors.textPrimary,
   },
   tokenBalance: {
-    fontSize: 14,
+    fontSize: moderateScale(14),
     fontFamily: 'Inter-Regular',
     color: colors.textSecondary,
-    marginTop: 2,
+    marginTop: verticalScale(2),
   },
   tokenValue: {
     fontSize: 16,
@@ -605,170 +569,170 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   inputGroup: {
-    marginBottom: 24,
+    marginBottom: verticalScale(24),
   },
   inputLabel: {
-    fontSize: 14,
+    fontSize: moderateScale(14),
     fontFamily: 'Inter-Medium',
     color: colors.textSecondary,
-    marginBottom: 8,
+    marginBottom: verticalScale(8),
   },
   amountInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.backgroundMedium,
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    height: 60,
+    borderRadius: scale(16),
+    paddingHorizontal: scale(16),
+    height: verticalScale(60),
   },
   amountInput: {
     flex: 1,
-    fontSize: 24,
+    fontSize: moderateScale(24),
     fontFamily: 'Inter-SemiBold',
     color: colors.textPrimary,
   },
   amountCurrency: {
-    fontSize: 16,
+    fontSize: moderateScale(16),
     fontFamily: 'Inter-SemiBold',
     color: colors.textSecondary,
   },
   amountInFiat: {
-    fontSize: 14,
+    fontSize: moderateScale(14),
     fontFamily: 'Inter-Regular',
     color: colors.textSecondary,
-    marginTop: 8,
-    marginLeft: 16,
+    marginTop: verticalScale(8),
+    marginLeft: scale(16),
   },
   amountOptions: {
     flexDirection: 'row',
-    marginTop: 12,
+    marginTop: verticalScale(10),
     justifyContent: 'space-between',
   },
   amountOption: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingVertical: verticalScale(6),
+    paddingHorizontal: scale(10),
     backgroundColor: colors.backgroundLight,
-    borderRadius: 12,
+    borderRadius: scale(10),
   },
   amountOptionText: {
-    fontSize: 14,
+    fontSize: moderateScale(13),
     fontFamily: 'Inter-Medium',
     color: colors.primary,
   },
   recipientSection: {
-    marginBottom: 24,
+    marginBottom: verticalScale(8),
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.backgroundMedium,
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    height: 50,
-    marginBottom: 16,
+    borderRadius: scale(16),
+    paddingHorizontal: scale(16),
+    height: verticalScale(50),
+    marginBottom: verticalScale(16),
   },
   searchInput: {
     flex: 1,
-    marginLeft: 8,
-    fontSize: 16,
+    marginLeft: scale(8),
+    fontSize: moderateScale(16),
     fontFamily: 'Inter-Regular',
     color: colors.textPrimary,
   },
   optionsRow: {
     flexDirection: 'row',
-    marginBottom: 16,
+    marginBottom: verticalScale(16),
   },
   optionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginRight: 16,
+    marginRight: scale(16),
   },
   optionIconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: scale(36),
+    height: scale(36),
+    borderRadius: scale(18),
     backgroundColor: colors.backgroundMedium,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 8,
+    marginRight: scale(8),
   },
   optionText: {
-    fontSize: 14,
+    fontSize: moderateScale(14),
     fontFamily: 'Inter-Medium',
     color: colors.textPrimary,
   },
   contactsContainer: {
-    paddingVertical: 8,
+    paddingVertical: verticalScale(8),
   },
   contactItem: {
     alignItems: 'center',
-    marginRight: 16,
-    width: 70,
+    marginRight: scale(16),
+    width: scale(70),
   },
   contactImage: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    marginBottom: 8,
+    width: scale(50),
+    height: scale(50),
+    borderRadius: scale(25),
+    marginBottom: verticalScale(8),
   },
   contactItemName: {
-    fontSize: 12,
+    fontSize: moderateScale(12),
     fontFamily: 'Inter-Medium',
     color: colors.textPrimary,
     textAlign: 'center',
   },
   noResults: {
-    fontSize: 14,
+    fontSize: moderateScale(13),
     fontFamily: 'Inter-Regular',
     color: colors.textSecondary,
     alignSelf: 'center',
-    marginVertical: 16,
+    marginVertical: verticalScale(14),
   },
   selectedContactContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.backgroundMedium,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
+    borderRadius: scale(14),
+    padding: scale(14),
+    marginBottom: verticalScale(14),
   },
   contactAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 12,
+    width: scale(36),
+    height: scale(36),
+    borderRadius: scale(18),
+    marginRight: scale(10),
   },
   contactInfo: {
     flex: 1,
   },
   contactName: {
-    fontSize: 16,
+    fontSize: moderateScale(15),
     fontFamily: 'Inter-SemiBold',
     color: colors.textPrimary,
   },
   contactUsername: {
-    fontSize: 14,
+    fontSize: moderateScale(13),
     fontFamily: 'Inter-Regular',
     color: colors.textSecondary,
   },
   changeButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
+    paddingVertical: verticalScale(5),
+    paddingHorizontal: scale(10),
     backgroundColor: colors.backgroundLight,
-    borderRadius: 12,
+    borderRadius: scale(10),
   },
   changeButtonText: {
-    fontSize: 14,
+    fontSize: moderateScale(13),
     fontFamily: 'Inter-Medium',
     color: colors.primary,
   },
   noteInput: {
     backgroundColor: colors.backgroundMedium,
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    minHeight: 80,
-    fontSize: 16,
+    borderRadius: scale(16),
+    paddingHorizontal: scale(16),
+    paddingVertical: verticalScale(12),
+    minHeight: verticalScale(80),
+    fontSize: moderateScale(16),
     fontFamily: 'Inter-Regular',
     color: colors.textPrimary,
     textAlignVertical: 'top',
@@ -778,17 +742,17 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: colors.backgroundMedium,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 100,
+    borderRadius: scale(16),
+    padding: scale(16),
+    marginBottom: verticalScale(100),
   },
   feeLabel: {
-    fontSize: 14,
+    fontSize: moderateScale(14),
     fontFamily: 'Inter-Regular',
     color: colors.textSecondary,
   },
   feeValue: {
-    fontSize: 14,
+    fontSize: moderateScale(14),
     fontFamily: 'Inter-Medium',
     color: colors.textPrimary,
   },
@@ -798,33 +762,9 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     marginTop: 'auto',
-    paddingBottom: Platform.OS === 'ios' ? 34 : 24,
-    paddingHorizontal: 20,
-  },
-  sendButton: {
-    height: 54,
-    borderRadius: 27,
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  buttonBackground: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-    height: '100%',
-    gap: 8,
-  },
-  sendButtonText: {
-    fontSize: 17,
-    fontFamily: 'Inter-SemiBold',
-    color: colors.white,
-  },
-  sendButtonTextDisabled: {
-    color: colors.textSecondary,
-    opacity: 0.5,
+    paddingBottom:
+      Platform.OS === 'ios' ? verticalScale(34) : verticalScale(24),
+    paddingHorizontal: scale(20),
   },
   // Bottom sheet styles
   bottomSheetBackground: {
@@ -871,14 +811,14 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   confirmButton: {
-    height: 54,
-    borderRadius: 27,
+    height: verticalScale(54),
+    borderRadius: scale(27),
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
   },
   confirmButtonText: {
-    fontSize: 17,
+    fontSize: moderateScale(17),
     fontFamily: 'Inter-SemiBold',
     color: colors.white,
   },
@@ -948,23 +888,10 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   errorSubtitle: {
-    fontSize: 14,
+    fontSize: moderateScale(14),
     fontFamily: 'Inter-Regular',
     color: colors.textSecondary,
     textAlign: 'center',
-    marginBottom: 24,
-  },
-  doneButton: {
-    width: '100%',
-    backgroundColor: colors.primary,
-    borderRadius: 12,
-    height: 50,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  doneButtonText: {
-    fontSize: 16,
-    fontFamily: 'Inter-SemiBold',
-    color: colors.white,
+    marginBottom: verticalScale(24),
   },
 });

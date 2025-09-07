@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Copy, Share as ShareIcon } from 'lucide-react-native';
+import { scale, verticalScale } from 'react-native-size-matters';
 import QRCode from 'react-native-qrcode-svg';
 import colors from '@/constants/colors';
 import ScreenHeader from '@/components/ScreenHeader';
@@ -19,7 +20,7 @@ import { setStringAsync } from 'expo-clipboard';
 import { useWalletPublicKey } from '@/services/walletService';
 
 const { width } = Dimensions.get('window');
-const QR_SIZE = width * 0.7;
+const QR_SIZE = Math.min(width * 0.6, scale(200));
 
 export default function ReceiveScreen() {
   const router = useRouter();
@@ -61,7 +62,7 @@ export default function ReceiveScreen() {
               value={walletAddress || ''}
               size={QR_SIZE}
               logo={require('@/assets/images/solana-logo.png')}
-              logoSize={60}
+              logoSize={scale(40)}
             />
           </View>
         </View>
@@ -84,14 +85,14 @@ export default function ReceiveScreen() {
                 style={styles.copyButton}
                 onPress={handleCopyAddress}
               >
-                <Copy size={20} color={colors.primary} />
+                <Copy size={scale(16)} color={colors.textPrimary} />
               </TouchableOpacity>
             </View>
           </View>
         </View>
 
         <TouchableOpacity style={styles.shareButton} onPress={handleShare}>
-          <ShareIcon size={20} color={colors.white} />
+          <ShareIcon size={scale(18)} color={colors.white} />
           <Text style={styles.actionButtonText}>Share</Text>
         </TouchableOpacity>
       </View>
@@ -108,98 +109,98 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingBottom: 16,
+    paddingHorizontal: scale(16),
+    paddingBottom: verticalScale(16),
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: scale(18),
     fontFamily: 'Inter-SemiBold',
     color: colors.textPrimary,
   },
   closeButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: scale(40),
+    height: scale(40),
+    borderRadius: scale(20),
     backgroundColor: colors.backgroundMedium,
     alignItems: 'center',
     justifyContent: 'center',
   },
   placeholder: {
-    width: 40,
+    width: scale(40),
   },
   content: {
     flex: 1,
-    paddingHorizontal: 16,
+    paddingHorizontal: scale(16),
+    justifyContent: 'center',
   },
   qrSection: {
     alignItems: 'center',
-    marginTop: 80,
-    marginBottom: 24,
+    marginBottom: verticalScale(20),
   },
   qrTitle: {
-    fontSize: 16,
+    fontSize: scale(14),
     fontFamily: 'Inter-Medium',
     color: colors.textPrimary,
-    marginBottom: 16,
+    marginBottom: verticalScale(12),
     textAlign: 'center',
   },
   qrContainer: {
     backgroundColor: colors.white,
-    borderRadius: 24,
-    padding: 16,
-    marginBottom: 24,
+    borderRadius: scale(20),
+    padding: scale(12),
+    marginBottom: verticalScale(16),
   },
   addressContainer: {
     width: '100%',
-    marginBottom: 24,
+    marginBottom: verticalScale(16),
   },
   addressLabel: {
-    fontSize: 14,
+    fontSize: scale(12),
     fontFamily: 'Inter-Medium',
     color: colors.textSecondary,
-    marginBottom: 8,
+    marginBottom: verticalScale(6),
   },
   addressInputContainer: {
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.backgroundMedium,
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    borderRadius: scale(12),
+    paddingHorizontal: scale(12),
+    paddingVertical: verticalScale(12),
   },
   addressGroup: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   addressInput: {
-    fontSize: 16,
+    fontSize: scale(14),
     fontFamily: 'Inter-SemiBold',
     color: colors.textPrimary,
-    marginRight: 8,
+    marginRight: scale(6),
   },
   copyButton: {
-    padding: 8,
+    padding: scale(6),
   },
   bottomSection: {
-    paddingHorizontal: 16,
-    paddingBottom: 32,
+    paddingHorizontal: scale(16),
+    paddingBottom: verticalScale(24),
   },
   actionButtons: {
-    paddingHorizontal: 16,
-    paddingBottom: 32,
+    paddingHorizontal: scale(16),
+    paddingBottom: verticalScale(24),
   },
   shareButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primary,
-    borderRadius: 16,
-    paddingVertical: 16,
+    backgroundColor: '#6366f1',
+    borderRadius: scale(14),
+    paddingVertical: verticalScale(14),
   },
   actionButtonText: {
     color: colors.white,
-    fontSize: 16,
+    fontSize: scale(15),
     fontFamily: 'Inter-SemiBold',
-    marginLeft: 8,
+    marginLeft: scale(8),
   },
 });
