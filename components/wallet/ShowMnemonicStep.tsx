@@ -188,7 +188,6 @@ const ShowMnemonicStep: React.FC<ShowMnemonicStepProps> = ({
             onPress={onNext}
             disabled={isLoading}
             loading={isLoading}
-            showArrow={true}
           />
         </View>
       </View>

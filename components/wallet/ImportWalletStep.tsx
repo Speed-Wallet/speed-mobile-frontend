@@ -176,7 +176,6 @@ export default function ImportWalletStep({
             onPress={handleContinue}
             disabled={!isValid}
             loading={isLoading}
-            showArrow={true}
           />
         </View>
       </KeyboardAvoidingView>

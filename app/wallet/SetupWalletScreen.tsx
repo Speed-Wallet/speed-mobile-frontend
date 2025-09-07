@@ -245,19 +245,6 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
           />
         </View>
       )}
-      {isLoading && (
-        <ActivityIndicator
-          size="large"
-          color={colors.primary}
-          style={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: [{ translateX: -25 }, { translateY: -25 }],
-            zIndex: 1000,
-          }}
-        />
-      )}
 
       {step === 1 && (
         <CreateWalletIntroStep
