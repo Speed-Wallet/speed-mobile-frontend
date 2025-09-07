@@ -15,6 +15,7 @@ import {
   ArrowUpDown,
 } from 'lucide-react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
+import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import colors from '@/constants/colors';
 import { getAllTokenInfo } from '@/data/tokens';
 import TokenItem from '@/components/TokenItem';
@@ -108,7 +109,7 @@ export default function MarketScreen() {
       {/* Search Bar */}
       <View style={styles.searchContainer}>
         <Search
-          size={20}
+          size={scale(18)}
           color={colors.textSecondary}
           style={styles.searchIcon}
         />
@@ -140,9 +141,9 @@ export default function MarketScreen() {
           </Text>
           {sortBy === 'name' && (
             <ArrowUpDown
-              size={14}
+              size={scale(12)}
               color={colors.backgroundDark}
-              style={{ marginLeft: 4 }}
+              style={{ marginLeft: scale(3) }}
             />
           )}
         </TouchableOpacity>
@@ -164,9 +165,9 @@ export default function MarketScreen() {
           </Text>
           {sortBy === 'price' && (
             <ArrowUpDown
-              size={14}
+              size={scale(12)}
               color={colors.backgroundDark}
-              style={{ marginLeft: 4 }}
+              style={{ marginLeft: scale(3) }}
             />
           )}
         </TouchableOpacity>
@@ -189,15 +190,15 @@ export default function MarketScreen() {
           {sortBy === 'change' &&
             (sortDirection === 'asc' ? (
               <TrendingUp
-                size={14}
+                size={scale(12)}
                 color={colors.backgroundDark}
-                style={{ marginLeft: 4 }}
+                style={{ marginLeft: scale(3) }}
               />
             ) : (
               <TrendingDown
-                size={14}
+                size={scale(12)}
                 color={colors.backgroundDark}
-                style={{ marginLeft: 4 }}
+                style={{ marginLeft: scale(3) }}
               />
             ))}
         </TouchableOpacity>
@@ -233,36 +234,36 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.backgroundMedium,
-    borderRadius: 12,
-    marginHorizontal: 16,
-    marginTop: 8,
-    marginBottom: 16,
-    paddingHorizontal: 12,
-    height: 48,
+    borderRadius: scale(10),
+    marginHorizontal: scale(12),
+    marginTop: verticalScale(6),
+    marginBottom: verticalScale(12),
+    paddingHorizontal: scale(10),
+    height: verticalScale(42),
   },
   searchIcon: {
-    marginRight: 8,
+    marginRight: scale(6),
   },
   searchInput: {
     flex: 1,
     color: colors.textPrimary,
     fontFamily: 'Inter-Regular',
-    fontSize: 16,
+    fontSize: moderateScale(14),
   },
   sortOptionsContainer: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
-    marginBottom: 16,
-    gap: 12,
+    paddingHorizontal: scale(12),
+    marginBottom: verticalScale(12),
+    gap: scale(8),
   },
   sortOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 25,
+    paddingVertical: verticalScale(8),
+    paddingHorizontal: scale(14),
+    borderRadius: scale(18),
     backgroundColor: colors.backgroundMedium,
-    minHeight: 44,
+    minHeight: verticalScale(36),
   },
   activeSortOption: {
     backgroundColor: '#00CFFF',
@@ -270,7 +271,7 @@ const styles = StyleSheet.create({
   sortOptionText: {
     color: colors.textSecondary,
     fontFamily: 'Inter-Medium',
-    fontSize: 15,
+    fontSize: moderateScale(12),
     fontWeight: '600',
   },
   activeSortOptionText: {
@@ -278,7 +279,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   listContent: {
-    paddingHorizontal: 16,
-    paddingBottom: 80,
+    paddingHorizontal: scale(12),
+    paddingBottom: verticalScale(60),
   },
 });
