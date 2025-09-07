@@ -34,6 +34,7 @@ import {
 } from 'lucide-react-native';
 import SettingsScreen from '@/components/SettingsScreen';
 import Toast from '@/components/Toast';
+import PrimaryActionButton from '@/components/buttons/PrimaryActionButton';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -48,6 +49,7 @@ import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import { StorageService, PersonalInfo } from '@/utils/storage';
 import { triggerShake } from '@/utils/animations';
 import { countries, Country } from '@/constants/countries';
+import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import { sendOtp, checkEmailStatus } from '@/services/otpService';
 import EmailBadge, { EmailStatus } from '@/components/EmailBadge';
 import EmailVerificationSheet from '@/components/EmailVerificationSheet';
@@ -840,24 +842,20 @@ export default function AccountScreen() {
                 { transform: [{ translateX: buttonShakeAnimationValue }] },
               ]}
             >
-              <TouchableOpacity
-                style={[
-                  styles.saveButton,
-                  (!isFormValid() || isSaving) && styles.saveButtonDisabled,
-                ]}
-                onPress={handleSaveButtonPress}
-                disabled={isSaving}
-              >
-                <Save size={20} color="#ffffff" />
-                <Text style={styles.saveButtonText}>
-                  {isSaving
+              <PrimaryActionButton
+                title={
+                  isSaving
                     ? 'Saving...'
                     : emailStatus === 'needs_verification' ||
                         emailStatus === 'otp_pending'
                       ? 'Verify Email'
-                      : 'Save Details'}
-                </Text>
-              </TouchableOpacity>
+                      : 'Save Details'
+                }
+                onPress={handleSaveButtonPress}
+                disabled={!isFormValid() || isSaving}
+                loading={isSaving}
+                variant="primary"
+              />
             </RNAnimated.View>
           </View>
 
@@ -871,146 +869,151 @@ export default function AccountScreen() {
         </>
       }
     >
-      {/* Verification Level Section */}
-      <View style={styles.section}>
-        <Text style={styles.sectionLabel}>Verification Level</Text>
+      {/* Verification Level Section - Commented Out */}
+      {false && (
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>Verification Level</Text>
 
-        <GestureDetector gesture={panGesture}>
-          <View>
-            <RNAnimated.View
-              style={[{ transform: [{ translateX: shakeAnimationValue }] }]}
-            >
-              <Animated.ScrollView
-                ref={scrollViewRef}
-                horizontal
-                pagingEnabled
-                showsHorizontalScrollIndicator={false}
-                onScroll={scrollHandler}
-                scrollEventThrottle={16}
-                snapToInterval={SNAP_INTERVAL}
-                decelerationRate="fast"
-                contentContainerStyle={styles.scrollContent}
+          <GestureDetector gesture={panGesture}>
+            <View>
+              <RNAnimated.View
+                style={[{ transform: [{ translateX: shakeAnimationValue }] }]}
               >
+                <Animated.ScrollView
+                  ref={scrollViewRef}
+                  horizontal
+                  pagingEnabled
+                  showsHorizontalScrollIndicator={false}
+                  onScroll={scrollHandler}
+                  scrollEventThrottle={16}
+                  snapToInterval={SNAP_INTERVAL}
+                  decelerationRate="fast"
+                  contentContainerStyle={styles.scrollContent}
+                >
+                  {verificationLevels.map((level, index) => {
+                    const animatedStyle = useAnimatedStyle(() => {
+                      const inputRange = [
+                        (index - 1) * SNAP_INTERVAL,
+                        index * SNAP_INTERVAL,
+                        (index + 1) * SNAP_INTERVAL,
+                      ];
+
+                      const scale = interpolate(
+                        scrollX.value,
+                        inputRange,
+                        [0.95, 1, 0.95],
+                        'clamp',
+                      );
+
+                      const opacity = interpolate(
+                        scrollX.value,
+                        inputRange,
+                        [0.7, 1, 0.7],
+                        'clamp',
+                      );
+
+                      return {
+                        transform: [{ scale }],
+                        opacity,
+                      };
+                    });
+
+                    return (
+                      <Animated.View
+                        key={level.id}
+                        style={[
+                          styles.verificationCard,
+                          { borderLeftColor: level.color },
+                          animatedStyle,
+                        ]}
+                      >
+                        <View style={styles.cardHeader}>
+                          <View style={styles.levelInfo}>
+                            <Text style={styles.levelTitle}>{level.title}</Text>
+                            <Text style={styles.levelDescription}>
+                              {level.description}
+                            </Text>
+                          </View>
+                          <View
+                            style={[
+                              styles.statusBadge,
+                              { backgroundColor: level.color },
+                            ]}
+                          >
+                            {getStatusIcon(level.icon, '#ffffff')}
+                          </View>
+                        </View>
+                      </Animated.View>
+                    );
+                  })}
+                </Animated.ScrollView>
+              </RNAnimated.View>
+
+              {/* Level Indicators */}
+              <View style={styles.indicators}>
                 {verificationLevels.map((level, index) => {
-                  const animatedStyle = useAnimatedStyle(() => {
-                    const inputRange = [
-                      (index - 1) * SNAP_INTERVAL,
-                      index * SNAP_INTERVAL,
-                      (index + 1) * SNAP_INTERVAL,
-                    ];
+                  const animatedIndicatorStyle = useAnimatedStyle(() => {
+                    const opacity = interpolate(
+                      scrollX.value,
+                      [
+                        (index - 0.5) * SNAP_INTERVAL,
+                        index * SNAP_INTERVAL,
+                        (index + 0.5) * SNAP_INTERVAL,
+                      ],
+                      [0.3, 1, 0.3],
+                      'clamp',
+                    );
 
                     const scale = interpolate(
                       scrollX.value,
-                      inputRange,
-                      [0.95, 1, 0.95],
+                      [
+                        (index - 0.5) * SNAP_INTERVAL,
+                        index * SNAP_INTERVAL,
+                        (index + 0.5) * SNAP_INTERVAL,
+                      ],
+                      [0.8, 1.2, 0.8],
                       'clamp',
                     );
 
-                    const opacity = interpolate(
-                      scrollX.value,
-                      inputRange,
-                      [0.7, 1, 0.7],
-                      'clamp',
-                    );
-
-                    return {
-                      transform: [{ scale }],
-                      opacity,
-                    };
+                    return { opacity, transform: [{ scale }] };
                   });
 
                   return (
-                    <Animated.View
-                      key={level.id}
-                      style={[
-                        styles.verificationCard,
-                        { borderLeftColor: level.color },
-                        animatedStyle,
-                      ]}
-                    >
-                      <View style={styles.cardHeader}>
-                        <View style={styles.levelInfo}>
-                          <Text style={styles.levelTitle}>{level.title}</Text>
-                          <Text style={styles.levelDescription}>
-                            {level.description}
-                          </Text>
-                        </View>
-                        <View
+                    <View key={index} style={styles.indicatorContainer}>
+                      {level.accessible ? (
+                        <Animated.View
                           style={[
-                            styles.statusBadge,
-                            { backgroundColor: level.color },
+                            styles.indicator,
+                            {
+                              backgroundColor:
+                                index === currentLevel ? '#10b981' : '#6b7280',
+                            },
+                            animatedIndicatorStyle,
+                          ]}
+                        />
+                      ) : (
+                        <Animated.View
+                          style={[
+                            styles.lockedIndicator,
+                            animatedIndicatorStyle,
                           ]}
                         >
-                          {getStatusIcon(level.icon, '#ffffff')}
-                        </View>
-                      </View>
-                    </Animated.View>
+                          <Lock size={12} color="#d1d5db" strokeWidth={4} />
+                        </Animated.View>
+                      )}
+                    </View>
                   );
                 })}
-              </Animated.ScrollView>
-            </RNAnimated.View>
-
-            {/* Level Indicators */}
-            <View style={styles.indicators}>
-              {verificationLevels.map((level, index) => {
-                const animatedIndicatorStyle = useAnimatedStyle(() => {
-                  const opacity = interpolate(
-                    scrollX.value,
-                    [
-                      (index - 0.5) * SNAP_INTERVAL,
-                      index * SNAP_INTERVAL,
-                      (index + 0.5) * SNAP_INTERVAL,
-                    ],
-                    [0.3, 1, 0.3],
-                    'clamp',
-                  );
-
-                  const scale = interpolate(
-                    scrollX.value,
-                    [
-                      (index - 0.5) * SNAP_INTERVAL,
-                      index * SNAP_INTERVAL,
-                      (index + 0.5) * SNAP_INTERVAL,
-                    ],
-                    [0.8, 1.2, 0.8],
-                    'clamp',
-                  );
-
-                  return { opacity, transform: [{ scale }] };
-                });
-
-                return (
-                  <View key={index} style={styles.indicatorContainer}>
-                    {level.accessible ? (
-                      <Animated.View
-                        style={[
-                          styles.indicator,
-                          {
-                            backgroundColor:
-                              index === currentLevel ? '#10b981' : '#6b7280',
-                          },
-                          animatedIndicatorStyle,
-                        ]}
-                      />
-                    ) : (
-                      <Animated.View
-                        style={[styles.lockedIndicator, animatedIndicatorStyle]}
-                      >
-                        <Lock size={12} color="#d1d5db" strokeWidth={4} />
-                      </Animated.View>
-                    )}
-                  </View>
-                );
-              })}
+              </View>
             </View>
-          </View>
-        </GestureDetector>
-      </View>
+          </GestureDetector>
+        </View>
+      )}
 
       {/* Dynamic Input Fields */}
       <View style={styles.section}>
         <Text style={styles.sectionInfo}>
-          Complete Level 1 verification to unlock virtual card creation
+          Complete verification to unlock virtual card creation
         </Text>
         <View style={styles.inputsContainer}>
           {/* Level 1 - Basic Personal Information */}
@@ -1386,32 +1389,32 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   section: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingHorizontal: scale(16), // Reduced from 20
+    paddingVertical: verticalScale(10), // Reduced from 12
   },
   sectionLabel: {
-    fontSize: 14,
+    fontSize: moderateScale(14), // Keep size but make responsive
     fontWeight: '600',
     color: '#9ca3af',
-    marginBottom: 12,
+    marginBottom: verticalScale(10), // Reduced from 12
   },
   sectionInfo: {
-    fontSize: 14,
+    fontSize: moderateScale(14), // Keep size but make responsive
     color: '#9ca3af',
-    lineHeight: 20,
-    marginBottom: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    lineHeight: verticalScale(18), // Reduced from 20
+    marginBottom: verticalScale(14), // Reduced from 16
+    paddingHorizontal: scale(10), // Reduced from 12
+    paddingVertical: verticalScale(8), // Reduced from 10
     backgroundColor: '#2a2a2a',
-    borderRadius: 8,
-    borderLeftWidth: 3,
+    borderRadius: scale(8),
+    borderLeftWidth: scale(3),
     borderLeftColor: '#3b82f6',
   },
   infoCard: {
     backgroundColor: '#2a2a2a',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderRadius: 12,
+    paddingHorizontal: scale(14), // Reduced from 16
+    paddingVertical: verticalScale(12), // Reduced from 14
+    borderRadius: scale(12),
     borderWidth: 1,
     borderColor: '#404040',
   },
@@ -1426,11 +1429,11 @@ const styles = StyleSheet.create({
   verificationCard: {
     width: CARD_WIDTH,
     backgroundColor: '#2a2a2a',
-    borderRadius: 16,
+    borderRadius: scale(14), // Reduced from 16
     borderWidth: 1,
     borderColor: '#404040',
-    borderLeftWidth: 4,
-    padding: 20,
+    borderLeftWidth: scale(4),
+    padding: scale(16), // Reduced from 20
     marginHorizontal: CARD_MARGIN, // Use the defined margin constant
   },
   cardHeader: {
@@ -1440,23 +1443,23 @@ const styles = StyleSheet.create({
   },
   levelInfo: {
     flex: 1,
-    marginRight: 16,
+    marginRight: scale(14), // Reduced from 16
   },
   levelTitle: {
-    fontSize: 18,
+    fontSize: moderateScale(18), // Keep size but make responsive
     fontWeight: '700',
     color: '#ffffff',
-    marginBottom: 6,
+    marginBottom: verticalScale(5), // Reduced from 6
   },
   levelDescription: {
-    fontSize: 14,
+    fontSize: moderateScale(14), // Keep size but make responsive - this is "Level 1 - Basic" text
     color: '#9ca3af',
-    lineHeight: 20,
+    lineHeight: verticalScale(18), // Reduced from 20
   },
   statusBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: scale(28), // Reduced from 32
+    height: scale(28), // Reduced from 32
+    borderRadius: scale(14), // Half of width/height
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1464,60 +1467,60 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 20,
-    gap: 8,
+    marginTop: verticalScale(16), // Reduced from 20
+    gap: scale(6), // Reduced from 8
   },
   indicatorContainer: {
     alignItems: 'center',
     justifyContent: 'center',
   },
   indicator: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: scale(6), // Reduced from 8
+    height: scale(6), // Reduced from 8
+    borderRadius: scale(3), // Half of width/height
   },
   lockedIndicator: {
-    width: 24,
-    height: 24,
+    width: scale(20), // Reduced from 24
+    height: scale(20), // Reduced from 24
     backgroundColor: '#6b7280',
-    borderRadius: 12,
+    borderRadius: scale(10), // Half of width/height
     alignItems: 'center',
     justifyContent: 'center',
   },
   inputsContainer: {
-    gap: 16,
+    gap: verticalScale(10), // Reduced from 14
   },
   inputContainer: {
-    marginBottom: 4,
+    marginBottom: verticalScale(1), // Reduced from 3
   },
   inputLabel: {
-    fontSize: 14,
+    fontSize: moderateScale(14), // Keep size - this is input header text that should be correct
     fontWeight: '600',
     color: '#ffffff',
-    marginBottom: 8,
+    marginBottom: verticalScale(6), // Reduced from 8
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#2a2a2a',
-    borderRadius: 12,
+    borderRadius: scale(10), // Reduced from 12
     borderWidth: 1,
     borderColor: '#404040',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingHorizontal: scale(14), // Reduced from 16
+    paddingVertical: verticalScale(12), // Reduced from 14
   },
   inputWrapperError: {
     borderColor: '#ef4444',
   },
   inputIcon: {
-    marginRight: 12,
+    marginRight: scale(10), // Reduced from 12
   },
   validIcon: {
-    marginLeft: 8,
+    marginLeft: scale(6), // Reduced from 8
   },
   textInput: {
     flex: 1,
-    fontSize: 16,
+    fontSize: moderateScale(16), // Keep size but make responsive
     color: '#ffffff',
     fontWeight: '500',
   },
@@ -1529,20 +1532,20 @@ const styles = StyleSheet.create({
   countrySelector: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingRight: 12,
-    marginRight: 12,
+    paddingRight: scale(10), // Reduced from 12
+    marginRight: scale(10), // Reduced from 12
     borderRightWidth: 1,
     borderRightColor: '#404040',
   },
   countryFlag: {
-    fontSize: 20,
-    marginRight: 8,
+    fontSize: moderateScale(18), // Reduced from 20
+    marginRight: scale(6), // Reduced from 8
   },
   dialCode: {
-    fontSize: 16,
+    fontSize: moderateScale(16), // Keep size but make responsive
     color: '#ffffff',
     fontWeight: '500',
-    marginRight: 8,
+    marginRight: scale(6), // Reduced from 8
   },
   phoneInput: {
     flex: 1,
@@ -1581,7 +1584,7 @@ const styles = StyleSheet.create({
     color: '#ef4444',
   },
   saveButtonContainer: {
-    padding: 20,
+    padding: scale(14), // Reduced from 20 and made responsive
     backgroundColor: '#1a1a1a',
     borderTopWidth: 1,
     borderTopColor: '#404040',

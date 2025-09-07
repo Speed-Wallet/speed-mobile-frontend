@@ -5,6 +5,7 @@ import { formatCurrency } from '@/utils/formatters';
 import { EnrichedTokenEntry, TokenEntry } from '@/data/types';
 import { useTokenBalance } from '@/hooks/useTokenBalance';
 import TokenLogo from './TokenLogo';
+import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 
 interface TokenItemAltProps {
   token: EnrichedTokenEntry;
@@ -38,7 +39,7 @@ const TokenItemAlt: React.FC<TokenItemAltProps> = ({
       ]}
       onPress={() => onSelectToken(token)}
     >
-      <TokenLogo logoURI={logoURI} size={40} style={styles.tokenIcon} />
+      <TokenLogo logoURI={logoURI} size={scale(32)} style={styles.tokenIcon} />
       <View style={styles.tokenInfo}>
         <Text style={styles.tokenName}>{name}</Text>
         <Text style={styles.tokenSymbol}>{symbol}</Text>
@@ -57,10 +58,10 @@ const styles = StyleSheet.create({
   tokenItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    marginBottom: 8,
+    paddingVertical: verticalScale(12),
+    paddingHorizontal: scale(12),
+    borderRadius: scale(12),
+    marginBottom: 4,
   },
   selectedTokenItem: {
     backgroundColor: colors.backgroundMedium,
@@ -68,22 +69,22 @@ const styles = StyleSheet.create({
     // borderWidth: 0.5,
   },
   tokenIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 12,
+    width: scale(32), // Reduced from 40
+    height: scale(32), // Reduced from 40
+    borderRadius: scale(16), // Half of width/height
+    marginRight: scale(10), // Reduced from 12
   },
   tokenInfo: {
     flex: 1,
   },
   tokenName: {
-    fontSize: 16,
+    fontSize: moderateScale(14), // Reduced from 16
     fontFamily: 'Inter-SemiBold',
     color: colors.textPrimary,
-    marginBottom: 4,
+    marginBottom: verticalScale(2), // Reduced from 4
   },
   tokenSymbol: {
-    fontSize: 14,
+    fontSize: moderateScale(12), // Reduced from 14
     fontFamily: 'Inter-Regular',
     color: colors.textSecondary,
   },
@@ -91,13 +92,13 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   balanceText: {
-    fontSize: 16,
+    fontSize: moderateScale(14), // Reduced from 16
     fontFamily: 'Inter-SemiBold',
     color: colors.textPrimary,
-    marginBottom: 4,
+    marginBottom: verticalScale(2), // Reduced from 4
   },
   balanceValue: {
-    fontSize: 14,
+    fontSize: moderateScale(12), // Reduced from 14
     fontFamily: 'Inter-Regular',
     color: colors.textSecondary,
   },

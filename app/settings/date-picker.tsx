@@ -9,6 +9,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { X } from 'lucide-react-native';
 import { router } from 'expo-router';
+import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import colors from '@/constants/colors';
 import { StorageService, PersonalInfo } from '@/utils/storage';
 
@@ -187,7 +188,7 @@ export default function DatePickerScreen() {
           onPress={() => router.back()}
           style={styles.closeButton}
         >
-          <X size={24} color={colors.textPrimary} />
+          <X size={scale(22)} color={colors.textPrimary} />
         </TouchableOpacity>
       </View>
 
@@ -277,8 +278,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingHorizontal: scale(15),
+    paddingVertical: verticalScale(15),
   },
   title: {
     fontSize: 18,
@@ -286,9 +287,9 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   closeButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: scale(36),
+    height: scale(36),
+    borderRadius: scale(18),
     backgroundColor: colors.backgroundMedium,
     alignItems: 'center',
     justifyContent: 'center',
@@ -296,38 +297,38 @@ const styles = StyleSheet.create({
   datePickerContainer: {
     flex: 1,
     flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingHorizontal: scale(15),
+    paddingTop: verticalScale(15),
   },
   pickerColumn: {
     flex: 1,
-    marginHorizontal: 4,
+    marginHorizontal: scale(3),
   },
   pickerColumnTitle: {
-    fontSize: 16,
+    fontSize: moderateScale(15),
     fontFamily: 'Inter-SemiBold',
     color: colors.textPrimary,
     textAlign: 'center',
-    marginBottom: 16,
+    marginBottom: verticalScale(15),
   },
   pickerList: {
     flex: 1,
   },
   pickerListContent: {
-    paddingBottom: 20,
+    paddingBottom: verticalScale(18),
   },
   pickerItem: {
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    borderRadius: 8,
-    marginVertical: 2,
+    paddingVertical: verticalScale(11),
+    paddingHorizontal: scale(7),
+    borderRadius: scale(7),
+    marginVertical: verticalScale(2),
     backgroundColor: colors.backgroundMedium,
   },
   selectedPickerItem: {
     backgroundColor: '#3b82f6',
   },
   pickerItemText: {
-    fontSize: 16,
+    fontSize: moderateScale(15),
     fontFamily: 'Inter-Regular',
     color: colors.textSecondary,
     textAlign: 'center',
@@ -337,14 +338,14 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-SemiBold',
   },
   confirmButtonContainer: {
-    padding: 16,
+    padding: scale(15),
     borderTopWidth: 1,
     borderTopColor: colors.backgroundMedium,
   },
   confirmButton: {
     backgroundColor: '#3b82f6',
-    paddingVertical: 16,
-    borderRadius: 12,
+    paddingVertical: verticalScale(15),
+    borderRadius: scale(11),
     alignItems: 'center',
   },
   confirmButtonDisabled: {
@@ -352,7 +353,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   confirmButtonText: {
-    fontSize: 16,
+    fontSize: moderateScale(15),
     fontFamily: 'Inter-SemiBold',
     color: colors.textPrimary,
   },
