@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { ArrowUpRight, ArrowDownRight, ChevronDown } from 'lucide-react-native';
+import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import colors from '@/constants/colors';
 import { formatCurrency, formatPercentage } from '@/utils/formatters';
 import GreyCard from './GreyCard';
@@ -10,7 +11,7 @@ import { EnrichedTokenEntry } from '@/data/types';
 import TokenLogo from './TokenLogo';
 
 // Define constants for image sizes
-const TOKEN_SYMBOL_CONTAINER_SIZE = 40;
+const TOKEN_SYMBOL_CONTAINER_SIZE = scale(36);
 
 type TokenItemProps = {
   token: EnrichedTokenEntry;
@@ -115,13 +116,13 @@ const TokenItem = ({
               <View style={styles.changeContainer}>
                 {isPositiveChange ? (
                   <ArrowUpRight
-                    size={12}
+                    size={scale(10)}
                     color={colors.success}
                     style={styles.changeIcon}
                   />
                 ) : (
                   <ArrowDownRight
-                    size={12}
+                    size={scale(10)}
                     color={colors.error}
                     style={styles.changeIcon}
                   />
@@ -141,7 +142,7 @@ const TokenItem = ({
         {showSelectorIcon && (
           <ChevronDown
             color={colors.textSecondary}
-            size={20}
+            size={scale(18)}
             style={styles.selectorIcon}
           />
         )}
@@ -153,7 +154,7 @@ const TokenItem = ({
 const styles = StyleSheet.create({
   cardStyle: {
     // Style for the GreyCard itself
-    marginBottom: 8,
+    marginBottom: verticalScale(6),
   },
   touchableContent: {
     // Style for the TouchableOpacity wrapping the content inside GreyCard
@@ -163,25 +164,25 @@ const styles = StyleSheet.create({
   leftSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginRight: 16,
+    marginRight: scale(12),
   },
   icon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 8,
+    width: scale(36),
+    height: scale(36),
+    borderRadius: scale(18),
+    marginRight: scale(6),
   },
   infoContainer: {
     flex: 1,
-    marginRight: 8, // Add some margin to prevent text from touching priceContainer when balance is not shown
+    marginRight: scale(6), // Add some margin to prevent text from touching priceContainer when balance is not shown
   },
   name: {
-    fontSize: 16,
+    fontSize: moderateScale(14),
     fontFamily: 'Inter-SemiBold',
     color: colors.textPrimary,
   },
   network: {
-    fontSize: 12,
+    fontSize: moderateScale(10),
     fontFamily: 'Inter-Regular',
     color: colors.textSecondary,
   },
@@ -193,29 +194,29 @@ const styles = StyleSheet.create({
   // but might be used elsewhere or can be removed if not.
   // For now, I will leave it in case it's used by other components or for future use.
   balance: {
-    fontSize: 14,
+    fontSize: moderateScale(12),
     fontFamily: 'Inter-Medium',
     color: colors.textPrimary,
   },
   price: {
-    fontSize: 14,
+    fontSize: moderateScale(12),
     fontFamily: 'Inter-Regular',
     color: colors.textSecondary,
   },
   changeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 4,
+    marginTop: verticalScale(3),
   },
   changeIcon: {
-    marginRight: 4,
+    marginRight: scale(3),
   },
   change: {
-    fontSize: 14,
+    fontSize: moderateScale(12),
     fontFamily: 'Inter-Medium',
   },
   selectorIcon: {
-    marginLeft: 8, // Add some space between the price container and the icon
+    marginLeft: scale(6), // Add some space between the price container and the icon
   },
 });
 

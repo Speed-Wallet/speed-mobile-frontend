@@ -9,6 +9,7 @@ import {
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
 import { Copy } from 'lucide-react-native';
+import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import colors from '@/constants/colors';
 import Avatar from '@/components/Avatar';
 import TokenList from '@/components/TokenList';
@@ -98,7 +99,7 @@ export default function HomeScreen() {
         {/* Header section */}
         <View style={styles.header}>
           <View style={styles.userSection}>
-            <Avatar size={40} user={genericUser} />
+            <Avatar size={scale(32)} user={genericUser} />
             <View style={styles.userInfo}>
               <Text style={styles.usernameText}>{walletName}</Text>
               <Text style={styles.walletNameText}>@{username}</Text>
@@ -108,7 +109,7 @@ export default function HomeScreen() {
             onPress={handleCopyAddress}
             style={styles.copyButton}
           >
-            <Copy size={20} color={colors.textPrimary} />
+            <Copy size={scale(18)} color={colors.textPrimary} />
           </TouchableOpacity>
         </View>
 
@@ -146,45 +147,45 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   scrollContent: {
-    padding: 16,
+    padding: scale(12),
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 24,
-    // marginTop: 40,
+    marginBottom: verticalScale(18),
+    // marginTop: verticalScale(40),
   },
   userSection: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   userInfo: {
-    marginLeft: 12,
+    marginLeft: scale(10),
   },
   usernameText: {
     color: colors.textPrimary,
-    fontSize: 16,
+    fontSize: moderateScale(14),
     fontFamily: 'Inter-Medium',
   },
   walletNameText: {
     color: colors.textSecondary,
-    fontSize: 12,
+    fontSize: moderateScale(11),
     fontFamily: 'Inter-Regular',
   },
   copyButton: {
-    padding: 8,
+    padding: scale(6),
   },
   assetsSection: {
     // Content section for tokens
   },
   activitySection: {
-    padding: 16,
+    padding: scale(12),
     alignItems: 'center',
   },
   placeholderText: {
     color: colors.textSecondary,
-    fontSize: 16,
+    fontSize: moderateScale(14),
     fontFamily: 'Inter-Regular',
   },
 });
