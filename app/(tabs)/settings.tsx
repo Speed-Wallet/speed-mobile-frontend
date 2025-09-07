@@ -26,6 +26,7 @@ import {
   Wallet,
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
+import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import colors from '@/constants/colors';
 import { getCurrentVerificationLevel } from '@/utils/verification';
 import ScreenContainer from '@/components/ScreenContainer';
@@ -281,19 +282,19 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: 16,
+    paddingHorizontal: scale(12), // Reduced spacing
   },
   section: {
-    paddingTop: 16, // Reduced from 24
+    paddingTop: verticalScale(12), // Reduced spacing
   },
   firstSection: {
-    paddingTop: 8, // Tighter spacing for the first section to match Market tab
+    paddingTop: verticalScale(6), // Reduced spacing
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 16, // Keep same size
     fontFamily: 'Inter-Medium',
-    color: '#a1a1aa', // Updated to specific hex color
-    marginBottom: 6, // Reduced from 10
+    color: '#a1a1aa',
+    marginBottom: verticalScale(4), // Reduced spacing
   },
   sectionContent: {
     // Container removed - items will be displayed without background containers
@@ -301,8 +302,8 @@ const styles = StyleSheet.create({
   settingItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 6, // Adjusted to 6 for better spacing
-    paddingHorizontal: 0, // Removed to align with section titles
+    paddingVertical: verticalScale(4), // Reduced spacing
+    paddingHorizontal: 0,
     // Removed all background and border styles
   },
   firstItem: {
@@ -315,12 +316,12 @@ const styles = StyleSheet.create({
     // Removed all border and radius styles
   },
   iconContainer: {
-    width: 32, // Reduced from 36
-    height: 32, // Reduced from 36
-    borderRadius: 7, // Adjusted to maintain proportion
+    width: 32, // Keep same size
+    height: 32, // Keep same size
+    borderRadius: 7,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 16,
+    marginRight: scale(12), // Reduced spacing
   },
   settingContent: {
     flex: 1,
@@ -331,31 +332,31 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   settingTitle: {
-    fontSize: 16,
-    fontFamily: 'Inter-Medium', // Changed from Inter-SemiBold to Inter-Medium
+    fontSize: 16, // Keep same size
+    fontFamily: 'Inter-Medium',
     color: colors.textPrimary,
   },
   kycBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#10b981',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginRight: 8, // Added margin to create space from chevron
+    paddingHorizontal: scale(6), // Reduced spacing
+    paddingVertical: verticalScale(3), // Reduced spacing
+    borderRadius: 12, // Keep same size
+    marginRight: scale(6), // Reduced spacing
   },
   kycText: {
-    fontSize: 12,
+    fontSize: 12, // Keep same size
     fontFamily: 'Inter-SemiBold',
     color: '#ffffff',
-    marginLeft: 4,
+    marginLeft: scale(3), // Reduced spacing
   },
   versionSection: {
     alignItems: 'center',
-    paddingVertical: 30,
+    paddingVertical: verticalScale(24), // Reduced spacing
   },
   versionText: {
-    fontSize: 14,
+    fontSize: 14, // Keep same size
     fontFamily: 'Inter-Regular',
     color: colors.textSecondary,
   },
