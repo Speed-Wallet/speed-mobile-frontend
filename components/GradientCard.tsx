@@ -5,7 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 interface GradientCardProps {
   children: React.ReactNode;
   style?: StyleProp<ViewStyle>;
-  gradientColors?: string[];
+  gradientColors?: readonly [string, string, ...string[]];
   gradientStart?: { x: number; y: number };
   gradientEnd?: { x: number; y: number };
   contentPaddingHorizontal?: number; // New prop for horizontal content padding
@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 8,
     width: '100%',
-    maxWidth: 400,
+    maxWidth: 500,
     alignSelf: 'center',
   },
   gradientBackground: {

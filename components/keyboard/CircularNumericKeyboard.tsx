@@ -61,13 +61,9 @@ const styles = StyleSheet.create({
   key: {
     width: scale(65),
     height: scale(65),
-    borderRadius: scale(32.5),
-    backgroundColor: '#2A2A2A',
     justifyContent: 'center',
     alignItems: 'center',
-    marginHorizontal: scale(10),
-    borderWidth: 1,
-    borderColor: '#3A3A3A',
+    marginHorizontal: scale(20),
   },
   invisibleKey: {
     backgroundColor: 'transparent',
