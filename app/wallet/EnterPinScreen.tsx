@@ -7,10 +7,12 @@ import {
   Platform,
   Animated,
 } from 'react-native';
+import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import { unlockApp } from '@/services/walletService';
 import CircularNumericKeyboard from '@/components/keyboard/CircularNumericKeyboard';
 import { triggerShake } from '@/utils/animations';
 import ScreenContainer from '@/components/ScreenContainer';
+import PrimaryActionButton from '@/components/buttons/PrimaryActionButton';
 
 interface EnterPinScreenProps {
   onWalletUnlocked: () => void;
@@ -101,59 +103,52 @@ const EnterPinScreen: React.FC<EnterPinScreenProps> = ({
 
   return (
     <ScreenContainer edges={['top', 'bottom']}>
-      <View style={styles.container}>
-        {/* Title */}
-        <Text style={styles.title}>Enter Your PIN</Text>
-
-        {/* Error Message */}
-        {error && (
-          <Animated.View
-            style={[
-              styles.errorContainer,
-              { transform: [{ translateX: shakeAnimationValue }] },
-            ]}
-          >
-            <Text style={styles.errorText}>{error}</Text>
-          </Animated.View>
-        )}
-
-        {/* PIN Dots Container */}
-        <View style={styles.pinDotsContainer}>
-          <View style={styles.pinDots}>
-            {Array.from({ length: 4 }, (_, index) => (
-              <View
-                key={index}
+      <View style={styles.content}>
+        {/* Main Content */}
+        <View style={styles.mainContent}>
+          {/* Header */}
+          <View style={styles.header}>
+            <Text style={styles.title}>Enter Your PIN</Text>
+            {/* Error Message */}
+            {error && (
+              <Animated.View
                 style={[
-                  styles.pinDot,
-                  index < pin.length && styles.pinDotFilled,
+                  styles.errorContainer,
+                  { transform: [{ translateX: shakeAnimationValue }] },
                 ]}
-              />
-            ))}
+              >
+                <Text style={styles.errorText}>{error}</Text>
+              </Animated.View>
+            )}
           </View>
-        </View>
 
-        {/* Circular Numeric Keyboard */}
-        <CircularNumericKeyboard onKeyPress={handleKeyPress} />
+          {/* PIN Dots Container */}
+          <View style={styles.pinDotsContainer}>
+            <View style={styles.pinDots}>
+              {Array.from({ length: 4 }, (_, index) => (
+                <View
+                  key={index}
+                  style={[
+                    styles.pinDot,
+                    index < pin.length && styles.pinDotFilled,
+                  ]}
+                />
+              ))}
+            </View>
+          </View>
+
+          {/* Circular Numeric Keyboard */}
+          <CircularNumericKeyboard onKeyPress={handleKeyPress} />
+        </View>
 
         {/* Button Container */}
         <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={[
-              styles.unlockButton,
-              pin.length === 4 && styles.unlockButtonActive,
-            ]}
+          <PrimaryActionButton
+            title={isLoading ? 'Unlocking...' : 'Unlock Wallet'}
             onPress={handleUnlockWallet}
             disabled={isLoading || pin.length < 4}
-          >
-            <Text
-              style={[
-                styles.unlockButtonText,
-                pin.length === 4 && styles.unlockButtonTextActive,
-              ]}
-            >
-              {isLoading ? 'Unlocking...' : 'Unlock Wallet'}
-            </Text>
-          </TouchableOpacity>
+            loading={isLoading}
+          />
         </View>
       </View>
     </ScreenContainer>
@@ -161,40 +156,61 @@ const EnterPinScreen: React.FC<EnterPinScreenProps> = ({
 };
 
 const styles = StyleSheet.create({
+  content: {
+    flex: 1,
+    paddingHorizontal: scale(20),
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: verticalScale(32),
+  },
+  mainContent: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingBottom: verticalScale(20),
+  },
   container: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: scale(20),
   },
   title: {
-    fontSize: 28,
+    fontSize: moderateScale(28),
     fontWeight: '600',
     color: '#FFFFFF',
     textAlign: 'center',
-    marginBottom: 40, // First easily adjustable gap
+    marginBottom: verticalScale(8),
   },
   errorContainer: {
-    marginBottom: 20,
-    paddingHorizontal: 16,
+    marginTop: verticalScale(8),
+    marginBottom: verticalScale(16),
+    paddingHorizontal: scale(16),
+    paddingVertical: verticalScale(8),
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    borderRadius: moderateScale(8),
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.3)',
   },
   errorText: {
     color: '#ef4444',
-    fontSize: 14,
+    fontSize: moderateScale(14),
     textAlign: 'center',
+    fontWeight: '500',
   },
   pinDotsContainer: {
-    marginBottom: 40, // Second easily adjustable gap
+    marginBottom: verticalScale(32),
     alignItems: 'center',
   },
   pinDots: {
     flexDirection: 'row',
-    gap: 15,
+    gap: scale(15),
   },
   pinDot: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
+    width: scale(16),
+    height: scale(16),
+    borderRadius: scale(8),
     backgroundColor: '#333333',
     borderWidth: 1,
     borderColor: '#555555',
@@ -204,17 +220,13 @@ const styles = StyleSheet.create({
     borderColor: '#00CFFF',
   },
   buttonContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 20,
-    right: 20,
-    paddingBottom: Platform.OS === 'ios' ? 34 : 24,
+    paddingBottom: verticalScale(Platform.OS === 'ios' ? 34 : 24),
   },
   unlockButton: {
     width: '100%',
-    height: 56,
+    height: verticalScale(56),
     backgroundColor: '#333333',
-    borderRadius: 28,
+    borderRadius: moderateScale(28),
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -222,7 +234,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#00CFFF',
   },
   unlockButtonText: {
-    fontSize: 18,
+    fontSize: moderateScale(18),
     fontWeight: '600',
     color: '#999999',
   },
