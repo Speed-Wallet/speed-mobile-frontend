@@ -125,9 +125,9 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
   };
 
   const handleSetPin = () => {
-    if (pin.length < 4) {
+    if (pin.length < 6) {
       // Basic PIN validation
-      showError('Invalid PIN', 'PIN must be at least 4 digits.');
+      showError('Invalid PIN', 'PIN must be at least 6 digits.');
       return;
     }
     setStep(6); // Move to PIN confirmation
@@ -174,9 +174,9 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
       );
       return;
     }
-    if (pin.length < 4) {
+    if (pin.length < 6) {
       setIsLoading(false);
-      setPinError('Invalid PIN. PIN must be at least 4 digits.');
+      setPinError('Invalid PIN. PIN must be at least 6 digits.');
       return;
     }
 

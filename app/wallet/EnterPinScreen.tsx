@@ -13,6 +13,7 @@ import CircularNumericKeyboard from '@/components/keyboard/CircularNumericKeyboa
 import { triggerShake } from '@/utils/animations';
 import ScreenContainer from '@/components/ScreenContainer';
 import PrimaryActionButton from '@/components/buttons/PrimaryActionButton';
+import PinDots from '@/components/PinDots';
 
 interface EnterPinScreenProps {
   onWalletUnlocked: () => void;
@@ -67,7 +68,7 @@ const EnterPinScreen: React.FC<EnterPinScreenProps> = ({
       if (key === 'backspace') {
         setPin((prev) => prev.slice(0, -1));
         if (error) setError(null);
-      } else if (key >= '0' && key <= '9' && pin.length < 4) {
+      } else if (key >= '0' && key <= '9' && pin.length < 6) {
         setPin((prev) => prev + key);
         if (error) setError(null);
       }
@@ -76,8 +77,8 @@ const EnterPinScreen: React.FC<EnterPinScreenProps> = ({
   );
 
   const handleUnlockWallet = async () => {
-    if (pin.length < 4) {
-      setError('PIN must be at least 4 digits.');
+    if (pin.length < 6) {
+      setError('PIN must be at least 6 digits.');
       triggerShake(shakeAnimationValue);
       return;
     }
@@ -124,17 +125,7 @@ const EnterPinScreen: React.FC<EnterPinScreenProps> = ({
 
           {/* PIN Dots Container */}
           <View style={styles.pinDotsContainer}>
-            <View style={styles.pinDots}>
-              {Array.from({ length: 4 }, (_, index) => (
-                <View
-                  key={index}
-                  style={[
-                    styles.pinDot,
-                    index < pin.length && styles.pinDotFilled,
-                  ]}
-                />
-              ))}
-            </View>
+            <PinDots pinLength={pin.length} maxLength={6} />
           </View>
 
           {/* Circular Numeric Keyboard */}
@@ -146,7 +137,7 @@ const EnterPinScreen: React.FC<EnterPinScreenProps> = ({
           <PrimaryActionButton
             title={isLoading ? 'Unlocking...' : 'Unlock Wallet'}
             onPress={handleUnlockWallet}
-            disabled={isLoading || pin.length < 4}
+            disabled={isLoading || pin.length < 6}
             loading={isLoading}
           />
         </View>
@@ -202,22 +193,6 @@ const styles = StyleSheet.create({
   pinDotsContainer: {
     marginBottom: verticalScale(32),
     alignItems: 'center',
-  },
-  pinDots: {
-    flexDirection: 'row',
-    gap: scale(15),
-  },
-  pinDot: {
-    width: scale(16),
-    height: scale(16),
-    borderRadius: scale(8),
-    backgroundColor: '#333333',
-    borderWidth: 1,
-    borderColor: '#555555',
-  },
-  pinDotFilled: {
-    backgroundColor: '#00CFFF',
-    borderColor: '#00CFFF',
   },
   buttonContainer: {
     paddingBottom: verticalScale(Platform.OS === 'ios' ? 34 : 24),

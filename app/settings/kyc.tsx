@@ -1013,7 +1013,8 @@ export default function AccountScreen() {
       {/* Dynamic Input Fields */}
       <View style={styles.section}>
         <Text style={styles.sectionInfo}>
-          Complete verification to unlock virtual card creation
+          Complete verification to unlock virtual card creation. All fields are
+          required.
         </Text>
         <View style={styles.inputsContainer}>
           {/* Level 1 - Basic Personal Information */}
@@ -1322,10 +1323,13 @@ export default function AccountScreen() {
                     placeholderTextColor="#6b7280"
                     value={streetNumber}
                     onChangeText={(text) => {
-                      setStreetNumber(text);
-                      // Only check error state on text change if already in error state
-                      if (streetNumberError) {
-                        setStreetNumberError(!validateStreetNumber(text));
+                      // Only allow digits (or empty string, so user can backspace)
+                      if (/^\d*$/.test(text)) {
+                        setStreetNumber(text);
+                        // Only check error state on text change if already in error state
+                        if (streetNumberError) {
+                          setStreetNumberError(!validateStreetNumber(text));
+                        }
                       }
                     }}
                     onBlur={async () => {
@@ -1336,6 +1340,8 @@ export default function AccountScreen() {
                         await saveFieldToStorage({ streetNumber });
                       }
                     }}
+                    keyboardType="number-pad"
+                    inputMode="numeric"
                     ref={streetNumberRef}
                   />
                   {!streetNumberError &&
@@ -1488,15 +1494,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   inputsContainer: {
-    gap: verticalScale(10), // Reduced from 14
+    gap: verticalScale(4), // Reduced from 14
   },
   inputContainer: {
     marginBottom: verticalScale(1), // Reduced from 3
   },
   inputLabel: {
-    fontSize: moderateScale(14), // Keep size - this is input header text that should be correct
-    fontWeight: '600',
-    color: '#ffffff',
+    fontSize: moderateScale(13), // Slightly smaller for less prominence
+    fontWeight: '500', // Less bold (was '600')
+    color: '#a1a1aa', // Back to muted gray
     marginBottom: verticalScale(6), // Reduced from 8
   },
   inputWrapper: {
@@ -1522,7 +1528,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: moderateScale(16), // Keep size but make responsive
     color: '#ffffff',
-    fontWeight: '500',
+    fontWeight: '400', // Slightly less bold (was '500')
   },
   phoneInputContainer: {
     flex: 1,
@@ -1578,7 +1584,7 @@ const styles = StyleSheet.create({
   inputHint: {
     fontSize: 14,
     color: '#9ca3af',
-    marginTop: 8,
+    marginTop: 2,
   },
   inputHintError: {
     color: '#ef4444',

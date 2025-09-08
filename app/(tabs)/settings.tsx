@@ -332,7 +332,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   settingTitle: {
-    fontSize: 16, // Keep same size
+    fontSize: moderateScale(14), // Slightly smaller with slow scaling
     fontFamily: 'Inter-Medium',
     color: colors.textPrimary,
   },

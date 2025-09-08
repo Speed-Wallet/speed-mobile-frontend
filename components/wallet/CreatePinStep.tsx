@@ -10,6 +10,7 @@ import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import ScreenContainer from '@/components/ScreenContainer';
 import CircularNumericKeyboard from '@/components/keyboard/CircularNumericKeyboard';
 import PrimaryActionButton from '@/components/buttons/PrimaryActionButton';
+import PinDots from '@/components/PinDots';
 
 interface CreatePinStepProps {
   pin: string;
@@ -30,7 +31,7 @@ const CreatePinStep: React.FC<CreatePinStepProps> = ({
     (key: string) => {
       if (key === 'backspace') {
         onPinChange(pin.slice(0, -1));
-      } else if (key >= '0' && key <= '9' && pin.length < 4) {
+      } else if (key >= '0' && key <= '9' && pin.length < 6) {
         onPinChange(pin + key);
       }
     },
@@ -49,17 +50,7 @@ const CreatePinStep: React.FC<CreatePinStepProps> = ({
         <View style={styles.mainContent}>
           {/* PIN Dots Container */}
           <View style={styles.pinDotsContainer}>
-            <View style={styles.pinDots}>
-              {Array.from({ length: 4 }, (_, index) => (
-                <View
-                  key={index}
-                  style={[
-                    styles.pinDot,
-                    index < pin.length && styles.pinDotFilled,
-                  ]}
-                />
-              ))}
-            </View>
+            <PinDots pinLength={pin.length} maxLength={6} />
           </View>
 
           {/* Circular Numeric Keyboard */}
@@ -71,7 +62,7 @@ const CreatePinStep: React.FC<CreatePinStepProps> = ({
           <PrimaryActionButton
             title={isLoading ? 'Creating...' : 'Continue'}
             onPress={onNext}
-            disabled={isLoading || pin.length < 4}
+            disabled={isLoading || pin.length < 6}
             loading={isLoading}
           />
         </View>
@@ -104,22 +95,6 @@ const styles = StyleSheet.create({
   pinDotsContainer: {
     marginBottom: verticalScale(30),
     alignItems: 'center',
-  },
-  pinDots: {
-    flexDirection: 'row',
-    gap: scale(15),
-  },
-  pinDot: {
-    width: scale(16),
-    height: scale(16),
-    borderRadius: scale(8),
-    backgroundColor: '#333333',
-    borderWidth: 1,
-    borderColor: '#555555',
-  },
-  pinDotFilled: {
-    backgroundColor: '#00CFFF',
-    borderColor: '#00CFFF',
   },
   buttonContainer: {
     paddingBottom:
