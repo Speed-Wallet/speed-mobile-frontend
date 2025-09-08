@@ -33,8 +33,8 @@ export default function SecuritySettingsScreen() {
   };
 
   const handlePinSubmit = async () => {
-    if (pin.length < 4) {
-      setError('PIN must be at least 4 digits.');
+    if (pin.length < 6) {
+      setError('PIN must be at least 6 digits.');
       return;
     }
     setIsLoading(true);
@@ -135,7 +135,7 @@ export default function SecuritySettingsScreen() {
             <TouchableOpacity
               style={[styles.button, isLoading && styles.buttonDisabled]}
               onPress={handlePinSubmit}
-              disabled={isLoading || pin.length < 4}
+              disabled={isLoading || pin.length < 6}
             >
               <Text style={styles.buttonText}>View Phrase</Text>
             </TouchableOpacity>

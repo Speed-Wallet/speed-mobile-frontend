@@ -40,8 +40,8 @@ export default function ImportPhraseScreen() {
       }
       setStep(3);
     } else if (step === 3) {
-      if (pin.length < 4) {
-        showError('Invalid PIN', 'PIN must be at least 4 digits.');
+      if (pin.length < 6) {
+        showError('Invalid PIN', 'PIN must be at least 6 digits.');
         return;
       }
       setStep(4);

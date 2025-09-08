@@ -15,6 +15,7 @@ import BackButton from '@/components/buttons/BackButton';
 import CircularNumericKeyboard from '@/components/keyboard/CircularNumericKeyboard';
 import CustomAlert from '@/components/CustomAlert';
 import ActionButtonGroup from '@/components/buttons/ActionButtonGroup';
+import PinDots from '@/components/PinDots';
 
 interface ConfirmPinStepProps {
   confirmPin: string;
@@ -66,7 +67,7 @@ const ConfirmPinStep: React.FC<ConfirmPinStepProps> = ({
     (key: string) => {
       if (key === 'backspace') {
         onConfirmPinChange(confirmPin.slice(0, -1));
-      } else if (key >= '0' && key <= '9' && confirmPin.length < 4) {
+      } else if (key >= '0' && key <= '9' && confirmPin.length < 6) {
         onConfirmPinChange(confirmPin + key);
       }
     },
@@ -105,17 +106,7 @@ const ConfirmPinStep: React.FC<ConfirmPinStepProps> = ({
         <View style={styles.mainContent}>
           {/* PIN Dots Container */}
           <View style={styles.pinDotsContainer}>
-            <View style={styles.pinDots}>
-              {Array.from({ length: 4 }, (_, index) => (
-                <View
-                  key={index}
-                  style={[
-                    styles.pinDot,
-                    index < confirmPin.length && styles.pinDotFilled,
-                  ]}
-                />
-              ))}
-            </View>
+            <PinDots pinLength={confirmPin.length} maxLength={6} />
           </View>
 
           {/* Circular Numeric Keyboard */}
@@ -126,7 +117,7 @@ const ConfirmPinStep: React.FC<ConfirmPinStepProps> = ({
         <ActionButtonGroup
           primaryTitle={loading ? 'Confirming...' : 'Confirm'}
           onPrimaryPress={handleConfirm}
-          primaryDisabled={loading || confirmPin.length < 4}
+          primaryDisabled={loading || confirmPin.length < 6}
           primaryLoading={loading}
           secondaryTitle="Back to Create PIN"
           onSecondaryPress={onBack}
@@ -187,22 +178,6 @@ const styles = StyleSheet.create({
   pinDotsContainer: {
     marginBottom: verticalScale(30),
     alignItems: 'center',
-  },
-  pinDots: {
-    flexDirection: 'row',
-    gap: scale(15),
-  },
-  pinDot: {
-    width: scale(16),
-    height: scale(16),
-    borderRadius: scale(8),
-    backgroundColor: '#333333',
-    borderWidth: 1,
-    borderColor: '#555555',
-  },
-  pinDotFilled: {
-    backgroundColor: '#00CFFF',
-    borderColor: '#00CFFF',
   },
 });
 
