@@ -8,11 +8,11 @@ import {
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
-import { Copy } from 'lucide-react-native';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import colors from '@/constants/colors';
 import Avatar from '@/components/Avatar';
 import TokenList from '@/components/TokenList';
+import CopyButton from '@/components/CopyButton';
 import { EnrichedTokenEntry } from '@/data/types';
 import BalanceCard from '@/components/BalanceCard';
 import {
@@ -20,7 +20,6 @@ import {
   getAllStoredWallets,
   getActiveWalletId,
 } from '@/services/walletService';
-import { setStringAsync } from 'expo-clipboard';
 import ScreenContainer from '@/components/ScreenContainer';
 import TabSelector from '@/components/TabSelector';
 import { AuthService } from '@/services/authService';
@@ -74,10 +73,6 @@ export default function HomeScreen() {
     }
   };
 
-  const handleCopyAddress = async () => {
-    await setStringAsync(walletAddress || '');
-  };
-
   const handleBalanceCardAction = (actionType: string) => {
     // actionType will be "send", "receive", "cards", "trade", "buy"
     if (actionType === 'cards') {
@@ -105,12 +100,12 @@ export default function HomeScreen() {
               <Text style={styles.walletNameText}>@{username}</Text>
             </View>
           </View>
-          <TouchableOpacity
-            onPress={handleCopyAddress}
+          <CopyButton
+            textToCopy={walletAddress || ''}
+            size={scale(18)}
+            color={colors.textPrimary}
             style={styles.copyButton}
-          >
-            <Copy size={scale(18)} color={colors.textPrimary} />
-          </TouchableOpacity>
+          />
         </View>
 
         {/* Balance card */}

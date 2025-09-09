@@ -10,12 +10,24 @@ import {
   Platform,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Copy, Share as ShareIcon } from 'lucide-react-native';
+import { Share as ShareIcon } from 'lucide-react-native';
 import { scale, verticalScale } from 'react-native-size-matters';
+import Animated, {
+  useSharedValue,
+  withTiming,
+  useAnimatedStyle,
+  withSequence,
+  withDelay,
+  FadeIn,
+  FadeOut,
+} from 'react-native-reanimated';
 import QRCode from 'react-native-qrcode-svg';
 import colors from '@/constants/colors';
 import ScreenHeader from '@/components/ScreenHeader';
 import ScreenContainer from '@/components/ScreenContainer';
+import PrimaryActionButton from '@/components/buttons/PrimaryActionButton';
+import CopyButton, { CopyButtonRef } from '@/components/CopyButton';
+import SecondaryActionButton from '@/components/buttons/SecondaryActionButton';
 import { setStringAsync } from 'expo-clipboard';
 import { useWalletPublicKey } from '@/services/walletService';
 
@@ -26,9 +38,22 @@ export default function ReceiveScreen() {
   const router = useRouter();
   const walletAddress = useWalletPublicKey();
   const addressInputRef = useRef(null);
+  const copyButtonRef = useRef<CopyButtonRef>(null);
 
-  const handleCopyAddress = async () => {
+  const [isCopied, setIsCopied] = useState(false);
+
+  const handleCopyComplete = () => {
+    setIsCopied(true);
+    setTimeout(() => {
+      setIsCopied(false);
+    }, 2000);
+  };
+
+  const handleAddressClick = async () => {
+    // Copy to clipboard
     await setStringAsync(walletAddress || '');
+    // Trigger the copy button animation
+    copyButtonRef.current?.triggerCopy();
   };
 
   const handleShare = async () => {
@@ -70,31 +95,43 @@ export default function ReceiveScreen() {
 
       <View style={styles.bottomSection}>
         <View style={styles.addressContainer}>
-          <Text style={styles.addressLabel}>Wallet Address (Solana)</Text>
-          <View style={styles.addressInputContainer}>
-            <View style={styles.addressGroup}>
-              <TextInput
-                ref={addressInputRef}
-                style={styles.addressInput}
-                value={formatAddress(walletAddress || '')}
-                editable={false}
-                multiline={Platform.OS === 'ios'}
-                numberOfLines={1}
-              />
-              <TouchableOpacity
-                style={styles.copyButton}
-                onPress={handleCopyAddress}
+          <View style={styles.addressLabelContainer}>
+            <Text style={styles.addressLabel}>Wallet Address (Solana)</Text>
+            {isCopied && (
+              <Animated.Text
+                entering={FadeIn.duration(200)}
+                exiting={FadeOut.duration(200)}
+                style={styles.copiedText}
               >
-                <Copy size={scale(16)} color={colors.textPrimary} />
-              </TouchableOpacity>
-            </View>
+                Copied!
+              </Animated.Text>
+            )}
           </View>
+
+          <SecondaryActionButton
+            title={formatAddress(walletAddress || '')}
+            onPress={handleAddressClick}
+            icon={
+              <CopyButton
+                ref={copyButtonRef}
+                textToCopy={walletAddress || ''}
+                size={scale(16)}
+                color={colors.textPrimary}
+                style={styles.copyButtonInSecondary}
+                onCopyComplete={handleCopyComplete}
+              />
+            }
+            style={styles.addressSecondaryButton}
+          />
         </View>
 
-        <TouchableOpacity style={styles.shareButton} onPress={handleShare}>
-          <ShareIcon size={scale(18)} color={colors.white} />
-          <Text style={styles.actionButtonText}>Share</Text>
-        </TouchableOpacity>
+        <PrimaryActionButton
+          title="Share"
+          onPress={handleShare}
+          variant="primary"
+          icon={<ShareIcon size={scale(18)} color="#000" />}
+          style={styles.shareButtonStyle}
+        />
       </View>
     </ScreenContainer>
   );
@@ -154,11 +191,21 @@ const styles = StyleSheet.create({
     width: '100%',
     marginBottom: verticalScale(16),
   },
+  addressLabelContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: verticalScale(6),
+  },
   addressLabel: {
     fontSize: scale(12),
     fontFamily: 'Inter-Medium',
     color: colors.textSecondary,
-    marginBottom: verticalScale(6),
+  },
+  copiedText: {
+    fontSize: scale(12),
+    fontFamily: 'Inter-SemiBold',
+    color: colors.textPrimary,
   },
   addressInputContainer: {
     alignItems: 'center',
@@ -181,26 +228,24 @@ const styles = StyleSheet.create({
   copyButton: {
     padding: scale(6),
   },
+  copyButtonInSecondary: {
+    padding: 0, // Remove padding since it's inside the secondary button
+  },
+  addressSecondaryButton: {
+    // Use the same style as the original address input container
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.backgroundMedium,
+    borderRadius: scale(12),
+    paddingHorizontal: scale(12),
+    paddingVertical: verticalScale(12),
+  },
   bottomSection: {
     paddingHorizontal: scale(16),
     paddingBottom: verticalScale(24),
   },
-  actionButtons: {
-    paddingHorizontal: scale(16),
-    paddingBottom: verticalScale(24),
-  },
-  shareButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#6366f1',
-    borderRadius: scale(14),
-    paddingVertical: verticalScale(14),
-  },
-  actionButtonText: {
-    color: colors.white,
-    fontSize: scale(15),
-    fontFamily: 'Inter-SemiBold',
-    marginLeft: scale(8),
+  shareButtonStyle: {
+    // Match original share button height
+    height: verticalScale(48),
   },
 });

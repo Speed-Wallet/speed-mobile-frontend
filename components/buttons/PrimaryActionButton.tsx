@@ -5,6 +5,7 @@ import {
   View,
   StyleSheet,
   ActivityIndicator,
+  ViewStyle,
 } from 'react-native';
 import { ArrowRight } from 'lucide-react-native';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
@@ -17,6 +18,8 @@ interface PrimaryActionButtonProps {
   loading?: boolean;
   variant?: 'primary' | 'success' | 'error';
   showArrow?: boolean;
+  icon?: React.ReactNode;
+  style?: ViewStyle;
 }
 
 const PrimaryActionButton: React.FC<PrimaryActionButtonProps> = ({
@@ -26,6 +29,8 @@ const PrimaryActionButton: React.FC<PrimaryActionButtonProps> = ({
   loading = false,
   variant = 'primary',
   showArrow = false,
+  icon,
+  style,
 }) => {
   const getBackgroundColor = () => {
     if (disabled) return colors.backgroundMedium;
@@ -53,7 +58,7 @@ const PrimaryActionButton: React.FC<PrimaryActionButtonProps> = ({
 
   return (
     <TouchableOpacity
-      style={styles.button}
+      style={[styles.button, style]}
       onPress={onPress}
       disabled={disabled || loading}
       activeOpacity={0.8}
@@ -68,6 +73,7 @@ const PrimaryActionButton: React.FC<PrimaryActionButtonProps> = ({
           <ActivityIndicator size="small" color={getTextColor()} />
         ) : (
           <>
+            {icon}
             <Text style={[styles.buttonText, { color: getTextColor() }]}>
               {title}
             </Text>
