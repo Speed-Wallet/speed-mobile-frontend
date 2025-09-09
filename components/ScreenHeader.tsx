@@ -21,19 +21,11 @@ export default function ScreenHeader({
 }: ScreenHeaderProps) {
   return (
     <View style={[styles.header, style]}>
-      {showBackButton ? (
-        <BackButton onPress={onBack} />
-      ) : (
-        <View style={styles.placeholder} />
-      )}
+      {showBackButton && <BackButton onPress={onBack} />}
 
       {title && <Text style={styles.title}>{title}</Text>}
 
-      {rightElement ? (
-        <View style={styles.rightElement}>{rightElement}</View>
-      ) : (
-        <View style={styles.placeholder} />
-      )}
+      {rightElement && <View style={styles.rightElement}>{rightElement}</View>}
     </View>
   );
 }
@@ -46,19 +38,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(12),
     paddingVertical: verticalScale(10),
     minHeight: scale(48),
+    position: 'relative',
   },
   title: {
     fontSize: scale(16),
     fontFamily: 'Inter-SemiBold',
     color: colors.textPrimary,
-    flex: 1,
+    position: 'absolute',
+    left: 0,
+    right: 0,
     textAlign: 'center',
-  },
-  placeholder: {
-    width: scale(48),
+    zIndex: -1,
   },
   rightElement: {
-    minWidth: scale(48),
+    minWidth: scale(28),
     alignItems: 'flex-end',
   },
 });

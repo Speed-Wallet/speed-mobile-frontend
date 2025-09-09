@@ -83,9 +83,9 @@ const PrimaryActionButton: React.FC<PrimaryActionButtonProps> = ({
 
 const styles = StyleSheet.create({
   button: {
-    height: verticalScale(54),
+    height: moderateScale(54, 0.4),
     width: '100%',
-    borderRadius: moderateScale(27),
+    borderRadius: 27,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
     gap: scale(8),
   },
   buttonText: {
-    fontSize: moderateScale(17),
+    fontSize: moderateScale(17, 0.4),
     fontFamily: 'Inter-SemiBold',
   },
 });

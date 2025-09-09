@@ -8,8 +8,9 @@ import {
   TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { X, Search } from 'lucide-react-native';
+import { Search } from 'lucide-react-native';
 import { router, useLocalSearchParams } from 'expo-router';
+import SettingsHeader from '@/components/SettingsHeader';
 import colors from '@/constants/colors';
 import { getAllTokenInfo } from '@/data/tokens';
 import { EnrichedTokenEntry, TokenEntry } from '@/data/types';
@@ -57,15 +58,7 @@ export default function TokenSelectScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Select Token</Text>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.closeButton}
-        >
-          <X size={scale(20)} color={colors.textPrimary} />
-        </TouchableOpacity>
-      </View>
+      <SettingsHeader title="Select Token" onClose={() => router.back()} />
 
       <View style={styles.searchContainer}>
         <Search
@@ -103,26 +96,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.backgroundDark,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-  },
-  title: {
-    fontSize: 18,
-    fontFamily: 'Inter-SemiBold',
-    color: colors.textPrimary,
-  },
-  closeButton: {
-    width: scale(32), // Reduced from 40
-    height: scale(32), // Reduced from 40
-    borderRadius: scale(16), // Half of width/height
-    backgroundColor: colors.backgroundMedium,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   searchContainer: {
     flexDirection: 'row',

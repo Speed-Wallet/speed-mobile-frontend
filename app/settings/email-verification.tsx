@@ -210,10 +210,15 @@ export default function EmailVerificationScreen() {
 
       {/* Content */}
       <View style={styles.content}>
-        <View style={styles.textSection}>
-          <Text style={styles.subtitle}>
-            Enter the 6 digit verification code sent to{' '}
+        <View>
+          <Text style={styles.primaryText}>
+            We've sent an email to{'\n'}
             <Text style={styles.emailHighlight}>{email}</Text>
+          </Text>
+
+          <Text style={styles.secondaryText}>
+            Please enter the verification code sent to your email in the next 10
+            mins
           </Text>
         </View>
 
@@ -290,15 +295,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(15),
     paddingTop: verticalScale(8),
   },
-  textSection: {
-    marginBottom: verticalScale(20),
-  },
-  subtitle: {
-    fontSize: moderateScale(16),
+  primaryText: {
+    fontSize: moderateScale(20),
     color: '#ffffff',
     textAlign: 'left',
-    lineHeight: verticalScale(22),
+    lineHeight: moderateScale(24),
     fontWeight: '600',
+    marginBottom: verticalScale(16),
+  },
+  secondaryText: {
+    fontSize: moderateScale(16),
+    color: '#9ca3af',
+    textAlign: 'left',
+    lineHeight: verticalScale(22),
+    fontWeight: '400',
   },
   emailHighlight: {
     color: '#00CFFF',
