@@ -7,8 +7,8 @@ import {
   FlatList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { X } from 'lucide-react-native';
 import { router } from 'expo-router';
+import SettingsHeader from '@/components/SettingsHeader';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import colors from '@/constants/colors';
 import { StorageService, PersonalInfo } from '@/utils/storage';
@@ -182,15 +182,10 @@ export default function DatePickerScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Select Date of Birth</Text>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.closeButton}
-        >
-          <X size={scale(22)} color={colors.textPrimary} />
-        </TouchableOpacity>
-      </View>
+      <SettingsHeader
+        title="Select Date of Birth"
+        onClose={() => router.back()}
+      />
 
       <View style={styles.datePickerContainer}>
         <View style={styles.pickerColumn}>
@@ -274,26 +269,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.backgroundDark,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: scale(15),
-    paddingVertical: verticalScale(15),
-  },
-  title: {
-    fontSize: 18,
-    fontFamily: 'Inter-SemiBold',
-    color: colors.textPrimary,
-  },
-  closeButton: {
-    width: scale(36),
-    height: scale(36),
-    borderRadius: scale(18),
-    backgroundColor: colors.backgroundMedium,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+
   datePickerContainer: {
     flex: 1,
     flexDirection: 'row',

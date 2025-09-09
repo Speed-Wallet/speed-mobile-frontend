@@ -8,8 +8,9 @@ import {
   TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { X, Search } from 'lucide-react-native';
+import { Search } from 'lucide-react-native';
 import { router } from 'expo-router';
+import SettingsHeader from '@/components/SettingsHeader';
 import colors from '@/constants/colors';
 import { countries, Country } from '@/constants/countries';
 import { StorageService, PersonalInfo } from '@/utils/storage';
@@ -79,15 +80,7 @@ export default function CountryPickerScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Select Country</Text>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.closeButton}
-        >
-          <X size={scale(22)} color={colors.textPrimary} />
-        </TouchableOpacity>
-      </View>
+      <SettingsHeader title="Select Country" onClose={() => router.back()} />
 
       <View style={styles.searchContainer}>
         <Search
@@ -119,26 +112,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.backgroundDark,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: scale(15),
-    paddingVertical: verticalScale(15),
-  },
-  title: {
-    fontSize: 18,
-    fontFamily: 'Inter-SemiBold',
-    color: colors.textPrimary,
-  },
-  closeButton: {
-    width: scale(36),
-    height: scale(36),
-    borderRadius: scale(18),
-    backgroundColor: colors.backgroundMedium,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   searchContainer: {
     flexDirection: 'row',

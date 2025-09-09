@@ -1,13 +1,24 @@
 const BASE_BACKEND_URL = process.env.EXPO_PUBLIC_BASE_BACKEND_URL;
 import { AuthService } from './authService';
 
+// Raw backend response from requestOTP endpoint
+export interface SendOtpBackendResponse {
+  success: boolean;
+  message: string;
+  email: string;
+  expiresIn: number; // Duration in seconds (e.g., 600 = 10 minutes)
+  error?: string; // Present in error responses
+}
+
+// Frontend-enhanced response with calculated fields
 export interface SendOtpResponse {
   success: boolean;
   message: string;
   email: string;
-  expiresIn: number;
-  otpId?: string;
-  expiresAt?: number;
+  expiresIn: number; // Duration in seconds (600 = 10 minutes)
+  // Frontend-calculated fields
+  otpId?: string; // Calculated from email for frontend use
+  expiresAt?: number; // Calculated timestamp for frontend use
 }
 
 export interface VerifyOtpResponse {
@@ -43,25 +54,23 @@ export async function sendOtp(email: string): Promise<SendOtpResponse> {
       },
       body: JSON.stringify({ email }),
     });
-    console.log('response', response);
-    const data = await response.json();
-    console.log('data', data);
+
+    const data: SendOtpBackendResponse = await response.json();
 
     if (!response.ok) {
-      console.log('response not ok', response);
       throw new Error(data.error || 'Failed to request OTP');
     }
 
-    // Calculate expiration timestamp
+    // Calculate expiration timestamp for frontend use
     const expiresAt = Date.now() + data.expiresIn * 1000;
 
     return {
-      success: true,
+      success: data.success,
       message: data.message,
       email: data.email,
       expiresIn: data.expiresIn,
-      otpId: data.email, // Use email as otpId for simplicity
-      expiresAt,
+      otpId: data.email, // Use email as otpId for simplicity in frontend
+      expiresAt, // Frontend-calculated expiration timestamp
     };
   } catch (error) {
     console.error('Error requesting OTP:', error);

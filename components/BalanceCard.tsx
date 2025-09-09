@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
+import { storage } from '@/utils/mmkvStorage';
 import ActionButton from '@/components/buttons/ActionButton';
 import {
   ArrowUp,
@@ -25,7 +26,11 @@ const BalanceCard: React.FC<BalanceCardProps> = ({
   onActionPress,
 }) => {
   const { portfolioValue } = usePortfolioValue();
-  const [isBalanceVisible, setIsBalanceVisible] = useState(true);
+
+  // Initialize state from MMKV storage, defaulting to true if not set
+  const [isBalanceVisible, setIsBalanceVisible] = useState(() => {
+    return storage.getBoolean('balanceVisible') ?? true;
+  });
 
   const formattedBalance = portfolioValue.toLocaleString('en-US', {
     minimumFractionDigits: 2,
@@ -33,7 +38,10 @@ const BalanceCard: React.FC<BalanceCardProps> = ({
   });
 
   const toggleBalanceVisibility = () => {
-    setIsBalanceVisible(!isBalanceVisible);
+    const newVisibility = !isBalanceVisible;
+    setIsBalanceVisible(newVisibility);
+    // Persist the new state to MMKV
+    storage.set('balanceVisible', newVisibility);
   };
 
   const actions = [

@@ -47,7 +47,6 @@ const EmailBadge: React.FC<EmailBadgeProps> = ({
     case 'needs_verification':
       return (
         <View style={[styles.badge, styles.needsVerificationBadge]}>
-          <Clock size={12} color="#3b82f6" />
           <Text style={[styles.badgeText, styles.needsVerificationText]}>
             Verify
           </Text>
@@ -71,9 +70,9 @@ const styles = StyleSheet.create({
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
     gap: 4,
   },
   badgeText: {
@@ -89,12 +88,12 @@ const styles = StyleSheet.create({
     color: '#6b7280',
   },
   needsVerificationBadge: {
-    backgroundColor: '#1e40af',
+    backgroundColor: 'rgba(0, 207, 255, 0.125)',
     borderWidth: 1,
-    borderColor: '#3b82f6',
+    borderColor: '#00CFFF',
   },
   needsVerificationText: {
-    color: '#3b82f6',
+    color: '#00CFFF',
   },
   pendingBadge: {
     backgroundColor: '#1e40af',
