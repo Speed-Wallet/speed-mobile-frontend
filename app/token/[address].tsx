@@ -289,7 +289,7 @@ export default function TokenDetailScreen() {
             <TokenPriceChart
               data={chartData}
               width={screenWidth - 32}
-              height={200}
+              height={scale(200)}
               timeframe={selectedTimeframe}
               isPositive={priceChange.changePercentage >= 0}
               onInteraction={handleChartInteraction}
@@ -454,15 +454,16 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   chartContainer: {
-    alignItems: 'center',
+    // backgroundColor: '#2a2a2a', // Using colors.backgroundMedium equivalent
+    borderRadius: 16,
+    alignItems: 'flex-start',
     justifyContent: 'center',
-    marginBottom: verticalScale(8),
-    paddingVertical: verticalScale(4),
+    marginHorizontal: scale(16),
   },
   chartLoadingContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    height: 200,
+    height: scale(200),
     width: screenWidth - 32,
   },
   chartLoadingText: {
@@ -473,7 +474,7 @@ const styles = StyleSheet.create({
   chartErrorContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    height: 200,
+    height: scale(200),
     width: screenWidth - 32,
     backgroundColor: '#2a2a2a',
     borderRadius: scale(16),

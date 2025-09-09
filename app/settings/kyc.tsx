@@ -48,6 +48,8 @@ import Animated, {
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import { StorageService, PersonalInfo } from '@/utils/storage';
 import { triggerShake } from '@/utils/animations';
+import colors from '@/constants/colors';
+import BottomActionContainer from '@/components/BottomActionContainer';
 import { countries, Country } from '@/constants/countries';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import { sendOtp, checkEmailStatus } from '@/services/otpService';
@@ -853,15 +855,10 @@ export default function AccountScreen() {
     <SettingsScreen
       title="Account Info"
       onBack={handleBackPress}
-      rightElement={
-        <TouchableOpacity style={styles.editButton}>
-          <Edit2 size={20} color="#3b82f6" />
-        </TouchableOpacity>
-      }
       bottomElement={
         <>
           {/* Save Button */}
-          <View style={styles.saveButtonContainer}>
+          <BottomActionContainer>
             <RNAnimated.View
               style={[
                 { transform: [{ translateX: buttonShakeAnimationValue }] },
@@ -875,7 +872,7 @@ export default function AccountScreen() {
                 variant="primary"
               />
             </RNAnimated.View>
-          </View>
+          </BottomActionContainer>
 
           {/* Toast */}
           <Toast
@@ -1613,12 +1610,6 @@ const styles = StyleSheet.create({
   },
   inputHintError: {
     color: '#ef4444',
-  },
-  saveButtonContainer: {
-    padding: scale(14), // Reduced from 20 and made responsive
-    backgroundColor: '#1a1a1a',
-    borderTopWidth: 1,
-    borderTopColor: '#404040',
   },
   saveButton: {
     flexDirection: 'row',

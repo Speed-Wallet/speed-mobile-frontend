@@ -4,17 +4,11 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  ScrollView,
   Animated,
   ActivityIndicator,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import {
-  ArrowDownUp,
-  DollarSign,
-  ChevronDown,
-  Check,
-} from 'lucide-react-native';
+import { DollarSign, Check } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import BottomSheet, {
   BottomSheetView,
@@ -26,8 +20,6 @@ import Toast from '@/components/Toast';
 import colors from '@/constants/colors';
 import { formatCurrency } from '@/utils/formatters';
 import { getAllTokenInfo, getTokenByAddress } from '@/data/tokens';
-// import AmountInput from '@/components/AmountInput'; // Commented out since we're using SwapBox now
-import TokenLogo from '@/components/TokenLogo'; // Added import
 import { EnrichedTokenEntry } from '@/data/types';
 import {
   JupiterQuote,
@@ -44,6 +36,7 @@ import { useTokenPrice } from '@/hooks/useTokenPrices';
 import { triggerShake } from '@/utils/animations';
 import { useTokenBalance } from '@/hooks/useTokenBalance';
 import { useQueryClient } from '@tanstack/react-query';
+import SwapTokensSection from '@/components/SwapTokensSection';
 
 const WAIT_ON_AMOUNT_CHANGE = 2000;
 const LOOP_QUOTE_INTERVAL = 300000;
@@ -53,94 +46,6 @@ let intervalID: NodeJS.Timeout | undefined;
 
 let platformFee: number;
 let quote: any;
-
-// New SwapBox component that combines label, token selector, and amount
-interface SwapBoxProps {
-  token: EnrichedTokenEntry | null;
-  onTokenPress: () => void;
-  labelText: string;
-  amount: string;
-  onAmountChange?: (amount: string) => void;
-  isInput?: boolean; // true for input, false for output
-  showBalance?: boolean;
-  onInputFocus?: () => void;
-}
-
-const SwapBox: React.FC<SwapBoxProps> = ({
-  token,
-  onTokenPress,
-  labelText,
-  amount,
-  onAmountChange,
-  isInput = false,
-  showBalance = false,
-  onInputFocus,
-}) => {
-  const { balance: tokenBalance } = useTokenBalance(token?.address);
-  const { price: tokenPrice } = useTokenPrice(token?.extensions.coingeckoId);
-
-  const usdValue =
-    token && amount && parseFloat(amount) > 0
-      ? formatCurrency(parseFloat(amount) * (tokenPrice || 0))
-      : '$0';
-
-  return (
-    <View style={styles.swapBoxContainer}>
-      <View style={styles.swapBoxContent}>
-        {/* Row 1: Label on left, Balance on right */}
-        <View style={styles.headerRow}>
-          <Text style={styles.swapBoxLabel}>{labelText}</Text>
-          {showBalance && token && (
-            <Text style={styles.balanceText}>
-              {tokenBalance.toFixed(token.decimalsShown)} {token.symbol}
-            </Text>
-          )}
-        </View>
-
-        {/* Row 2: Token selector on left, Amount on right */}
-        <View style={styles.tokenAmountRow}>
-          <TouchableOpacity
-            onPress={onTokenPress}
-            style={styles.tokenSelectorInBox}
-          >
-            {token ? (
-              <View style={styles.tokenDisplay}>
-                <TokenLogo
-                  logoURI={token.logoURI}
-                  size={moderateScale(24, 0.3)}
-                  style={styles.tokenLogo}
-                />
-                <Text style={styles.tokenSymbolText}>{token.symbol}</Text>
-              </View>
-            ) : (
-              <Text style={styles.tokenPlaceholderText}>Select</Text>
-            )}
-            <ChevronDown
-              color={colors.textSecondary}
-              size={moderateScale(16, 0.3)}
-            />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={onInputFocus}
-            style={styles.amountInputTouchable}
-          >
-            <Text
-              style={[styles.amountText, !amount && styles.amountPlaceholder]}
-            >
-              {amount || '0'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Row 3: USD Value on right - No gap above */}
-        <View style={styles.usdValueRowTight}>
-          <Text style={styles.usdValue}>{usdValue}</Text>
-        </View>
-      </View>
-    </View>
-  );
-};
 
 export default function TradeScreen() {
   const { tokenAddress, selectedTokenAddress, returnParam } =
@@ -650,63 +555,18 @@ export default function TradeScreen() {
           <View style={{ flex: 1 }}>
             {/* Main Content */}
             <View style={styles.mainContent}>
-              <ScrollView
-                style={styles.scrollView}
-                contentContainerStyle={styles.scrollViewContent}
-                showsVerticalScrollIndicator={false}
-              >
-                {/* From Token Box */}
-                <SwapBox
-                  labelText="From"
-                  token={fromToken}
-                  onTokenPress={() =>
-                    router.push({
-                      pathname: '/token/select',
-                      params: {
-                        excludeAddress: toToken?.address,
-                        selectedAddress: fromToken?.address,
-                        returnParam: 'fromToken',
-                      },
-                    })
-                  }
-                  amount={fromAmount}
-                  onAmountChange={setFromAmount}
-                  onInputFocus={handleInputFocus}
-                  isInput={true}
-                  showBalance={true}
-                />
-
-                {/* Swap Button */}
-                <View style={styles.swapButtonContainer}>
-                  <TouchableOpacity
-                    style={styles.swapButton}
-                    onPress={handleSwapTokens}
-                  >
-                    <ArrowDownUp color={colors.white} size={16} />
-                  </TouchableOpacity>
-                </View>
-
-                {/* To Token Box */}
-                <SwapBox
-                  labelText="To"
-                  token={toToken}
-                  onTokenPress={() =>
-                    router.push({
-                      pathname: '/token/select',
-                      params: {
-                        excludeAddress: fromToken?.address,
-                        selectedAddress: toToken?.address,
-                        returnParam: 'toToken',
-                      },
-                    })
-                  }
-                  amount={toAmount}
-                  onAmountChange={setToAmount}
-                  onInputFocus={handleToInputFocus}
-                  isInput={true} // Changed to true to enable input
-                  showBalance={false}
-                />
-              </ScrollView>
+              <SwapTokensSection
+                fromToken={fromToken}
+                toToken={toToken}
+                fromAmount={fromAmount}
+                toAmount={toAmount}
+                activeInput={activeInput}
+                onFromAmountChange={setFromAmount}
+                onToAmountChange={setToAmount}
+                onFromInputFocus={handleInputFocus}
+                onToInputFocus={handleToInputFocus}
+                onSwapTokens={handleSwapTokens}
+              />
 
               {/* Bottom Section - Keyboard and Button */}
               <View style={styles.bottomSection}>
@@ -1118,14 +978,6 @@ const styles = StyleSheet.create({
   mainContent: {
     flex: 1,
   },
-  scrollView: {
-    flex: 1,
-  },
-  scrollViewContent: {
-    flexGrow: 1,
-    paddingHorizontal: 20,
-    paddingTop: moderateScale(8, 2.5),
-  },
   // Bottom section for keyboard and button
   bottomSection: {
     backgroundColor: colors.backgroundDark,
@@ -1136,83 +988,6 @@ const styles = StyleSheet.create({
     paddingTop: moderateScale(4, 2.0),
     paddingBottom: verticalScale(16),
     marginTop: -8,
-  },
-  // New SwapBox styles
-  swapBoxContainer: {
-    backgroundColor: 'transparent',
-    borderRadius: 0,
-    paddingVertical: moderateScale(4, 4.0),
-    paddingHorizontal: moderateScale(4, 2.5),
-    marginBottom: moderateScale(6, 4.5),
-  },
-  swapBoxHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: moderateScale(6, 3.0),
-  },
-  swapBoxLabel: {
-    fontSize: moderateScale(14),
-    fontFamily: 'Inter-Medium',
-    color: colors.textSecondary,
-  },
-  swapBoxContent: {
-    flexDirection: 'column',
-    justifyContent: 'flex-start',
-  },
-  tokenSelectorInBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.backgroundLight,
-    borderRadius: 18,
-    paddingHorizontal: moderateScale(10, 0.8),
-    paddingVertical: moderateScale(10, 0.8),
-    minWidth: moderateScale(85, 0.3),
-  },
-  amountSection: {
-    flex: 1,
-    alignItems: 'flex-end',
-    justifyContent: 'center',
-    marginLeft: moderateScale(16, 2.5),
-  },
-  amountText: {
-    fontSize: moderateScale(32, 0.3), // Apply responsive scaling
-    color: colors.white,
-    textAlign: 'right',
-    fontFamily: 'Inter-Regular',
-    minWidth: scale(120),
-  },
-  amountPlaceholder: {
-    fontSize: moderateScale(32, 0.3), // Increased to match the amount text size
-    fontFamily: 'Inter-Regular',
-    color: colors.textSecondary,
-  },
-  usdValue: {
-    fontSize: moderateScale(16), // Apply responsive scaling
-    fontFamily: 'Inter-Medium',
-    color: colors.textSecondary,
-  },
-  usdValueRow: {
-    width: '100%',
-    alignItems: 'flex-end',
-  },
-  usdValueRowTight: {
-    width: '100%',
-    alignItems: 'flex-end',
-    marginTop: -16,
-  },
-  headerRow: {
-    width: '100%',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  tokenAmountRow: {
-    width: '100%',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: -4,
   },
   // Keep existing styles
   label: {
@@ -1236,55 +1011,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 16,
   },
-  tokenDisplay: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  tokenLogo: {
-    marginRight: 8,
-  },
-  tokenSymbolText: {
-    fontSize: 16,
-    fontFamily: 'Inter-SemiBold',
-    color: colors.white,
-    marginRight: 8,
-  },
-  tokenNameText: {
-    fontSize: 16,
-    fontFamily: 'Inter-SemiBold', // Changed from Inter-Regular
-    color: colors.white, // Changed from colors.textSecondary
-  },
-  tokenPlaceholderText: {
-    fontSize: 16,
-    fontFamily: 'Inter-Regular',
-    color: colors.textSecondary,
-  },
-  swapButtonContainer: {
-    alignItems: 'center',
-    marginVertical: moderateScale(-24, 0.05),
-    zIndex: 1,
-  },
-  swapButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.backgroundLight,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: colors.backgroundDark,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  balanceText: {
-    fontSize: 12,
-    fontFamily: 'Inter-Regular',
-    color: colors.textSecondary,
-    textAlign: 'right',
-  },
+
   // New style for "You Receive" text
   receiveAmountText: {
     fontSize: 16,
@@ -1482,17 +1209,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-SemiBold',
     color: colors.white,
   },
-  // SwapBox custom input styles
-  amountInputTouchable: {
-    paddingVertical: moderateScale(12, 2.0),
-    paddingHorizontal: moderateScale(8, 2.5),
-    borderRadius: 0,
-    backgroundColor: 'transparent',
-    borderWidth: 0,
-    borderColor: 'transparent',
-    minHeight: moderateScale(48, 1.8),
-    justifyContent: 'center',
-  },
+
   // Custom keyboard styles
   inlineKeyboard: {
     paddingHorizontal: scale(14),
