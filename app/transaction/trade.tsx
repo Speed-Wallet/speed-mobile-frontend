@@ -4,9 +4,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  TextInput,
-  SafeAreaView,
-  StatusBar,
   ScrollView,
   Animated,
   ActivityIndicator,
@@ -15,9 +12,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   ArrowDownUp,
   DollarSign,
-  Lock,
   ChevronDown,
-  Zap,
   Check,
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -179,11 +174,10 @@ export default function TradeScreen() {
   const swapFeeRate = config?.swapFeeRate;
 
   // Toast state for validation errors and network issues
-  const [showToast, setShowToast] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
-  const [toastType, setToastType] = useState<'success' | 'error' | 'info'>(
-    'error',
-  );
+  const [toast, setToast] = useState<{
+    message: string;
+    type: 'success' | 'error' | 'info';
+  } | null>(null);
 
   // Loading state for swap
   const [isSwapping, setIsSwapping] = useState(false);
@@ -272,9 +266,10 @@ export default function TradeScreen() {
       }
     } catch (err: any) {
       console.error(err.message);
-      setToastMessage('Network error, unable to establish connection');
-      setToastType('error');
-      setShowToast(true);
+      setToast({
+        message: 'Network error, unable to establish connection',
+        type: 'error',
+      });
     }
   }
 
@@ -395,29 +390,27 @@ export default function TradeScreen() {
     const amount = parseFloat(fromAmount);
 
     if (isNaN(amount) || amount <= 0) {
-      setToastMessage('Please enter a valid amount');
-      setToastType('error');
-      setShowToast(true);
+      setToast({ message: 'Please enter a valid amount', type: 'error' });
       return;
     }
 
     if (!fromToken || !toToken) {
-      setToastMessage('Please select both tokens.');
-      setToastType('error');
-      setShowToast(true);
+      setToast({ message: 'Please select both tokens.', type: 'error' });
       return;
     }
 
     if (amount > fromTokenBalance) {
-      setToastMessage("You don't have enough tokens for this trade");
-      setToastType('error');
-      setShowToast(true);
+      setToast({
+        message: "You don't have enough tokens for this trade",
+        type: 'error',
+      });
       return;
     }
     if (!quote || quote.errorCode) {
-      setToastMessage('Quote is not available or invalid. Please try again.');
-      setToastType('error');
-      setShowToast(true);
+      setToast({
+        message: 'Quote is not available or invalid. Please try again.',
+        type: 'error',
+      });
       return;
     }
 
@@ -443,9 +436,10 @@ export default function TradeScreen() {
       console.log('Swap prepared successfully');
     } catch (err: any) {
       console.error('Failed to prepare swap:', err);
-      setToastMessage('Failed to prepare swap. Please try again.');
-      setToastType('error');
-      setShowToast(true);
+      setToast({
+        message: 'Failed to prepare swap. Please try again.',
+        type: 'error',
+      });
       bottomSheetRef.current?.close();
     } finally {
       setIsPreparingSwap(false);
@@ -454,9 +448,10 @@ export default function TradeScreen() {
 
   const handleConfirmSwap = async () => {
     if (!preparedSwap) {
-      setToastMessage('Swap not prepared. Please try again.');
-      setToastType('error');
-      setShowToast(true);
+      setToast({
+        message: 'Swap not prepared. Please try again.',
+        type: 'error',
+      });
       return;
     }
 
@@ -1104,10 +1099,10 @@ export default function TradeScreen() {
             </BottomSheet>
 
             <Toast
-              message={toastMessage}
-              visible={showToast}
-              onHide={() => setShowToast(false)}
-              type={toastType}
+              message={toast?.message || ''}
+              visible={!!toast}
+              onHide={() => setToast(null)}
+              type={toast?.type || 'error'}
             />
           </View>
         )}

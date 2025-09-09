@@ -4,10 +4,12 @@ import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 
 interface CircularNumericKeyboardProps {
   onKeyPress: (key: string) => void;
+  scale?: number;
 }
 
 const CircularNumericKeyboard: React.FC<CircularNumericKeyboardProps> = ({
   onKeyPress,
+  scale: scaleProp = 1,
 }) => {
   const keys = [
     ['1', '2', '3'],
@@ -22,22 +24,47 @@ const CircularNumericKeyboard: React.FC<CircularNumericKeyboardProps> = ({
     }
   };
 
+  const dynamicStyles = {
+    container: {
+      ...styles.container,
+      marginBottom: verticalScale(15 * scaleProp),
+    },
+    row: {
+      ...styles.row,
+      marginVertical: verticalScale(8 * scaleProp),
+    },
+    key: {
+      ...styles.key,
+      width: scale(65 * scaleProp),
+      height: scale(65 * scaleProp),
+      marginHorizontal: scale(20 * scaleProp),
+    },
+    keyText: {
+      ...styles.keyText,
+      fontSize: moderateScale(22 * scaleProp),
+    },
+    backspaceText: {
+      ...styles.backspaceText,
+      fontSize: moderateScale(20 * scaleProp),
+    },
+  };
+
   return (
-    <View style={styles.container}>
+    <View style={dynamicStyles.container}>
       {keys.map((row, rowIndex) => (
-        <View key={rowIndex} style={styles.row}>
+        <View key={rowIndex} style={dynamicStyles.row}>
           {row.map((key, keyIndex) => (
             <TouchableOpacity
               key={keyIndex}
-              style={[styles.key, key === '' && styles.invisibleKey]}
+              style={[dynamicStyles.key, key === '' && styles.invisibleKey]}
               onPress={() => handleKeyPress(key)}
               activeOpacity={0.6}
               disabled={key === ''}
             >
               {key === 'backspace' ? (
-                <Text style={styles.backspaceText}>⌫</Text>
+                <Text style={dynamicStyles.backspaceText}>⌫</Text>
               ) : (
-                <Text style={styles.keyText}>{key}</Text>
+                <Text style={dynamicStyles.keyText}>{key}</Text>
               )}
             </TouchableOpacity>
           ))}

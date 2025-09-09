@@ -52,7 +52,6 @@ import { countries, Country } from '@/constants/countries';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import { sendOtp, checkEmailStatus } from '@/services/otpService';
 import EmailBadge, { EmailStatus } from '@/components/EmailBadge';
-import EmailVerificationSheet from '@/components/EmailVerificationSheet';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -229,11 +228,10 @@ export default function AccountScreen() {
   const [phoneNumberError, setPhoneNumberError] = useState(false);
 
   // Toast state
-  const [showToast, setShowToast] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
-  const [toastType, setToastType] = useState<'success' | 'error' | 'info'>(
-    'success',
-  );
+  const [toast, setToast] = useState<{
+    message: string;
+    type: 'success' | 'error' | 'info';
+  } | null>(null);
 
   // Save button state
   const [isSaving, setIsSaving] = useState(false);
@@ -242,7 +240,6 @@ export default function AccountScreen() {
   const [emailStatus, setEmailStatus] = useState<EmailStatus>('unverified');
   const [otpId, setOtpId] = useState<string | null>(null);
   const [otpExpiresAt, setOtpExpiresAt] = useState<number | null>(null);
-  const [showSheet, setShowSheet] = useState(false);
 
   // Animation for shake effect
   const shakeAnimationValue = useRef(new RNAnimated.Value(0)).current;
@@ -410,89 +407,117 @@ export default function AccountScreen() {
     setTimeout(() => {
       if (firstNameError && firstNameRef.current) {
         firstNameRef.current.focus();
+        // Position cursor at end of text
+        setTimeout(() => {
+          const textLength = firstName.length;
+          firstNameRef.current?.setSelection(textLength, textLength);
+        }, 50);
         return;
       }
       if (lastNameError && lastNameRef.current) {
         lastNameRef.current.focus();
+        // Position cursor at end of text
+        setTimeout(() => {
+          const textLength = lastName.length;
+          lastNameRef.current?.setSelection(textLength, textLength);
+        }, 50);
         return;
       }
       if (emailError && emailRef.current) {
         emailRef.current.focus();
+        // Position cursor at end of text
+        setTimeout(() => {
+          const textLength = email.length;
+          emailRef.current?.setSelection(textLength, textLength);
+        }, 50);
         return;
       }
       if (addressError && addressRef.current) {
         addressRef.current.focus();
+        // Position cursor at end of text
+        setTimeout(() => {
+          const textLength = address.length;
+          addressRef.current?.setSelection(textLength, textLength);
+        }, 50);
         return;
       }
       if (streetNumberError && streetNumberRef.current) {
         streetNumberRef.current.focus();
+        // Position cursor at end of text
+        setTimeout(() => {
+          const textLength = streetNumber.length;
+          streetNumberRef.current?.setSelection(textLength, textLength);
+        }, 50);
         return;
       }
       if (phoneNumberError && phoneNumberRef.current) {
         phoneNumberRef.current.focus();
+        // Position cursor at end of text
+        setTimeout(() => {
+          const textLength = phoneNumber.length;
+          phoneNumberRef.current?.setSelection(textLength, textLength);
+        }, 50);
         return;
       }
     }, 100);
   };
 
+  const handleEmailVerification = async () => {
+    if (emailStatus === 'needs_verification') {
+      try {
+        // First check if email is already verified in the backend
+        const statusResponse = await checkEmailStatus(email);
+        if (statusResponse.isVerified) {
+          // Email is already verified, update status
+          setEmailStatus('verified');
+          setToast({
+            message: 'Email is already verified ✅',
+            type: 'success',
+          });
+          return;
+        }
+
+        // Email not verified, proceed with OTP flow and navigate to verification screen
+        const response = await sendOtp(email);
+        setOtpId(response.otpId || null);
+        setOtpExpiresAt(response.expiresAt || null);
+        setEmailStatus('otp_pending');
+
+        // Navigate to email verification screen instead of showing sheet
+        router.push('/settings/email-verification' as any);
+
+        setToast({
+          message: 'Verification code sent to your email',
+          type: 'info',
+        });
+      } catch (error) {
+        setToast({
+          message: 'Failed to send verification code',
+          type: 'error',
+        });
+      }
+    } else if (emailStatus === 'otp_pending') {
+      // Navigate to email verification screen
+      router.push('/settings/email-verification' as any);
+    }
+  };
+
   const handleSaveButtonPress = async () => {
+    // Check if form is valid
     if (!isFormValid()) {
+      // Trigger shake animation and focus first invalid field
       triggerShake(buttonShakeAnimationValue);
       focusFirstInvalidField();
       return;
     }
 
-    // Handle OTP verification flow
-    if (emailStatus === 'needs_verification') {
-      setIsSaving(true);
-      try {
-        // First check if email is already verified in the backend
-        const statusResponse = await checkEmailStatus(email);
-        if (statusResponse.isVerified) {
-          // Email is already verified, update status and skip OTP
-          setEmailStatus('verified');
-          setToastMessage('Email is already verified ✅');
-          setToastType('success');
-          setShowToast(true);
-          setIsSaving(false);
-          return;
-        }
-
-        // Email not verified, proceed with OTP flow
-        const response = await sendOtp(email);
-        setOtpId(response.otpId || null);
-        setOtpExpiresAt(response.expiresAt || null);
-        setEmailStatus('otp_pending');
-        setShowSheet(true);
-        setToastMessage('Verification code sent to your email');
-        setToastType('info');
-        setShowToast(true);
-      } catch (error) {
-        setToastMessage('Failed to send verification code');
-        setToastType('error');
-        setShowToast(true);
-      } finally {
-        setIsSaving(false);
-      }
-      return;
-    }
-
-    if (emailStatus === 'otp_pending') {
-      setShowSheet(true);
-      return;
-    }
-
-    // Default save behavior
+    // Default save behavior - only proceed if form is valid
     setIsSaving(true);
     try {
       await savePersonalInfo();
-      setToastMessage('Details saved successfully ✅');
-      setToastType('success');
-      setShowToast(true);
+      setToast({ message: 'Details saved successfully ✅', type: 'success' });
     } catch (error) {
-      setToastMessage('Error saving details');
-      setToastType('error');
-      setShowToast(true);
+      setToast({ message: 'Error saving details', type: 'error' });
     } finally {
       setIsSaving(false);
     }
@@ -843,16 +868,9 @@ export default function AccountScreen() {
               ]}
             >
               <PrimaryActionButton
-                title={
-                  isSaving
-                    ? 'Saving...'
-                    : emailStatus === 'needs_verification' ||
-                        emailStatus === 'otp_pending'
-                      ? 'Verify Email'
-                      : 'Save Details'
-                }
+                title={isSaving ? 'Saving...' : 'Save Details'}
                 onPress={handleSaveButtonPress}
-                disabled={!isFormValid() || isSaving}
+                disabled={isSaving}
                 loading={isSaving}
                 variant="primary"
               />
@@ -861,10 +879,10 @@ export default function AccountScreen() {
 
           {/* Toast */}
           <Toast
-            message={toastMessage}
-            visible={showToast}
-            onHide={() => setShowToast(false)}
-            type={toastType}
+            message={toast?.message || ''}
+            visible={!!toast}
+            onHide={() => setToast(null)}
+            type={toast?.type || 'success'}
           />
         </>
       }
@@ -1153,79 +1171,99 @@ export default function AccountScreen() {
                     emailError && styles.inputWrapperError,
                   ]}
                 >
-                  <Mail size={20} color="#9ca3af" style={styles.inputIcon} />
-                  <TextInput
-                    style={styles.textInput}
-                    placeholder="Enter your email address"
-                    placeholderTextColor="#6b7280"
-                    value={email}
-                    editable={
-                      ALWAYS_ALLOW_EMAIL_EDIT ||
-                      emailStatus === 'unverified' ||
-                      emailStatus === 'needs_verification'
-                    }
-                    onChangeText={(text) => {
-                      // Remove all spaces from email
-                      const noSpaces = text.replace(/\s/g, '');
-                      setEmail(noSpaces);
-
-                      // Reset email status when email changes
-                      if (
-                        emailStatus === 'verified' ||
-                        emailStatus === 'otp_pending'
-                      ) {
-                        setEmailStatus('needs_verification');
-                        setOtpId(null);
-                        setOtpExpiresAt(null);
+                  {/* Email Input Section */}
+                  <View style={styles.emailInputSection}>
+                    <Mail size={20} color="#9ca3af" style={styles.inputIcon} />
+                    <TextInput
+                      style={styles.emailTextInput}
+                      placeholder="Enter your email address"
+                      placeholderTextColor="#6b7280"
+                      value={email}
+                      editable={
+                        ALWAYS_ALLOW_EMAIL_EDIT ||
+                        emailStatus === 'unverified' ||
+                        emailStatus === 'needs_verification'
                       }
+                      onChangeText={(text) => {
+                        // Remove all spaces from email
+                        const noSpaces = text.replace(/\s/g, '');
+                        setEmail(noSpaces);
 
-                      // Only check error state on text change if already in error state
-                      if (emailError) {
-                        setEmailError(!validateEmail(noSpaces));
-                      }
-                    }}
-                    onBlur={async () => {
-                      // Always check error state on blur
-                      setEmailError(!validateEmail(email));
+                        // Reset email status when email changes
+                        if (
+                          emailStatus === 'verified' ||
+                          emailStatus === 'otp_pending'
+                        ) {
+                          setEmailStatus('needs_verification');
+                          setOtpId(null);
+                          setOtpExpiresAt(null);
+                        }
 
-                      // Check if email is already verified on blur
-                      if (validateEmail(email)) {
-                        try {
-                          const statusResponse = await checkEmailStatus(email);
-                          if (statusResponse.isVerified) {
-                            setEmailStatus('verified');
-                          } else if (emailStatus === 'unverified') {
-                            setEmailStatus('needs_verification');
-                          }
-                        } catch (error) {
-                          console.error(
-                            'Error checking email status on blur:',
-                            error,
-                          );
-                          // If check fails, set to needs_verification if email is valid
-                          if (emailStatus === 'unverified') {
-                            setEmailStatus('needs_verification');
+                        // Only check error state on text change if already in error state
+                        if (emailError) {
+                          setEmailError(!validateEmail(noSpaces));
+                        }
+                      }}
+                      onBlur={async () => {
+                        // Always check error state on blur
+                        setEmailError(!validateEmail(email));
+
+                        // Check if email is already verified on blur
+                        if (validateEmail(email)) {
+                          try {
+                            const statusResponse =
+                              await checkEmailStatus(email);
+                            if (statusResponse.isVerified) {
+                              setEmailStatus('verified');
+                            } else if (emailStatus === 'unverified') {
+                              setEmailStatus('needs_verification');
+                            }
+                          } catch (error) {
+                            console.error(
+                              'Error checking email status on blur:',
+                              error,
+                            );
+                            // If check fails, set to needs_verification if email is valid
+                            if (emailStatus === 'unverified') {
+                              setEmailStatus('needs_verification');
+                            }
                           }
                         }
-                      }
 
-                      // Only save to storage on blur (slow operation)
-                      if (email.trim()) {
-                        await saveFieldToStorage({ email });
-                      }
-                    }}
-                    keyboardType="email-address"
-                    ref={emailRef}
-                  />
-                  <EmailBadge
-                    status={emailStatus}
-                    expiresAt={otpExpiresAt}
-                    onExpire={() => {
-                      setEmailStatus('needs_verification');
-                      setOtpExpiresAt(null);
-                      setOtpId(null);
-                    }}
-                  />
+                        // Only save to storage on blur (slow operation)
+                        if (email.trim()) {
+                          await saveFieldToStorage({ email });
+                        }
+                      }}
+                      keyboardType="email-address"
+                      ref={emailRef}
+                      multiline={true}
+                      numberOfLines={1}
+                    />
+                  </View>
+                  {/* Email Badge Section */}
+                  <TouchableOpacity
+                    onPress={
+                      emailStatus === 'needs_verification' ||
+                      emailStatus === 'otp_pending'
+                        ? handleEmailVerification
+                        : undefined
+                    }
+                    disabled={
+                      emailStatus !== 'needs_verification' &&
+                      emailStatus !== 'otp_pending'
+                    }
+                  >
+                    <EmailBadge
+                      status={emailStatus}
+                      expiresAt={otpExpiresAt}
+                      onExpire={() => {
+                        setEmailStatus('needs_verification');
+                        setOtpExpiresAt(null);
+                        setOtpId(null);
+                      }}
+                    />
+                  </TouchableOpacity>
                 </View>
                 {emailStatus === 'verified' && (
                   <TouchableOpacity
@@ -1373,19 +1411,6 @@ export default function AccountScreen() {
           {verificationLevels[currentLevel]?.inputs.map(renderInputField)}
         </View>
       </View>
-
-      {/* Email Verification Sheet */}
-      <EmailVerificationSheet
-        visible={showSheet}
-        onClose={() => setShowSheet(false)}
-        email={email}
-        onVerified={() => {
-          setEmailStatus('verified');
-          setOtpId(null);
-          setOtpExpiresAt(null);
-          setShowSheet(false);
-        }}
-      />
     </SettingsScreen>
   );
 }
@@ -1412,7 +1437,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(10), // Reduced from 12
     paddingVertical: verticalScale(8), // Reduced from 10
     backgroundColor: '#2a2a2a',
-    borderRadius: scale(8),
+    borderRadius: 8,
     borderLeftWidth: scale(3),
     borderLeftColor: '#3b82f6',
   },
@@ -1420,7 +1445,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#2a2a2a',
     paddingHorizontal: scale(14), // Reduced from 16
     paddingVertical: verticalScale(12), // Reduced from 14
-    borderRadius: scale(12),
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#404040',
   },
@@ -1435,7 +1460,7 @@ const styles = StyleSheet.create({
   verificationCard: {
     width: CARD_WIDTH,
     backgroundColor: '#2a2a2a',
-    borderRadius: scale(14), // Reduced from 16
+    borderRadius: 14, // Reduced from 16
     borderWidth: 1,
     borderColor: '#404040',
     borderLeftWidth: scale(4),
@@ -1465,7 +1490,7 @@ const styles = StyleSheet.create({
   statusBadge: {
     width: scale(28), // Reduced from 32
     height: scale(28), // Reduced from 32
-    borderRadius: scale(14), // Half of width/height
+    borderRadius: 14, // Half of width/height
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1483,13 +1508,13 @@ const styles = StyleSheet.create({
   indicator: {
     width: scale(6), // Reduced from 8
     height: scale(6), // Reduced from 8
-    borderRadius: scale(3), // Half of width/height
+    borderRadius: 3, // Half of width/height
   },
   lockedIndicator: {
     width: scale(20), // Reduced from 24
     height: scale(20), // Reduced from 24
     backgroundColor: '#6b7280',
-    borderRadius: scale(10), // Half of width/height
+    borderRadius: 10, // Half of width/height
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1509,7 +1534,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#2a2a2a',
-    borderRadius: scale(10), // Reduced from 12
+    borderRadius: 10, // Reduced from 12
     borderWidth: 1,
     borderColor: '#404040',
     paddingHorizontal: scale(14), // Reduced from 16
@@ -1622,5 +1647,21 @@ const styles = StyleSheet.create({
     color: '#3b82f6',
     fontSize: 14,
     fontWeight: '600',
+  },
+  emailBadgeContainer: {
+    marginTop: verticalScale(8),
+    alignItems: 'flex-start',
+  },
+  emailInputSection: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  emailTextInput: {
+    flex: 1,
+    fontSize: moderateScale(16),
+    color: '#ffffff',
+    fontWeight: '400',
+    minHeight: verticalScale(20),
   },
 });

@@ -22,6 +22,8 @@ const Toast: React.FC<ToastProps> = ({
 
   useEffect(() => {
     if (visible) {
+      console.log('Running the toast my guy');
+
       // Show toast
       Animated.parallel([
         Animated.timing(opacity, {

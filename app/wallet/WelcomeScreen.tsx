@@ -18,7 +18,7 @@ import SpeedLogo from '@/components/SpeedLogo';
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const SLIDER_WIDTH = SCREEN_WIDTH - scale(40);
 const THUMB_SIZE = scale(55);
-const THUMB_MARGIN = scale(3);
+const THUMB_MARGIN = scale(5);
 const SLIDER_HEIGHT = THUMB_SIZE + THUMB_MARGIN * 2;
 const SLIDER_TRACK_WIDTH = SLIDER_WIDTH - THUMB_SIZE - THUMB_MARGIN * 2;
 
