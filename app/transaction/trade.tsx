@@ -107,7 +107,7 @@ const SwapBox: React.FC<SwapBoxProps> = ({
               <View style={styles.tokenDisplay}>
                 <TokenLogo
                   logoURI={token.logoURI}
-                  size={scale(24)}
+                  size={moderateScale(24, 0.3)}
                   style={styles.tokenLogo}
                 />
                 <Text style={styles.tokenSymbolText}>{token.symbol}</Text>
@@ -115,7 +115,10 @@ const SwapBox: React.FC<SwapBoxProps> = ({
             ) : (
               <Text style={styles.tokenPlaceholderText}>Select</Text>
             )}
-            <ChevronDown color={colors.textSecondary} size={scale(16)} />
+            <ChevronDown
+              color={colors.textSecondary}
+              size={moderateScale(16, 0.3)}
+            />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -123,10 +126,7 @@ const SwapBox: React.FC<SwapBoxProps> = ({
             style={styles.amountInputTouchable}
           >
             <Text
-              style={[
-                isInput ? styles.amountInput : styles.amountOutput,
-                !amount && styles.amountPlaceholder,
-              ]}
+              style={[styles.amountText, !amount && styles.amountPlaceholder]}
             >
               {amount || '0'}
             </Text>
@@ -1135,7 +1135,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: moderateScale(20, 2.0),
     paddingTop: moderateScale(4, 2.0),
     paddingBottom: verticalScale(16),
-    marginTop: moderateScale(-8, 0.05),
+    marginTop: -8,
   },
   // New SwapBox styles
   swapBoxContainer: {
@@ -1164,10 +1164,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.backgroundLight,
-    borderRadius: scale(6),
-    paddingHorizontal: moderateScale(10, 1.8),
-    paddingVertical: moderateScale(10, 2.2),
-    minWidth: scale(85),
+    borderRadius: 18,
+    paddingHorizontal: moderateScale(10, 0.8),
+    paddingVertical: moderateScale(10, 0.8),
+    minWidth: moderateScale(85, 0.3),
   },
   amountSection: {
     flex: 1,
@@ -1175,19 +1175,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginLeft: moderateScale(16, 2.5),
   },
-  amountInput: {
-    fontSize: moderateScale(32), // Apply responsive scaling
-    fontFamily: 'Inter-Bold',
+  amountText: {
+    fontSize: moderateScale(32, 0.3), // Apply responsive scaling
     color: colors.white,
     textAlign: 'right',
+    fontFamily: 'Inter-Regular',
     minWidth: scale(120),
   },
-  amountOutput: {
-    fontSize: moderateScale(32), // Apply responsive scaling
-    fontFamily: 'Inter-Bold',
-    color: colors.white,
-    textAlign: 'right',
-    minWidth: scale(120),
+  amountPlaceholder: {
+    fontSize: moderateScale(32, 0.3), // Increased to match the amount text size
+    fontFamily: 'Inter-Regular',
+    color: colors.textSecondary,
   },
   usdValue: {
     fontSize: moderateScale(16), // Apply responsive scaling
@@ -1201,7 +1199,7 @@ const styles = StyleSheet.create({
   usdValueRowTight: {
     width: '100%',
     alignItems: 'flex-end',
-    marginTop: moderateScale(-16, 0.1),
+    marginTop: -16,
   },
   headerRow: {
     width: '100%',
@@ -1214,7 +1212,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: moderateScale(-4, 0.05),
+    marginTop: -4,
   },
   // Keep existing styles
   label: {
@@ -1494,11 +1492,6 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
     minHeight: moderateScale(48, 1.8),
     justifyContent: 'center',
-  },
-  amountPlaceholder: {
-    fontSize: 32, // Increased to match the amount text size
-    fontFamily: 'Inter-Regular',
-    color: colors.textSecondary,
   },
   // Custom keyboard styles
   inlineKeyboard: {
