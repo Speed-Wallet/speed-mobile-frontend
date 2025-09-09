@@ -1,0 +1,332 @@
+import React from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+} from 'react-native';
+import { ArrowDownUp, ChevronDown } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
+import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
+import colors from '@/constants/colors';
+import { formatCurrency } from '@/utils/formatters';
+import TokenLogo from '@/components/TokenLogo';
+import { EnrichedTokenEntry } from '@/data/types';
+import { useTokenBalance } from '@/hooks/useTokenBalance';
+import { useTokenPrice } from '@/hooks/useTokenPrices';
+
+// SwapBox component that combines label, token selector, and amount
+interface SwapBoxProps {
+  token: EnrichedTokenEntry | null;
+  onTokenPress: () => void;
+  labelText: string;
+  amount: string;
+  onAmountChange?: (amount: string) => void;
+  isInput?: boolean; // true for input, false for output
+  showBalance?: boolean;
+  onInputFocus?: () => void;
+  isActive?: boolean; // true when this input is currently focused
+}
+
+const SwapBox: React.FC<SwapBoxProps> = ({
+  token,
+  onTokenPress,
+  labelText,
+  amount,
+  onAmountChange,
+  isInput = false,
+  showBalance = false,
+  onInputFocus,
+  isActive = false,
+}) => {
+  const { balance: tokenBalance } = useTokenBalance(token?.address);
+  const { price: tokenPrice } = useTokenPrice(token?.extensions.coingeckoId);
+
+  const usdValue =
+    token && amount && parseFloat(amount) > 0
+      ? formatCurrency(parseFloat(amount) * (tokenPrice || 0))
+      : '$0';
+
+  return (
+    <View style={styles.swapBoxContainer}>
+      <View style={styles.swapBoxContent}>
+        {/* Row 1: Label on left, Balance on right */}
+        <View style={styles.headerRow}>
+          <Text style={styles.swapBoxLabel}>{labelText}</Text>
+          {showBalance && token && (
+            <Text style={styles.balanceText}>
+              {tokenBalance.toFixed(token.decimalsShown)} {token.symbol}
+            </Text>
+          )}
+        </View>
+
+        {/* Row 2: Token selector on left, Amount on right */}
+        <View style={styles.tokenAmountRow}>
+          <TouchableOpacity
+            onPress={onTokenPress}
+            style={styles.tokenSelectorInBox}
+          >
+            {token ? (
+              <View style={styles.tokenDisplay}>
+                <TokenLogo
+                  logoURI={token.logoURI}
+                  size={moderateScale(24, 0.3)}
+                  style={styles.tokenLogo}
+                />
+                <Text style={styles.tokenSymbolText}>{token.symbol}</Text>
+              </View>
+            ) : (
+              <Text style={styles.tokenPlaceholderText}>Select</Text>
+            )}
+            <ChevronDown
+              color={colors.textSecondary}
+              size={moderateScale(16, 0.3)}
+            />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={onInputFocus}
+            style={styles.amountInputTouchable}
+          >
+            <Text
+              style={[
+                styles.amountText,
+                !amount && styles.amountPlaceholder,
+                isActive && styles.amountTextActive,
+              ]}
+            >
+              {amount || '0'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Row 3: USD Value on right - No gap above */}
+        <View style={styles.usdValueRowTight}>
+          <Text style={styles.usdValue}>{usdValue}</Text>
+        </View>
+      </View>
+    </View>
+  );
+};
+
+// Main SwapTokensSection component
+interface SwapTokensSectionProps {
+  fromToken: EnrichedTokenEntry | null;
+  toToken: EnrichedTokenEntry | null;
+  fromAmount: string;
+  toAmount: string;
+  activeInput: 'from' | 'to' | null;
+  onFromAmountChange: (amount: string) => void;
+  onToAmountChange: (amount: string) => void;
+  onFromInputFocus: () => void;
+  onToInputFocus: () => void;
+  onSwapTokens: () => void;
+}
+
+const SwapTokensSection: React.FC<SwapTokensSectionProps> = ({
+  fromToken,
+  toToken,
+  fromAmount,
+  toAmount,
+  activeInput,
+  onFromAmountChange,
+  onToAmountChange,
+  onFromInputFocus,
+  onToInputFocus,
+  onSwapTokens,
+}) => {
+  const router = useRouter();
+
+  return (
+    <ScrollView
+      style={styles.scrollView}
+      contentContainerStyle={styles.scrollViewContent}
+      showsVerticalScrollIndicator={false}
+    >
+      {/* From Token Box */}
+      <SwapBox
+        labelText="From"
+        token={fromToken}
+        onTokenPress={() =>
+          router.push({
+            pathname: '/token/select',
+            params: {
+              excludeAddress: toToken?.address,
+              selectedAddress: fromToken?.address,
+              returnParam: 'fromToken',
+            },
+          })
+        }
+        amount={fromAmount}
+        onAmountChange={onFromAmountChange}
+        onInputFocus={onFromInputFocus}
+        isInput={true}
+        showBalance={true}
+        isActive={activeInput === 'from'}
+      />
+
+      {/* Swap Button */}
+      <View style={styles.swapButtonContainer}>
+        <TouchableOpacity style={styles.swapButton} onPress={onSwapTokens}>
+          <ArrowDownUp color={colors.white} size={moderateScale(16, 0.3)} />
+        </TouchableOpacity>
+      </View>
+
+      {/* To Token Box */}
+      <SwapBox
+        labelText="To"
+        token={toToken}
+        onTokenPress={() =>
+          router.push({
+            pathname: '/token/select',
+            params: {
+              excludeAddress: fromToken?.address,
+              selectedAddress: toToken?.address,
+              returnParam: 'toToken',
+            },
+          })
+        }
+        amount={toAmount}
+        onAmountChange={onToAmountChange}
+        onInputFocus={onToInputFocus}
+        isInput={true}
+        showBalance={false}
+        isActive={activeInput === 'to'}
+      />
+    </ScrollView>
+  );
+};
+
+const styles = StyleSheet.create({
+  scrollView: {
+    flex: 1,
+  },
+  scrollViewContent: {
+    flexGrow: 1,
+    paddingHorizontal: 20,
+    paddingTop: moderateScale(8, 2.5),
+  },
+  // SwapBox styles
+  swapBoxContainer: {
+    backgroundColor: 'transparent',
+    borderRadius: 0,
+    paddingVertical: moderateScale(4, 4.0),
+    paddingHorizontal: moderateScale(4, 2.5),
+    marginBottom: moderateScale(6, 4.5),
+  },
+  swapBoxLabel: {
+    fontSize: moderateScale(14),
+    fontFamily: 'Inter-Medium',
+    color: colors.textSecondary,
+  },
+  swapBoxContent: {
+    flexDirection: 'column',
+    justifyContent: 'flex-start',
+  },
+  headerRow: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  tokenAmountRow: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: -4,
+  },
+  tokenSelectorInBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.backgroundLight,
+    borderRadius: 18,
+    paddingHorizontal: moderateScale(10, 0.8),
+    paddingVertical: moderateScale(10, 0.8),
+    minWidth: moderateScale(85, 0.3),
+  },
+  tokenDisplay: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  tokenLogo: {
+    marginRight: 8,
+  },
+  tokenSymbolText: {
+    fontSize: 16,
+    fontFamily: 'Inter-SemiBold',
+    color: colors.white,
+    marginRight: 8,
+  },
+  tokenPlaceholderText: {
+    fontSize: 16,
+    fontFamily: 'Inter-Regular',
+    color: colors.textSecondary,
+  },
+  amountInputTouchable: {
+    paddingVertical: moderateScale(12, 2.0),
+    paddingHorizontal: moderateScale(8, 2.5),
+    borderRadius: 0,
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    borderColor: 'transparent',
+    minHeight: moderateScale(48, 1.8),
+    justifyContent: 'center',
+  },
+  amountText: {
+    fontSize: moderateScale(32, 0.3),
+    color: colors.white,
+    textAlign: 'right',
+    fontFamily: 'Inter-Regular',
+    minWidth: scale(120),
+  },
+  amountPlaceholder: {
+    fontSize: moderateScale(32, 0.3),
+    fontFamily: 'Inter-Regular',
+    color: colors.textSecondary,
+  },
+  amountTextActive: {
+    color: '#00CFFF', // Bright blue color to indicate active state
+    opacity: 1,
+  },
+  usdValueRowTight: {
+    width: '100%',
+    alignItems: 'flex-end',
+    marginTop: -16,
+  },
+  usdValue: {
+    fontSize: moderateScale(16),
+    fontFamily: 'Inter-Medium',
+    color: colors.textSecondary,
+  },
+  balanceText: {
+    fontSize: 12,
+    fontFamily: 'Inter-Regular',
+    color: colors.textSecondary,
+    textAlign: 'right',
+  },
+  // Swap button styles
+  swapButtonContainer: {
+    alignItems: 'center',
+    marginVertical: moderateScale(-24, 0.05),
+    zIndex: 1,
+  },
+  swapButton: {
+    width: moderateScale(36, 0.3),
+    height: moderateScale(36, 0.3),
+    borderRadius: 18, // Keep border radius fixed, no scaling
+    backgroundColor: colors.backgroundLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: colors.backgroundDark,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+});
+
+export default SwapTokensSection;

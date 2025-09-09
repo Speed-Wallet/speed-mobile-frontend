@@ -72,7 +72,7 @@ const PrimaryActionButton: React.FC<PrimaryActionButtonProps> = ({
               {title}
             </Text>
             {showArrow && !disabled && (
-              <ArrowRight size={scale(20)} color={getArrowColor()} />
+              <ArrowRight size={scale(16)} color={getArrowColor()} />
             )}
           </>
         )}
@@ -83,9 +83,9 @@ const PrimaryActionButton: React.FC<PrimaryActionButtonProps> = ({
 
 const styles = StyleSheet.create({
   button: {
-    height: moderateScale(54, 0.4),
+    height: moderateScale(54, 0.1),
     width: '100%',
-    borderRadius: 27,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
@@ -97,10 +97,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: '100%',
     height: '100%',
-    gap: scale(8),
+    gap: scale(4),
   },
   buttonText: {
-    fontSize: moderateScale(17, 0.4),
+    fontSize: moderateScale(16, 0.1),
     fontFamily: 'Inter-SemiBold',
   },
 });

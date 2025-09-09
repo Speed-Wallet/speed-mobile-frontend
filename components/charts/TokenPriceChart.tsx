@@ -187,15 +187,15 @@ const TokenPriceChart: React.FC<TokenPriceChartProps> = ({
   // Format price for Y-axis labels
   const formatYAxisPrice = (price: number) => {
     if (price < 0.01) {
-      return `$${price.toFixed(6)}`;
+      return `${price.toFixed(6)}`;
     } else if (price < 1) {
-      return `$${price.toFixed(4)}`;
+      return `${price.toFixed(4)}`;
     } else if (price >= 1000000) {
-      return `$${(price / 1000000).toFixed(1)}M`;
+      return `${(price / 1000000).toFixed(1)}M`;
     } else if (price >= 1000) {
-      return `$${(price / 1000).toFixed(1)}K`;
+      return `${(price / 1000).toFixed(1)}K`;
     } else {
-      return `$${price.toFixed(2)}`;
+      return `${price.toFixed(2)}`;
     }
   };
 
@@ -489,9 +489,8 @@ const TokenPriceChart: React.FC<TokenPriceChartProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: 'center',
-    justifyContent: 'center',
     position: 'relative',
+    borderRadius: scale(12),
   },
   noDataText: {
     color: '#9ca3af',

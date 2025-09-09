@@ -10,13 +10,7 @@ import {
   Linking,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import {
-  X,
-  ArrowRight,
-  ChevronDown,
-  Info,
-  CreditCard,
-} from 'lucide-react-native';
+import { X, ChevronDown, Info, CreditCard } from 'lucide-react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { WebView } from 'react-native-webview';
 
@@ -26,6 +20,8 @@ import { getAllTokenInfo, getTokenByAddress } from '@/data/tokens';
 import { EnrichedTokenEntry } from '@/data/types';
 import ScreenHeader from '@/components/ScreenHeader';
 import ScreenContainer from '@/components/ScreenContainer';
+import BottomActionContainer from '@/components/BottomActionContainer';
+import PrimaryActionButton from '@/components/buttons/PrimaryActionButton';
 
 const paymentMethods = [
   {
@@ -267,24 +263,19 @@ export default function BuyScreen() {
           </ScrollView>
 
           {/* Buy Button */}
-          <View style={styles.bottomContainer}>
-            <TouchableOpacity
-              style={[
-                styles.buyButton,
-                (!amount || parseFloat(amount) <= 0) &&
-                  styles.buyButtonDisabled,
-              ]}
-              disabled={!amount || parseFloat(amount) <= 0}
-              onPress={handleBuy}
-            >
-              <Text style={styles.buyButtonText}>
-                {selectedMethod.id === 'yellowcard'
+          <BottomActionContainer style={styles.bottomContainer}>
+            <PrimaryActionButton
+              title={
+                selectedMethod.id === 'yellowcard'
                   ? 'Open YellowCard Widget'
-                  : `Continue to ${selectedMethod.provider}`}
-              </Text>
-              <ArrowRight size={20} color={colors.white} />
-            </TouchableOpacity>
-          </View>
+                  : `Continue to ${selectedMethod.provider}`
+              }
+              onPress={handleBuy}
+              disabled={!amount || parseFloat(amount) <= 0}
+              variant="primary"
+              showArrow={true}
+            />
+          </BottomActionContainer>
         </>
       )}
     </ScreenContainer>
@@ -434,28 +425,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: colors.backgroundMedium,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 16,
-  },
-  buyButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.primary,
-    borderRadius: 16,
-    height: 56,
-  },
-  buyButtonDisabled: {
-    backgroundColor: colors.backgroundLight,
-    opacity: 0.7,
-  },
-  buyButtonText: {
-    fontSize: 16,
-    fontFamily: 'Inter-SemiBold',
-    color: colors.white,
-    marginRight: 8,
   },
   webViewContainer: {
     flex: 1,
