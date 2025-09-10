@@ -7,7 +7,7 @@ import {
   ActivityIndicator,
   ViewStyle,
 } from 'react-native';
-import { ArrowRight } from 'lucide-react-native';
+
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import colors from '@/constants/colors';
 
@@ -17,8 +17,8 @@ interface PrimaryActionButtonProps {
   disabled?: boolean;
   loading?: boolean;
   variant?: 'primary' | 'success' | 'error';
-  showArrow?: boolean;
-  icon?: React.ReactNode;
+  icon?: React.ReactNode; // pass actual component, not string
+  iconPosition?: 'left' | 'right';
   style?: ViewStyle;
 }
 
@@ -28,8 +28,8 @@ const PrimaryActionButton: React.FC<PrimaryActionButtonProps> = ({
   disabled = false,
   loading = false,
   variant = 'primary',
-  showArrow = false,
   icon,
+  iconPosition = 'right',
   style,
 }) => {
   const getBackgroundColor = () => {
@@ -51,9 +51,9 @@ const PrimaryActionButton: React.FC<PrimaryActionButtonProps> = ({
     return variant === 'success' || variant === 'error' ? colors.white : '#000';
   };
 
-  const getArrowColor = () => {
-    if (disabled) return colors.textSecondary;
-    return variant === 'primary' ? '#000' : colors.white;
+  const renderIcon = () => {
+    if (!icon || disabled) return null;
+    return icon;
   };
 
   return (
@@ -73,13 +73,11 @@ const PrimaryActionButton: React.FC<PrimaryActionButtonProps> = ({
           <ActivityIndicator size="small" color={getTextColor()} />
         ) : (
           <>
-            {icon}
+            {iconPosition === 'left' && renderIcon()}
             <Text style={[styles.buttonText, { color: getTextColor() }]}>
               {title}
             </Text>
-            {showArrow && !disabled && (
-              <ArrowRight size={scale(16)} color={getArrowColor()} />
-            )}
+            {iconPosition === 'right' && renderIcon()}
           </>
         )}
       </View>
