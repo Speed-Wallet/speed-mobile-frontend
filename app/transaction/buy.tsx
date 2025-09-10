@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,41 +8,48 @@ import {
   ScrollView,
   Image,
   Linking,
+  Animated as RNAnimated,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { X, ChevronDown, Info, CreditCard } from 'lucide-react-native';
+import {
+  X,
+  ChevronDown,
+  Info,
+  CreditCard,
+  ExternalLink,
+} from 'lucide-react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { WebView } from 'react-native-webview';
+import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
+
+import { triggerShake } from '@/utils/animations';
+import { generateSignature } from '@/utils/signature';
 
 import colors from '@/constants/colors';
 import { formatCurrency } from '@/utils/formatters';
 import { getAllTokenInfo, getTokenByAddress } from '@/data/tokens';
 import { EnrichedTokenEntry } from '@/data/types';
+import { getWalletPublicKey } from '@/services/walletService';
 import ScreenHeader from '@/components/ScreenHeader';
 import ScreenContainer from '@/components/ScreenContainer';
 import BottomActionContainer from '@/components/BottomActionContainer';
 import PrimaryActionButton from '@/components/buttons/PrimaryActionButton';
+import TokenLogo from '@/components/TokenLogo';
 
 const paymentMethods = [
   {
     id: 'yellowcard',
     name: 'YellowCard',
-    recommended: true,
     icon: <CreditCard size={20} color={colors.textPrimary} />,
     provider: 'YellowCard',
     url: 'https://yellowcard.io',
   },
-  {
-    id: 'onramper',
-    name: 'OnRamper',
-    recommended: false,
-    icon: <CreditCard size={20} color={colors.textPrimary} />,
-    provider: 'OnRamper',
-    url: 'https://onramper.com',
-  },
 ];
 
 const quickAmounts = [10, 100, 1000];
+
+// USDT token data for logo
+const USDT_LOGO_URI = 'local://usdt-logo.png';
 
 export default function BuyScreen() {
   const { tokenAddress, selectedTokenAddress } = useLocalSearchParams<{
@@ -58,6 +65,17 @@ export default function BuyScreen() {
   const [selectedMethod, setSelectedMethod] = useState(paymentMethods[0]);
   const [showWebView, setShowWebView] = useState(false);
   const [webViewLoading, setWebViewLoading] = useState(false);
+  const shakeAnimationValue = useRef(new RNAnimated.Value(0)).current;
+  const amountInputRef = useRef<TextInput>(null);
+
+  // Custom keyboard state
+  const [showCustomKeyboard, setShowCustomKeyboard] = useState(true);
+  const [activeInput, setActiveInput] = useState<'amount' | null>(null);
+
+  // YellowCard widget state
+  const [walletAddress, setWalletAddress] = useState('');
+  const [signature, setSignature] = useState('');
+  const [widgetUrl, setWidgetUrl] = useState('https://widget.yellowcard.io');
 
   useEffect(() => {
     loadData();
@@ -77,6 +95,40 @@ export default function BuyScreen() {
     }
   }, [selectedTokenAddress]);
 
+  // Effect to generate signature and wallet address for YellowCard widget
+  useEffect(() => {
+    const initializeWidgetParams = async () => {
+      try {
+        // Get wallet address
+        const address = await getWalletPublicKey();
+        if (address) {
+          setWalletAddress(address);
+        }
+
+        // Generate signature if amount is provided
+        if (amount && address) {
+          const sig = await generateSignature(address, 'USDT', amount);
+          setSignature(sig);
+
+          // Build widget URL with parameters
+          const params = new URLSearchParams({
+            currencyAmount: amount,
+            token: 'USDT',
+            walletAddress: address,
+            network: 'SOL',
+            signature: sig,
+          });
+
+          setWidgetUrl(`https://widget.yellowcard.io?${params.toString()}`);
+        }
+      } catch (error) {
+        console.error('Error initializing widget params:', error);
+      }
+    };
+
+    initializeWidgetParams();
+  }, [amount]);
+
   if (Array.isArray(tokenAddress)) {
     throw new Error('tokenAddress should not be an array');
   }
@@ -95,7 +147,8 @@ export default function BuyScreen() {
 
   const handleBuy = () => {
     if (!amount || parseFloat(amount) <= 0) {
-      alert('Please enter a valid amount');
+      triggerShake(shakeAnimationValue);
+      amountInputRef.current?.focus();
       return;
     }
 
@@ -117,6 +170,37 @@ export default function BuyScreen() {
     setAmount(value.toString());
   };
 
+  // Custom keyboard handlers
+  const handleKeyPress = useCallback(
+    (key: string) => {
+      if (!activeInput) return;
+
+      if (key === 'backspace') {
+        setAmount((prev) => prev.slice(0, -1));
+      } else if (key === '.') {
+        if (!amount.includes('.')) {
+          setAmount((prev) => prev + '.');
+        }
+      } else {
+        // Number key
+        setAmount((prev) => {
+          // Prevent multiple leading zeros
+          if (prev === '0' && key !== '.') return key;
+          return prev + key;
+        });
+      }
+    },
+    [activeInput, amount],
+  );
+
+  const handleInputFocus = useCallback(() => {
+    setActiveInput('amount');
+  }, []);
+
+  const handleCloseKeyboard = useCallback(() => {
+    setActiveInput(null);
+  }, []);
+
   return (
     <ScreenContainer edges={['top', 'bottom']}>
       {showWebView ? (
@@ -136,7 +220,7 @@ export default function BuyScreen() {
           </View>
           <WebView
             source={{
-              uri: 'https://sandbox--payments-widget.netlify.app/landing/d5bfaa148d8534514e478def46d2ffea',
+              uri: widgetUrl,
             }}
             style={styles.webView}
             javaScriptEnabled={true}
@@ -165,117 +249,323 @@ export default function BuyScreen() {
         <>
           <ScreenHeader title="Buy" onBack={() => router.push('/' as any)} />
 
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.content}
-          >
-            {selectedToken && (
-              <>
-                {/* Amount Input */}
-                <Animated.View
-                  entering={FadeIn.delay(100)}
-                  style={styles.amountSection}
-                >
-                  <Text style={styles.amountLabel}>Amount to Buy (USD)</Text>
-                  <View style={styles.amountDisplay}>
-                    <Text style={styles.currencySymbol}>$</Text>
-                    <TextInput
-                      style={styles.amountInput}
-                      placeholder="0.00"
-                      placeholderTextColor={colors.textSecondary}
-                      keyboardType="decimal-pad"
-                      value={amount}
-                      onChangeText={setAmount}
-                    />
-                  </View>
-                  <Text style={styles.tokenAmount}>
-                    ≈ {getTokenAmount()} {selectedToken.symbol}
-                  </Text>
+          <View style={styles.mainContent}>
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.content}
+            >
+              {selectedToken && (
+                <>
+                  {/* Amount Input */}
+                  <Animated.View
+                    entering={FadeIn.delay(100)}
+                    style={styles.amountSection}
+                  >
+                    <Text style={styles.amountLabel}>Amount to Buy (USD)</Text>
+                    <RNAnimated.View
+                      style={[
+                        styles.amountDisplay,
+                        {
+                          transform: [{ translateX: shakeAnimationValue }],
+                        },
+                      ]}
+                    >
+                      <TokenLogo
+                        logoURI={USDT_LOGO_URI}
+                        size={36}
+                        style={styles.currencyLogo}
+                      />
+                      <TextInput
+                        ref={amountInputRef}
+                        style={styles.amountInput}
+                        placeholder="0.00"
+                        placeholderTextColor={colors.textSecondary}
+                        keyboardType="decimal-pad"
+                        showSoftInputOnFocus={false}
+                        value={amount}
+                        onChangeText={setAmount}
+                        onFocus={handleInputFocus}
+                      />
+                    </RNAnimated.View>
+                    <Text style={styles.tokenAmount}>
+                      ≈ {getTokenAmount()} {selectedToken.symbol}
+                    </Text>
 
-                  <View style={styles.quickAmounts}>
-                    {quickAmounts.map((value) => (
+                    <View style={styles.quickAmounts}>
+                      {quickAmounts.map((value) => (
+                        <TouchableOpacity
+                          key={value}
+                          style={[
+                            styles.quickAmountButton,
+                            amount === value.toString() &&
+                              styles.quickAmountButtonActive,
+                          ]}
+                          onPress={() => handleQuickAmount(value)}
+                        >
+                          <Text
+                            style={[
+                              styles.quickAmountText,
+                              amount === value.toString() &&
+                                styles.quickAmountTextActive,
+                            ]}
+                          >
+                            ${value}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </Animated.View>
+
+                  {/* Payment Info */}
+                  <Animated.View entering={FadeIn.delay(200)}>
+                    <View style={styles.paymentInfo}>
+                      <Info size={16} color={colors.textSecondary} />
+                      <Text style={styles.paymentInfoText}>
+                        Payment made with USDT via YellowCard
+                      </Text>
+                    </View>
+                  </Animated.View>
+                </>
+              )}
+            </ScrollView>
+
+            {/* Bottom Section - Keyboard and Button */}
+            <View style={styles.bottomSection}>
+              {/* Custom Keyboard */}
+              {showCustomKeyboard && (
+                <View style={styles.inlineKeyboard}>
+                  <View style={styles.keyboardGrid}>
+                    <View style={styles.keyboardRow}>
                       <TouchableOpacity
-                        key={value}
                         style={[
-                          styles.quickAmountButton,
-                          amount === value.toString() &&
-                            styles.quickAmountButtonActive,
+                          styles.keyboardKey,
+                          !activeInput && styles.keyboardKeyDisabled,
                         ]}
-                        onPress={() => handleQuickAmount(value)}
+                        onPress={() => handleKeyPress('1')}
+                        disabled={!activeInput}
                       >
                         <Text
                           style={[
-                            styles.quickAmountText,
-                            amount === value.toString() &&
-                              styles.quickAmountTextActive,
+                            styles.keyboardKeyText,
+                            !activeInput && styles.keyboardKeyTextDisabled,
                           ]}
                         >
-                          ${value}
+                          1
                         </Text>
                       </TouchableOpacity>
-                    ))}
-                  </View>
-                </Animated.View>
-
-                {/* Payment Methods */}
-                <Animated.View entering={FadeIn.delay(200)}>
-                  <Text style={styles.sectionTitle}>Payment Method</Text>
-                  <View style={styles.methodsContainer}>
-                    {paymentMethods.map((method) => (
                       <TouchableOpacity
-                        key={method.id}
                         style={[
-                          styles.methodCard,
-                          selectedMethod.id === method.id &&
-                            styles.selectedMethodCard,
+                          styles.keyboardKey,
+                          !activeInput && styles.keyboardKeyDisabled,
                         ]}
-                        onPress={() => setSelectedMethod(method)}
+                        onPress={() => handleKeyPress('2')}
+                        disabled={!activeInput}
                       >
-                        <View style={styles.methodContent}>
-                          <View style={styles.methodIconContainer}>
-                            {method.icon}
-                          </View>
-                          <Text style={styles.methodName}>{method.name}</Text>
-                          {method.recommended && (
-                            <View style={styles.recommendedBadge}>
-                              <Text style={styles.recommendedText}>
-                                Recommended
-                              </Text>
-                            </View>
-                          )}
-                        </View>
+                        <Text
+                          style={[
+                            styles.keyboardKeyText,
+                            !activeInput && styles.keyboardKeyTextDisabled,
+                          ]}
+                        >
+                          2
+                        </Text>
                       </TouchableOpacity>
-                    ))}
+                      <TouchableOpacity
+                        style={[
+                          styles.keyboardKey,
+                          !activeInput && styles.keyboardKeyDisabled,
+                        ]}
+                        onPress={() => handleKeyPress('3')}
+                        disabled={!activeInput}
+                      >
+                        <Text
+                          style={[
+                            styles.keyboardKeyText,
+                            !activeInput && styles.keyboardKeyTextDisabled,
+                          ]}
+                        >
+                          3
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    <View style={styles.keyboardRow}>
+                      <TouchableOpacity
+                        style={[
+                          styles.keyboardKey,
+                          !activeInput && styles.keyboardKeyDisabled,
+                        ]}
+                        onPress={() => handleKeyPress('4')}
+                        disabled={!activeInput}
+                      >
+                        <Text
+                          style={[
+                            styles.keyboardKeyText,
+                            !activeInput && styles.keyboardKeyTextDisabled,
+                          ]}
+                        >
+                          4
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[
+                          styles.keyboardKey,
+                          !activeInput && styles.keyboardKeyDisabled,
+                        ]}
+                        onPress={() => handleKeyPress('5')}
+                        disabled={!activeInput}
+                      >
+                        <Text
+                          style={[
+                            styles.keyboardKeyText,
+                            !activeInput && styles.keyboardKeyTextDisabled,
+                          ]}
+                        >
+                          5
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[
+                          styles.keyboardKey,
+                          !activeInput && styles.keyboardKeyDisabled,
+                        ]}
+                        onPress={() => handleKeyPress('6')}
+                        disabled={!activeInput}
+                      >
+                        <Text
+                          style={[
+                            styles.keyboardKeyText,
+                            !activeInput && styles.keyboardKeyTextDisabled,
+                          ]}
+                        >
+                          6
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    <View style={styles.keyboardRow}>
+                      <TouchableOpacity
+                        style={[
+                          styles.keyboardKey,
+                          !activeInput && styles.keyboardKeyDisabled,
+                        ]}
+                        onPress={() => handleKeyPress('7')}
+                        disabled={!activeInput}
+                      >
+                        <Text
+                          style={[
+                            styles.keyboardKeyText,
+                            !activeInput && styles.keyboardKeyTextDisabled,
+                          ]}
+                        >
+                          7
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[
+                          styles.keyboardKey,
+                          !activeInput && styles.keyboardKeyDisabled,
+                        ]}
+                        onPress={() => handleKeyPress('8')}
+                        disabled={!activeInput}
+                      >
+                        <Text
+                          style={[
+                            styles.keyboardKeyText,
+                            !activeInput && styles.keyboardKeyTextDisabled,
+                          ]}
+                        >
+                          8
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[
+                          styles.keyboardKey,
+                          !activeInput && styles.keyboardKeyDisabled,
+                        ]}
+                        onPress={() => handleKeyPress('9')}
+                        disabled={!activeInput}
+                      >
+                        <Text
+                          style={[
+                            styles.keyboardKeyText,
+                            !activeInput && styles.keyboardKeyTextDisabled,
+                          ]}
+                        >
+                          9
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    <View style={styles.keyboardRow}>
+                      <TouchableOpacity
+                        style={[
+                          styles.keyboardKey,
+                          !activeInput && styles.keyboardKeyDisabled,
+                        ]}
+                        onPress={() => handleKeyPress('.')}
+                        disabled={!activeInput}
+                      >
+                        <Text
+                          style={[
+                            styles.keyboardKeyText,
+                            !activeInput && styles.keyboardKeyTextDisabled,
+                          ]}
+                        >
+                          .
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[
+                          styles.keyboardKey,
+                          !activeInput && styles.keyboardKeyDisabled,
+                        ]}
+                        onPress={() => handleKeyPress('0')}
+                        disabled={!activeInput}
+                      >
+                        <Text
+                          style={[
+                            styles.keyboardKeyText,
+                            !activeInput && styles.keyboardKeyTextDisabled,
+                          ]}
+                        >
+                          0
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[
+                          styles.keyboardKey,
+                          !activeInput && styles.keyboardKeyDisabled,
+                        ]}
+                        onPress={() => handleKeyPress('backspace')}
+                        disabled={!activeInput}
+                      >
+                        <Text
+                          style={[
+                            styles.keyboardKeyText,
+                            !activeInput && styles.keyboardKeyTextDisabled,
+                          ]}
+                        >
+                          ⌫
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
-                </Animated.View>
-
-                {/* Provider Info */}
-                <View style={styles.providerInfo}>
-                  <Info size={16} color={colors.textSecondary} />
-                  <Text style={styles.providerText}>
-                    {selectedMethod.id === 'yellowcard'
-                      ? 'The YellowCard widget will open to complete your purchase'
-                      : `You will be redirected to ${selectedMethod.provider} to complete your purchase`}
-                  </Text>
                 </View>
-              </>
-            )}
-          </ScrollView>
+              )}
+            </View>
 
-          {/* Buy Button */}
-          <BottomActionContainer style={styles.bottomContainer}>
-            <PrimaryActionButton
-              title={
-                selectedMethod.id === 'yellowcard'
-                  ? 'Open YellowCard Widget'
-                  : `Continue to ${selectedMethod.provider}`
-              }
-              onPress={handleBuy}
-              disabled={!amount || parseFloat(amount) <= 0}
-              variant="primary"
-              showArrow={true}
-            />
-          </BottomActionContainer>
+            {/* Buy Button */}
+            <View style={styles.buttonContainer}>
+              <PrimaryActionButton
+                title="Open YellowCard Widget"
+                onPress={handleBuy}
+                variant="primary"
+                icon={<ExternalLink size={18} color="#000" />}
+                iconPosition="right"
+              />
+            </View>
+          </View>
         </>
       )}
     </ScreenContainer>
@@ -283,6 +573,20 @@ export default function BuyScreen() {
 }
 
 const styles = StyleSheet.create({
+  mainContent: {
+    flex: 1,
+  },
+  // Bottom section for keyboard and button
+  bottomSection: {
+    backgroundColor: colors.backgroundDark,
+    paddingBottom: verticalScale(34), // Safe area padding
+  },
+  buttonContainer: {
+    paddingHorizontal: moderateScale(20, 2.0),
+    paddingTop: moderateScale(4, 2.0),
+    paddingBottom: verticalScale(16),
+    marginTop: -8,
+  },
   content: {
     padding: 16,
     paddingBottom: 120,
@@ -312,6 +616,9 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     marginRight: 4,
   },
+  currencyLogo: {
+    marginRight: 8,
+  },
   amountInput: {
     fontSize: 40,
     fontFamily: 'Inter-SemiBold',
@@ -333,22 +640,22 @@ const styles = StyleSheet.create({
   quickAmountButton: {
     paddingVertical: 8,
     paddingHorizontal: 16,
-    backgroundColor: colors.backgroundLight,
+    backgroundColor: 'transparent',
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'transparent',
+    borderColor: '#00CFFF',
   },
   quickAmountButtonActive: {
-    backgroundColor: colors.primary + '20',
-    borderColor: colors.primary,
+    backgroundColor: '#00CFFF' + '20',
+    borderColor: '#00CFFF',
   },
   quickAmountText: {
     fontSize: 14,
     fontFamily: 'Inter-Medium',
-    color: colors.textSecondary,
+    color: '#00CFFF',
   },
   quickAmountTextActive: {
-    color: colors.primary,
+    color: '#00CFFF',
   },
   sectionTitle: {
     fontSize: 16,
@@ -457,5 +764,56 @@ const styles = StyleSheet.create({
   },
   webView: {
     flex: 1,
+  },
+  // Custom keyboard styles
+  inlineKeyboard: {
+    paddingHorizontal: scale(14),
+    paddingTop: verticalScale(2),
+    paddingBottom: verticalScale(0),
+  },
+  keyboardGrid: {
+    gap: scale(6),
+    marginBottom: 0,
+  },
+  keyboardRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: scale(6),
+  },
+  keyboardKey: {
+    flex: 1,
+    height: verticalScale(56),
+    backgroundColor: 'transparent',
+    borderRadius: scale(6),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  keyboardKeyText: {
+    fontSize: moderateScale(18),
+    fontFamily: 'Inter-SemiBold',
+    color: colors.textPrimary,
+  },
+  keyboardKeyDisabled: {
+    backgroundColor: 'transparent',
+    opacity: 0.5,
+  },
+  keyboardKeyTextDisabled: {
+    color: colors.textSecondary,
+    opacity: 0.5,
+  },
+  paymentInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.backgroundMedium,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 24,
+  },
+  paymentInfoText: {
+    flex: 1,
+    marginLeft: 8,
+    fontSize: 14,
+    fontFamily: 'Inter-Medium',
+    color: colors.textSecondary,
   },
 });
