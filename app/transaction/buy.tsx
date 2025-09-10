@@ -75,7 +75,9 @@ export default function BuyScreen() {
   // YellowCard widget state
   const [walletAddress, setWalletAddress] = useState('');
   const [signature, setSignature] = useState('');
-  const [widgetUrl, setWidgetUrl] = useState('https://widget.yellowcard.io');
+  const [widgetUrl, setWidgetUrl] = useState(
+    'https://sandbox--payments-widget.netlify.app/landing/d5bfaa148d8534514e478def46d2ffea',
+  );
 
   useEffect(() => {
     loadData();
@@ -119,7 +121,9 @@ export default function BuyScreen() {
             signature: sig,
           });
 
-          setWidgetUrl(`https://widget.yellowcard.io?${params.toString()}`);
+          setWidgetUrl(
+            `https://sandbox--payments-widget.netlify.app/landing/d5bfaa148d8534514e478def46d2ffea?${params.toString()}`,
+          );
         }
       } catch (error) {
         console.error('Error initializing widget params:', error);
