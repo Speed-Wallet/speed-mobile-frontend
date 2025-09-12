@@ -69,6 +69,8 @@ export const getJupiterQuote = async (
     `${JUPITER_API_URL}quote?${quoteQueries.join('&')}`,
   );
 
+  // console.log("Jupiter Quote Response:", response.json());
+
   if (!response.ok) {
     throw new Error(`Failed to get Jupiter quote: ${response.statusText}`);
   }

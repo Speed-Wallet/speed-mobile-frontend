@@ -20,7 +20,6 @@ import CryptoJS from 'crypto-js';
 import { useEffect, useState } from 'react';
 import { WSOL_ADDRESS } from '@/constants/tokens';
 import {
-  getJupiterQuote,
   prepareJupiterSwap,
   submitSignedTransaction,
   type JupiterQuoteResponse,
@@ -642,12 +641,6 @@ export const lockWallet = (): void => {
   setTempAppPin(null);
   console.log('Temporary PIN cleared from memory.');
 };
-
-// Re-export Jupiter functions from the new API service
-export {
-  getJupiterQuote as JupiterQuote,
-  type JupiterQuoteResponse,
-} from './jupiterApi';
 
 // Re-export wallet utils for compatibility
 export {

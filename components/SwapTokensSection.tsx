@@ -71,7 +71,7 @@ const SwapBox: React.FC<SwapBoxProps> = ({
               <View style={styles.tokenDisplay}>
                 <TokenLogo
                   logoURI={token.logoURI}
-                  size={moderateScale(24, 0.3)}
+                  size={moderateScale(22, 0.3)}
                   style={styles.tokenLogo}
                 />
                 <Text style={styles.tokenSymbolText}>{token.symbol}</Text>
@@ -81,7 +81,7 @@ const SwapBox: React.FC<SwapBoxProps> = ({
             )}
             <ChevronDown
               color={colors.textSecondary}
-              size={moderateScale(16, 0.3)}
+              size={moderateScale(14, 0.3)}
             />
           </TouchableOpacity>
 
@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
   scrollViewContent: {
     flexGrow: 1,
     paddingHorizontal: 20,
-    paddingTop: moderateScale(8, 2.5),
+    // paddingTop: moderateScale(8, 0),
   },
   // SwapBox styles
   swapBoxContainer: {
@@ -235,38 +235,37 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: -4,
+    marginTop: -8,
   },
   tokenSelectorInBox: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.backgroundLight,
-    borderRadius: 18,
-    paddingHorizontal: moderateScale(10, 0.8),
-    paddingVertical: moderateScale(10, 0.8),
-    minWidth: moderateScale(85, 0.3),
+    borderRadius: 11,
+    paddingHorizontal: moderateScale(9, 0.8),
+    paddingVertical: moderateScale(9, 0.8),
+    minWidth: moderateScale(77, 0.3),
   },
   tokenDisplay: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   tokenLogo: {
-    marginRight: 8,
+    marginRight: 7,
   },
   tokenSymbolText: {
-    fontSize: 16,
+    fontSize: 14,
     fontFamily: 'Inter-SemiBold',
     color: colors.white,
-    marginRight: 8,
+    marginRight: 7,
   },
   tokenPlaceholderText: {
-    fontSize: 16,
+    fontSize: 14,
     fontFamily: 'Inter-Regular',
     color: colors.textSecondary,
   },
   amountInputTouchable: {
     paddingVertical: moderateScale(12, 2.0),
-    paddingHorizontal: moderateScale(8, 2.5),
     borderRadius: 0,
     backgroundColor: 'transparent',
     borderWidth: 0,
@@ -275,7 +274,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   amountText: {
-    fontSize: moderateScale(32, 0.3),
+    fontSize: moderateScale(26, 0.3),
     color: colors.white,
     textAlign: 'right',
     fontFamily: 'Inter-Regular',
@@ -287,16 +286,16 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   amountTextActive: {
-    color: '#00CFFF', // Bright blue color to indicate active state
+    color: colors.white, // Normal white color when active
     opacity: 1,
   },
   usdValueRowTight: {
     width: '100%',
     alignItems: 'flex-end',
-    marginTop: -16,
+    marginTop: -12,
   },
   usdValue: {
-    fontSize: moderateScale(16),
+    fontSize: moderateScale(13),
     fontFamily: 'Inter-Medium',
     color: colors.textSecondary,
   },
@@ -309,7 +308,7 @@ const styles = StyleSheet.create({
   // Swap button styles
   swapButtonContainer: {
     alignItems: 'center',
-    marginVertical: moderateScale(-24, 0.05),
+    marginVertical: moderateScale(-28, 0.05),
     zIndex: 1,
   },
   swapButton: {
