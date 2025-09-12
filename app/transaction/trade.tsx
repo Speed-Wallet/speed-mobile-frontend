@@ -22,7 +22,6 @@ import { formatCurrency } from '@/utils/formatters';
 import { getAllTokenInfo, getTokenByAddress } from '@/data/tokens';
 import { EnrichedTokenEntry } from '@/data/types';
 import {
-  JupiterQuote,
   prepareJupiterSwapTransaction,
   confirmJupiterSwap,
   type PreparedJupiterSwap,
@@ -31,12 +30,14 @@ import { useConfig } from '@/hooks/useConfig';
 import ScreenHeader from '@/components/ScreenHeader';
 import ScreenContainer from '@/components/ScreenContainer';
 import PrimaryActionButton from '@/components/buttons/PrimaryActionButton';
+import PercentageButtons from '@/components/buttons/PercentageButtons';
 import { useTokenValue } from '@/hooks/useTokenValue';
 import { useTokenPrice } from '@/hooks/useTokenPrices';
 import { triggerShake } from '@/utils/animations';
 import { useTokenBalance } from '@/hooks/useTokenBalance';
 import { useQueryClient } from '@tanstack/react-query';
 import SwapTokensSection from '@/components/SwapTokensSection';
+import { getJupiterQuote } from '@/services/jupiterApi';
 
 const WAIT_ON_AMOUNT_CHANGE = 2000;
 const LOOP_QUOTE_INTERVAL = 300000;
@@ -138,7 +139,7 @@ export default function TradeScreen() {
 
   async function fetchAndApplyQuote(inAmount: number) {
     try {
-      quote = await JupiterQuote(
+      quote = await getJupiterQuote(
         fromToken!.address,
         toToken!.address,
         inAmount,
@@ -514,6 +515,26 @@ export default function TradeScreen() {
     setActiveInput(null);
   }, []);
 
+  const handlePercentagePress = useCallback(
+    (percentage: number) => {
+      if (!fromToken || !fromTokenBalance || fromTokenBalance === 0) return;
+
+      // Calculate the percentage of the available balance
+      const amount = (fromTokenBalance * percentage) / 100;
+
+      // Format to the token's decimal precision
+      const formattedAmount = amount.toFixed(fromToken.decimalsShown);
+
+      // Set the from amount and clear the to amount
+      setFromAmount(formattedAmount);
+      setToAmount('');
+
+      // Set focus to from input
+      setActiveInput('from');
+    },
+    [fromToken, fromTokenBalance],
+  );
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ScreenContainer edges={['top', 'bottom']} style={styles.container}>
@@ -566,6 +587,13 @@ export default function TradeScreen() {
                 onFromInputFocus={handleInputFocus}
                 onToInputFocus={handleToInputFocus}
                 onSwapTokens={handleSwapTokens}
+              />
+
+              {/* Percentage Buttons */}
+              <PercentageButtons
+                fromToken={fromToken}
+                fromTokenBalance={fromTokenBalance}
+                onPercentagePress={handlePercentagePress}
               />
 
               {/* Bottom Section - Keyboard and Button */}
@@ -981,7 +1009,7 @@ const styles = StyleSheet.create({
   // Bottom section for keyboard and button
   bottomSection: {
     backgroundColor: colors.backgroundDark,
-    paddingBottom: verticalScale(34), // Safe area padding
+    paddingBottom: verticalScale(18), // Safe area padding
   },
   buttonContainer: {
     paddingHorizontal: moderateScale(20, 2.0),
@@ -1213,8 +1241,8 @@ const styles = StyleSheet.create({
   // Custom keyboard styles
   inlineKeyboard: {
     paddingHorizontal: scale(14),
-    paddingTop: verticalScale(2),
-    paddingBottom: verticalScale(0), // Remove bottom padding to move keyboard closer to button
+    paddingTop: verticalScale(14),
+    // paddingBottom: verticalScale(4), // Remove bottom padding to move keyboard closer to button
   },
   keyboardHeader: {
     alignItems: 'center',
