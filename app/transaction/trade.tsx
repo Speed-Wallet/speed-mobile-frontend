@@ -18,7 +18,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import Toast from '@/components/Toast';
 import colors from '@/constants/colors';
-import { formatCurrency } from '@/utils/formatters';
+import { formatCurrency, unformatAmountInput } from '@/utils/formatters';
 import { getAllTokenInfo, getTokenByAddress } from '@/data/tokens';
 import { EnrichedTokenEntry } from '@/data/types';
 import {
@@ -120,7 +120,7 @@ export default function TradeScreen() {
     }
 
     setToAmount('');
-    const amountEntered = parseFloat(fromAmount);
+    const amountEntered = parseFloat(unformatAmountInput(fromAmount));
     if (isNaN(amountEntered) || amountEntered === 0) return;
 
     const amount = amountEntered * 10 ** fromToken!.decimals;
@@ -187,7 +187,7 @@ export default function TradeScreen() {
       !fromToken ||
       !toToken ||
       !toAmount ||
-      parseFloat(toAmount) === 0
+      parseFloat(unformatAmountInput(toAmount)) === 0
     ) {
       setFromAmount('');
       return;
@@ -203,7 +203,7 @@ export default function TradeScreen() {
       intervalID = undefined;
     }
 
-    const toAmountEntered = parseFloat(toAmount);
+    const toAmountEntered = parseFloat(unformatAmountInput(toAmount));
     if (isNaN(toAmountEntered) || toAmountEntered === 0) {
       setFromAmount('');
       return;
@@ -293,7 +293,7 @@ export default function TradeScreen() {
   };
 
   const handlePreviewSwap = async () => {
-    const amount = parseFloat(fromAmount);
+    const amount = parseFloat(unformatAmountInput(fromAmount));
 
     if (isNaN(amount) || amount <= 0) {
       setToast({ message: 'Please enter a valid amount', type: 'error' });
@@ -397,39 +397,44 @@ export default function TradeScreen() {
 
   // Calculate exchange rate and receive amount for display
   const exchangeRate =
-    quote && toToken && fromToken && parseFloat(fromAmount) > 0
+    quote &&
+    toToken &&
+    fromToken &&
+    parseFloat(unformatAmountInput(fromAmount)) > 0
       ? parseFloat(quote.outAmount) /
         10 ** toToken.decimals /
-        parseFloat(fromAmount)
+        parseFloat(unformatAmountInput(fromAmount))
       : null;
 
-  // Determine if the effective 'toAmount' is zero for styling purposes
-  const effectiveToAmountIsZero = !toAmount || parseFloat(toAmount) === 0;
-
-  // Format the 'toAmount' for display with thousand separators and correct decimal places
-  const receiveAmountDisplay = useMemo(() => {
-    const num = parseFloat(toAmount);
-    // Default to 0 formatted according to token's decimalsShown or 2 if token/amount is invalid
-    if (isNaN(num) || !toToken) {
-      return (0).toLocaleString(undefined, {
-        minimumFractionDigits: toToken?.decimalsShown || 2,
-        maximumFractionDigits: toToken?.decimalsShown || 2,
-      });
-    }
-    // Format the valid number
-    return num.toLocaleString(undefined, {
-      minimumFractionDigits: toToken.decimalsShown,
-      maximumFractionDigits: toToken.decimalsShown,
-    });
-  }, [toAmount, toToken]);
-
   const totalValueDisplay =
-    fromAmount && fromToken && parseFloat(fromAmount) > 0
-      ? formatCurrency(parseFloat(fromAmount) * (fromTokenPrice || 0))
+    fromAmount && fromToken && parseFloat(unformatAmountInput(fromAmount)) > 0
+      ? formatCurrency(
+          parseFloat(unformatAmountInput(fromAmount)) * (fromTokenPrice || 0),
+        )
       : '$0.00';
 
+  // Check if amount exceeds balance
+  const isInsufficientBalance = useMemo(() => {
+    if (!fromAmount || !fromToken) return false;
+    const amount = parseFloat(unformatAmountInput(fromAmount));
+    if (isNaN(amount) || amount === 0) return false;
+    return amount > fromTokenBalance;
+  }, [fromAmount, fromToken, fromTokenBalance]);
+
   const isButtonDisabled =
-    !fromAmount || parseFloat(fromAmount) <= 0 || !quote || !!quote.errorCode;
+    !fromAmount ||
+    parseFloat(unformatAmountInput(fromAmount)) <= 0 ||
+    !quote ||
+    !!quote.errorCode ||
+    isInsufficientBalance;
+
+  // Determine button text based on state
+  const getButtonText = () => {
+    if (isInsufficientBalance && fromToken) {
+      return `Insufficient ${fromToken.symbol}`;
+    }
+    return 'Preview Swap';
+  };
 
   const handlePreviewSwapClick = useCallback(() => {
     if (isButtonDisabled) {
@@ -466,11 +471,11 @@ export default function TradeScreen() {
       } else if (key === '.') {
         if (activeInput === 'from') {
           if (!fromAmount.includes('.')) {
-            setFromAmount((prev) => prev + '.');
+            setFromAmount((prev) => (prev === '' ? '0.' : prev + '.'));
           }
         } else {
           if (!toAmount.includes('.')) {
-            setToAmount((prev) => prev + '.');
+            setToAmount((prev) => (prev === '' ? '0.' : prev + '.'));
           }
         }
       } else {
@@ -825,7 +830,7 @@ export default function TradeScreen() {
               {/* Preview Swap Button */}
               <View style={styles.buttonContainer}>
                 <PrimaryActionButton
-                  title="Preview Swap"
+                  title={getButtonText()}
                   onPress={handlePreviewSwapClick}
                   disabled={isButtonDisabled}
                 />
