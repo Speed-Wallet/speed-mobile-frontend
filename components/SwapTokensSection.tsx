@@ -10,7 +10,7 @@ import { ArrowDownUp, ChevronDown } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import colors from '@/constants/colors';
-import { formatCurrency } from '@/utils/formatters';
+import { formatCurrency, formatAmountInput } from '@/utils/formatters';
 import TokenLogo from '@/components/TokenLogo';
 import { EnrichedTokenEntry } from '@/data/types';
 import { useTokenBalance } from '@/hooks/useTokenBalance';
@@ -96,7 +96,7 @@ const SwapBox: React.FC<SwapBoxProps> = ({
                 isActive && styles.amountTextActive,
               ]}
             >
-              {amount || '0'}
+              {amount ? formatAmountInput(amount) : '0'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -281,7 +281,7 @@ const styles = StyleSheet.create({
     minWidth: scale(120),
   },
   amountPlaceholder: {
-    fontSize: moderateScale(32, 0.3),
+    fontSize: moderateScale(26, 0.3),
     fontFamily: 'Inter-Regular',
     color: colors.textSecondary,
   },
