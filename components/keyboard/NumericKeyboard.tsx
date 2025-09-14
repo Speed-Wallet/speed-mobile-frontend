@@ -1,104 +1,233 @@
 import React from 'react';
 import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import colors from '@/constants/colors';
 
 interface NumericKeyboardProps {
   onKeyPress: (key: string) => void;
-  showDecimal?: boolean;
+  activeInput: 'from' | 'to' | null;
 }
 
 const NumericKeyboard: React.FC<NumericKeyboardProps> = ({
   onKeyPress,
-  showDecimal = false,
+  activeInput,
 }) => {
   return (
-    <View style={styles.keyboard}>
+    <View style={styles.inlineKeyboard}>
       <View style={styles.keyboardGrid}>
         <View style={styles.keyboardRow}>
           <TouchableOpacity
-            style={styles.keyboardKey}
+            style={[
+              styles.keyboardKey,
+              !activeInput && styles.keyboardKeyDisabled,
+            ]}
             onPress={() => onKeyPress('1')}
+            disabled={!activeInput}
           >
-            <Text style={styles.keyboardKeyText}>1</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.keyboardKey}
-            onPress={() => onKeyPress('2')}
-          >
-            <Text style={styles.keyboardKeyText}>2</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.keyboardKey}
-            onPress={() => onKeyPress('3')}
-          >
-            <Text style={styles.keyboardKeyText}>3</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.keyboardRow}>
-          <TouchableOpacity
-            style={styles.keyboardKey}
-            onPress={() => onKeyPress('4')}
-          >
-            <Text style={styles.keyboardKeyText}>4</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.keyboardKey}
-            onPress={() => onKeyPress('5')}
-          >
-            <Text style={styles.keyboardKeyText}>5</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.keyboardKey}
-            onPress={() => onKeyPress('6')}
-          >
-            <Text style={styles.keyboardKeyText}>6</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.keyboardRow}>
-          <TouchableOpacity
-            style={styles.keyboardKey}
-            onPress={() => onKeyPress('7')}
-          >
-            <Text style={styles.keyboardKeyText}>7</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.keyboardKey}
-            onPress={() => onKeyPress('8')}
-          >
-            <Text style={styles.keyboardKeyText}>8</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.keyboardKey}
-            onPress={() => onKeyPress('9')}
-          >
-            <Text style={styles.keyboardKeyText}>9</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.keyboardRow}>
-          {showDecimal ? (
-            <TouchableOpacity
-              style={styles.keyboardKey}
-              onPress={() => onKeyPress('.')}
+            <Text
+              style={[
+                styles.keyboardKeyText,
+                !activeInput && styles.keyboardKeyTextDisabled,
+              ]}
             >
-              <Text style={styles.keyboardKeyText}>.</Text>
-            </TouchableOpacity>
-          ) : (
-            <View style={styles.keyboardKeyEmpty} />
-          )}
-          <TouchableOpacity
-            style={styles.keyboardKey}
-            onPress={() => onKeyPress('0')}
-          >
-            <Text style={styles.keyboardKeyText}>0</Text>
+              1
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.keyboardKey}
-            onPress={() => onKeyPress('backspace')}
+            style={[
+              styles.keyboardKey,
+              !activeInput && styles.keyboardKeyDisabled,
+            ]}
+            onPress={() => onKeyPress('2')}
+            disabled={!activeInput}
           >
-            <Text style={styles.keyboardKeyText}>⌫</Text>
+            <Text
+              style={[
+                styles.keyboardKeyText,
+                !activeInput && styles.keyboardKeyTextDisabled,
+              ]}
+            >
+              2
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.keyboardKey,
+              !activeInput && styles.keyboardKeyDisabled,
+            ]}
+            onPress={() => onKeyPress('3')}
+            disabled={!activeInput}
+          >
+            <Text
+              style={[
+                styles.keyboardKeyText,
+                !activeInput && styles.keyboardKeyTextDisabled,
+              ]}
+            >
+              3
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.keyboardRow}>
+          <TouchableOpacity
+            style={[
+              styles.keyboardKey,
+              !activeInput && styles.keyboardKeyDisabled,
+            ]}
+            onPress={() => onKeyPress('4')}
+            disabled={!activeInput}
+          >
+            <Text
+              style={[
+                styles.keyboardKeyText,
+                !activeInput && styles.keyboardKeyTextDisabled,
+              ]}
+            >
+              4
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.keyboardKey,
+              !activeInput && styles.keyboardKeyDisabled,
+            ]}
+            onPress={() => onKeyPress('5')}
+            disabled={!activeInput}
+          >
+            <Text
+              style={[
+                styles.keyboardKeyText,
+                !activeInput && styles.keyboardKeyTextDisabled,
+              ]}
+            >
+              5
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.keyboardKey,
+              !activeInput && styles.keyboardKeyDisabled,
+            ]}
+            onPress={() => onKeyPress('6')}
+            disabled={!activeInput}
+          >
+            <Text
+              style={[
+                styles.keyboardKeyText,
+                !activeInput && styles.keyboardKeyTextDisabled,
+              ]}
+            >
+              6
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.keyboardRow}>
+          <TouchableOpacity
+            style={[
+              styles.keyboardKey,
+              !activeInput && styles.keyboardKeyDisabled,
+            ]}
+            onPress={() => onKeyPress('7')}
+            disabled={!activeInput}
+          >
+            <Text
+              style={[
+                styles.keyboardKeyText,
+                !activeInput && styles.keyboardKeyTextDisabled,
+              ]}
+            >
+              7
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.keyboardKey,
+              !activeInput && styles.keyboardKeyDisabled,
+            ]}
+            onPress={() => onKeyPress('8')}
+            disabled={!activeInput}
+          >
+            <Text
+              style={[
+                styles.keyboardKeyText,
+                !activeInput && styles.keyboardKeyTextDisabled,
+              ]}
+            >
+              8
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.keyboardKey,
+              !activeInput && styles.keyboardKeyDisabled,
+            ]}
+            onPress={() => onKeyPress('9')}
+            disabled={!activeInput}
+          >
+            <Text
+              style={[
+                styles.keyboardKeyText,
+                !activeInput && styles.keyboardKeyTextDisabled,
+              ]}
+            >
+              9
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.keyboardRow}>
+          <TouchableOpacity
+            style={[
+              styles.keyboardKey,
+              !activeInput && styles.keyboardKeyDisabled,
+            ]}
+            onPress={() => onKeyPress('.')}
+            disabled={!activeInput}
+          >
+            <Text
+              style={[
+                styles.keyboardKeyText,
+                !activeInput && styles.keyboardKeyTextDisabled,
+              ]}
+            >
+              .
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.keyboardKey,
+              !activeInput && styles.keyboardKeyDisabled,
+            ]}
+            onPress={() => onKeyPress('0')}
+            disabled={!activeInput}
+          >
+            <Text
+              style={[
+                styles.keyboardKeyText,
+                !activeInput && styles.keyboardKeyTextDisabled,
+              ]}
+            >
+              0
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.keyboardKey,
+              !activeInput && styles.keyboardKeyDisabled,
+            ]}
+            onPress={() => onKeyPress('backspace')}
+            disabled={!activeInput}
+          >
+            <Text
+              style={[
+                styles.keyboardKeyText,
+                !activeInput && styles.keyboardKeyTextDisabled,
+              ]}
+            >
+              ⌫
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -107,34 +236,39 @@ const NumericKeyboard: React.FC<NumericKeyboardProps> = ({
 };
 
 const styles = StyleSheet.create({
-  keyboard: {
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 32,
+  inlineKeyboard: {
+    paddingHorizontal: scale(14),
+    paddingTop: verticalScale(14),
   },
   keyboardGrid: {
-    gap: 12,
+    gap: scale(6),
+    marginBottom: 0,
   },
   keyboardRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 12,
+    gap: scale(6),
   },
   keyboardKey: {
     flex: 1,
-    height: 50,
-    backgroundColor: colors.backgroundLight,
-    borderRadius: 8,
+    height: verticalScale(56),
+    backgroundColor: 'transparent',
+    borderRadius: scale(6),
     alignItems: 'center',
     justifyContent: 'center',
   },
-  keyboardKeyEmpty: {
-    flex: 1,
-  },
   keyboardKeyText: {
-    fontSize: 20,
+    fontSize: moderateScale(18),
     fontFamily: 'Inter-SemiBold',
     color: colors.textPrimary,
+  },
+  keyboardKeyDisabled: {
+    backgroundColor: 'transparent',
+    opacity: 0.5,
+  },
+  keyboardKeyTextDisabled: {
+    color: colors.textSecondary,
+    opacity: 0.5,
   },
 });
 

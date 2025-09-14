@@ -7,8 +7,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { ArrowDownUp, ChevronDown } from 'lucide-react-native';
-import { useRouter } from 'expo-router';
-import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
+import { scale, moderateScale } from 'react-native-size-matters';
 import colors from '@/constants/colors';
 import { formatCurrency, formatAmountInput } from '@/utils/formatters';
 import TokenLogo from '@/components/TokenLogo';
@@ -122,6 +121,8 @@ interface SwapTokensSectionProps {
   onFromInputFocus: () => void;
   onToInputFocus: () => void;
   onSwapTokens: () => void;
+  onFromTokenSelect: () => void;
+  onToTokenSelect: () => void;
 }
 
 const SwapTokensSection: React.FC<SwapTokensSectionProps> = ({
@@ -135,66 +136,58 @@ const SwapTokensSection: React.FC<SwapTokensSectionProps> = ({
   onFromInputFocus,
   onToInputFocus,
   onSwapTokens,
+  onFromTokenSelect,
+  onToTokenSelect,
 }) => {
-  const router = useRouter();
+  const handleFromTokenPress = () => {
+    onFromTokenSelect();
+  };
+
+  const handleToTokenPress = () => {
+    onToTokenSelect();
+  };
 
   return (
-    <ScrollView
-      style={styles.scrollView}
-      contentContainerStyle={styles.scrollViewContent}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* From Token Box */}
-      <SwapBox
-        labelText="From"
-        token={fromToken}
-        onTokenPress={() =>
-          router.push({
-            pathname: '/token/select',
-            params: {
-              excludeAddress: toToken?.address,
-              selectedAddress: fromToken?.address,
-              returnParam: 'fromToken',
-            },
-          })
-        }
-        amount={fromAmount}
-        onAmountChange={onFromAmountChange}
-        onInputFocus={onFromInputFocus}
-        isInput={true}
-        showBalance={true}
-        isActive={activeInput === 'from'}
-      />
+    <>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollViewContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* From Token Box */}
+        <SwapBox
+          labelText="From"
+          token={fromToken}
+          onTokenPress={handleFromTokenPress}
+          amount={fromAmount}
+          onAmountChange={onFromAmountChange}
+          onInputFocus={onFromInputFocus}
+          isInput={true}
+          showBalance={true}
+          isActive={activeInput === 'from'}
+        />
 
-      {/* Swap Button */}
-      <View style={styles.swapButtonContainer}>
-        <TouchableOpacity style={styles.swapButton} onPress={onSwapTokens}>
-          <ArrowDownUp color={colors.white} size={moderateScale(16, 0.3)} />
-        </TouchableOpacity>
-      </View>
+        {/* Swap Button */}
+        <View style={styles.swapButtonContainer}>
+          <TouchableOpacity style={styles.swapButton} onPress={onSwapTokens}>
+            <ArrowDownUp color={colors.white} size={moderateScale(16, 0.3)} />
+          </TouchableOpacity>
+        </View>
 
-      {/* To Token Box */}
-      <SwapBox
-        labelText="To"
-        token={toToken}
-        onTokenPress={() =>
-          router.push({
-            pathname: '/token/select',
-            params: {
-              excludeAddress: fromToken?.address,
-              selectedAddress: toToken?.address,
-              returnParam: 'toToken',
-            },
-          })
-        }
-        amount={toAmount}
-        onAmountChange={onToAmountChange}
-        onInputFocus={onToInputFocus}
-        isInput={true}
-        showBalance={false}
-        isActive={activeInput === 'to'}
-      />
-    </ScrollView>
+        {/* To Token Box */}
+        <SwapBox
+          labelText="To"
+          token={toToken}
+          onTokenPress={handleToTokenPress}
+          amount={toAmount}
+          onAmountChange={onToAmountChange}
+          onInputFocus={onToInputFocus}
+          isInput={true}
+          showBalance={false}
+          isActive={activeInput === 'to'}
+        />
+      </ScrollView>
+    </>
   );
 };
 
@@ -204,7 +197,7 @@ const styles = StyleSheet.create({
   },
   scrollViewContent: {
     flexGrow: 1,
-    paddingHorizontal: 20,
+    paddingHorizontal: moderateScale(20, 2.0),
     // paddingTop: moderateScale(8, 0),
   },
   // SwapBox styles
@@ -212,7 +205,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     borderRadius: 0,
     paddingVertical: moderateScale(4, 4.0),
-    paddingHorizontal: moderateScale(4, 2.5),
     marginBottom: moderateScale(6, 4.5),
   },
   swapBoxLabel: {
