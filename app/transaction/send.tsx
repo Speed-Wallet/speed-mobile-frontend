@@ -31,6 +31,9 @@ import ScreenContainer from '@/components/ScreenContainer';
 import PrimaryActionButton from '@/components/buttons/PrimaryActionButton';
 import AmountInputWithValue from '@/components/AmountInputWithValue';
 import TokenItem from '@/components/TokenItem';
+import TokenSelectorBottomSheet, {
+  TokenSelectorBottomSheetRef,
+} from '@/components/TokenSelectorBottomSheet';
 import {
   prepareSendTransaction,
   confirmSendTransaction,
@@ -56,6 +59,7 @@ export default function SendScreen() {
   // Bottom sheet states
   const previewBottomSheetRef = useRef<BottomSheet>(null);
   const statusBottomSheetRef = useRef<BottomSheet>(null);
+  const tokenSelectorRef = useRef<TokenSelectorBottomSheetRef>(null);
   const [isPreviewSheetOpen, setIsPreviewSheetOpen] = useState(false);
   const [isStatusSheetOpen, setIsStatusSheetOpen] = useState(false);
   const [isSending, setIsSending] = useState(false);
@@ -132,6 +136,14 @@ export default function SendScreen() {
   if (Array.isArray(tokenAddress)) {
     throw new Error('tokenAddress should not be an array');
   }
+
+  const handleTokenSelect = (token: EnrichedTokenEntry) => {
+    setSelectedToken(token);
+  };
+
+  const handleTokenSelectorClose = () => {
+    // Bottom sheet closed, no need to do anything
+  };
 
   const handleSend = async () => {
     if (!selectedToken) {
@@ -238,14 +250,7 @@ export default function SendScreen() {
                 <Text style={styles.inputLabel}>Token</Text>
                 <TokenItem
                   token={selectedToken}
-                  onPress={() =>
-                    router.push({
-                      pathname: '/token/select',
-                      params: {
-                        selectedAddress: selectedToken?.address,
-                      },
-                    })
-                  }
+                  onPress={() => tokenSelectorRef.current?.expand()}
                   showSelectorIcon={true}
                 />
                 <Text style={styles.inputLabel}>Amount</Text>
@@ -528,6 +533,14 @@ export default function SendScreen() {
           )}
         </View>
       </ScreenContainer>
+
+      {/* Token Selector Bottom Sheet */}
+      <TokenSelectorBottomSheet
+        ref={tokenSelectorRef}
+        onTokenSelect={handleTokenSelect}
+        onClose={handleTokenSelectorClose}
+        selectedAddress={selectedToken?.address}
+      />
     </GestureHandlerRootView>
   );
 }

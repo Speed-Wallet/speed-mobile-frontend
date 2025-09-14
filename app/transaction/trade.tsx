@@ -9,7 +9,6 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { DollarSign, Check } from 'lucide-react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import BottomSheet, {
   BottomSheetView,
   BottomSheetBackdrop,
@@ -31,12 +30,15 @@ import ScreenHeader from '@/components/ScreenHeader';
 import ScreenContainer from '@/components/ScreenContainer';
 import PrimaryActionButton from '@/components/buttons/PrimaryActionButton';
 import PercentageButtons from '@/components/buttons/PercentageButtons';
-import { useTokenValue } from '@/hooks/useTokenValue';
 import { useTokenPrice } from '@/hooks/useTokenPrices';
 import { triggerShake } from '@/utils/animations';
 import { useTokenBalance } from '@/hooks/useTokenBalance';
 import { useQueryClient } from '@tanstack/react-query';
 import SwapTokensSection from '@/components/SwapTokensSection';
+import TokenSelectorBottomSheet, {
+  TokenSelectorBottomSheetRef,
+} from '@/components/TokenSelectorBottomSheet';
+import NumericKeyboard from '@/components/keyboard/NumericKeyboard';
 import { getJupiterQuote } from '@/services/jupiterApi';
 
 const WAIT_ON_AMOUNT_CHANGE = 2000;
@@ -65,6 +67,8 @@ export default function TradeScreen() {
   const shakeAnimationValue = useRef(new Animated.Value(0)).current;
   const bottomSheetRef = useRef<BottomSheet>(null);
   const loadingBottomSheetRef = useRef<BottomSheet>(null);
+  const fromTokenSelectorRef = useRef<TokenSelectorBottomSheetRef>(null);
+  const toTokenSelectorRef = useRef<TokenSelectorBottomSheetRef>(null);
 
   const { price: fromTokenPrice } = useTokenPrice(
     fromToken?.extensions.coingeckoId,
@@ -275,21 +279,9 @@ export default function TradeScreen() {
     setFromToken(toToken);
     setToToken(fromToken);
 
-    // If amounts were tied to tokens, you might want to swap them or clear/recalculate
-    // For now, let's clear the 'toAmount' and keep 'fromAmount' if it was user-entered,
-    // or swap them if 'toAmount' was a calculated quote.
-    // If 'toAmount' was a quote, it's now invalid.
-    // Let's assume user might want to re-enter or recalculate.
-    // For simplicity, we can swap amounts or clear toAmount.
-    // Swapping amounts:
-    // setFromAmount(tempToAmount);
-    // setToAmount(tempFromAmount);
-
     // Or, more robustly, clear toAmount and let it recalculate if fromAmount is present
     setFromAmount(toAmount); // Or keep original fromAmount: setFromAmount(tempFromAmount)
     setToAmount(''); // Quote will be re-fetched by useEffect on fromAmount or by updateAmounts call
-
-    // setSelectedPercentage('25'); // Reset selected percentage
   };
 
   const handlePreviewSwap = async () => {
@@ -592,6 +584,8 @@ export default function TradeScreen() {
                 onFromInputFocus={handleInputFocus}
                 onToInputFocus={handleToInputFocus}
                 onSwapTokens={handleSwapTokens}
+                onFromTokenSelect={() => fromTokenSelectorRef.current?.expand()}
+                onToTokenSelect={() => toTokenSelectorRef.current?.expand()}
               />
 
               {/* Percentage Buttons */}
@@ -605,225 +599,10 @@ export default function TradeScreen() {
               <View style={styles.bottomSection}>
                 {/* Custom Keyboard */}
                 {showCustomKeyboard && (
-                  <View style={styles.inlineKeyboard}>
-                    <View style={styles.keyboardGrid}>
-                      <View style={styles.keyboardRow}>
-                        <TouchableOpacity
-                          style={[
-                            styles.keyboardKey,
-                            !activeInput && styles.keyboardKeyDisabled,
-                          ]}
-                          onPress={() => handleKeyPress('1')}
-                          disabled={!activeInput}
-                        >
-                          <Text
-                            style={[
-                              styles.keyboardKeyText,
-                              !activeInput && styles.keyboardKeyTextDisabled,
-                            ]}
-                          >
-                            1
-                          </Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[
-                            styles.keyboardKey,
-                            !activeInput && styles.keyboardKeyDisabled,
-                          ]}
-                          onPress={() => handleKeyPress('2')}
-                          disabled={!activeInput}
-                        >
-                          <Text
-                            style={[
-                              styles.keyboardKeyText,
-                              !activeInput && styles.keyboardKeyTextDisabled,
-                            ]}
-                          >
-                            2
-                          </Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[
-                            styles.keyboardKey,
-                            !activeInput && styles.keyboardKeyDisabled,
-                          ]}
-                          onPress={() => handleKeyPress('3')}
-                          disabled={!activeInput}
-                        >
-                          <Text
-                            style={[
-                              styles.keyboardKeyText,
-                              !activeInput && styles.keyboardKeyTextDisabled,
-                            ]}
-                          >
-                            3
-                          </Text>
-                        </TouchableOpacity>
-                      </View>
-
-                      <View style={styles.keyboardRow}>
-                        <TouchableOpacity
-                          style={[
-                            styles.keyboardKey,
-                            !activeInput && styles.keyboardKeyDisabled,
-                          ]}
-                          onPress={() => handleKeyPress('4')}
-                          disabled={!activeInput}
-                        >
-                          <Text
-                            style={[
-                              styles.keyboardKeyText,
-                              !activeInput && styles.keyboardKeyTextDisabled,
-                            ]}
-                          >
-                            4
-                          </Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[
-                            styles.keyboardKey,
-                            !activeInput && styles.keyboardKeyDisabled,
-                          ]}
-                          onPress={() => handleKeyPress('5')}
-                          disabled={!activeInput}
-                        >
-                          <Text
-                            style={[
-                              styles.keyboardKeyText,
-                              !activeInput && styles.keyboardKeyTextDisabled,
-                            ]}
-                          >
-                            5
-                          </Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[
-                            styles.keyboardKey,
-                            !activeInput && styles.keyboardKeyDisabled,
-                          ]}
-                          onPress={() => handleKeyPress('6')}
-                          disabled={!activeInput}
-                        >
-                          <Text
-                            style={[
-                              styles.keyboardKeyText,
-                              !activeInput && styles.keyboardKeyTextDisabled,
-                            ]}
-                          >
-                            6
-                          </Text>
-                        </TouchableOpacity>
-                      </View>
-
-                      <View style={styles.keyboardRow}>
-                        <TouchableOpacity
-                          style={[
-                            styles.keyboardKey,
-                            !activeInput && styles.keyboardKeyDisabled,
-                          ]}
-                          onPress={() => handleKeyPress('7')}
-                          disabled={!activeInput}
-                        >
-                          <Text
-                            style={[
-                              styles.keyboardKeyText,
-                              !activeInput && styles.keyboardKeyTextDisabled,
-                            ]}
-                          >
-                            7
-                          </Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[
-                            styles.keyboardKey,
-                            !activeInput && styles.keyboardKeyDisabled,
-                          ]}
-                          onPress={() => handleKeyPress('8')}
-                          disabled={!activeInput}
-                        >
-                          <Text
-                            style={[
-                              styles.keyboardKeyText,
-                              !activeInput && styles.keyboardKeyTextDisabled,
-                            ]}
-                          >
-                            8
-                          </Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[
-                            styles.keyboardKey,
-                            !activeInput && styles.keyboardKeyDisabled,
-                          ]}
-                          onPress={() => handleKeyPress('9')}
-                          disabled={!activeInput}
-                        >
-                          <Text
-                            style={[
-                              styles.keyboardKeyText,
-                              !activeInput && styles.keyboardKeyTextDisabled,
-                            ]}
-                          >
-                            9
-                          </Text>
-                        </TouchableOpacity>
-                      </View>
-
-                      <View style={styles.keyboardRow}>
-                        <TouchableOpacity
-                          style={[
-                            styles.keyboardKey,
-                            !activeInput && styles.keyboardKeyDisabled,
-                          ]}
-                          onPress={() => handleKeyPress('.')}
-                          disabled={!activeInput}
-                        >
-                          <Text
-                            style={[
-                              styles.keyboardKeyText,
-                              !activeInput && styles.keyboardKeyTextDisabled,
-                            ]}
-                          >
-                            .
-                          </Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[
-                            styles.keyboardKey,
-                            !activeInput && styles.keyboardKeyDisabled,
-                          ]}
-                          onPress={() => handleKeyPress('0')}
-                          disabled={!activeInput}
-                        >
-                          <Text
-                            style={[
-                              styles.keyboardKeyText,
-                              !activeInput && styles.keyboardKeyTextDisabled,
-                            ]}
-                          >
-                            0
-                          </Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[
-                            styles.keyboardKey,
-                            !activeInput && styles.keyboardKeyDisabled,
-                          ]}
-                          onPress={() => handleKeyPress('backspace')}
-                          disabled={!activeInput}
-                        >
-                          <Text
-                            style={[
-                              styles.keyboardKeyText,
-                              !activeInput && styles.keyboardKeyTextDisabled,
-                            ]}
-                          >
-                            ⌫
-                          </Text>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  </View>
+                  <NumericKeyboard
+                    onKeyPress={handleKeyPress}
+                    activeInput={activeInput}
+                  />
                 )}
               </View>
 
@@ -999,6 +778,23 @@ export default function TradeScreen() {
             />
           </View>
         )}
+
+        {/* Token Selector Bottom Sheets - At root level for proper z-index */}
+        <TokenSelectorBottomSheet
+          ref={fromTokenSelectorRef}
+          onTokenSelect={setFromToken}
+          onClose={() => {}}
+          excludeAddress={toToken?.address}
+          selectedAddress={fromToken?.address}
+        />
+
+        <TokenSelectorBottomSheet
+          ref={toTokenSelectorRef}
+          onTokenSelect={setToToken}
+          onClose={() => {}}
+          excludeAddress={fromToken?.address}
+          selectedAddress={toToken?.address}
+        />
       </ScreenContainer>
     </GestureHandlerRootView>
   );
@@ -1030,91 +826,6 @@ const styles = StyleSheet.create({
     opacity: 0.7, // Added opacity to make it slightly less prominent than full white
     marginBottom: 8,
   },
-  bottomLabel: {
-    // This style might no longer be needed if TokenSelectorDisplay handles its own label
-    // marginTop: -10, // Or adjust if still used elsewhere
-  },
-  tokenSelectorContainer: {
-    backgroundColor: colors.backgroundMedium, // Darker element background
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-
-  // New style for "You Receive" text
-  receiveAmountText: {
-    fontSize: 16,
-    fontFamily: 'Inter-Medium',
-    color: colors.white, // Base color is white
-    textAlign: 'left', // Or 'center' if preferred
-    marginTop: 4,
-    marginBottom: 12, // Space before the trade button
-    paddingHorizontal: 4, // Optional: if you want some horizontal padding
-  },
-  percentagesRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around', // Or space-between
-  },
-  percentageChip: {
-    backgroundColor: colors.backgroundLight,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-  },
-  selectedPercentageChip: {
-    backgroundColor: colors.primary,
-  },
-  percentageChipText: {
-    fontSize: 14,
-    fontFamily: 'Inter-Medium',
-    color: colors.textSecondary,
-  },
-  selectedPercentageChipText: {
-    color: colors.white,
-  },
-  exchangeInfoCard: {
-    backgroundColor: colors.backgroundMedium,
-    borderRadius: 12,
-    padding: 16,
-    marginTop: 16, // Adjusted marginTop to bring it closer to the trade button
-    marginBottom: 24, // Space for sticky button
-  },
-  exchangeInfoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12, // Increased vertical spacing
-  },
-  exchangeInfoLabel: {
-    fontSize: 14,
-    fontFamily: 'Inter-Regular', // Changed from Inter-Medium to make it less bold
-    color: colors.textSecondary,
-    // marginRight: 4, // Add some spacing if needed next to an icon
-  },
-  exchangeInfoValue: {
-    fontSize: 14,
-    fontFamily: 'Inter-Medium', // Changed from Inter-SemiBold to make it less bold
-    color: colors.white,
-    textAlign: 'right',
-    opacity: 0.9, // Added opacity to slightly grey out
-  },
-  exchangeInfoValueMini: {
-    fontSize: 12,
-    fontFamily: 'Inter-Regular', // Kept as Inter-Regular
-    color: colors.textSecondary, // This is likely already a greyish color
-    textAlign: 'right',
-    flexShrink: 1,
-    opacity: 0.9, // Added or adjust opacity if needed for further greying out
-  },
-  swapBoxAmountTextDisabled: {
-    flexShrink: 1,
-    opacity: 0.9, // Added or adjust opacity if needed for further greying out
-  },
-  // Bottom Sheet Styles
   bottomSheetBackground: {
     backgroundColor: colors.bottomSheetBackground, // Custom dark color with full opacity
   },
@@ -1160,23 +871,6 @@ const styles = StyleSheet.create({
   swapDetailValueSmall: {
     fontSize: 12,
     flexShrink: 1,
-  },
-  confirmSwapButton: {
-    height: 54, // Match the preview button height
-    borderRadius: 27, // Match the preview button border radius
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
-    // Remove absolute positioning - let it flow naturally in the layout
-  },
-  confirmSwapButtonText: {
-    fontSize: 17,
-    fontFamily: 'Inter-SemiBold',
-    color: colors.white,
-  },
-  confirmSwapButtonTextDisabled: {
-    color: colors.textSecondary,
-    opacity: 0.5,
   },
   // Loading Bottom Sheet Styles
   loadingBottomSheetContent: {
@@ -1241,52 +935,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'Inter-SemiBold',
     color: colors.white,
-  },
-
-  // Custom keyboard styles
-  inlineKeyboard: {
-    paddingHorizontal: scale(14),
-    paddingTop: verticalScale(14),
-    // paddingBottom: verticalScale(4), // Remove bottom padding to move keyboard closer to button
-  },
-  keyboardHeader: {
-    alignItems: 'center',
-    marginBottom: verticalScale(6),
-  },
-  keyboardHeaderText: {
-    fontSize: moderateScale(12),
-    fontFamily: 'Inter-Medium',
-    color: colors.textSecondary,
-  },
-  keyboardGrid: {
-    gap: scale(6),
-    marginBottom: 0, // Ensure no bottom margin
-  },
-  keyboardRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: scale(6),
-  },
-  keyboardKey: {
-    flex: 1,
-    height: verticalScale(56),
-    backgroundColor: 'transparent',
-    borderRadius: scale(6),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  keyboardKeyText: {
-    fontSize: moderateScale(18),
-    fontFamily: 'Inter-SemiBold',
-    color: colors.textPrimary,
-  },
-  keyboardKeyDisabled: {
-    backgroundColor: 'transparent',
-    opacity: 0.5,
-  },
-  keyboardKeyTextDisabled: {
-    color: colors.textSecondary,
-    opacity: 0.5,
   },
   errorContainer: {
     flex: 1,

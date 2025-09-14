@@ -45,7 +45,17 @@ import Animated, {
   useAnimatedRef,
   scrollTo,
 } from 'react-native-reanimated';
-import { GestureDetector, Gesture } from 'react-native-gesture-handler';
+import {
+  GestureDetector,
+  Gesture,
+  GestureHandlerRootView,
+} from 'react-native-gesture-handler';
+import CountryPickerBottomSheet, {
+  CountryPickerBottomSheetRef,
+} from '@/components/CountryPickerBottomSheet';
+import DatePickerBottomSheet, {
+  DatePickerBottomSheetRef,
+} from '@/components/DatePickerBottomSheet';
 import { StorageService, PersonalInfo } from '@/utils/storage';
 import { triggerShake } from '@/utils/animations';
 import colors from '@/constants/colors';
@@ -254,6 +264,8 @@ export default function AccountScreen() {
   const addressRef = useRef<TextInput>(null);
   const streetNumberRef = useRef<TextInput>(null);
   const phoneNumberRef = useRef<TextInput>(null);
+  const countryPickerRef = useRef<CountryPickerBottomSheetRef>(null);
+  const datePickerRef = useRef<DatePickerBottomSheetRef>(null);
 
   const scrollX = useSharedValue(0);
   const scrollViewRef = useAnimatedRef<Animated.ScrollView>();
@@ -644,13 +656,33 @@ export default function AccountScreen() {
   );
 
   const handleCountrySelect = () => {
-    // Navigate to country picker - it will save to storage and return
-    router.push('/settings/country-picker');
+    // Open the country picker bottom sheet
+    countryPickerRef.current?.expand();
+  };
+
+  const handleCountryPicked = (country: any) => {
+    // Country is already saved to storage by the bottom sheet
+    // Just reload the personal info to update the UI
+    loadPersonalInfo();
+  };
+
+  const handleCountryPickerClose = () => {
+    // Bottom sheet closed, no need to do anything
+  };
+
+  const handleDatePicked = (date: Date) => {
+    // Date is already saved to storage by the bottom sheet
+    // Just reload the personal info to update the UI
+    loadPersonalInfo();
+  };
+
+  const handleDatePickerClose = () => {
+    // Bottom sheet closed, no need to do anything
   };
 
   const handleDateSelect = () => {
-    // Navigate to date picker - it will save to storage and return
-    router.push('/settings/date-picker');
+    // Open date picker bottom sheet
+    datePickerRef.current?.expand();
   };
 
   const handleBackPress = async () => {
@@ -880,6 +912,20 @@ export default function AccountScreen() {
             visible={!!toast}
             onHide={() => setToast(null)}
             type={toast?.type || 'success'}
+          />
+
+          {/* Country Picker Bottom Sheet */}
+          <CountryPickerBottomSheet
+            ref={countryPickerRef}
+            onCountrySelect={handleCountryPicked}
+            onClose={handleCountryPickerClose}
+          />
+
+          {/* Date Picker Bottom Sheet */}
+          <DatePickerBottomSheet
+            ref={datePickerRef}
+            onDateSelect={handleDatePicked}
+            onClose={handleDatePickerClose}
           />
         </>
       }
