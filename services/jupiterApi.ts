@@ -65,17 +65,18 @@ export const getJupiterQuote = async (
     'dynamicSlippage=true',
   ];
 
-  const response = await fetch(
-    `${JUPITER_API_URL}quote?${quoteQueries.join('&')}`,
-  );
+  const url = `${JUPITER_API_URL}quote?${quoteQueries.join('&')}`;
+  console.log(url);
+  const response = await fetch(url);
 
-  // console.log("Jupiter Quote Response:", response.json());
+  const json = await response.json();
+  console.log(json);
 
   if (!response.ok) {
     throw new Error(`Failed to get Jupiter quote: ${response.statusText}`);
   }
 
-  return response.json();
+  return json;
 };
 
 /**

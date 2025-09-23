@@ -23,6 +23,7 @@ import { EnrichedTokenEntry } from '@/data/types';
 import {
   prepareJupiterSwapTransaction,
   confirmJupiterSwap,
+  useWalletPublicKey,
   type PreparedJupiterSwap,
 } from '@/services/walletService';
 import { useConfig } from '@/hooks/useConfig';
@@ -33,6 +34,7 @@ import PercentageButtons from '@/components/buttons/PercentageButtons';
 import { useTokenPrice } from '@/hooks/useTokenPrices';
 import { triggerShake } from '@/utils/animations';
 import { useTokenBalance } from '@/hooks/useTokenBalance';
+import { useRefetchTokenBalances } from '@/hooks/useTokenBalance';
 import { useQueryClient } from '@tanstack/react-query';
 import SwapTokensSection from '@/components/SwapTokensSection';
 import TokenSelectorBottomSheet, {
@@ -59,6 +61,7 @@ export default function TradeScreen() {
     }>();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const walletAddress = useWalletPublicKey();
   const [fromToken, setFromToken] = useState<EnrichedTokenEntry | null>(null);
   const [toToken, setToToken] = useState<EnrichedTokenEntry | null>(null);
   const [fromAmount, setFromAmount] = useState('');
@@ -74,6 +77,9 @@ export default function TradeScreen() {
     fromToken?.extensions.coingeckoId,
   );
   const { balance: fromTokenBalance } = useTokenBalance(fromToken?.address);
+
+  // Get refetch function for after successful trades
+  const refetchTokenBalances = useRefetchTokenBalances();
 
   // Get config values - this is critical data that must be loaded
   const {
@@ -365,6 +371,9 @@ export default function TradeScreen() {
     try {
       const sig = await confirmJupiterSwap(preparedSwap);
       console.log(`Trade Successful: ${sig}`);
+
+      // Refetch token balances after successful trade
+      refetchTokenBalances();
 
       // Update loading states - success handled by bottom sheet
       setSwapSuccess(true);

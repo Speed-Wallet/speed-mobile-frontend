@@ -23,6 +23,7 @@ import {
 import ScreenContainer from '@/components/ScreenContainer';
 import TabSelector from '@/components/TabSelector';
 import { AuthService } from '@/services/authService';
+import { useTokenBalances } from '@/hooks/useTokenBalance';
 // import CryptoTest from '@/components/CryptoTest';
 
 export default function HomeScreen() {
@@ -31,6 +32,14 @@ export default function HomeScreen() {
   const [walletName, setWalletName] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'tokens' | 'activity'>('tokens');
   const walletAddress = useWalletPublicKey();
+
+  // Token balances with automatic polling every 10 seconds when app is active
+  const {
+    data: tokenBalancesData,
+    isLoading: isLoadingBalances,
+    error: balancesError,
+    refetch: refetchBalances,
+  } = useTokenBalances(walletAddress);
 
   // Generic user object for avatar
   const genericUser = {
