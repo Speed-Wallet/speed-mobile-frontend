@@ -1,21 +1,27 @@
 {
   "expo": {
-    "name": "bolt-expo-nativewind",
-    "slug": "bolt-expo-nativewind",
+    "name": "Speed Wallet",
+    "slug": "speed-wallet",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "myapp",
+    "icon": "./assets/images/icons/speed-wallet-icon-1024.png",
+    "scheme": "speedwallet",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1A1B23"
+    },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.alexthelion123.boltexponativewind"
+      "bundleIdentifier": "co.za.speedwallet.app",
+      "icon": "./assets/images/icons/speed-wallet-icon-1024.png"
     },
     "web": {
       "bundler": "metro",
       "output": "single",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/icons/favicon.png"
     },
     "plugins": ["expo-router"],
     "experiments": {
@@ -30,8 +36,14 @@
       }
     },
     "android": {
-      "package": "com.alexthelion123.boltexponativewind",
-      "googleServicesFile": "./google-services.json"
+      "package": "co.za.speedwallet.app",
+      "googleServicesFile": "./google-services.json",
+      "icon": "./assets/images/icons/speed-wallet-icon-1024.png",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/icons/speed-wallet-adaptive-foreground.png",
+        "backgroundImage": "./assets/images/icons/speed-wallet-adaptive-background.png"
+      },
+      "versionCode": 1
     },
     "runtimeVersion": "1.0.0",
     "updates": {
