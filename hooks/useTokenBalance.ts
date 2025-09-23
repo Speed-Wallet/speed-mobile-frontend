@@ -1,60 +1,107 @@
-import { useShallow } from 'zustand/react/shallow';
-import { useTokenBalanceStore } from '../stores/tokenBalanceStore';
-
-interface UseTokenBalanceResult {
-  balance: number; // Human-readable balance
-  rawBalance: bigint; // Raw balance in the smallest unit (e.g., lamports for SOL)
-  decimals: number; // Number of decimals for the token
-  loading: boolean; // Optional loading state for the specific token
-  decimalsShown: number; // Number of decimals shown in UI
-  address: string; // Mint address of the token
-  symbol: string; // Symbol of the token
-  name: string; // Name of the token
-  logoURI: string; // Optional logo URI for the token
-  //   wsError: Error | null; // WebSocket specific errors from the store
-  //   storeError: Error | null; // General store operation errors
-  error: Error | null; // General store operation errors
-  globalError: Error | null; // Combined WebSocket and store errors
-  isConnectingOrFetchingOverall: boolean; // Overall status of fetching/connecting
-}
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { AppState } from 'react-native';
+import { useState, useEffect } from 'react';
+import {
+  getTokenBalances,
+  type TokenBalance,
+} from '@/services/tokenBalanceService';
+import { useWalletPublicKey } from '@/services/walletService';
 
 /**
- * Custom hook to get the detailed balance, loading state, and error state for a single token,
- * along with any global WebSocket or store errors.
- * @param address The mint address of the token. Can be undefined if no specific token is targeted yet.
- * @returns An object containing tokenDetails (balance, loading, error for the specific token),
- *          wsError, storeError, and isConnectingOrFetching status from the store.
+ * Hook to track if app is active/inactive for controlling refetch
  */
-export const useTokenBalance = (
-  address: string | null | undefined,
-): UseTokenBalanceResult => {
-  const {
-    tokenBalanceDetails,
-    wsError,
-    storeError,
-    isConnectingOrFetchingOverall,
-  } = useTokenBalanceStore(
-    useShallow((state) => ({
-      tokenBalanceDetails: state.tokenBalanceDetails,
-      wsError: state.wsError,
-      storeError: state.storeError,
-      isConnectingOrFetchingOverall: state.isConnectingOrFetching, // Renamed to avoid conflict in return object
-    })),
+const useAppIsActive = () => {
+  const [appIsActive, setAppIsActive] = useState(
+    AppState.currentState === 'active',
   );
-  const tokenDetails = address ? tokenBalanceDetails[address] : undefined;
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextAppState) => {
+      setAppIsActive(nextAppState === 'active');
+    });
+
+    return () => subscription?.remove();
+  }, []);
+
+  return appIsActive;
+};
+
+/**
+ * Main hook for fetching all token balances
+ * Automatically polls every 10 seconds when app is active
+ */
+export const useTokenBalances = (walletAddress: string | null | undefined) => {
+  const appIsActive = useAppIsActive();
+
+  return useQuery({
+    queryKey: ['tokenBalances', walletAddress],
+    queryFn: async () => {
+      if (!walletAddress) {
+        throw new Error('Wallet address is required');
+      }
+
+      const response = await getTokenBalances(walletAddress);
+
+      if (!response.success || !response.data) {
+        throw new Error(response.error || 'Failed to fetch token balances');
+      }
+
+      return response.data;
+    },
+    enabled: !!walletAddress && appIsActive,
+    refetchInterval: 10000, // 10 seconds
+    staleTime: 5000, // Cache is fresh for 5 seconds
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+  });
+};
+
+/**
+ * Hook to get a specific token balance
+ * Automatically gets the current wallet address and polls every 10 seconds when app is active
+ */
+export const useTokenBalance = (tokenAddress: string | null | undefined) => {
+  const walletAddress = useWalletPublicKey();
+  const { data, isLoading, error, refetch } = useTokenBalances(walletAddress);
+
+  const tokenBalance = data?.tokenBalances?.find(
+    (token) => token.address === tokenAddress,
+  );
 
   return {
-    balance: tokenDetails?.balance || 0,
-    rawBalance: tokenDetails?.rawBalance || BigInt(0),
-    decimals: tokenDetails?.decimals || 0,
-    decimalsShown: tokenDetails?.decimalsShown || 0,
-    address: tokenDetails?.address || '',
-    symbol: tokenDetails?.symbol || '',
-    name: tokenDetails?.name || '',
-    logoURI: tokenDetails?.logoURI || '',
-    loading: tokenDetails?.loading || false,
-    error: tokenDetails?.error || null,
-    globalError: storeError || wsError || null, // Combine WebSocket and store errors
-    isConnectingOrFetchingOverall: isConnectingOrFetchingOverall,
+    balance: tokenBalance?.balance || 0,
+    rawBalance: tokenBalance ? BigInt(tokenBalance.rawBalance) : BigInt(0),
+    decimals: tokenBalance?.decimals || 0,
+    decimalsShown: tokenBalance?.decimalsShown || 0,
+    symbol: tokenBalance?.symbol || '',
+    name: tokenBalance?.name || '',
+    logoURI: tokenBalance?.logoURI || '',
+    address: tokenBalance?.address || '',
+    totalPrice: tokenBalance?.totalPrice || 0,
+    pricePerToken: tokenBalance?.pricePerToken || 0,
+    currency: tokenBalance?.currency || 'USD',
+    loading: isLoading,
+    error: error?.message || null,
+    refetch,
+  };
+};
+
+/**
+ * Hook to manually trigger refetch after transactions
+ * Automatically uses the current wallet address
+ */
+export const useRefetchTokenBalances = () => {
+  const queryClient = useQueryClient();
+  const walletAddress = useWalletPublicKey();
+
+  return () => {
+    if (walletAddress) {
+      queryClient.invalidateQueries({
+        queryKey: ['tokenBalances', walletAddress],
+      });
+    }
   };
 };
