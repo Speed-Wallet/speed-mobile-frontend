@@ -1,0 +1,22 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background with gradient -->
+  <rect width="1024" height="1024" rx="180" fill="url(#gradient)"/>
+  
+  <!-- Speed Wallet Logo -->
+  <g transform="translate(256, 256)">
+    <!-- S Letter -->
+    <path d="M120 120h120c66.27 0 120 53.73 120 120v0c0 33.14-13.43 63.13-35.15 84.85C302.13 346.57 272.14 360 239 360H160v120c0 66.27-53.73 120-120 120H40V120z" fill="white"/>
+    <path d="M120 120v120h119c33.14 0 60-26.86 60-60v0c0-33.14-26.86-60-60-60H120z" fill="url(#gradient)"/>
+    
+    <!-- W Letter -->
+    <path d="M280 120h80l40 240 40-240h80l-80 480h-80l-40-240-40 240h-80L280 120z" fill="white"/>
+  </g>
+  
+  <!-- Gradient Definition -->
+  <defs>
+    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea"/>
+      <stop offset="100%" style="stop-color:#764ba2"/>
+    </linearGradient>
+  </defs>
+</svg>
