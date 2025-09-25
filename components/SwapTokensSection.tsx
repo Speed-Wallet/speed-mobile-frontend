@@ -27,6 +27,7 @@ interface SwapBoxProps {
   onInputFocus?: () => void;
   isActive?: boolean; // true when this input is currently focused
   hasInsufficientFunds?: boolean; // true when amount exceeds available balance
+  disabled?: boolean; // true to disable amount input interaction
 }
 
 const SwapBox: React.FC<SwapBoxProps> = ({
@@ -40,6 +41,7 @@ const SwapBox: React.FC<SwapBoxProps> = ({
   onInputFocus,
   isActive = false,
   hasInsufficientFunds = false,
+  disabled = false,
 }) => {
   const { balance: tokenBalance } = useTokenBalance(token?.address);
   const { price: tokenPrice } = useTokenPrice(token?.extensions.coingeckoId);
@@ -86,21 +88,36 @@ const SwapBox: React.FC<SwapBoxProps> = ({
             />
           </TouchableOpacity>
 
-          <TouchableOpacity
-            onPress={onInputFocus}
-            style={styles.amountInputTouchable}
-          >
-            <Text
-              style={[
-                styles.amountText,
-                !amount && styles.amountPlaceholder,
-                isActive && styles.amountTextActive,
-                hasInsufficientFunds && styles.amountTextInsufficient,
-              ]}
+          {disabled ? (
+            <View style={styles.amountInputTouchable}>
+              <Text
+                style={[
+                  styles.amountText,
+                  !amount && styles.amountPlaceholder,
+                  isActive && styles.amountTextActive,
+                  hasInsufficientFunds && styles.amountTextInsufficient,
+                ]}
+              >
+                {amount ? formatAmountInput(amount) : '0'}
+              </Text>
+            </View>
+          ) : (
+            <TouchableOpacity
+              onPress={onInputFocus}
+              style={styles.amountInputTouchable}
             >
-              {amount ? formatAmountInput(amount) : '0'}
-            </Text>
-          </TouchableOpacity>
+              <Text
+                style={[
+                  styles.amountText,
+                  !amount && styles.amountPlaceholder,
+                  isActive && styles.amountTextActive,
+                  hasInsufficientFunds && styles.amountTextInsufficient,
+                ]}
+              >
+                {amount ? formatAmountInput(amount) : '0'}
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Row 3: USD Value on right - No gap above */}
@@ -191,6 +208,7 @@ const SwapTokensSection: React.FC<SwapTokensSectionProps> = ({
           isInput={true}
           showBalance={false}
           isActive={activeInput === 'to'}
+          disabled={true}
         />
       </ScrollView>
     </>
