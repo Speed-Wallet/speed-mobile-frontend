@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { DollarSign, Check } from 'lucide-react-native';
+import { DollarSign, Check, ExternalLink } from 'lucide-react-native';
 import BottomSheet, {
   BottomSheetView,
   BottomSheetBackdrop,
@@ -38,6 +38,8 @@ import { useRefetchTokenBalances } from '@/hooks/useTokenBalance';
 import { useQueryClient } from '@tanstack/react-query';
 import { SOL_ADDRESS } from '@/constants/tokens';
 import SwapTokensSection from '@/components/SwapTokensSection';
+import TokenLogo from '@/components/TokenLogo';
+import CopyButton from '@/components/CopyButton';
 import TokenSelectorBottomSheet, {
   TokenSelectorBottomSheetRef,
 } from '@/components/TokenSelectorBottomSheet';
@@ -450,9 +452,6 @@ export default function TradeScreen() {
     const amount = parseFloat(unformatAmountInput(fromAmount));
     if (isNaN(amount) || amount === 0) return false;
 
-    console.log('From Amount:', amount);
-    console.log('From Token Balance:', fromTokenBalance);
-
     // For SOL, compare against max allowable amount (already has buffer subtracted)
     if (fromToken.address === SOL_ADDRESS) {
       const maxAllowable = getMaxSolAmount();
@@ -710,6 +709,26 @@ export default function TradeScreen() {
                 <Text style={styles.bottomSheetTitle}>Swap Details</Text>
 
                 {fromToken && toToken && (
+                  <View style={styles.swapTokensDisplay}>
+                    <View style={styles.swapTokenLogos}>
+                      <TokenLogo
+                        logoURI={fromToken.logoURI}
+                        size={moderateScale(32, 0.3)}
+                        style={styles.fromTokenLogo}
+                      />
+                      <TokenLogo
+                        logoURI={toToken.logoURI}
+                        size={moderateScale(32, 0.3)}
+                        style={styles.toTokenLogo}
+                      />
+                    </View>
+                    <Text style={styles.swapTokensText}>
+                      {fromToken.symbol} → {toToken.symbol}
+                    </Text>
+                  </View>
+                )}
+
+                {fromToken && toToken && (
                   <View style={styles.swapDetailsContainer}>
                     <View style={styles.swapDetailRow}>
                       <Text style={styles.swapDetailLabel}>Rate</Text>
@@ -744,6 +763,34 @@ export default function TradeScreen() {
                       <Text style={styles.swapDetailLabel}>Trade Fee</Text>
                       <Text style={styles.swapDetailValue}>0.2%</Text>
                     </View>
+
+                    {quote && (
+                      <>
+                        <View style={styles.swapDetailRow}>
+                          <Text style={styles.swapDetailLabel}>
+                            Price Impact
+                          </Text>
+                          <Text style={styles.swapDetailValue}>
+                            {(() => {
+                              const impact =
+                                parseFloat(quote.priceImpactPct) * 100;
+                              if (impact < 0.001) return '0.00%';
+                              const decimals = impact < 0.01 ? 3 : 2;
+                              return `${impact.toFixed(decimals)}%`;
+                            })()}
+                          </Text>
+                        </View>
+
+                        <View style={styles.swapDetailRow}>
+                          <Text style={styles.swapDetailLabel}>
+                            Max Slippage
+                          </Text>
+                          <Text style={styles.swapDetailValue}>
+                            {(quote.slippageBps / 100).toFixed(2)}%
+                          </Text>
+                        </View>
+                      </>
+                    )}
 
                     {/* <View style={styles.swapDetailRow}>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -802,37 +849,115 @@ export default function TradeScreen() {
                   {swapComplete && swapSuccess && (
                     <>
                       <View style={styles.successIcon}>
-                        <Check size={32} color="#10b981" />
+                        <Check size={32} color="white" />
                       </View>
                       <Text style={styles.loadingTitle}>Swap Successful!</Text>
                       <Text style={styles.loadingSubtitle}>
-                        Transaction: {swapTxSignature.substring(0, 8)}...
-                        {swapTxSignature.substring(swapTxSignature.length - 8)}
+                        You've successfully swapped your tokens.
                       </Text>
-                      <TouchableOpacity
-                        style={styles.closeButton}
+
+                      {fromToken && toToken && fromAmount && toAmount && (
+                        <View style={styles.swapSummaryContainer}>
+                          <View style={styles.swapSummaryRow}>
+                            <Text style={styles.swapSummaryLabel}>From</Text>
+                            <View style={styles.swapSummaryAmountContainer}>
+                              <Text style={styles.swapSummaryAmount}>
+                                {parseFloat(
+                                  unformatAmountInput(fromAmount),
+                                ).toFixed(2)}{' '}
+                                {fromToken.symbol}
+                              </Text>
+                              <Text style={styles.swapSummaryValue}>
+                                {formatCurrency(
+                                  parseFloat(unformatAmountInput(fromAmount)) *
+                                    (fromTokenPrice || 0),
+                                )}
+                              </Text>
+                            </View>
+                          </View>
+
+                          <View style={styles.swapSummaryRow}>
+                            <Text style={styles.swapSummaryLabel}>To</Text>
+                            <View style={styles.swapSummaryAmountContainer}>
+                              <Text style={styles.swapSummaryAmount}>
+                                {parseFloat(
+                                  unformatAmountInput(toAmount),
+                                ).toFixed(2)}{' '}
+                                {toToken.symbol}
+                              </Text>
+                              <Text style={styles.swapSummaryValue}>
+                                {formatCurrency(
+                                  parseFloat(unformatAmountInput(toAmount)) *
+                                    (fromTokenPrice || 0),
+                                )}
+                              </Text>
+                            </View>
+                          </View>
+                        </View>
+                      )}
+
+                      {swapTxSignature && (
+                        <>
+                          <View style={styles.transactionIdContainer}>
+                            <View>
+                              <Text style={styles.transactionIdLabel}>
+                                Transaction ID
+                              </Text>
+                              <Text style={styles.transactionIdValue}>
+                                {swapTxSignature.substring(0, 8)}...
+                                {swapTxSignature.substring(
+                                  swapTxSignature.length - 8,
+                                )}
+                              </Text>
+                            </View>
+                            <CopyButton
+                              textToCopy={swapTxSignature}
+                              size={20}
+                            />
+                          </View>
+
+                          <TouchableOpacity style={styles.explorerContainer}>
+                            <View>
+                              <Text style={styles.explorerLabel}>Explorer</Text>
+                              <Text style={styles.explorerSubtext}>
+                                View on Solana Explorer
+                              </Text>
+                            </View>
+                            <ExternalLink size={20} color={colors.white} />
+                          </TouchableOpacity>
+                        </>
+                      )}
+
+                      <PrimaryActionButton
+                        title="Close"
                         onPress={handleCloseLoadingSheet}
-                      >
-                        <Text style={styles.closeButtonText}>Close</Text>
-                      </TouchableOpacity>
+                        style={styles.successCloseButton}
+                      />
                     </>
                   )}
 
                   {swapComplete && !swapSuccess && (
                     <>
-                      <View style={styles.errorIcon}>
-                        <Text style={styles.errorIconText}>✕</Text>
+                      <View style={styles.errorIconSubdued}>
+                        <Text style={styles.errorIconText}>!</Text>
                       </View>
                       <Text style={styles.loadingTitle}>Swap Failed</Text>
                       <Text style={styles.loadingSubtitle}>
-                        Please try again
+                        Your transaction could not be completed.{'\n'}
+                        Please check your funds and network connection.
                       </Text>
-                      <TouchableOpacity
-                        style={styles.closeButton}
-                        onPress={handleCloseLoadingSheet}
-                      >
-                        <Text style={styles.closeButtonText}>Close</Text>
-                      </TouchableOpacity>
+
+                      <View style={styles.failedButtonContainer}>
+                        <PrimaryActionButton
+                          title="Try Again"
+                          onPress={handleCloseLoadingSheet}
+                        />
+                        <PrimaryActionButton
+                          title="Close"
+                          onPress={handleCloseLoadingSheet}
+                          variant="secondary"
+                        />
+                      </View>
                     </>
                   )}
                 </View>
@@ -914,11 +1039,35 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: 'center',
   },
+  swapTokensDisplay: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  swapTokenLogos: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+    position: 'relative',
+  },
+  fromTokenLogo: {
+    zIndex: 2,
+  },
+  toTokenLogo: {
+    marginLeft: -8, // Overlap the logos
+    zIndex: 1,
+  },
+  swapTokensText: {
+    fontSize: 16,
+    fontFamily: 'Inter-SemiBold',
+    color: colors.white,
+    textAlign: 'center',
+  },
   swapDetailsContainer: {
     backgroundColor: colors.backgroundMedium, // Use a more opaque background
     borderRadius: 12,
     padding: 16,
-    marginBottom: 42, // Increased space before the button to push it down
+    marginBottom: 24, // Reduced gap between details and button
   },
   swapDetailRow: {
     flexDirection: 'row',
@@ -968,7 +1117,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Regular',
     color: colors.textSecondary,
     textAlign: 'center',
-    marginTop: 4,
   },
   successIcon: {
     width: 64,
@@ -984,6 +1132,17 @@ const styles = StyleSheet.create({
     height: 64,
     borderRadius: 32,
     backgroundColor: '#ef4444',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  errorIconSubdued: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: 'rgba(239, 68, 68, 0.2)', // More subdued red background
+    borderWidth: 2,
+    borderColor: '#ef4444',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 8,
@@ -1004,6 +1163,90 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'Inter-SemiBold',
     color: colors.white,
+  },
+  failedButtonContainer: {
+    width: '100%',
+    marginTop: 24,
+    gap: 12,
+  },
+  // Success screen styles
+  swapSummaryContainer: {
+    width: '100%',
+    backgroundColor: colors.backgroundMedium,
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 20,
+    marginBottom: 16,
+  },
+  swapSummaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  swapSummaryLabel: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    color: colors.textSecondary,
+  },
+  swapSummaryAmountContainer: {
+    alignItems: 'flex-end',
+  },
+  swapSummaryAmount: {
+    fontSize: 16,
+    fontFamily: 'Inter-SemiBold',
+    color: colors.white,
+  },
+  swapSummaryValue: {
+    fontSize: 12,
+    fontFamily: 'Inter-Regular',
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  transactionIdContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: colors.backgroundMedium,
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 4,
+    width: '100%',
+  },
+  transactionIdLabel: {
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
+    color: colors.white,
+  },
+  transactionIdValue: {
+    fontSize: 12,
+    fontFamily: 'Inter-Regular',
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  explorerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: colors.backgroundMedium,
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 4,
+    width: '100%',
+  },
+  explorerLabel: {
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
+    color: colors.white,
+  },
+  explorerSubtext: {
+    fontSize: 12,
+    fontFamily: 'Inter-Regular',
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  successCloseButton: {
+    marginTop: 0,
   },
   errorContainer: {
     flex: 1,

@@ -16,7 +16,7 @@ interface PrimaryActionButtonProps {
   onPress: () => void;
   disabled?: boolean;
   loading?: boolean;
-  variant?: 'primary' | 'success' | 'error';
+  variant?: 'primary' | 'success' | 'error' | 'secondary';
   icon?: React.ReactNode; // pass actual component, not string
   iconPosition?: 'left' | 'right';
   style?: ViewStyle;
@@ -40,6 +40,8 @@ const PrimaryActionButton: React.FC<PrimaryActionButtonProps> = ({
         return colors.primary;
       case 'error':
         return '#ff5252';
+      case 'secondary':
+        return colors.backgroundMedium;
       case 'primary':
       default:
         return '#00CFFF';
@@ -48,6 +50,7 @@ const PrimaryActionButton: React.FC<PrimaryActionButtonProps> = ({
 
   const getTextColor = () => {
     if (disabled) return colors.textSecondary;
+    if (variant === 'secondary') return colors.textSecondary;
     return variant === 'success' || variant === 'error' ? colors.white : '#000';
   };
 
