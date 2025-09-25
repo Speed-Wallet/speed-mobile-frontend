@@ -73,7 +73,6 @@ export default function TradeScreen() {
 
   const shakeAnimationValue = useRef(new Animated.Value(0)).current;
   const bottomSheetRef = useRef<BottomSheet>(null);
-  const loadingBottomSheetRef = useRef<BottomSheet>(null);
   const fromTokenSelectorRef = useRef<TokenSelectorBottomSheetRef>(null);
   const toTokenSelectorRef = useRef<TokenSelectorBottomSheetRef>(null);
 
@@ -107,6 +106,8 @@ export default function TradeScreen() {
   const [swapComplete, setSwapComplete] = useState(false);
   const [swapSuccess, setSwapSuccess] = useState(false);
   const [swapTxSignature, setSwapTxSignature] = useState<string>('');
+  const [wasSheetDismissedDuringSwap, setWasSheetDismissedDuringSwap] =
+    useState(false);
 
   // New state for prepared swap workflow
   const [preparedSwap, setPreparedSwap] = useState<PreparedJupiterSwap | null>(
@@ -378,14 +379,12 @@ export default function TradeScreen() {
       return;
     }
 
-    // Close the preview bottom sheet and show loading sheet
-    bottomSheetRef.current?.close();
+    // Start swap process - keep current bottom sheet open, just update state
     setIsConfirmingSwap(true);
     setIsSwapping(true);
     setSwapComplete(false);
     setSwapSuccess(false);
     setSwapTxSignature('');
-    loadingBottomSheetRef.current?.expand();
 
     try {
       const sig = await confirmJupiterSwap(preparedSwap);
@@ -394,12 +393,21 @@ export default function TradeScreen() {
       // Refetch token balances after successful trade
       refetchTokenBalances();
 
-      // Update loading states - success handled by bottom sheet
+      // Update loading states - success handled by bottom sheet or toast
       setSwapSuccess(true);
       setSwapTxSignature(sig);
       setSwapComplete(true);
       setIsSwapping(false);
       setIsConfirmingSwap(false);
+
+      // If sheet was dismissed during swap, show success toast
+      if (wasSheetDismissedDuringSwap) {
+        setToast({
+          message: 'Swap successful!',
+          type: 'success',
+        });
+        setWasSheetDismissedDuringSwap(false);
+      }
 
       // Clear the input amount and prepared swap after successful trade
       setFromAmount('');
@@ -407,11 +415,20 @@ export default function TradeScreen() {
       setPreparedSwap(null);
     } catch (err: any) {
       console.error(err);
-      // Error handled by bottom sheet
+      // Error handled by bottom sheet or toast
       setIsSwapping(false);
       setIsConfirmingSwap(false);
       setSwapComplete(true);
       setSwapSuccess(false);
+
+      // If sheet was dismissed during swap, show error toast
+      if (wasSheetDismissedDuringSwap) {
+        setToast({
+          message: 'Swap failed. Please try again.',
+          type: 'error',
+        });
+        setWasSheetDismissedDuringSwap(false);
+      }
     }
   };
 
@@ -523,8 +540,8 @@ export default function TradeScreen() {
     }
   }, [isButtonDisabled, shakeAnimationValue]);
 
-  const handleCloseLoadingSheet = useCallback(() => {
-    loadingBottomSheetRef.current?.close();
+  const handleCloseSheet = useCallback(() => {
+    bottomSheetRef.current?.close();
     // Reset all loading states
     setTimeout(() => {
       setIsSwapping(false);
@@ -611,13 +628,13 @@ export default function TradeScreen() {
 
         {/* Config Loading/Error States */}
         {isConfigLoading ? (
-          <View style={styles.loadingContainer}>
+          <View style={styles.stateContainer}>
             <ActivityIndicator size="large" color="#3B82F6" />
           </View>
         ) : configError ? (
           <View style={styles.errorContainer}>
             <Text style={styles.errorTitle}>Configuration Error</Text>
-            <Text style={styles.loadingSubtitle}>
+            <Text style={styles.stateSubtitle}>
               Failed to load app configuration. Please check your connection and
               try again.
             </Text>
@@ -634,7 +651,7 @@ export default function TradeScreen() {
         ) : swapFeeRate === undefined ? (
           <View style={styles.errorContainer}>
             <Text style={styles.errorTitle}>Configuration Missing</Text>
-            <Text style={styles.loadingSubtitle}>
+            <Text style={styles.stateSubtitle}>
               Required configuration data is missing. Please contact support.
             </Text>
           </View>
@@ -700,162 +717,148 @@ export default function TradeScreen() {
                 />
               )}
               onClose={() => {
+                // If swap is in progress, mark as dismissed and let toast handle success/error
+                if (isSwapping) {
+                  setWasSheetDismissedDuringSwap(true);
+                }
                 // Clean up prepared swap state when bottom sheet closes
                 setPreparedSwap(null);
                 setIsPreparingSwap(false);
               }}
             >
               <BottomSheetView style={styles.bottomSheetContent}>
-                <Text style={styles.bottomSheetTitle}>Swap Details</Text>
+                {/* Only show swap details when not in success/error state */}
+                {!swapComplete && (
+                  <>
+                    <Text style={styles.bottomSheetTitle}>Swap Details</Text>
 
-                {fromToken && toToken && (
-                  <View style={styles.swapTokensDisplay}>
-                    <View style={styles.swapTokenLogos}>
-                      <TokenLogo
-                        logoURI={fromToken.logoURI}
-                        size={moderateScale(32, 0.3)}
-                        style={styles.fromTokenLogo}
-                      />
-                      <TokenLogo
-                        logoURI={toToken.logoURI}
-                        size={moderateScale(32, 0.3)}
-                        style={styles.toTokenLogo}
-                      />
-                    </View>
-                    <Text style={styles.swapTokensText}>
-                      {fromToken.symbol} → {toToken.symbol}
-                    </Text>
-                  </View>
-                )}
-
-                {fromToken && toToken && (
-                  <View style={styles.swapDetailsContainer}>
-                    <View style={styles.swapDetailRow}>
-                      <Text style={styles.swapDetailLabel}>Rate</Text>
-                      <Text style={styles.swapDetailValue}>
-                        {exchangeRate
-                          ? `1 ${fromToken.symbol} = ${exchangeRate.toFixed(toToken.decimalsShown)} ${toToken.symbol}`
-                          : 'N/A'}
-                      </Text>
-                    </View>
-
-                    <View style={styles.swapDetailRow}>
-                      <Text style={styles.swapDetailLabel}>Total Value</Text>
-                      <View
-                        style={{ flexDirection: 'row', alignItems: 'center' }}
-                      >
-                        <DollarSign
-                          size={14}
-                          color={'#4ade80'}
-                          style={{ marginRight: 2 }}
-                        />
-                        <Text
-                          style={[styles.swapDetailValue, { color: '#4ade80' }]}
-                        >
-                          {totalValueDisplay.startsWith('$')
-                            ? totalValueDisplay.substring(1)
-                            : totalValueDisplay}
+                    {fromToken && toToken && (
+                      <View style={styles.swapTokensDisplay}>
+                        <View style={styles.swapTokenLogos}>
+                          <TokenLogo
+                            logoURI={fromToken.logoURI}
+                            size={moderateScale(32, 0.3)}
+                            style={styles.fromTokenLogo}
+                          />
+                          <TokenLogo
+                            logoURI={toToken.logoURI}
+                            size={moderateScale(32, 0.3)}
+                            style={styles.toTokenLogo}
+                          />
+                        </View>
+                        <Text style={styles.swapTokensText}>
+                          {fromToken.symbol} → {toToken.symbol}
                         </Text>
                       </View>
-                    </View>
-
-                    <View style={styles.swapDetailRow}>
-                      <Text style={styles.swapDetailLabel}>Trade Fee</Text>
-                      <Text style={styles.swapDetailValue}>0.2%</Text>
-                    </View>
-
-                    {quote && (
-                      <>
-                        <View style={styles.swapDetailRow}>
-                          <Text style={styles.swapDetailLabel}>
-                            Price Impact
-                          </Text>
-                          <Text style={styles.swapDetailValue}>
-                            {(() => {
-                              const impact =
-                                parseFloat(quote.priceImpactPct) * 100;
-                              if (impact < 0.001) return '0.00%';
-                              const decimals = impact < 0.01 ? 3 : 2;
-                              return `${impact.toFixed(decimals)}%`;
-                            })()}
-                          </Text>
-                        </View>
-
-                        <View style={styles.swapDetailRow}>
-                          <Text style={styles.swapDetailLabel}>
-                            Max Slippage
-                          </Text>
-                          <Text style={styles.swapDetailValue}>
-                            {(quote.slippageBps / 100).toFixed(2)}%
-                          </Text>
-                        </View>
-                      </>
                     )}
 
-                    {/* <View style={styles.swapDetailRow}>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <Zap size={14} color={'#eab308'} style={{ marginRight: 4 }} />
-                  <Text style={styles.swapDetailLabel}>Network Fee</Text>
-                </View>
-                <Text style={styles.swapDetailValue}>$0.01</Text>
-              </View> */}
-                  </View>
+                    {fromToken && toToken && (
+                      <View style={styles.swapDetailsContainer}>
+                        <View style={styles.swapDetailRow}>
+                          <Text style={styles.swapDetailLabel}>Rate</Text>
+                          <Text style={styles.swapDetailValue}>
+                            {exchangeRate
+                              ? `1 ${fromToken.symbol} = ${exchangeRate.toFixed(toToken.decimalsShown)} ${toToken.symbol}`
+                              : 'N/A'}
+                          </Text>
+                        </View>
+
+                        <View style={styles.swapDetailRow}>
+                          <Text style={styles.swapDetailLabel}>
+                            Total Value
+                          </Text>
+                          <View
+                            style={{
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                            }}
+                          >
+                            <DollarSign
+                              size={14}
+                              color={'#4ade80'}
+                              style={{ marginRight: 2 }}
+                            />
+                            <Text
+                              style={[
+                                styles.swapDetailValue,
+                                { color: '#4ade80' },
+                              ]}
+                            >
+                              {totalValueDisplay.startsWith('$')
+                                ? totalValueDisplay.substring(1)
+                                : totalValueDisplay}
+                            </Text>
+                          </View>
+                        </View>
+
+                        <View style={styles.swapDetailRow}>
+                          <Text style={styles.swapDetailLabel}>Trade Fee</Text>
+                          <Text style={styles.swapDetailValue}>0.2%</Text>
+                        </View>
+
+                        {quote && (
+                          <>
+                            <View style={styles.swapDetailRow}>
+                              <Text style={styles.swapDetailLabel}>
+                                Price Impact
+                              </Text>
+                              <Text style={styles.swapDetailValue}>
+                                {(() => {
+                                  const impact =
+                                    parseFloat(quote.priceImpactPct) * 100;
+                                  if (impact < 0.001) return '0.00%';
+                                  const decimals = impact < 0.01 ? 3 : 2;
+                                  return `${impact.toFixed(decimals)}%`;
+                                })()}
+                              </Text>
+                            </View>
+
+                            <View style={styles.swapDetailRow}>
+                              <Text style={styles.swapDetailLabel}>
+                                Max Slippage
+                              </Text>
+                              <Text style={styles.swapDetailValue}>
+                                {(quote.slippageBps / 100).toFixed(2)}%
+                              </Text>
+                            </View>
+                          </>
+                        )}
+                      </View>
+                    )}
+
+                    <PrimaryActionButton
+                      title={
+                        isSwapping
+                          ? 'Processing Swap...'
+                          : isPreparingSwap
+                            ? 'Preparing...'
+                            : 'Confirm Swap'
+                      }
+                      onPress={handleConfirmSwap}
+                      disabled={!preparedSwap || isPreparingSwap || isSwapping}
+                      loading={isPreparingSwap || isSwapping}
+                    />
+                  </>
                 )}
 
-                <PrimaryActionButton
-                  title={isPreparingSwap ? 'Preparing...' : 'Confirm Swap'}
-                  onPress={handleConfirmSwap}
-                  disabled={!preparedSwap || isPreparingSwap}
-                  loading={isPreparingSwap}
-                />
-              </BottomSheetView>
-            </BottomSheet>
+                {/* Success State */}
+                {swapComplete && swapSuccess && (
+                  <View style={styles.stateContainer}>
+                    {/* Row 1: Check mark */}
+                    <View style={styles.successIcon}>
+                      <Check size={32} color="white" />
+                    </View>
 
-            {/* Loading Bottom Sheet for Swap Progress */}
-            <BottomSheet
-              ref={loadingBottomSheetRef}
-              index={-1}
-              enablePanDownToClose={swapComplete}
-              backgroundStyle={styles.bottomSheetBackground}
-              handleIndicatorStyle={styles.bottomSheetHandle}
-              backdropComponent={(props) => (
-                <BottomSheetBackdrop
-                  {...props}
-                  appearsOnIndex={0}
-                  disappearsOnIndex={-1}
-                  opacity={0.4}
-                />
-              )}
-              onClose={handleCloseLoadingSheet}
-            >
-              <BottomSheetView style={styles.loadingBottomSheetContent}>
-                <View style={styles.loadingContainer}>
-                  {isSwapping && (
-                    <>
-                      <ActivityIndicator
-                        size="large"
-                        color="#3B82F6"
-                        style={styles.loadingSpinner}
-                      />
-                      <Text style={styles.loadingTitle}>
-                        Processing Swap...
-                      </Text>
-                      <Text style={styles.loadingSubtitle}>
-                        Please wait while we execute your trade
-                      </Text>
-                    </>
-                  )}
-
-                  {swapComplete && swapSuccess && (
-                    <>
-                      <View style={styles.successIcon}>
-                        <Check size={32} color="white" />
-                      </View>
-                      <Text style={styles.loadingTitle}>Swap Successful!</Text>
-                      <Text style={styles.loadingSubtitle}>
+                    {/* Row 2: Title + subtitle */}
+                    <View>
+                      <Text style={styles.stateTitle}>Swap Successful!</Text>
+                      <Text style={styles.stateSubtitle}>
                         You've successfully swapped your tokens.
                       </Text>
+                    </View>
 
+                    {/* Row 3: From/to box + txn id box + explorer box */}
+                    <View style={styles.successDetailsContainer}>
                       {fromToken && toToken && fromAmount && toAmount && (
                         <View style={styles.swapSummaryContainer}>
                           <View style={styles.swapSummaryRow}>
@@ -875,6 +878,8 @@ export default function TradeScreen() {
                               </Text>
                             </View>
                           </View>
+
+                          <View style={styles.swapSummaryDivider} />
 
                           <View style={styles.swapSummaryRow}>
                             <Text style={styles.swapSummaryLabel}>To</Text>
@@ -927,40 +932,41 @@ export default function TradeScreen() {
                           </TouchableOpacity>
                         </>
                       )}
+                    </View>
 
+                    {/* Row 4: Close button */}
+                    <PrimaryActionButton
+                      title="Close"
+                      onPress={handleCloseSheet}
+                    />
+                  </View>
+                )}
+
+                {/* Error State */}
+                {swapComplete && !swapSuccess && (
+                  <View style={styles.stateContainer}>
+                    <View style={styles.errorIconSubdued}>
+                      <Text style={styles.errorIconText}>!</Text>
+                    </View>
+                    <Text style={styles.stateTitle}>Swap Failed</Text>
+                    <Text style={styles.stateSubtitle}>
+                      Your transaction could not be completed.{'\n'}
+                      Please check your funds and network connection.
+                    </Text>
+
+                    <View style={styles.failedButtonContainer}>
+                      <PrimaryActionButton
+                        title="Try Again"
+                        onPress={handleCloseSheet}
+                      />
                       <PrimaryActionButton
                         title="Close"
-                        onPress={handleCloseLoadingSheet}
-                        style={styles.successCloseButton}
+                        onPress={handleCloseSheet}
+                        variant="secondary"
                       />
-                    </>
-                  )}
-
-                  {swapComplete && !swapSuccess && (
-                    <>
-                      <View style={styles.errorIconSubdued}>
-                        <Text style={styles.errorIconText}>!</Text>
-                      </View>
-                      <Text style={styles.loadingTitle}>Swap Failed</Text>
-                      <Text style={styles.loadingSubtitle}>
-                        Your transaction could not be completed.{'\n'}
-                        Please check your funds and network connection.
-                      </Text>
-
-                      <View style={styles.failedButtonContainer}>
-                        <PrimaryActionButton
-                          title="Try Again"
-                          onPress={handleCloseLoadingSheet}
-                        />
-                        <PrimaryActionButton
-                          title="Close"
-                          onPress={handleCloseLoadingSheet}
-                          variant="secondary"
-                        />
-                      </View>
-                    </>
-                  )}
-                </View>
+                    </View>
+                  </View>
+                )}
               </BottomSheetView>
             </BottomSheet>
 
@@ -1091,32 +1097,23 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   // Loading Bottom Sheet Styles
-  loadingBottomSheetContent: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 20,
-  },
-  loadingContainer: {
+  stateContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 16,
   },
-  loadingSpinner: {
-    marginBottom: 8,
-  },
-  loadingTitle: {
+  stateTitle: {
     fontSize: 18,
     fontFamily: 'Inter-SemiBold',
     color: colors.white,
     textAlign: 'center',
   },
-  loadingSubtitle: {
+  stateSubtitle: {
     fontSize: 14,
     fontFamily: 'Inter-Regular',
     color: colors.textSecondary,
     textAlign: 'center',
+    marginTop: 1,
   },
   successIcon: {
     width: 64,
@@ -1170,19 +1167,32 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   // Success screen styles
+  successDetailsContainer: {
+    width: '100%',
+    gap: 10, // Customize spacing between from/to box, txn id box, and explorer box
+    marginVertical: 24,
+  },
   swapSummaryContainer: {
     width: '100%',
     backgroundColor: colors.backgroundMedium,
     borderRadius: 12,
-    padding: 16,
-    marginTop: 20,
-    marginBottom: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 20,
   },
   swapSummaryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    paddingVertical: 8,
+  },
+  swapSummaryDivider: {
+    height: 1,
+    backgroundColor: 'transparent',
+    borderTopWidth: 1,
+    borderTopColor: colors.textSecondary,
+    borderStyle: 'dashed',
+    opacity: 0.3,
+    marginVertical: 4,
   },
   swapSummaryLabel: {
     fontSize: 14,
@@ -1210,7 +1220,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.backgroundMedium,
     borderRadius: 12,
     padding: 20,
-    marginBottom: 4,
     width: '100%',
   },
   transactionIdLabel: {
@@ -1222,7 +1231,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'Inter-Regular',
     color: colors.textSecondary,
-    marginTop: 2,
   },
   explorerContainer: {
     flexDirection: 'row',
@@ -1231,7 +1239,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.backgroundMedium,
     borderRadius: 12,
     padding: 20,
-    marginBottom: 4,
     width: '100%',
   },
   explorerLabel: {
@@ -1244,9 +1251,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Regular',
     color: colors.textSecondary,
     marginTop: 2,
-  },
-  successCloseButton: {
-    marginTop: 0,
   },
   errorContainer: {
     flex: 1,
