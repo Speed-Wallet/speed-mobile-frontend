@@ -191,7 +191,7 @@ export default function TradeScreen() {
         );
       }
     } catch (err: any) {
-      console.error(err.message);
+      console.error(err);
       setToast({
         message: 'Network error, unable to establish connection',
         type: 'error',
@@ -232,7 +232,7 @@ export default function TradeScreen() {
     // For inverse calculation, we estimate the from amount
     // This is approximate since we don't have reverse quotes from Jupiter
     const estimatedFromAmount = toAmountEntered * 1.01; // Add small buffer for slippage
-    setFromAmount(estimatedFromAmount.toString());
+    setFromAmount(truncateDecimals(estimatedFromAmount.toString()));
   }
 
   // Cleanup effect for timers
@@ -303,7 +303,7 @@ export default function TradeScreen() {
     setToToken(fromToken);
 
     // Or, more robustly, clear toAmount and let it recalculate if fromAmount is present
-    setFromAmount(toAmount); // Or keep original fromAmount: setFromAmount(tempFromAmount)
+    setFromAmount(truncateDecimals(toAmount)); // Or keep original fromAmount: setFromAmount(tempFromAmount)
     setToAmount(''); // Quote will be re-fetched by useEffect on fromAmount or by updateAmounts call
   };
 
@@ -466,6 +466,31 @@ export default function TradeScreen() {
   // Get SOL balance for transaction fee checking
   const { balance: solBalance } = useTokenBalance(SOL_ADDRESS);
 
+  // Helper function to truncate decimal places to maximum of 9
+  const truncateDecimals = useCallback(
+    (value: string, maxDecimals: number = 9): string => {
+      const decimalIndex = value.indexOf('.');
+      if (decimalIndex === -1) return value;
+
+      const integerPart = value.substring(0, decimalIndex);
+      const decimalPart = value.substring(decimalIndex + 1);
+
+      if (decimalPart.length <= maxDecimals) return value;
+
+      const truncatedDecimal = decimalPart.substring(0, maxDecimals);
+      return `${integerPart}.${truncatedDecimal}`;
+    },
+    [],
+  );
+
+  // Wrapped setFromAmount that truncates decimals
+  const setFromAmountTruncated = useCallback(
+    (value: string) => {
+      setFromAmount(truncateDecimals(value));
+    },
+    [truncateDecimals],
+  );
+
   // Check for insufficient SOL considering buffer for transaction fees
   const isInsufficientSol = useMemo(() => {
     // Require at least 0.01 SOL for any swap operation
@@ -531,8 +556,10 @@ export default function TradeScreen() {
           }
           // Prevent multiple leading zeros
           if (prev === '0' && key !== '.') return key;
-          // No limit on decimal places - allow users to input as many as they want
-          return prev + key;
+
+          // Add the new key and truncate to max 9 decimal places
+          const newValue = prev + key;
+          return truncateDecimals(newValue);
         });
       }
     },
@@ -560,9 +587,12 @@ export default function TradeScreen() {
       // Convert to string with reasonable precision, removing trailing zeros
       const formattedAmount = parseFloat(amount.toPrecision(12)).toString();
 
+      // Truncate to max 9 decimal places
+      const truncatedAmount = truncateDecimals(formattedAmount);
+
       // Only update if the amount actually changed
-      if (formattedAmount !== fromAmount) {
-        setFromAmount(formattedAmount);
+      if (truncatedAmount !== fromAmount) {
+        setFromAmount(truncatedAmount);
         setToAmount(''); // Only clear output when input changes
       }
 
@@ -619,7 +649,7 @@ export default function TradeScreen() {
                 fromAmount={fromAmount}
                 toAmount={toAmount}
                 activeInput={activeInput}
-                onFromAmountChange={setFromAmount}
+                onFromAmountChange={setFromAmountTruncated}
                 onToAmountChange={setToAmount}
                 onFromInputFocus={handleInputFocus}
                 onToInputFocus={() => {}} // No-op since to input is disabled

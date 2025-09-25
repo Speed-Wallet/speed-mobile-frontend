@@ -69,7 +69,7 @@ export const getJupiterQuote = async (
   const response = await fetch(url);
 
   const json = await response.json();
-
+  console.log('Jupiter quote response:', json);
   if (!response.ok) {
     throw new Error(`Failed to get Jupiter quote: ${response.statusText}`);
   }
