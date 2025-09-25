@@ -46,12 +46,6 @@ import { getJupiterQuote } from '@/services/jupiterApi';
 
 const WAIT_ON_AMOUNT_CHANGE = 2000;
 const LOOP_QUOTE_INTERVAL = 300000;
-let lastQuoteTime = 0;
-let timeoutID: NodeJS.Timeout | undefined;
-let intervalID: NodeJS.Timeout | undefined;
-
-let platformFee: number;
-let quote: any;
 
 export default function TradeScreen() {
   const { tokenAddress, selectedTokenAddress, returnParam } =
@@ -67,6 +61,13 @@ export default function TradeScreen() {
   const [toToken, setToToken] = useState<EnrichedTokenEntry | null>(null);
   const [fromAmount, setFromAmount] = useState('');
   const [toAmount, setToAmount] = useState('');
+
+  // Move module-level variables to proper React state/refs
+  const lastQuoteTimeRef = useRef(0);
+  const timeoutIDRef = useRef<NodeJS.Timeout | undefined>();
+  const intervalIDRef = useRef<NodeJS.Timeout | undefined>();
+  const [platformFee, setPlatformFee] = useState<number>(0);
+  const [quote, setQuote] = useState<any>(undefined);
 
   const shakeAnimationValue = useRef(new Animated.Value(0)).current;
   const bottomSheetRef = useRef<BottomSheet>(null);
@@ -112,9 +113,8 @@ export default function TradeScreen() {
   const [isPreparingSwap, setIsPreparingSwap] = useState(false);
   const [isConfirmingSwap, setIsConfirmingSwap] = useState(false);
 
-  // Custom keyboard state
-  const [showCustomKeyboard, setShowCustomKeyboard] = useState(true);
-  const [activeInput, setActiveInput] = useState<'from' | 'to' | null>(null);
+  // Always focus on 'from' input since 'to' is disabled
+  const [activeInput, setActiveInput] = useState<'from' | 'to' | null>('from');
 
   function updateAmounts() {
     // Only proceed if config is loaded and swapFeeRate is available
@@ -123,14 +123,14 @@ export default function TradeScreen() {
       return;
     }
 
-    if (timeoutID !== undefined) {
-      clearTimeout(timeoutID);
-      timeoutID = undefined;
+    if (timeoutIDRef.current !== undefined) {
+      clearTimeout(timeoutIDRef.current);
+      timeoutIDRef.current = undefined;
     }
 
-    if (intervalID !== undefined) {
-      clearInterval(intervalID);
-      intervalID = undefined;
+    if (intervalIDRef.current !== undefined) {
+      clearInterval(intervalIDRef.current);
+      intervalIDRef.current = undefined;
     }
 
     setToAmount('');
@@ -138,47 +138,53 @@ export default function TradeScreen() {
     if (isNaN(amountEntered) || amountEntered === 0) return;
 
     const amount = amountEntered * 10 ** fromToken!.decimals;
-    platformFee = Math.round(amount * swapFeeRate);
-    const inAmount = amount - platformFee;
-    const diff = Date.now() - lastQuoteTime;
+    const calculatedPlatformFee = Math.round(amount * swapFeeRate);
+    setPlatformFee(calculatedPlatformFee);
+    const inAmount = amount - calculatedPlatformFee;
+    const diff = Date.now() - lastQuoteTimeRef.current;
 
     if (diff < WAIT_ON_AMOUNT_CHANGE) {
-      timeoutID = setTimeout(updateAmounts, WAIT_ON_AMOUNT_CHANGE - diff);
+      timeoutIDRef.current = setTimeout(
+        updateAmounts,
+        WAIT_ON_AMOUNT_CHANGE - diff,
+      );
       return;
     }
 
-    lastQuoteTime = Date.now();
+    lastQuoteTimeRef.current = Date.now();
     fetchAndApplyQuote(inAmount);
   }
 
   async function fetchAndApplyQuote(inAmount: number) {
     try {
-      quote = await getJupiterQuote(
+      const newQuote = await getJupiterQuote(
         fromToken!.address,
         toToken!.address,
         inAmount,
       );
 
-      if (!quote) {
-        quote = undefined;
+      if (!newQuote) {
+        setQuote(undefined);
         return;
-      } else if (quote.errorCode) {
-        console.error(quote);
-        quote = undefined;
+      } else if ('error' in newQuote || 'errorCode' in newQuote) {
+        console.error(newQuote);
+        setQuote(undefined);
         return;
       }
 
-      const outAmount = parseFloat(quote.outAmount);
+      setQuote(newQuote);
+
+      const outAmount = parseFloat(newQuote.outAmount);
       console.log(
-        `Quote received: ${quote.inAmount} -> ${quote.outAmount} (${quote.slippageBps})`,
+        `Quote received: ${newQuote.inAmount} -> ${newQuote.outAmount} (${newQuote.slippageBps})`,
       );
       if (!isNaN(outAmount)) {
         const val = outAmount * 10 ** -toToken!.decimals;
         setToAmount(parseFloat(val.toPrecision(12)).toString()); // Use reasonable precision without trailing zeros
       }
 
-      if (!intervalID) {
-        intervalID = setInterval(
+      if (!intervalIDRef.current) {
+        intervalIDRef.current = setInterval(
           fetchAndApplyQuote,
           LOOP_QUOTE_INTERVAL,
           inAmount,
@@ -207,14 +213,14 @@ export default function TradeScreen() {
       return;
     }
 
-    if (timeoutID !== undefined) {
-      clearTimeout(timeoutID);
-      timeoutID = undefined;
+    if (timeoutIDRef.current !== undefined) {
+      clearTimeout(timeoutIDRef.current);
+      timeoutIDRef.current = undefined;
     }
 
-    if (intervalID !== undefined) {
-      clearInterval(intervalID);
-      intervalID = undefined;
+    if (intervalIDRef.current !== undefined) {
+      clearInterval(intervalIDRef.current);
+      intervalIDRef.current = undefined;
     }
 
     const toAmountEntered = parseFloat(unformatAmountInput(toAmount));
@@ -229,13 +235,20 @@ export default function TradeScreen() {
     setFromAmount(estimatedFromAmount.toString());
   }
 
-  useEffect(updateAmounts, [fromAmount, fromToken, toToken, swapFeeRate]);
+  // Cleanup effect for timers
   useEffect(() => {
-    // Only run inverse calculation when actively typing in "to" field
-    if (activeInput === 'to') {
-      updateInverseAmounts();
-    }
-  }, [toAmount, fromToken, toToken, swapFeeRate, activeInput]);
+    return () => {
+      if (timeoutIDRef.current) {
+        clearTimeout(timeoutIDRef.current);
+      }
+      if (intervalIDRef.current) {
+        clearInterval(intervalIDRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(updateAmounts, [fromAmount, fromToken, toToken, swapFeeRate]);
+  // Note: Removed inverse calculation useEffect since 'to' input is now disabled
 
   // Handle token selection from the token selector page
   useEffect(() => {
@@ -322,13 +335,13 @@ export default function TradeScreen() {
       return;
     }
 
-    if (timeoutID !== undefined) {
-      clearTimeout(timeoutID);
-      timeoutID = undefined;
+    if (timeoutIDRef.current !== undefined) {
+      clearTimeout(timeoutIDRef.current);
+      timeoutIDRef.current = undefined;
     }
-    if (intervalID !== undefined) {
-      clearInterval(intervalID);
-      intervalID = undefined;
+    if (intervalIDRef.current !== undefined) {
+      clearInterval(intervalIDRef.current);
+      intervalIDRef.current = undefined;
     }
 
     // Open the bottom sheet immediately
@@ -502,64 +515,32 @@ export default function TradeScreen() {
   // Custom keyboard handlers
   const handleKeyPress = useCallback(
     (key: string) => {
-      if (!activeInput) return;
-
+      // Always handle input for 'from' field since 'to' input is disabled
       if (key === 'backspace') {
-        if (activeInput === 'from') {
-          setFromAmount((prev) => prev.slice(0, -1));
-        } else {
-          setToAmount((prev) => prev.slice(0, -1));
-        }
+        setFromAmount((prev) => prev.slice(0, -1));
       } else if (key === '.') {
-        if (activeInput === 'from') {
-          if (!fromAmount.includes('.')) {
-            setFromAmount((prev) => (prev === '' ? '0.' : prev + '.'));
-          }
-        } else {
-          if (!toAmount.includes('.')) {
-            setToAmount((prev) => (prev === '' ? '0.' : prev + '.'));
-          }
+        if (!fromAmount.includes('.')) {
+          setFromAmount((prev) => (prev === '' ? '0.' : prev + '.'));
         }
       } else {
         // Number key
-        if (activeInput === 'from') {
-          setFromAmount((prev) => {
-            // Clear to amount when starting to type in from field
-            if (prev === '' && key !== '0') {
-              setToAmount('');
-            }
-            // Prevent multiple leading zeros
-            if (prev === '0' && key !== '.') return key;
-            // No limit on decimal places - allow users to input as many as they want
-            return prev + key;
-          });
-        } else {
-          setToAmount((prev) => {
-            // Clear from amount when starting to type in to field
-            if (prev === '' && key !== '0') {
-              setFromAmount('');
-            }
-            // Prevent multiple leading zeros
-            if (prev === '0' && key !== '.') return key;
-            // No limit on decimal places - allow users to input as many as they want
-            return prev + key;
-          });
-        }
+        setFromAmount((prev) => {
+          // Clear to amount when starting to type in from field
+          if (prev === '' && key !== '0') {
+            setToAmount('');
+          }
+          // Prevent multiple leading zeros
+          if (prev === '0' && key !== '.') return key;
+          // No limit on decimal places - allow users to input as many as they want
+          return prev + key;
+        });
       }
     },
-    [activeInput, fromAmount, toAmount],
+    [fromAmount],
   );
 
   const handleInputFocus = useCallback(() => {
     setActiveInput('from');
-  }, []);
-
-  const handleToInputFocus = useCallback(() => {
-    setActiveInput('to');
-  }, []);
-
-  const handleCloseKeyboard = useCallback(() => {
-    setActiveInput(null);
   }, []);
 
   const handlePercentagePress = useCallback(
@@ -641,7 +622,7 @@ export default function TradeScreen() {
                 onFromAmountChange={setFromAmount}
                 onToAmountChange={setToAmount}
                 onFromInputFocus={handleInputFocus}
-                onToInputFocus={handleToInputFocus}
+                onToInputFocus={() => {}} // No-op since to input is disabled
                 onSwapTokens={handleSwapTokens}
                 onFromTokenSelect={() => fromTokenSelectorRef.current?.expand()}
                 onToTokenSelect={() => toTokenSelectorRef.current?.expand()}
@@ -657,13 +638,11 @@ export default function TradeScreen() {
 
               {/* Bottom Section - Keyboard and Button */}
               <View style={styles.bottomSection}>
-                {/* Custom Keyboard */}
-                {showCustomKeyboard && (
-                  <NumericKeyboard
-                    onKeyPress={handleKeyPress}
-                    activeInput={activeInput}
-                  />
-                )}
+                {/* Custom Keyboard - Always shown since only 'from' input is active */}
+                <NumericKeyboard
+                  onKeyPress={handleKeyPress}
+                  activeInput={activeInput}
+                />
               </View>
 
               {/* Preview Swap Button */}
