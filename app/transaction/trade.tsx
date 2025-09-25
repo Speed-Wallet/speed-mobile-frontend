@@ -36,6 +36,7 @@ import { triggerShake } from '@/utils/animations';
 import { useTokenBalance } from '@/hooks/useTokenBalance';
 import { useRefetchTokenBalances } from '@/hooks/useTokenBalance';
 import { useQueryClient } from '@tanstack/react-query';
+import { SOL_ADDRESS } from '@/constants/tokens';
 import SwapTokensSection from '@/components/SwapTokensSection';
 import TokenSelectorBottomSheet, {
   TokenSelectorBottomSheetRef,
@@ -77,6 +78,9 @@ export default function TradeScreen() {
     fromToken?.extensions.coingeckoId,
   );
   const { balance: fromTokenBalance } = useTokenBalance(fromToken?.address);
+
+  // Check if the output token's ATA exists (for SOL buffer calculation)
+  const { ataExists: outputTokenAtaExists } = useTokenBalance(toToken?.address);
 
   // Get refetch function for after successful trades
   const refetchTokenBalances = useRefetchTokenBalances();
@@ -170,7 +174,7 @@ export default function TradeScreen() {
       );
       if (!isNaN(outAmount)) {
         const val = outAmount * 10 ** -toToken!.decimals;
-        setToAmount(val.toFixed(toToken!.decimalsShown)); // Use decimalsShown (now mandatory)
+        setToAmount(parseFloat(val.toPrecision(12)).toString()); // Use reasonable precision without trailing zeros
       }
 
       if (!intervalID) {
@@ -414,23 +418,60 @@ export default function TradeScreen() {
         )
       : '$0.00';
 
+  // Shared SOL buffer calculation
+  const getSolBuffer = useCallback(() => {
+    return outputTokenAtaExists ? 0.006 : 0.008;
+  }, [outputTokenAtaExists]);
+
+  // Calculate max allowable SOL amount (with buffer)
+  const getMaxSolAmount = useCallback(() => {
+    if (!fromToken || fromToken.address !== SOL_ADDRESS)
+      return fromTokenBalance;
+    const buffer = getSolBuffer();
+    return Math.max(0, fromTokenBalance - buffer);
+  }, [fromToken, fromTokenBalance, getSolBuffer]);
+
   // Check if amount exceeds balance
   const isInsufficientBalance = useMemo(() => {
     if (!fromAmount || !fromToken) return false;
     const amount = parseFloat(unformatAmountInput(fromAmount));
     if (isNaN(amount) || amount === 0) return false;
+
+    console.log('From Amount:', amount);
+    console.log('From Token Balance:', fromTokenBalance);
+
+    // For SOL, compare against max allowable amount (already has buffer subtracted)
+    if (fromToken.address === SOL_ADDRESS) {
+      const maxAllowable = getMaxSolAmount();
+      return amount > maxAllowable;
+    }
+
+    // For other tokens, just check if amount exceeds balance
     return amount > fromTokenBalance;
-  }, [fromAmount, fromToken, fromTokenBalance]);
+  }, [fromAmount, fromToken, fromTokenBalance, getMaxSolAmount]);
+
+  // Get SOL balance for transaction fee checking
+  const { balance: solBalance } = useTokenBalance(SOL_ADDRESS);
+
+  // Check for insufficient SOL considering buffer for transaction fees
+  const isInsufficientSol = useMemo(() => {
+    // Require at least 0.01 SOL for any swap operation
+    return solBalance < 0.01;
+  }, [solBalance]);
 
   const isButtonDisabled =
     !fromAmount ||
     parseFloat(unformatAmountInput(fromAmount)) <= 0 ||
     !quote ||
     !!quote.errorCode ||
-    isInsufficientBalance;
+    isInsufficientBalance ||
+    isInsufficientSol;
 
   // Determine button text based on state
   const getButtonText = () => {
+    if (isInsufficientSol) {
+      return 'Insufficient SOL';
+    }
     if (isInsufficientBalance && fromToken) {
       return `Insufficient ${fromToken.symbol}`;
     }
@@ -525,20 +566,29 @@ export default function TradeScreen() {
     (percentage: number) => {
       if (!fromToken || !fromTokenBalance || fromTokenBalance === 0) return;
 
-      // Calculate the percentage of the available balance
-      const amount = (fromTokenBalance * percentage) / 100;
+      let amount;
 
-      // Format to the token's decimal precision
-      const formattedAmount = amount.toFixed(fromToken.decimalsShown);
+      // For SOL, use the max allowable amount when clicking 100%
+      if (fromToken.address === SOL_ADDRESS && percentage === 100) {
+        amount = getMaxSolAmount();
+      } else {
+        // For other percentages or non-SOL tokens, calculate normally
+        amount = (fromTokenBalance * percentage) / 100;
+      }
 
-      // Set the from amount and clear the to amount
-      setFromAmount(formattedAmount);
-      setToAmount('');
+      // Convert to string with reasonable precision, removing trailing zeros
+      const formattedAmount = parseFloat(amount.toPrecision(12)).toString();
+
+      // Only update if the amount actually changed
+      if (formattedAmount !== fromAmount) {
+        setFromAmount(formattedAmount);
+        setToAmount(''); // Only clear output when input changes
+      }
 
       // Set focus to from input
       setActiveInput('from');
     },
-    [fromToken, fromTokenBalance],
+    [fromToken, fromTokenBalance, fromAmount, getMaxSolAmount],
   );
 
   return (
@@ -595,6 +645,7 @@ export default function TradeScreen() {
                 onSwapTokens={handleSwapTokens}
                 onFromTokenSelect={() => fromTokenSelectorRef.current?.expand()}
                 onToTokenSelect={() => toTokenSelectorRef.current?.expand()}
+                hasInsufficientFunds={isInsufficientBalance}
               />
 
               {/* Percentage Buttons */}

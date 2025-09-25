@@ -7,6 +7,9 @@ import {
 } from '@/services/tokenBalanceService';
 import { useWalletPublicKey } from '@/services/walletService';
 
+// Refetch interval in milliseconds (30 seconds)
+const REFETCH_INTERVAL = 30 * 1000;
+
 /**
  * Hook to track if app is active/inactive for controlling refetch
  */
@@ -49,8 +52,8 @@ export const useTokenBalances = (walletAddress: string | null | undefined) => {
       return response.data;
     },
     enabled: !!walletAddress && appIsActive,
-    refetchInterval: 10000, // 10 seconds
-    staleTime: 5000, // Cache is fresh for 5 seconds
+    refetchInterval: REFETCH_INTERVAL,
+    staleTime: REFETCH_INTERVAL, // Keep data fresh for the full refetch interval
     gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
@@ -71,6 +74,8 @@ export const useTokenBalance = (tokenAddress: string | null | undefined) => {
     (token) => token.address === tokenAddress,
   );
 
+  const ataExists = !!tokenBalance; // exists even if balance === 0
+
   return {
     balance: tokenBalance?.balance || 0,
     rawBalance: tokenBalance ? BigInt(tokenBalance.rawBalance) : BigInt(0),
@@ -83,6 +88,7 @@ export const useTokenBalance = (tokenAddress: string | null | undefined) => {
     totalPrice: tokenBalance?.totalPrice || 0,
     pricePerToken: tokenBalance?.pricePerToken || 0,
     currency: tokenBalance?.currency || 'USD',
+    ataExists,
     loading: isLoading,
     error: error?.message || null,
     refetch,

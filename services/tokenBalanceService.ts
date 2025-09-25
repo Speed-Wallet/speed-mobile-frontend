@@ -57,16 +57,13 @@ export const getTokenBalances = async (
       throw new Error('Wallet address is required');
     }
 
-    const token = await AuthService.getToken();
-    if (!token) {
-      throw new Error('Authentication token not found');
-    }
+    const authHeaders = await AuthService.getAuthHeader();
 
     const response = await fetch(`${BASE_BACKEND_URL}/api/wallet/balances`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
+        ...authHeaders,
       },
       body: JSON.stringify({
         walletAddress,
@@ -74,6 +71,7 @@ export const getTokenBalances = async (
     });
 
     if (!response.ok) {
+      console.log('error response', await response.json());
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 

@@ -26,6 +26,7 @@ interface SwapBoxProps {
   showBalance?: boolean;
   onInputFocus?: () => void;
   isActive?: boolean; // true when this input is currently focused
+  hasInsufficientFunds?: boolean; // true when amount exceeds available balance
 }
 
 const SwapBox: React.FC<SwapBoxProps> = ({
@@ -38,6 +39,7 @@ const SwapBox: React.FC<SwapBoxProps> = ({
   showBalance = false,
   onInputFocus,
   isActive = false,
+  hasInsufficientFunds = false,
 }) => {
   const { balance: tokenBalance } = useTokenBalance(token?.address);
   const { price: tokenPrice } = useTokenPrice(token?.extensions.coingeckoId);
@@ -55,7 +57,7 @@ const SwapBox: React.FC<SwapBoxProps> = ({
           <Text style={styles.swapBoxLabel}>{labelText}</Text>
           {showBalance && token && (
             <Text style={styles.balanceText}>
-              {tokenBalance.toFixed(token.decimalsShown)} {token.symbol}
+              {tokenBalance} {token.symbol}
             </Text>
           )}
         </View>
@@ -93,6 +95,7 @@ const SwapBox: React.FC<SwapBoxProps> = ({
                 styles.amountText,
                 !amount && styles.amountPlaceholder,
                 isActive && styles.amountTextActive,
+                hasInsufficientFunds && styles.amountTextInsufficient,
               ]}
             >
               {amount ? formatAmountInput(amount) : '0'}
@@ -123,6 +126,7 @@ interface SwapTokensSectionProps {
   onSwapTokens: () => void;
   onFromTokenSelect: () => void;
   onToTokenSelect: () => void;
+  hasInsufficientFunds?: boolean; // Flag to show red text when amount exceeds balance
 }
 
 const SwapTokensSection: React.FC<SwapTokensSectionProps> = ({
@@ -138,6 +142,7 @@ const SwapTokensSection: React.FC<SwapTokensSectionProps> = ({
   onSwapTokens,
   onFromTokenSelect,
   onToTokenSelect,
+  hasInsufficientFunds = false,
 }) => {
   const handleFromTokenPress = () => {
     onFromTokenSelect();
@@ -165,6 +170,7 @@ const SwapTokensSection: React.FC<SwapTokensSectionProps> = ({
           isInput={true}
           showBalance={true}
           isActive={activeInput === 'from'}
+          hasInsufficientFunds={hasInsufficientFunds}
         />
 
         {/* Swap Button */}
@@ -280,6 +286,9 @@ const styles = StyleSheet.create({
   amountTextActive: {
     color: colors.white, // Normal white color when active
     opacity: 1,
+  },
+  amountTextInsufficient: {
+    color: colors.error, // Red color for insufficient funds
   },
   usdValueRowTight: {
     width: '100%',
