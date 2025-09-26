@@ -237,28 +237,26 @@ const NumericKeyboard: React.FC<NumericKeyboardProps> = ({
 
 const styles = StyleSheet.create({
   inlineKeyboard: {
-    paddingHorizontal: scale(14),
-    paddingTop: verticalScale(14),
+    flex: 1, // Fill remaining horizontal space in the parent container
+    maxWidth: 500,
   },
   keyboardGrid: {
-    gap: scale(6),
     marginBottom: 0,
+    flex: 1, // Fill the full height of the keyboard container
+    justifyContent: 'space-around', // Distribute rows evenly vertically
   },
   keyboardRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: scale(6),
+    justifyContent: 'space-around',
   },
   keyboardKey: {
     flex: 1,
-    height: verticalScale(56),
     backgroundColor: 'transparent',
     borderRadius: scale(6),
     alignItems: 'center',
-    justifyContent: 'center',
   },
   keyboardKeyText: {
-    fontSize: moderateScale(18),
+    fontSize: moderateScale(26),
     fontFamily: 'Inter-SemiBold',
     color: colors.textPrimary,
   },

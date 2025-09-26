@@ -675,15 +675,15 @@ export default function TradeScreen() {
                 hasInsufficientFunds={isInsufficientBalance}
               />
 
-              {/* Percentage Buttons */}
-              <PercentageButtons
-                fromToken={fromToken}
-                fromTokenBalance={fromTokenBalance}
-                onPercentagePress={handlePercentagePress}
-              />
+              {/* Horizontal Container for Percentage Buttons and Keyboard */}
+              <View style={styles.horizontalContainer}>
+                {/* Percentage Buttons */}
+                <PercentageButtons
+                  fromToken={fromToken}
+                  fromTokenBalance={fromTokenBalance}
+                  onPercentagePress={handlePercentagePress}
+                />
 
-              {/* Bottom Section - Keyboard and Button */}
-              <View style={styles.bottomSection}>
                 {/* Custom Keyboard - Always shown since only 'from' input is active */}
                 <NumericKeyboard
                   onKeyPress={handleKeyPress}
@@ -1006,6 +1006,16 @@ const styles = StyleSheet.create({
   },
   mainContent: {
     flex: 1,
+  },
+  // Horizontal container for percentage buttons and keyboard
+  horizontalContainer: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    height: verticalScale(200),
+    backgroundColor: colors.backgroundDark,
+    paddingBottom: verticalScale(18), // Safe area padding
+    paddingHorizontal: moderateScale(20, 2.0),
+    gap: 20,
   },
   // Bottom section for keyboard and button
   bottomSection: {
