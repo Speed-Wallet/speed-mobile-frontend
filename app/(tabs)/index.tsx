@@ -5,6 +5,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Linking,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
@@ -19,11 +20,13 @@ import {
   useWalletPublicKey,
   getAllStoredWallets,
   getActiveWalletId,
+  getWalletPublicKey,
 } from '@/services/walletService';
 import ScreenContainer from '@/components/ScreenContainer';
 import TabSelector from '@/components/TabSelector';
 import { AuthService } from '@/services/authService';
 import { useTokenBalances } from '@/hooks/useTokenBalance';
+import { generateSignature } from '@/utils/signature';
 // import CryptoTest from '@/components/CryptoTest';
 
 export default function HomeScreen() {
@@ -82,9 +85,36 @@ export default function HomeScreen() {
     }
   };
 
-  const handleBalanceCardAction = (actionType: string) => {
+  const handleBalanceCardAction = async (actionType: string) => {
     // actionType will be "send", "receive", "cards", "trade", "buy"
-    if (actionType === 'cards') {
+    if (actionType === 'buy') {
+      // Handle buy action with YellowCard - open in external browser
+      try {
+        const address = await getWalletPublicKey();
+        if (!address) {
+          throw new Error('No wallet address available');
+        }
+
+        const apiKey = process.env.EXPO_PUBLIC_YELLOWCARD_API_KEY;
+
+        // Build widget URL with required parameters
+        const params = new URLSearchParams({
+          // walletAddress: address,
+          network: 'SOL',
+          // signature: await generateSignature(address, 'USDT'),
+        });
+
+        const url = `https://sandbox--payments-widget.netlify.app/landing/${apiKey}?${params.toString()}`;
+
+        console.log('Opening YellowCard widget in browser:', url);
+
+        // Open URL in external browser
+        await Linking.openURL(url);
+      } catch (error) {
+        console.error('Error opening YellowCard widget:', error);
+        alert('Failed to open YellowCard widget. Please try again.');
+      }
+    } else if (actionType === 'cards') {
       router.push('/transaction/cards');
     } else {
       router.push(`/transaction/${actionType}` as any);

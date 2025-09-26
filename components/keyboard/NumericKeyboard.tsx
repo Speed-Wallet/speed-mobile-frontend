@@ -238,7 +238,6 @@ const NumericKeyboard: React.FC<NumericKeyboardProps> = ({
 const styles = StyleSheet.create({
   inlineKeyboard: {
     flex: 1, // Fill remaining horizontal space in the parent container
-    maxWidth: 500,
   },
   keyboardGrid: {
     marginBottom: 0,

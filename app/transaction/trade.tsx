@@ -1011,11 +1011,13 @@ const styles = StyleSheet.create({
   horizontalContainer: {
     flexDirection: 'row',
     alignItems: 'stretch',
-    height: verticalScale(200),
+    height: 250,
     backgroundColor: colors.backgroundDark,
     paddingBottom: verticalScale(18), // Safe area padding
     paddingHorizontal: moderateScale(20, 2.0),
-    gap: 20,
+    justifyContent: 'space-between',
+    gap: moderateScale(12, 2.0),
+    maxWidth: 600,
   },
   // Bottom section for keyboard and button
   bottomSection: {

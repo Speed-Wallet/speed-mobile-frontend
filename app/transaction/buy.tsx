@@ -23,7 +23,7 @@ import { WebView } from 'react-native-webview';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 
 import { triggerShake } from '@/utils/animations';
-import { generateSignature } from '@/utils/signature';
+import { createYellowCardAuth } from '@/utils/yellowcard-auth';
 
 import colors from '@/constants/colors';
 import { formatCurrency } from '@/utils/formatters';
@@ -35,6 +35,7 @@ import ScreenContainer from '@/components/ScreenContainer';
 import BottomActionContainer from '@/components/BottomActionContainer';
 import PrimaryActionButton from '@/components/buttons/PrimaryActionButton';
 import TokenLogo from '@/components/TokenLogo';
+import { generateSignature } from '@/utils/signature';
 
 const paymentMethods = [
   {
@@ -107,23 +108,26 @@ export default function BuyScreen() {
           setWalletAddress(address);
         }
 
-        // Generate signature if amount is provided
+        // Generate authentication headers for YellowCard API
         if (amount && address) {
-          const sig = await generateSignature(address, 'USDT', amount);
-          setSignature(sig);
+          try {
+            const apiKey = process.env.EXPO_PUBLIC_YELLOWCARD_API_KEY;
 
-          // Build widget URL with parameters
-          const params = new URLSearchParams({
-            currencyAmount: amount,
-            token: 'USDT',
-            walletAddress: address,
-            network: 'SOL',
-            signature: sig,
-          });
+            // Build widget URL with API key
+            const params = new URLSearchParams({
+              walletAddress: address,
+              network: 'SOL',
+              signature: await generateSignature(address, 'USDT'),
+            });
 
-          setWidgetUrl(
-            `https://sandbox--payments-widget.netlify.app/landing/d5bfaa148d8534514e478def46d2ffea?${params.toString()}`,
-          );
+            console.log('params', params);
+
+            setWidgetUrl(
+              `https://sandbox--payments-widget.netlify.app/landing/${apiKey}?${params.toString()}`,
+            );
+          } catch (error) {
+            console.error('Error generating YellowCard auth headers:', error);
+          }
         }
       } catch (error) {
         console.error('Error initializing widget params:', error);

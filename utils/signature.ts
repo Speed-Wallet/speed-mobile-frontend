@@ -1,44 +1,107 @@
 /**
  * Signature utilities for YellowCard widget authentication
+ * Uses manual HMAC-SHA256 implementation for compatibility
  */
+
+/**
+ * Manual HMAC-SHA256 implementation using only SHA-256 (compatible with react-native-quick-crypto)
+ * This produces the exact same result as Node.js crypto.createHmac('sha256', key).update(message).digest('base64')
+ */
+async function createHmacSha256(key: string, message: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const keyBytes = encoder.encode(key);
+  const messageBytes = encoder.encode(message);
+
+  // HMAC constants
+  const blockSize = 64; // SHA-256 block size is 64 bytes
+  const ipad = 0x36;
+  const opad = 0x5c;
+
+  // Prepare key: if key is longer than blockSize, hash it first
+  let processedKey: Uint8Array;
+  if (keyBytes.length > blockSize) {
+    const hashedKey = await crypto.subtle.digest(
+      'SHA-256',
+      keyBytes.buffer as ArrayBuffer,
+    );
+    processedKey = new Uint8Array(hashedKey);
+  } else {
+    processedKey = keyBytes;
+  }
+
+  // Pad key to blockSize with zeros
+  const paddedKey = new Uint8Array(blockSize);
+  paddedKey.set(processedKey);
+
+  // Create inner and outer padded keys
+  const innerKey = new Uint8Array(blockSize);
+  const outerKey = new Uint8Array(blockSize);
+
+  for (let i = 0; i < blockSize; i++) {
+    innerKey[i] = paddedKey[i] ^ ipad;
+    outerKey[i] = paddedKey[i] ^ opad;
+  }
+
+  // Inner hash: SHA256(innerKey + message)
+  const innerInput = new Uint8Array(innerKey.length + messageBytes.length);
+  innerInput.set(innerKey);
+  innerInput.set(messageBytes, innerKey.length);
+  const innerHash = await crypto.subtle.digest(
+    'SHA-256',
+    innerInput.buffer as ArrayBuffer,
+  );
+
+  // Outer hash: SHA256(outerKey + innerHash)
+  const outerInput = new Uint8Array(outerKey.length + innerHash.byteLength);
+  outerInput.set(outerKey);
+  outerInput.set(new Uint8Array(innerHash), outerKey.length);
+  const finalHash = await crypto.subtle.digest(
+    'SHA-256',
+    outerInput.buffer as ArrayBuffer,
+  );
+
+  // Convert to base64
+  const hashArray = new Uint8Array(finalHash);
+  let binaryString = '';
+  for (let i = 0; i < hashArray.length; i++) {
+    binaryString += String.fromCharCode(hashArray[i]);
+  }
+
+  return btoa(binaryString);
+}
 
 /**
  * Generate HMAC-SHA256 signature for YellowCard widget parameters
  * @param walletAddress - The user's wallet address
  * @param token - The token symbol (e.g., 'USDT')
- * @param amount - The amount to purchase
- * @returns Promise<string> - Base64 encoded signature
+ * @param amount - The amount to purchase (optional - removed from message if not provided)
+ * @returns Promise<string> - URL-encoded base64 signature
  */
 export const generateSignature = async (
   walletAddress: string,
   token: string,
-  amount: string,
 ): Promise<string> => {
   const message = {
     address: walletAddress,
     token: token,
-    amount: amount,
   };
+  const secretKey = process.env.EXPO_PUBLIC_YELLOWCARD_SECRET_KEY;
 
-  const secretKey =
-    '8a2bfda7f762403b97a3abddc9c16c9298d066f81b7d01679c918929528f969c';
-
-  // For now, use a deterministic hash-based approach
-  // This creates a consistent signature for the same inputs
-  // In production, you might want to use a proper HMAC library
-  const messageString = JSON.stringify(message) + secretKey;
-
-  // Simple hash function that creates a deterministic signature
-  let hash = 0;
-  for (let i = 0; i < messageString.length; i++) {
-    const char = messageString.charCodeAt(i);
-    hash = (hash << 5) - hash + char;
-    hash = hash & hash; // Convert to 32-bit integer
+  if (!secretKey) {
+    throw new Error('YellowCard secret key not configured');
   }
 
-  // Convert to a positive hex string for consistency
-  const signature = Math.abs(hash).toString(16).padStart(8, '0');
+  try {
+    // Use manual HMAC implementation
+    const base64Signature = await createHmacSha256(
+      secretKey,
+      JSON.stringify(message),
+    );
 
-  // Return as base64 encoded string
-  return btoa(signature);
+    // Return URL-encoded signature (as in your Node.js example)
+    return encodeURIComponent(base64Signature);
+  } catch (error) {
+    console.error('Failed to generate HMAC signature:', error);
+    throw new Error('Signature generation failed');
+  }
 };
