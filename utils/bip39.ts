@@ -28,7 +28,10 @@ function bytesToBinary(bytes: Uint8Array): string {
 
 // Derive checksum bits from entropy
 async function deriveChecksumBits(entropyBuffer: Uint8Array): Promise<string> {
-  const hashBuffer = await crypto.subtle.digest('SHA-256', entropyBuffer);
+  const hashBuffer = await crypto.subtle.digest(
+    'SHA-256',
+    entropyBuffer.buffer as ArrayBuffer,
+  );
   const hash = new Uint8Array(hashBuffer);
   const bits = bytesToBinary(hash);
   const checksumLength = (entropyBuffer.length * 8) / 32;
@@ -106,7 +109,7 @@ export async function mnemonicToSeed(
 
   const key = await crypto.subtle.importKey(
     'raw',
-    mnemonicBuffer,
+    mnemonicBuffer.buffer as ArrayBuffer,
     { name: 'PBKDF2' },
     false,
     ['deriveBits'],
@@ -115,7 +118,7 @@ export async function mnemonicToSeed(
   const derivedBits = await crypto.subtle.deriveBits(
     {
       name: 'PBKDF2',
-      salt: saltBuffer,
+      salt: saltBuffer.buffer as ArrayBuffer,
       iterations: 2048,
       hash: 'SHA-512',
     },

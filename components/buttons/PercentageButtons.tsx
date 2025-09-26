@@ -55,22 +55,23 @@ const PercentageButtons: React.FC<PercentageButtonsProps> = ({
 const styles = StyleSheet.create({
   percentageButtonsContainer: {
     flexDirection: 'column',
-    justifyContent: 'space-between', // Distribute buttons with same approach as keyboard
+    justifyContent: 'space-around', // Distribute buttons with same approach as keyboard
     width: moderateScale(80), // Fixed width for the percentage buttons column
-    gap: moderateScale(10),
+    gap: 5,
   },
   percentageButton: {
+    // paddingVertical: 15,
     flex: 1, // Each button takes equal height
-    paddingVertical: verticalScale(5),
     backgroundColor: colors.backgroundMedium,
-    borderRadius: moderateScale(8),
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: colors.backgroundLight,
+    maxHeight: 60,
   },
   percentageButtonText: {
-    fontSize: moderateScale(12),
+    fontSize: moderateScale(14),
     fontFamily: 'Inter-Medium',
     color: colors.white,
   },
