@@ -52,19 +52,17 @@ const TokenItem = ({
     balance: displayQuantity,
     loading: isLoading,
     error: _error,
-    globalError,
-    isConnectingOrFetchingOverall,
     decimalsShown,
   } = useTokenBalance(token.address);
   const displayDollarValue = displayQuantity
     ? displayQuantity * currentPrice
     : undefined;
-  const error = _error || globalError; // Combine WebSocket and store errors
+  const error = _error; // Use the error from the hook
 
   return (
     <GreyCard
       style={styles.cardStyle}
-      contentPaddingVertical={16}
+      contentPaddingVertical={10}
       contentPaddingHorizontal={16}
     >
       <TouchableOpacity style={styles.touchableContent} onPress={onPress}>
@@ -180,11 +178,6 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(14),
     fontFamily: 'Inter-SemiBold',
     color: colors.textPrimary,
-  },
-  network: {
-    fontSize: moderateScale(10),
-    fontFamily: 'Inter-Regular',
-    color: colors.textSecondary,
   },
   priceContainer: {
     alignItems: 'flex-end',

@@ -22,8 +22,6 @@ const TokenItemAlt: React.FC<TokenItemAltProps> = ({
     balance,
     loading: isLoading,
     error: _error,
-    globalError,
-    isConnectingOrFetchingOverall,
     decimalsShown,
     name,
     symbol,

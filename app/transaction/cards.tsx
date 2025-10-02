@@ -5,13 +5,14 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Modal,
   TextInput,
   Alert,
   Image,
   Animated,
   ActivityIndicator,
+  Dimensions,
 } from 'react-native';
+
 import * as Clipboard from 'expo-clipboard';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -52,6 +53,13 @@ import { useConfig } from '@/hooks/useConfig';
 import CustomAlert from '@/components/CustomAlert';
 import { useTokenBalance } from '@/hooks/useTokenBalance';
 import { USDT_ADDRESS } from '@/constants/tokens';
+import colors from '@/constants/colors';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import BottomActionContainer from '@/components/BottomActionContainer';
+import PrimaryActionButton from '@/components/buttons/PrimaryActionButton';
+import CreateCardBottomSheet, {
+  CreateCardBottomSheetRef,
+} from '@/components/CreateCardBottomSheet';
 // Note: cardCreationSteps service simplified since we now use status-based polling
 
 const MIN_KYC_LEVEL = 1; // Minimum KYC level required for virtual cards
@@ -66,21 +74,14 @@ Notifications.setNotificationHandler({
 });
 
 export default function CardsScreen() {
-  const [showAddCard, setShowAddCard] = useState(false);
   const [selectedBrand, setSelectedBrand] = useState<'mastercard' | 'visa'>(
     'visa',
   );
-  const [cardBalance, setCardBalance] = useState('');
-  const [cardName, setCardName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [visibleCards, setVisibleCards] = useState<{ [key: string]: boolean }>(
     {},
   );
-  const [showValidationError, setShowValidationError] = useState(false);
-  const [showNameValidationError, setShowNameValidationError] = useState(false);
-  const [showBalanceValidationError, setShowBalanceValidationError] =
-    useState(false);
-  const [showDevButtons, setShowDevButtons] = useState(true);
+
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [customAlert, setCustomAlert] = useState<{
     visible: boolean;
@@ -121,10 +122,8 @@ export default function CardsScreen() {
     refetch: refetchCards,
   } = useCards(userEmail);
 
-  // Animation refs for shake effects
-  const createButtonShakeAnim = useRef(new Animated.Value(0)).current;
-  const devButton1ShakeAnim = useRef(new Animated.Value(0)).current;
-  const devButton2ShakeAnim = useRef(new Animated.Value(0)).current;
+  // Bottom sheet ref
+  const addCardBottomSheetRef = useRef<CreateCardBottomSheetRef>(null);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -209,60 +208,16 @@ export default function CardsScreen() {
     return totalRequired > usdtBalance;
   };
 
-  const handleBalanceChange = (text: string) => {
-    // Only allow numbers and one decimal point
-    const numericRegex = /^(\d*\.?\d{0,2})$/;
-
-    // Remove any non-numeric characters except decimal point
-    const cleanedText = text.replace(/[^0-9.]/g, '');
-
-    // Ensure only one decimal point and max 2 decimal places
-    const parts = cleanedText.split('.');
-    let validText = parts[0];
-    if (parts.length > 1) {
-      validText += '.' + parts[1].substring(0, 2);
-    }
-
-    // Only update if the text matches our numeric pattern
-    if (numericRegex.test(validText)) {
-      setCardBalance(validText);
-
-      // Clear balance validation error when user types (will be re-validated below)
-      setShowBalanceValidationError(false);
-
-      // Validate the numeric value for range (5-2500)
-      const balance = parseFloat(validText);
-      if (validText && !isNaN(balance) && balance > 0) {
-        setShowValidationError(balance < 5 || balance > 2500);
-
-        // Check for insufficient balance in real-time
-        const hasInsufficientBalance = validateCardBalance(validText);
-        setShowBalanceValidationError(hasInsufficientBalance);
-      } else {
-        setShowValidationError(false);
-        setShowBalanceValidationError(false);
-      }
-    }
-  };
-
-  const handleBalanceBlur = () => {
-    // Re-validate on blur to ensure validation is up-to-date
-    const hasInsufficientBalance = validateCardBalance(cardBalance);
-    setShowBalanceValidationError(hasInsufficientBalance);
+  const handleCloseAddCard = () => {
+    addCardBottomSheetRef.current?.close();
   };
 
   const handleAddCardPress = async () => {
-    // Show modal immediately for better UX
-    setShowAddCard(true);
-
-    // Check KYC in the background
+    // Check KYC first
     const isKYCCompliant = await checkKYCLevel(MIN_KYC_LEVEL);
 
     if (!isKYCCompliant) {
-      // Close the modal first
-      setShowAddCard(false);
-
-      // Then show the KYC alert
+      // Show the KYC alert
       Alert.alert(
         'KYC Verification Required',
         `You need to complete KYC Level ${MIN_KYC_LEVEL} verification to create virtual cards. Please complete your document verification first.`,
@@ -281,6 +236,9 @@ export default function CardsScreen() {
       );
       return;
     }
+
+    // Open bottom sheet
+    addCardBottomSheetRef.current?.expand();
   };
 
   const simulateCardFailureFlow = async (
@@ -331,34 +289,14 @@ export default function CardsScreen() {
   };
 
   const handleAddCard = async (
+    cardName: string,
+    cardBalance: string,
     simulationType?: 'simulate_usdt_failed' | 'simulate_card_failed',
   ) => {
     const balance = parseFloat(cardBalance);
 
-    if (!cardName.trim()) {
-      Alert.alert('Error', 'Please enter a card name');
-      return;
-    }
-
-    if (cardName.trim().length < 4) {
-      Alert.alert('Error', 'Card name must be at least 4 characters long');
-      return;
-    }
-
-    if (!cardBalance || balance <= 0) {
-      Alert.alert('Error', 'Please enter a valid balance amount');
-      return;
-    }
-
-    if (balance < 5 || balance > 2500) {
-      setShowValidationError(true);
-      Alert.alert('Error', 'Balance must be between $5.00 and $2,500.00');
-      return;
-    }
-
     // Check if user has sufficient USDT balance
     if (validateCardBalance(cardBalance)) {
-      setShowBalanceValidationError(true);
       showCustomAlert(
         '💰 Insufficient USDT Balance',
         `You need at least ${formatBalance(
@@ -386,7 +324,6 @@ export default function CardsScreen() {
       return;
     }
 
-    setShowValidationError(false);
     setIsLoading(true);
 
     try {
@@ -522,13 +459,9 @@ export default function CardsScreen() {
         return;
       }
 
-      // Close the modal and reset form
-      setShowAddCard(false);
-      setCardBalance('');
-      setCardName('');
-      setShowValidationError(false);
-      setShowNameValidationError(false);
-      setShowBalanceValidationError(false);
+      // Close the bottom sheet and reset form
+      addCardBottomSheetRef.current?.close();
+
       setIsLoading(false);
 
       // Refresh cards from API to show any new cards
@@ -592,58 +525,6 @@ export default function CardsScreen() {
       style: 'currency',
       currency: 'USD',
     }).format(amount);
-  };
-
-  // Handler functions for button interactions with shake animation
-  const handleCreateCardAttempt = () => {
-    const isDisabled =
-      !cardName.trim() ||
-      cardName.trim().length < 4 ||
-      !cardBalance ||
-      parseFloat(cardBalance) <= 0 ||
-      isLoading ||
-      showValidationError ||
-      showNameValidationError ||
-      showBalanceValidationError;
-    if (isDisabled) {
-      triggerShake(createButtonShakeAnim);
-    } else {
-      handleAddCard();
-    }
-  };
-
-  const handleDevButton1Attempt = () => {
-    const isDisabled =
-      !cardName.trim() ||
-      cardName.trim().length < 4 ||
-      !cardBalance ||
-      parseFloat(cardBalance) <= 0 ||
-      isLoading ||
-      showValidationError ||
-      showNameValidationError ||
-      showBalanceValidationError;
-    if (isDisabled) {
-      triggerShake(devButton1ShakeAnim);
-    } else {
-      handleAddCard('simulate_usdt_failed');
-    }
-  };
-
-  const handleDevButton2Attempt = () => {
-    const isDisabled =
-      !cardName.trim() ||
-      cardName.trim().length < 4 ||
-      !cardBalance ||
-      parseFloat(cardBalance) <= 0 ||
-      isLoading ||
-      showValidationError ||
-      showNameValidationError ||
-      showBalanceValidationError;
-    if (isDisabled) {
-      triggerShake(devButton2ShakeAnim);
-    } else {
-      handleAddCard('simulate_card_failed');
-    }
   };
 
   const getBrandLogo = (brand: 'mastercard' | 'visa') => {
@@ -784,518 +665,108 @@ export default function CardsScreen() {
   };
 
   return (
-    <ScreenContainer edges={['top', 'bottom']}>
-      <ScreenHeader
-        title="Virtual Cards"
-        onBack={() => router.push('/' as any)}
-      />
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ScreenContainer edges={['top', 'bottom']}>
+        <ScreenHeader
+          title="Virtual Cards"
+          onBack={() => router.push('/' as any)}
+        />
 
-      {/* Config Loading/Error States */}
-      {isConfigLoading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#10b981" />
-        </View>
-      ) : configError ? (
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorTitle}>Configuration Error</Text>
-          <Text style={styles.errorText}>
-            Failed to load app configuration. Please check your connection and
-            try again.
-          </Text>
-          <TouchableOpacity
-            style={styles.retryButton}
-            onPress={() => {
-              // Invalidate the config query to trigger a refetch
-              queryClient.invalidateQueries({ queryKey: ['app-config'] });
-            }}
-          >
-            <Text style={styles.retryButtonText}>Retry</Text>
-          </TouchableOpacity>
-        </View>
-      ) : virtualCardCreationFee === undefined ||
-        cashwyreBaseFee === undefined ? (
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorTitle}>Configuration Missing</Text>
-          <Text style={styles.errorText}>
-            Required configuration data is missing. Please contact support.
-          </Text>
-        </View>
-      ) : (
-        <>
-          <ScrollView
-            style={styles.content}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.scrollContent}
-          >
-            {/* Existing Cards */}
-            <View style={styles.cardsContainer}>
-              {isLoadingCards ? (
-                <View style={styles.loadingContainer}>
-                  <ActivityIndicator size="large" color="#10b981" />
-                  <Text style={styles.loadingText}>Loading your cards...</Text>
-                </View>
-              ) : cards.length === 0 ? (
-                <View style={styles.emptyContainer}>
-                  <CreditCard size={48} color="#6b7280" />
-                  <Text style={styles.emptyTitle}>No Cards Yet</Text>
-                  <Text style={styles.emptyText}>
-                    Create your first virtual card to get started
-                  </Text>
-                </View>
-              ) : (
-                cards.map(renderPaymentCard)
-              )}
-            </View>
-          </ScrollView>
-
-          {/* Sticky Add New Card Button */}
-          <View style={styles.stickyButtonContainer}>
+        {/* Config Loading/Error States */}
+        {isConfigLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#10b981" />
+          </View>
+        ) : configError ? (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorTitle}>Configuration Error</Text>
+            <Text style={styles.errorText}>
+              Failed to load app configuration. Please check your connection and
+              try again.
+            </Text>
             <TouchableOpacity
-              style={styles.addCardButton}
-              onPress={handleAddCardPress}
+              style={styles.retryButton}
+              onPress={() => {
+                // Invalidate the config query to trigger a refetch
+                queryClient.invalidateQueries({ queryKey: ['app-config'] });
+              }}
             >
-              <Plus size={24} color="#ffffff" />
-              <Text style={styles.addCardText}>ADD NEW CARD</Text>
-              <View style={styles.addCardIcon}>
-                <CreditCard size={20} color="#9ca3af" />
-              </View>
+              <Text style={styles.retryButtonText}>Retry</Text>
             </TouchableOpacity>
           </View>
-
-          {/* Add Card Modal */}
-          <Modal
-            visible={showAddCard}
-            animationType="slide"
-            presentationStyle="pageSheet"
-          >
-            <SafeAreaView style={styles.container}>
-              <View style={styles.header}>
-                <View style={styles.placeholder} />
-                <Text style={styles.title}>Create New Card</Text>
-                <TouchableOpacity
-                  style={styles.closeButton}
-                  onPress={() => {
-                    setShowAddCard(false);
-                    setShowValidationError(false);
-                    setShowNameValidationError(false);
-                    setShowBalanceValidationError(false);
-                    setShowDevButtons(true); // Reset dev buttons visibility when closing modal
-                  }}
-                >
-                  <X size={24} color="#ffffff" />
-                </TouchableOpacity>
+        ) : virtualCardCreationFee === undefined ||
+          cashwyreBaseFee === undefined ? (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorTitle}>Configuration Missing</Text>
+            <Text style={styles.errorText}>
+              Required configuration data is missing. Please contact support.
+            </Text>
+          </View>
+        ) : (
+          <>
+            <ScrollView
+              style={styles.content}
+              showsVerticalScrollIndicator={false}
+            >
+              {/* Existing Cards */}
+              <View style={styles.cardsContainer}>
+                {isLoadingCards ? (
+                  <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color="#10b981" />
+                    <Text style={styles.loadingText}>
+                      Loading your cards...
+                    </Text>
+                  </View>
+                ) : cards.length === 0 ? (
+                  <View style={styles.emptyContainer}>
+                    <CreditCard size={48} color="#6b7280" />
+                    <Text style={styles.emptyTitle}>No Cards Yet</Text>
+                    <Text style={styles.emptyText}>
+                      Create your first virtual card to get started
+                    </Text>
+                  </View>
+                ) : (
+                  cards.map(renderPaymentCard)
+                )}
               </View>
+            </ScrollView>
 
-              <ScrollView
-                style={styles.content}
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.modalScrollContent}
-              >
-                {/* Card Brand Selection */}
-                <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>Card Brand</Text>
-                  <View style={styles.brandSelector}>
-                    <TouchableOpacity
-                      style={[
-                        styles.brandOption,
-                        styles.brandOptionDisabled,
-                        selectedBrand === 'mastercard' &&
-                          styles.brandOptionSelected,
-                      ]}
-                      disabled={true}
-                    >
-                      <Image
-                        source={getBrandLogo('mastercard')}
-                        style={[
-                          styles.brandOptionLogo,
-                          styles.brandOptionLogoDisabled,
-                        ]}
-                        resizeMode="contain"
-                      />
-                      <Text
-                        style={[
-                          styles.brandOptionText,
-                          styles.brandOptionTextDisabled,
-                        ]}
-                      >
-                        Mastercard
-                      </Text>
-                    </TouchableOpacity>
+            {/* Add New Card Button */}
+            <BottomActionContainer>
+              <PrimaryActionButton
+                title="ADD NEW CARD"
+                onPress={handleAddCardPress}
+              />
+            </BottomActionContainer>
 
-                    <TouchableOpacity
-                      style={[
-                        styles.brandOption,
-                        selectedBrand === 'visa' && styles.brandOptionSelected,
-                      ]}
-                      onPress={() => setSelectedBrand('visa')}
-                    >
-                      <Image
-                        source={getBrandLogo('visa')}
-                        style={styles.brandOptionLogo}
-                        resizeMode="contain"
-                      />
-                      <Text style={styles.brandOptionText}>Visa</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
+            {/* Create Card Bottom Sheet */}
+            <CreateCardBottomSheet
+              ref={addCardBottomSheetRef}
+              onCreateCard={handleAddCard}
+              onClose={() => {}}
+              isLoading={isLoading}
+            />
+          </>
+        )}
 
-                {/* Card Name Input */}
-                <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>Card Name</Text>
-                  <View style={styles.inputWrapper}>
-                    <CreditCard
-                      size={20}
-                      color="#9ca3af"
-                      style={styles.inputIcon}
-                    />
-                    <TextInput
-                      style={styles.balanceInput}
-                      placeholder="Enter card name (e.g., Personal Card)"
-                      placeholderTextColor="#6b7280"
-                      value={cardName}
-                      onChangeText={(text) => {
-                        // Only allow English letters (a-z, A-Z) and spaces
-                        const letterRegex = /^[a-zA-Z\s]*$/;
-
-                        // Remove any non-letter characters except spaces
-                        const cleanedText = text.replace(/[^a-zA-Z\s]/g, '');
-
-                        // Remove extra consecutive spaces and trim leading spaces
-                        const normalizedText = cleanedText
-                          .replace(/\s+/g, ' ')
-                          .replace(/^\s+/, '');
-
-                        // Only update if the text matches our letter pattern
-                        if (letterRegex.test(normalizedText)) {
-                          setCardName(normalizedText);
-                          // Check minimum length validation
-                          setShowNameValidationError(
-                            normalizedText.length > 0 &&
-                              normalizedText.length < 4,
-                          );
-                        }
-                      }}
-                    />
-                  </View>
-                  <Text
-                    style={[
-                      styles.inputHint,
-                      showNameValidationError && styles.inputHintError,
-                    ]}
-                  >
-                    {showNameValidationError ? '*' : ''}Minimum 4 characters,
-                    letters only{showNameValidationError ? ' *' : ''}
-                  </Text>
-                </View>
-
-                {/* Balance Input */}
-                <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>Initial Balance</Text>
-                  <View
-                    style={[
-                      styles.inputWrapper,
-                      showBalanceValidationError && styles.inputWrapperError,
-                    ]}
-                  >
-                    <DollarSign
-                      size={20}
-                      color="#9ca3af"
-                      style={styles.inputIcon}
-                    />
-                    <TextInput
-                      style={styles.balanceInput}
-                      placeholder="Enter amount (e.g., 500.00)"
-                      placeholderTextColor="#6b7280"
-                      value={cardBalance}
-                      onChangeText={handleBalanceChange}
-                      onBlur={handleBalanceBlur}
-                      keyboardType="decimal-pad"
-                    />
-                  </View>
-
-                  {/* Balance validation error */}
-                  {showBalanceValidationError && (
-                    <Text style={[styles.inputHint, styles.inputHintError]}>
-                      * Insufficient USDT balance. You have{' '}
-                      {usdtBalance.toFixed(2)} USDT available *
-                    </Text>
-                  )}
-
-                  {/* Range validation error */}
-                  <Text
-                    style={[
-                      styles.inputHint,
-                      showValidationError && styles.inputHintError,
-                    ]}
-                  >
-                    {showValidationError ? '*' : ''}Min: $5.00 • Max: $2,500.00
-                    {showValidationError ? ' *' : ''}
-                  </Text>
-                </View>
-
-                {/* Fee Breakdown */}
-                <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>Fee Breakdown</Text>
-                  <View style={styles.feeBreakdownCard}>
-                    <View style={styles.feeRow}>
-                      <Text style={styles.feeLabel}>Initial Balance</Text>
-                      <Text style={styles.feeValue}>
-                        {cardBalance
-                          ? formatBalance(parseFloat(cardBalance))
-                          : '$0.00'}
-                      </Text>
-                    </View>
-                    <View style={styles.feeRow}>
-                      <Text style={styles.feeLabel}>
-                        Processing Fee (
-                        {(virtualCardCreationFee * 100).toFixed(0)}%)
-                      </Text>
-                      <Text style={styles.feeValue}>
-                        {cardBalance
-                          ? formatBalance(
-                              virtualCardCreationFee * parseFloat(cardBalance),
-                            )
-                          : '$0.00'}
-                      </Text>
-                    </View>
-                    <View style={styles.feeRow}>
-                      <Text style={styles.feeLabel}>Provider Fee</Text>
-                      <Text style={styles.feeValue}>
-                        {formatBalance(cashwyreBaseFee)}
-                      </Text>
-                    </View>
-                    <View style={styles.feeDivider} />
-                    <View style={styles.feeRow}>
-                      <Text style={styles.feeLabelTotal}>Total Fee</Text>
-                      <Text style={styles.feeValueTotal}>
-                        {cardBalance
-                          ? formatBalance(
-                              virtualCardCreationFee * parseFloat(cardBalance) +
-                                cashwyreBaseFee,
-                            )
-                          : formatBalance(cashwyreBaseFee)}
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-
-                {/* Total to Pay */}
-                <View style={styles.section}>
-                  <View style={styles.totalToPayCard}>
-                    <Text style={styles.totalToPayLabel}>Total to Pay</Text>
-                    <Text style={styles.totalToPayValue}>
-                      {cardBalance
-                        ? formatBalance(
-                            parseFloat(cardBalance) +
-                              virtualCardCreationFee * parseFloat(cardBalance) +
-                              cashwyreBaseFee,
-                          )
-                        : formatBalance(cashwyreBaseFee)}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Card Preview - Commented out for now */}
-                {/* <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Card Preview</Text>
-              <View style={styles.previewCard}>
-                <View style={styles.previewCardHeader}>
-                  <View style={styles.previewCardHolderSection}>
-                    <View style={styles.previewUserIcon}>
-                      <User size={14} color="#ffffff" />
-                    </View>
-                    <Text style={styles.previewCardHolderName}>
-                      {cardName.trim() || 'Enter card name'}
-                    </Text>
-                  </View>
-                  <Image
-                    source={getBrandLogo(selectedBrand)}
-                    style={styles.previewBrandLogo}
-                    resizeMode="contain"
-                  />
-                </View>
-
-                <View style={styles.previewCardNumberSection}>
-                  <Text style={styles.previewCardNumberText}>•••• •••• •••• ••••</Text>
-                  <View style={styles.previewVisibilityButton}>
-                    <Eye size={20} color="#9ca3af" />
-                  </View>
-                </View>
-
-                <View style={styles.previewCardFooter}>
-                  <View style={styles.previewBalanceSection}>
-                    <Text style={styles.previewCardLabel}>BALANCE</Text>
-                    <View style={styles.previewBalanceRow}>
-                      <Text style={styles.previewBalanceValue}>
-                        {cardBalance ? formatBalance(parseFloat(cardBalance)) : '$0.00'}
-                      </Text>
-                      <View style={styles.previewBalanceVisibilityButton}>
-                        <Eye size={16} color="#10b981" />
-                      </View>
-                    </View>
-                  </View>
-                  <View style={styles.previewCvvSection}>
-                    <Text style={styles.previewCardLabel}>CVV</Text>
-                    <Text style={styles.previewCardValue}>•••</Text>
-                  </View>
-                  <View style={styles.previewExpirySection}>
-                    <Text style={styles.previewCardLabel}>EXPIRES</Text>
-                    <Text style={styles.previewCardValue}>••/••</Text>
-                  </View>
-                </View>
-              </View>
-            </View> */}
-              </ScrollView>
-
-              {/* Sticky Button Container */}
-              <View style={styles.modalStickyButtonContainer}>
-                {/* Development Mode: Toggle and Simulation Buttons */}
-                {process.env.EXPO_PUBLIC_APP_ENV === 'development' &&
-                  showDevButtons && (
-                    <View style={styles.devSection}>
-                      <TouchableOpacity
-                        style={styles.devToggleButton}
-                        onPress={() => setShowDevButtons(false)}
-                      >
-                        <Text style={styles.devToggleButtonText}>
-                          Hide Dev Buttons
-                        </Text>
-                      </TouchableOpacity>
-
-                      <View style={styles.devButtonsContainer}>
-                        <Animated.View
-                          style={{
-                            transform: [{ translateX: devButton1ShakeAnim }],
-                          }}
-                        >
-                          <TouchableOpacity
-                            style={[
-                              styles.devSimulateButton,
-                              (!cardName.trim() ||
-                                cardName.trim().length < 4 ||
-                                !cardBalance ||
-                                parseFloat(cardBalance) <= 0 ||
-                                isLoading ||
-                                showValidationError ||
-                                showNameValidationError ||
-                                showBalanceValidationError) &&
-                                styles.devSimulateButtonDisabled,
-                            ]}
-                            onPress={handleDevButton1Attempt}
-                          >
-                            <Text
-                              style={[
-                                styles.devSimulateButtonText,
-                                (!cardName.trim() ||
-                                  cardName.trim().length < 4 ||
-                                  !cardBalance ||
-                                  parseFloat(cardBalance) <= 0 ||
-                                  isLoading ||
-                                  showValidationError ||
-                                  showNameValidationError ||
-                                  showBalanceValidationError) &&
-                                  styles.devSimulateButtonTextDisabled,
-                              ]}
-                            >
-                              Simulate USDT Send Failed
-                            </Text>
-                          </TouchableOpacity>
-                        </Animated.View>
-
-                        <Animated.View
-                          style={{
-                            transform: [{ translateX: devButton2ShakeAnim }],
-                          }}
-                        >
-                          <TouchableOpacity
-                            style={[
-                              styles.devSimulateButton,
-                              (!cardName.trim() ||
-                                cardName.trim().length < 4 ||
-                                !cardBalance ||
-                                parseFloat(cardBalance) <= 0 ||
-                                isLoading ||
-                                showValidationError ||
-                                showNameValidationError ||
-                                showBalanceValidationError) &&
-                                styles.devSimulateButtonDisabled,
-                            ]}
-                            onPress={handleDevButton2Attempt}
-                          >
-                            <Text
-                              style={[
-                                styles.devSimulateButtonText,
-                                (!cardName.trim() ||
-                                  cardName.trim().length < 4 ||
-                                  !cardBalance ||
-                                  parseFloat(cardBalance) <= 0 ||
-                                  isLoading ||
-                                  showValidationError ||
-                                  showNameValidationError ||
-                                  showBalanceValidationError) &&
-                                  styles.devSimulateButtonTextDisabled,
-                              ]}
-                            >
-                              Simulate Card Creation Failed
-                            </Text>
-                          </TouchableOpacity>
-                        </Animated.View>
-                      </View>
-                    </View>
-                  )}
-
-                {/* Create Button */}
-                <Animated.View
-                  style={{ transform: [{ translateX: createButtonShakeAnim }] }}
-                >
-                  <TouchableOpacity
-                    style={[
-                      styles.createButton,
-                      (!cardName.trim() ||
-                        cardName.trim().length < 4 ||
-                        !cardBalance ||
-                        parseFloat(cardBalance) <= 0 ||
-                        isLoading ||
-                        showValidationError ||
-                        showNameValidationError ||
-                        showBalanceValidationError) &&
-                        styles.createButtonDisabled,
-                    ]}
-                    onPress={handleCreateCardAttempt}
-                  >
-                    {isLoading ? (
-                      <ActivityIndicator size="small" color="#ffffff" />
-                    ) : (
-                      <CreditCard size={20} color="#ffffff" />
-                    )}
-                    <Text style={styles.createButtonText}>
-                      {isLoading ? 'Creating Card...' : 'Create Virtual Card'}
-                    </Text>
-                  </TouchableOpacity>
-                </Animated.View>
-              </View>
-            </SafeAreaView>
-          </Modal>
-        </>
-      )}
-
-      {/* Custom Alert */}
-      <CustomAlert
-        title={customAlert.title}
-        message={customAlert.message}
-        type={customAlert.type}
-        visible={customAlert.visible}
-        onDismiss={hideCustomAlert}
-        buttons={customAlert.buttons}
-      />
-    </ScreenContainer>
+        {/* Custom Alert */}
+        <CustomAlert
+          title={customAlert.title}
+          message={customAlert.message}
+          type={customAlert.type}
+          visible={customAlert.visible}
+          onDismiss={hideCustomAlert}
+          buttons={customAlert.buttons}
+        />
+      </ScreenContainer>
+    </GestureHandlerRootView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: colors.backgroundDark,
   },
   header: {
     flexDirection: 'row',
@@ -1321,7 +792,8 @@ const styles = StyleSheet.create({
     width: 40,
   },
   content: {
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
   },
   cardsContainer: {
     marginBottom: 24,
@@ -1357,65 +829,14 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 24,
   },
-  addCardButton: {
-    backgroundColor: '#1a1a1a',
-    borderRadius: 16,
-    padding: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderWidth: 2,
-    borderColor: '#333333',
-    borderStyle: 'dashed',
-  },
-  addCardText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#ffffff',
-    flex: 1,
-    marginLeft: 12,
-  },
-  addCardIcon: {
-    opacity: 0.5,
-  },
-  scrollContent: {
-    paddingBottom: 100, // Add space for the sticky button
-  },
-  modalScrollContent: {
-    paddingBottom: 160, // Extra space for sticky buttons in modal (dev buttons + create button)
-  },
-  stickyButtonContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: '#000000',
-    paddingHorizontal: 16,
-    paddingBottom: 24, // Extra padding for safe area
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  modalStickyButtonContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: '#000000',
-    paddingHorizontal: 16,
-    paddingBottom: 24, // Extra padding for safe area
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.1)',
-  },
   section: {
     marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#ffffff',
-    marginBottom: 12,
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#a1a1aa',
+    marginBottom: 6,
   },
   brandSelector: {
     flexDirection: 'row',
@@ -1575,24 +996,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#ffffff',
   },
-  createButton: {
-    backgroundColor: '#10b981',
-    borderRadius: 12,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 8,
-  },
-  createButtonDisabled: {
-    backgroundColor: '#374151',
-  },
-  createButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#ffffff',
-    marginLeft: 8,
-  },
+
   devButton: {
     backgroundColor: 'rgba(239, 68, 68, 0.1)',
     borderRadius: 16,
@@ -1642,6 +1046,7 @@ const styles = StyleSheet.create({
   },
   devSection: {
     marginBottom: 12,
+    padding: 16,
   },
   devToggleButton: {
     backgroundColor: '#374151',

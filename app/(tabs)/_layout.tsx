@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router';
-import { View, useWindowDimensions } from 'react-native'; // Import useWindowDimensions instead of Dimensions
-import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
+import { useWindowDimensions } from 'react-native'; // Import useWindowDimensions instead of Dimensions
+import { verticalScale, moderateScale } from 'react-native-size-matters';
 import {
   House,
   ChartPie as PieChart,
@@ -22,9 +22,11 @@ export default function TabLayout() {
         tabBarStyle: {
           backgroundColor: colors.backgroundDark,
           borderTopWidth: 0,
-          elevation: 0,
-          height: verticalScale(60), // Reduced and made responsive
-          paddingTop: verticalScale(6), // Responsive vertical padding
+          // elevation: 0,
+          // height: verticalScale(28) + insets.bottom, // Add bottom safe area
+          // paddingBottom: verticalScale(52),
+          // paddingBottom: insets.bottom, // Add bottom safe area padding
+          marginTop: 6,
         },
         tabBarActiveTintColor: '#4682B4', // Steel Blue
         tabBarInactiveTintColor: colors.textSecondary,
@@ -32,7 +34,7 @@ export default function TabLayout() {
         tabBarLabelStyle: {
           fontWeight: '500',
           fontSize: moderateScale(10),
-          marginBottom: verticalScale(3), // Responsive margin
+          // marginBottom: verticalScale(30), // Responsive margin
         },
         tabBarIconStyle: {
           ...(isTablet ? {} : { marginBottom: verticalScale(3) }), // Responsive gap

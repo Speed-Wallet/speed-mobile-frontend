@@ -5,15 +5,8 @@ import React, {
   forwardRef,
   useImperativeHandle,
 } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  TextInput,
-  FlatList,
-} from 'react-native';
-import { Search } from 'lucide-react-native';
+import { StyleSheet } from 'react-native';
+import SearchBar from '@/components/SearchBar';
 import BottomSheet, {
   BottomSheetView,
   BottomSheetBackdrop,
@@ -22,9 +15,9 @@ import BottomSheet, {
 import SettingsHeader from '@/components/SettingsHeader';
 import colors from '@/constants/colors';
 import { getAllTokenInfo } from '@/data/tokens';
-import { EnrichedTokenEntry, TokenEntry } from '@/data/types';
+import { EnrichedTokenEntry } from '@/data/types';
 import TokenItemAlt from '@/components/TokenItemAlt';
-import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
+import { scale, verticalScale } from 'react-native-size-matters';
 
 interface TokenSelectorBottomSheetProps {
   onTokenSelect: (token: EnrichedTokenEntry) => void;
@@ -114,20 +107,11 @@ const TokenSelectorBottomSheet = forwardRef<
       <BottomSheetView style={styles.bottomSheetContent}>
         <SettingsHeader title="Select Token" onClose={handleClose} />
 
-        <View style={styles.searchContainer}>
-          <Search
-            size={scale(20)}
-            color={colors.textSecondary}
-            style={styles.searchIcon}
-          />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search by name or symbol"
-            placeholderTextColor={colors.textSecondary}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-        </View>
+        <SearchBar
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          placeholder="Search by name or symbol"
+        />
 
         <BottomSheetFlatList
           data={filteredTokens}
@@ -153,26 +137,6 @@ const styles = StyleSheet.create({
   bottomSheetContent: {
     flex: 1,
     backgroundColor: colors.backgroundDark,
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: scale(16),
-    paddingVertical: verticalScale(12),
-    borderColor: colors.backgroundMedium,
-    borderWidth: 1,
-    borderRadius: scale(12),
-    marginHorizontal: scale(16),
-    marginBottom: verticalScale(16),
-  },
-  searchIcon: {
-    marginRight: scale(8),
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: moderateScale(16),
-    fontFamily: 'Inter-Regular',
-    color: colors.textPrimary,
   },
   listContent: {
     paddingHorizontal: scale(16),

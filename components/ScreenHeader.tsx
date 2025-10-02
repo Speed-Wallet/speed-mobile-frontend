@@ -36,9 +36,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: scale(12),
-    paddingVertical: verticalScale(10),
+    // paddingVertical: verticalScale(10),
     minHeight: scale(48),
     position: 'relative',
+    borderBottomColor: '#E0E0E0',
   },
   title: {
     fontSize: scale(16),

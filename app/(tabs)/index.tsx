@@ -122,7 +122,7 @@ export default function HomeScreen() {
   };
 
   return (
-    <ScreenContainer edges={['top', 'bottom']}>
+    <ScreenContainer edges={['top']}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}

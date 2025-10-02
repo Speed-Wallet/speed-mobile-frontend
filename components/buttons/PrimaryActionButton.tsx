@@ -90,7 +90,7 @@ const PrimaryActionButton: React.FC<PrimaryActionButtonProps> = ({
 
 const styles = StyleSheet.create({
   button: {
-    height: moderateScale(50, 0.4),
+    height: moderateScale(44, 0.8),
     width: '100%',
     borderRadius: 16,
     alignItems: 'center',
