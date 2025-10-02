@@ -14,7 +14,7 @@ interface SettingsHeaderProps {
 const SettingsHeader: React.FC<SettingsHeaderProps> = ({
   title,
   onClose,
-  backgroundColor = colors.backgroundMedium,
+  // backgroundColor = colors.backgroundMedium,
   textColor = colors.textPrimary,
 }) => {
   return (
@@ -22,7 +22,10 @@ const SettingsHeader: React.FC<SettingsHeaderProps> = ({
       <Text style={[styles.title, { color: textColor }]}>{title}</Text>
       <TouchableOpacity
         onPress={onClose}
-        style={[styles.closeButton, { backgroundColor }]}
+        style={[
+          styles.closeButton,
+          // { backgroundColor }
+        ]}
       >
         <X size={scale(22)} color={textColor} />
       </TouchableOpacity>
@@ -36,7 +39,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: scale(15),
-    paddingVertical: verticalScale(15),
+    paddingBottom: 8,
   },
   title: {
     fontSize: moderateScale(18),

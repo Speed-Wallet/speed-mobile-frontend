@@ -65,7 +65,7 @@ const BalanceCard: React.FC<BalanceCardProps> = ({
   return (
     <GradientCard
       style={styles.balanceCardSpecificContainer}
-      contentPaddingVertical={32}
+      contentPaddingVertical={verticalScale(20)}
     >
       <View style={styles.upperContent}>
         {/* <Text style={styles.balanceLabel}>TOTAL BALANCE</Text> */}

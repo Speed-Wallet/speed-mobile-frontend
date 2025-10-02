@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Search } from 'lucide-react-native';
+import SearchBar from '@/components/SearchBar';
 import { router } from 'expo-router';
 import SettingsHeader from '@/components/SettingsHeader';
 import colors from '@/constants/colors';
@@ -82,20 +83,11 @@ export default function CountryPickerScreen() {
     <SafeAreaView style={styles.container}>
       <SettingsHeader title="Select Country" onClose={() => router.back()} />
 
-      <View style={styles.searchContainer}>
-        <Search
-          size={scale(20)}
-          color={colors.textSecondary}
-          style={styles.searchIcon}
-        />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search by country name or dial code"
-          placeholderTextColor={colors.textSecondary}
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-      </View>
+      <SearchBar
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        placeholder="Search by country name or dial code"
+      />
 
       <FlatList
         data={filteredCountries}
@@ -112,26 +104,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.backgroundDark,
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: scale(15),
-    paddingVertical: verticalScale(11),
-    borderColor: colors.backgroundMedium,
-    borderWidth: 1,
-    borderRadius: scale(11),
-    marginHorizontal: scale(15),
-    marginBottom: verticalScale(15),
-  },
-  searchIcon: {
-    marginRight: scale(7),
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: moderateScale(15),
-    fontFamily: 'Inter-Regular',
-    color: colors.textPrimary,
   },
   listContent: {
     paddingHorizontal: scale(15),

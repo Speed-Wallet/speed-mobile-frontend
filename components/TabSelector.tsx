@@ -82,8 +82,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.backgroundMedium,
     borderRadius: scale(6),
     padding: scale(3),
-    marginTop: 12,
-    marginBottom: 12,
+    marginVertical: 8,
   },
   tab: {
     flex: 1,
