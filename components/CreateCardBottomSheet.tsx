@@ -25,6 +25,7 @@ import colors from '@/constants/colors';
 import { useConfig } from '@/hooks/useConfig';
 import { useTokenBalance } from '@/hooks/useTokenBalance';
 import { USDT_ADDRESS } from '@/constants/tokens';
+import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 
 // USDT Logo URI
 const USDT_LOGO_URI = 'local://usdt-logo.png';
@@ -58,6 +59,10 @@ const CreateCardBottomSheet = forwardRef<
   const [showDevButtons, setShowDevButtons] = useState(true);
 
   const bottomSheetRef = useRef<BottomSheet>(null);
+
+  // TextInput refs for focusing on errors
+  const cardNameRef = useRef<TextInput>(null);
+  const cardBalanceRef = useRef<TextInput>(null);
 
   // Animation refs for shake effects
   const createButtonShakeAnim = useRef(new RNAnimated.Value(0)).current;
@@ -193,6 +198,52 @@ const CreateCardBottomSheet = forwardRef<
     ]).start();
   };
 
+  // Focus first invalid field similar to KYC
+  const focusFirstInvalidField = () => {
+    // First blur all inputs to ensure we can refocus properly
+    [cardNameRef, cardBalanceRef].forEach((ref) => {
+      if (ref.current) {
+        ref.current.blur();
+      }
+    });
+
+    // Use setTimeout to ensure blur completes before focusing
+    setTimeout(() => {
+      // Check card name first
+      if (
+        !cardName.trim() ||
+        (cardName.trim().length > 0 && cardName.trim().length < 4)
+      ) {
+        if (cardNameRef.current) {
+          cardNameRef.current.focus();
+          // Position cursor at end of text
+          setTimeout(() => {
+            const textLength = cardName.length;
+            cardNameRef.current?.setSelection(textLength, textLength);
+          }, 50);
+          return;
+        }
+      }
+      // Then check balance
+      if (
+        !cardBalance ||
+        parseFloat(cardBalance) <= 0 ||
+        parseFloat(cardBalance) < 5 ||
+        parseFloat(cardBalance) > 2500
+      ) {
+        if (cardBalanceRef.current) {
+          cardBalanceRef.current.focus();
+          // Position cursor at end of text
+          setTimeout(() => {
+            const textLength = cardBalance.length;
+            cardBalanceRef.current?.setSelection(textLength, textLength);
+          }, 50);
+          return;
+        }
+      }
+    }, 100);
+  };
+
   // Handler functions for button interactions with shake animation
   const handleCreateCardAttempt = () => {
     const isDisabled =
@@ -206,7 +257,9 @@ const CreateCardBottomSheet = forwardRef<
       cardBalanceError;
 
     if (isDisabled) {
+      // Trigger shake animation and focus first invalid field
       triggerShake(createButtonShakeAnim);
+      focusFirstInvalidField();
     } else {
       onCreateCard(cardName, cardBalance);
     }
@@ -276,9 +329,15 @@ const CreateCardBottomSheet = forwardRef<
           {/* Card Name Input */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Card Name</Text>
-            <View style={styles.inputWrapper}>
+            <View
+              style={[
+                styles.inputWrapper,
+                cardNameError && styles.inputWrapperError,
+              ]}
+            >
               <CreditCard size={20} color="#9ca3af" style={styles.inputIcon} />
               <TextInput
+                ref={cardNameRef}
                 style={styles.balanceInput}
                 placeholder="Enter card name"
                 placeholderTextColor="#6b7280"
@@ -344,6 +403,7 @@ const CreateCardBottomSheet = forwardRef<
                 style={styles.inputIcon}
               />
               <TextInput
+                ref={cardBalanceRef}
                 style={styles.balanceInput}
                 placeholder="Enter amount"
                 placeholderTextColor="#6b7280"
@@ -361,7 +421,7 @@ const CreateCardBottomSheet = forwardRef<
                 cardBalanceError && styles.inputHintError,
               ]}
             >
-              {cardBalanceError ? '*' : ''}Range: $5 - $2,500 USD
+              {cardBalanceError ? '*' : ''}Range: $5 - $2,500 USDT
               {cardBalanceError ? ' *' : ''}
             </Text>
           </View>
@@ -497,16 +557,7 @@ const CreateCardBottomSheet = forwardRef<
             <PrimaryActionButton
               title={isLoading ? 'Creating Card...' : 'Create Virtual Card'}
               onPress={handleCreateCardAttempt}
-              disabled={
-                !cardName.trim() ||
-                cardName.trim().length < 4 ||
-                !cardBalance ||
-                parseFloat(cardBalance) <= 0 ||
-                isLoading ||
-                showValidationError ||
-                cardNameError ||
-                cardBalanceError
-              }
+              disabled={isLoading} // Only disable when loading
               loading={isLoading}
             />
           </RNAnimated.View>
@@ -531,9 +582,10 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 15,
+    gap: verticalScale(4), // Match KYC inputsContainer gap
   },
   section: {
-    marginVertical: 16,
+    marginBottom: verticalScale(1), // Match KYC inputContainer marginBottom
   },
   sectionTitle: {
     fontSize: 13,
@@ -552,7 +604,6 @@ const styles = StyleSheet.create({
   },
   inputWrapperError: {
     borderColor: '#ef4444',
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
   },
   inputIcon: {
     marginRight: 12,
