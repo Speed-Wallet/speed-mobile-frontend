@@ -1,10 +1,11 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useRef, useEffect } from 'react';
 import {
   StyleSheet,
   View,
   Text,
   TouchableOpacity,
   Platform,
+  Animated,
 } from 'react-native';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import ScreenContainer from '@/components/ScreenContainer';
@@ -28,6 +29,30 @@ const CreatePinStep: React.FC<CreatePinStepProps> = ({
   onBack,
   isLoading,
 }) => {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.95)).current;
+  const translateY = useRef(new Animated.Value(20)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.timing(translateY, {
+        toValue: 0,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
   const handleKeyPress = useCallback(
     (key: string) => {
       if (key === 'backspace') {
@@ -43,12 +68,28 @@ const CreatePinStep: React.FC<CreatePinStepProps> = ({
     <UnsafeScreenContainer>
       <View style={styles.content}>
         {/* Header */}
-        <View style={styles.header}>
+        <Animated.View
+          style={[
+            styles.header,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY }],
+            },
+          ]}
+        >
           <Text style={styles.title}>Create Your PIN</Text>
-        </View>
+        </Animated.View>
 
         {/* Main Content */}
-        <View style={styles.mainContent}>
+        <Animated.View
+          style={[
+            styles.mainContent,
+            {
+              opacity: fadeAnim,
+              transform: [{ scale: scaleAnim }],
+            },
+          ]}
+        >
           {/* PIN Dots Container */}
           <View style={styles.pinDotsContainer}>
             <PinDots pinLength={pin.length} maxLength={6} />
@@ -56,7 +97,7 @@ const CreatePinStep: React.FC<CreatePinStepProps> = ({
 
           {/* Circular Numeric Keyboard */}
           <CircularNumericKeyboard onKeyPress={handleKeyPress} />
-        </View>
+        </Animated.View>
 
         {/* Button Container */}
         <View style={styles.buttonContainer}>

@@ -8,7 +8,7 @@ import {
   Platform,
   Animated,
 } from 'react-native';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { User } from 'lucide-react-native';
 import { verticalScale, scale, moderateScale } from 'react-native-size-matters';
 import colors from '@/constants/colors';
@@ -35,6 +35,29 @@ export default function CreateUsernameStep({
   const [error, setError] = useState('');
   const [isUsernameTaken, setIsUsernameTaken] = useState(false);
   const shakeAnimationValue = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.95)).current;
+  const translateY = useRef(new Animated.Value(20)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.timing(translateY, {
+        toValue: 0,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
 
   const validateUsername = (text: string) => {
     // Match backend validation exactly
@@ -93,7 +116,15 @@ export default function CreateUsernameStep({
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
           {/* Header Section */}
-          <View style={styles.header}>
+          <Animated.View
+            style={[
+              styles.header,
+              {
+                opacity: fadeAnim,
+                transform: [{ translateY }],
+              },
+            ]}
+          >
             <Text style={styles.title}>
               Welcome
               {username.length > 0 && (
@@ -103,10 +134,18 @@ export default function CreateUsernameStep({
             <Text style={styles.subtitle}>
               Please enter your username to get started with your wallet setup
             </Text>
-          </View>
+          </Animated.View>
 
           {/* Form Section */}
-          <View style={styles.form}>
+          <Animated.View
+            style={[
+              styles.form,
+              {
+                opacity: fadeAnim,
+                transform: [{ scale: scaleAnim }],
+              },
+            ]}
+          >
             <Text style={styles.label}>Username</Text>
 
             <Animated.View
@@ -148,7 +187,7 @@ export default function CreateUsernameStep({
                 </Text>
               )}
             </View>
-          </View>
+          </Animated.View>
 
           {/* Continue Button */}
           <View style={styles.buttonWrapper}>
