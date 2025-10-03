@@ -5,7 +5,6 @@ import {
   Text,
   TouchableOpacity,
   Animated,
-  SafeAreaView,
   Platform,
   Clipboard,
 } from 'react-native';
@@ -18,6 +17,7 @@ import {
   AlertTriangle,
 } from 'lucide-react-native';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
+import UnsafeScreenContainer from '../UnsafeScreenContainer';
 import WordBox from './WordBox';
 import PrimaryActionButton from '../buttons/PrimaryActionButton';
 
@@ -68,7 +68,7 @@ const ShowMnemonicStep: React.FC<ShowMnemonicStepProps> = ({
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <UnsafeScreenContainer style={styles.container}>
       {/* Dev Mode Skip Button */}
       {process.env.EXPO_PUBLIC_APP_ENV === 'development' && (
         <TouchableOpacity style={styles.skipButton} onPress={onNext}>
@@ -191,14 +191,13 @@ const ShowMnemonicStep: React.FC<ShowMnemonicStepProps> = ({
           />
         </View>
       </View>
-    </SafeAreaView>
+    </UnsafeScreenContainer>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: '#121212',
+    // UnsafeScreenContainer provides flex: 1 and backgroundColor
   },
   content: {
     flex: 1,

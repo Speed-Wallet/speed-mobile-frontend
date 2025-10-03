@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import ScreenContainer from '@/components/ScreenContainer';
+import UnsafeScreenContainer from '@/components/UnsafeScreenContainer';
 import CircularNumericKeyboard from '@/components/keyboard/CircularNumericKeyboard';
 import PrimaryActionButton from '@/components/buttons/PrimaryActionButton';
 import PinDots from '@/components/PinDots';
@@ -39,7 +40,7 @@ const CreatePinStep: React.FC<CreatePinStepProps> = ({
   );
 
   return (
-    <ScreenContainer edges={['top', 'bottom']}>
+    <UnsafeScreenContainer>
       <View style={styles.content}>
         {/* Header */}
         <View style={styles.header}>
@@ -67,7 +68,7 @@ const CreatePinStep: React.FC<CreatePinStepProps> = ({
           />
         </View>
       </View>
-    </ScreenContainer>
+    </UnsafeScreenContainer>
   );
 };
 

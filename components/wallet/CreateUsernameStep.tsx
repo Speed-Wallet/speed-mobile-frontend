@@ -10,10 +10,11 @@ import {
 } from 'react-native';
 import { useState, useRef } from 'react';
 import { User } from 'lucide-react-native';
-import { verticalScale, scale } from 'react-native-size-matters';
+import { verticalScale, scale, moderateScale } from 'react-native-size-matters';
 import colors from '@/constants/colors';
 import ScreenHeader from '@/components/ScreenHeader';
 import ScreenContainer from '@/components/ScreenContainer';
+import UnsafeScreenContainer from '@/components/UnsafeScreenContainer';
 import PrimaryActionButton from '@/components/buttons/PrimaryActionButton';
 import BackButton from '@/components/buttons/BackButton';
 import { triggerShake } from '@/utils/animations';
@@ -80,7 +81,7 @@ export default function CreateUsernameStep({
   };
 
   return (
-    <ScreenContainer edges={['top', 'bottom']}>
+    <UnsafeScreenContainer>
       {/* Development Back Button */}
       {process.env.EXPO_PUBLIC_APP_ENV === 'development' && onBack && (
         <BackButton onPress={onBack} style={styles.devBackButton} />
@@ -167,7 +168,7 @@ export default function CreateUsernameStep({
           </View>
         </KeyboardAvoidingView>
       </View>
-    </ScreenContainer>
+    </UnsafeScreenContainer>
   );
 }
 
@@ -193,23 +194,20 @@ const styles = StyleSheet.create({
     marginBottom: verticalScale(24),
   },
   title: {
-    fontSize: 32,
-    fontFamily: 'Inter-Bold',
-    color: colors.textPrimary,
-    marginBottom: 12,
+    fontSize: moderateScale(24),
+    fontWeight: '900',
+    color: '#ffffff',
+    marginBottom: verticalScale(8),
     textAlign: 'left',
   },
   usernameText: {
     color: '#00CFFF',
   },
   subtitle: {
-    fontSize: 16,
-    fontFamily: 'Inter-Regular',
-    color: colors.textSecondary,
-    lineHeight: 24,
+    fontSize: moderateScale(16),
+    color: '#9ca3af',
     textAlign: 'left',
-    paddingHorizontal: 0,
-    marginBottom: 8,
+    lineHeight: moderateScale(22),
   },
   form: {
     marginTop: 20,

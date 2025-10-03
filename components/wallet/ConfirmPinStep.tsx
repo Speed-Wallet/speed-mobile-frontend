@@ -11,6 +11,7 @@ import {
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import { triggerShake } from '@/utils/animations';
 import ScreenContainer from '@/components/ScreenContainer';
+import UnsafeScreenContainer from '@/components/UnsafeScreenContainer';
 import BackButton from '@/components/buttons/BackButton';
 import CircularNumericKeyboard from '@/components/keyboard/CircularNumericKeyboard';
 import CustomAlert from '@/components/CustomAlert';
@@ -90,7 +91,7 @@ const ConfirmPinStep: React.FC<ConfirmPinStepProps> = ({
   }, [onConfirmPinChange, onClearError]);
 
   return (
-    <ScreenContainer edges={['top', 'bottom']}>
+    <UnsafeScreenContainer>
       {/* Development Back Button */}
       {process.env.EXPO_PUBLIC_APP_ENV === 'development' && (
         <BackButton onPress={onBack} style={styles.devBackButton} />
@@ -142,7 +143,7 @@ const ConfirmPinStep: React.FC<ConfirmPinStepProps> = ({
           ]}
         />
       )}
-    </ScreenContainer>
+    </UnsafeScreenContainer>
   );
 };
 

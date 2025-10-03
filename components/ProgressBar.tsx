@@ -31,8 +31,6 @@ const styles = StyleSheet.create({
   container: {
     width: '100%',
     paddingHorizontal: 24,
-    paddingTop: 16,
-    paddingBottom: 8,
   },
   progressTrack: {
     flexDirection: 'row',

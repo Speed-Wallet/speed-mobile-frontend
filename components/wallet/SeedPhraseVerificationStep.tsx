@@ -13,6 +13,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import colors from '@/constants/colors';
 import ScreenContainer from '@/components/ScreenContainer';
+import UnsafeScreenContainer from '@/components/UnsafeScreenContainer';
 import BackButton from '@/components/buttons/BackButton';
 import WordBox from '@/components/wallet/WordBox';
 import ActionButtonGroup from '@/components/buttons/ActionButtonGroup';
@@ -175,7 +176,7 @@ const SeedPhraseVerificationStep: React.FC<SeedPhraseVerificationStepProps> = ({
   };
 
   return (
-    <ScreenContainer>
+    <UnsafeScreenContainer>
       {/* Development Back Button */}
       {process.env.EXPO_PUBLIC_APP_ENV === 'development' && (
         <BackButton onPress={onBack} style={styles.devBackButton} />
@@ -293,7 +294,7 @@ const SeedPhraseVerificationStep: React.FC<SeedPhraseVerificationStepProps> = ({
           secondaryStyle="text"
         />
       </View>
-    </ScreenContainer>
+    </UnsafeScreenContainer>
   );
 };
 
