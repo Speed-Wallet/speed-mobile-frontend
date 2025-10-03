@@ -38,7 +38,30 @@ const ConfirmPinStep: React.FC<ConfirmPinStepProps> = ({
   onClearError,
 }) => {
   const shakeAnimationValue = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.95)).current;
+  const translateY = useRef(new Animated.Value(20)).current;
   const [isLocalLoading, setIsLocalLoading] = useState(false);
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.timing(translateY, {
+        toValue: 0,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
 
   // Combined loading state
   const loading = isLoading || isLocalLoading;
@@ -99,12 +122,28 @@ const ConfirmPinStep: React.FC<ConfirmPinStepProps> = ({
 
       <View style={styles.content}>
         {/* Header */}
-        <View style={styles.header}>
+        <Animated.View
+          style={[
+            styles.header,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: translateY }],
+            },
+          ]}
+        >
           <Text style={styles.title}>Confirm Your PIN</Text>
-        </View>
+        </Animated.View>
 
         {/* Main Content */}
-        <View style={styles.mainContent}>
+        <Animated.View
+          style={[
+            styles.mainContent,
+            {
+              opacity: fadeAnim,
+              transform: [{ scale: scaleAnim }],
+            },
+          ]}
+        >
           {/* PIN Dots Container */}
           <View style={styles.pinDotsContainer}>
             <PinDots pinLength={confirmPin.length} maxLength={6} />
@@ -112,7 +151,7 @@ const ConfirmPinStep: React.FC<ConfirmPinStepProps> = ({
 
           {/* Circular Numeric Keyboard */}
           <CircularNumericKeyboard onKeyPress={handleKeyPress} />
-        </View>
+        </Animated.View>
 
         {/* Button Container */}
         <ActionButtonGroup
