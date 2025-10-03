@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Speed Wallet",
-    "slug": "speed-wallet",
+    "slug": "bolt-expo-nativewind",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icons/speed-wallet-icon-1024.png",

@@ -8,11 +8,13 @@ import {
   Platform,
   Animated,
 } from 'react-native';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Key } from 'lucide-react-native';
+import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import colors from '@/constants/colors';
 import ScreenHeader from '@/components/ScreenHeader';
 import ScreenContainer from '@/components/ScreenContainer';
+import UnsafeScreenContainer from '@/components/UnsafeScreenContainer';
 import BackButton from '@/components/buttons/BackButton';
 import PrimaryActionButton from '@/components/buttons/PrimaryActionButton';
 import { triggerShake } from '@/utils/animations';
@@ -32,6 +34,29 @@ export default function ImportWalletStep({
   const [isValid, setIsValid] = useState(false);
   const [error, setError] = useState('');
   const shakeAnimationValue = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.95)).current;
+  const translateY = useRef(new Animated.Value(20)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.timing(translateY, {
+        toValue: 0,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
 
   const validateSeedPhrase = (text: string) => {
     const cleanPhrase = text.trim().toLowerCase();
@@ -81,7 +106,7 @@ export default function ImportWalletStep({
   };
 
   return (
-    <ScreenContainer edges={['top', 'bottom']}>
+    <UnsafeScreenContainer style={styles.container}>
       {/* Development Back Button */}
       {process.env.EXPO_PUBLIC_APP_ENV === 'development' && onBack && (
         <BackButton onPress={onBack} style={styles.devBackButton} />
@@ -101,22 +126,35 @@ export default function ImportWalletStep({
         </TouchableOpacity>
       )}
 
-      <KeyboardAvoidingView
-        style={styles.content}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
-        {/* Header Section */}
-        <View style={styles.header}>
-          <View style={styles.spacer} />
-
-          <Text style={styles.title}>Import Wallet</Text>
-          <Text style={styles.subtitle}>
-            Enter your existing wallet's seed phrase to recover your wallet
-          </Text>
-        </View>
+      <View style={styles.content}>
+        {/* Header */}
+        <Animated.View
+          style={[
+            styles.header,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY }],
+            },
+          ]}
+        >
+          <View style={styles.headerContent}>
+            <Text style={styles.title}>Import Wallet</Text>
+            <Text style={styles.subtitle}>
+              Enter your existing wallet's seed phrase to recover your wallet
+            </Text>
+          </View>
+        </Animated.View>
 
         {/* Form Section */}
-        <View style={styles.form}>
+        <Animated.View
+          style={[
+            styles.form,
+            {
+              opacity: fadeAnim,
+              transform: [{ scale: scaleAnim }],
+            },
+          ]}
+        >
           <Text style={styles.label}>Seed Phrase</Text>
 
           <Animated.View
@@ -167,10 +205,10 @@ export default function ImportWalletStep({
               </Text>
             )}
           </View>
-        </View>
+        </Animated.View>
 
-        {/* Continue Button */}
-        <View style={styles.buttonWrapper}>
+        {/* Action Button */}
+        <View style={styles.buttonContainer}>
           <PrimaryActionButton
             title={isLoading ? 'Importing...' : 'Import Wallet'}
             onPress={handleContinue}
@@ -178,61 +216,52 @@ export default function ImportWalletStep({
             loading={isLoading}
           />
         </View>
-      </KeyboardAvoidingView>
-    </ScreenContainer>
+      </View>
+    </UnsafeScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    // UnsafeScreenContainer provides flex: 1 and backgroundColor
+  },
   devBackButton: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 50 : 20,
-    left: 20,
+    top: Platform.OS === 'ios' ? verticalScale(50) : verticalScale(20),
+    left: scale(20),
     zIndex: 1000,
     backgroundColor: '#FFB800',
-    borderRadius: 20,
+    borderRadius: scale(20),
   },
   content: {
     flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 20,
+    paddingHorizontal: scale(20),
+    justifyContent: 'space-between',
   },
   header: {
-    alignItems: 'center',
-    marginBottom: 32,
-    marginTop: 20,
+    paddingTop: Platform.OS === 'ios' ? verticalScale(10) : verticalScale(20),
   },
-  spacer: {
-    height: 104, // 80px height + 24px marginBottom from iconContainer
-  },
-  iconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(0, 207, 255, 0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 24,
+  headerContent: {
+    alignItems: 'flex-start',
   },
   title: {
-    fontSize: 32,
-    fontFamily: 'Inter-Bold',
-    color: colors.textPrimary,
-    marginBottom: 12,
-    textAlign: 'center',
+    fontSize: moderateScale(24),
+    fontWeight: '900',
+    color: '#ffffff',
+    marginBottom: verticalScale(8),
+    textAlign: 'left',
   },
   subtitle: {
-    fontSize: 16,
-    fontFamily: 'Inter-Regular',
-    color: colors.textSecondary,
-    lineHeight: 24,
-    textAlign: 'center',
-    paddingHorizontal: 20,
-    marginBottom: 8,
+    fontSize: moderateScale(16),
+    color: '#9ca3af',
+    textAlign: 'left',
+    lineHeight: moderateScale(22),
   },
   form: {
-    marginTop: 20,
-    marginBottom: 32,
+    flex: 1,
+    justifyContent: 'center',
+    paddingVertical: verticalScale(10),
+    maxHeight: '50%',
   },
   label: {
     fontSize: 16,
@@ -265,16 +294,16 @@ const styles = StyleSheet.create({
   },
   devButton: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 50 : 20,
-    right: 20,
+    top: Platform.OS === 'ios' ? verticalScale(50) : verticalScale(20),
+    right: scale(20),
     zIndex: 1000,
     backgroundColor: '#FFB800',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingHorizontal: scale(16),
+    paddingVertical: verticalScale(8),
+    borderRadius: scale(8),
   },
   devButtonText: {
-    fontSize: 12,
+    fontSize: moderateScale(12),
     fontFamily: 'Inter-Bold',
     color: '#000000',
   },
@@ -294,8 +323,12 @@ const styles = StyleSheet.create({
     color: colors.error,
     lineHeight: 20,
   },
-  buttonWrapper: {
-    marginTop: 'auto',
-    paddingBottom: Platform.OS === 'ios' ? 34 : 24,
+  buttonContainer: {
+    flex: 0,
+    paddingTop: verticalScale(20),
+    paddingBottom:
+      Platform.OS === 'ios' ? verticalScale(34) : verticalScale(24),
+    minHeight: '15%',
+    justifyContent: 'flex-end',
   },
 });

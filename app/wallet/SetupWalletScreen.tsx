@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import ScreenContainer from '@/components/ScreenContainer';
 import {
   generateInitialSolanaWallet,
   saveWalletToList,
@@ -235,10 +236,10 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
   const showProgressBar = (step > 1 && step !== 9) || step === 7; // Show on all steps except initial and import, but include success screen
 
   return (
-    <View style={{ flex: 1 }}>
+    <ScreenContainer edges={['top', 'bottom']}>
       {/* Progress Bar */}
       {showProgressBar && (
-        <View style={{ backgroundColor: '#121212' }}>
+        <View>
           <ProgressBar
             currentStep={progressInfo.current}
             totalSteps={progressInfo.total}
@@ -315,7 +316,7 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
           isLoading={isImporting}
         />
       )}
-    </View>
+    </ScreenContainer>
   );
 };
 
