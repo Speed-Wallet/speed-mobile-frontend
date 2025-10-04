@@ -294,11 +294,11 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
       {step === 6 && (
         <ConfirmPinStep
           confirmPin={confirmPin}
+          originalPin={pin}
           onConfirmPinChange={handleConfirmPinChange}
           onConfirm={handleConfirmSave}
           onBack={handleBackToCreatePin}
           isLoading={isLoading}
-          pinError={pinError}
         />
       )}
 

@@ -13,10 +13,10 @@ import colors from '@/constants/colors';
 import SettingsScreen from '@/components/SettingsScreen';
 import CreateWalletBottomSheet, {
   CreateWalletBottomSheetRef,
-} from '@/components/CreateWalletBottomSheet';
+} from '@/components/bottom-sheets/CreateWalletBottomSheet';
 import ImportWalletBottomSheet, {
   ImportWalletBottomSheetRef,
-} from '@/components/ImportWalletBottomSheet';
+} from '@/components/bottom-sheets/ImportWalletBottomSheet';
 import {
   generateSolanaWalletFromMaster,
   getAllStoredWallets,

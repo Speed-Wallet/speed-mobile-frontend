@@ -59,7 +59,7 @@ import BottomActionContainer from '@/components/BottomActionContainer';
 import PrimaryActionButton from '@/components/buttons/PrimaryActionButton';
 import CreateCardBottomSheet, {
   CreateCardBottomSheetRef,
-} from '@/components/CreateCardBottomSheet';
+} from '@/components/bottom-sheets/CreateCardBottomSheet';
 // Note: cardCreationSteps service simplified since we now use status-based polling
 
 const MIN_KYC_LEVEL = 1; // Minimum KYC level required for virtual cards
