@@ -52,10 +52,10 @@ import {
 } from 'react-native-gesture-handler';
 import CountryPickerBottomSheet, {
   CountryPickerBottomSheetRef,
-} from '@/components/CountryPickerBottomSheet';
+} from '@/components/bottom-sheets/CountryPickerBottomSheet';
 import DatePickerBottomSheet, {
   DatePickerBottomSheetRef,
-} from '@/components/DatePickerBottomSheet';
+} from '@/components/bottom-sheets/DatePickerBottomSheet';
 import { StorageService, PersonalInfo } from '@/utils/storage';
 import { triggerShake } from '@/utils/animations';
 import colors from '@/constants/colors';

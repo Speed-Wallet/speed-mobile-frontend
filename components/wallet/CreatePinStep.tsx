@@ -1,18 +1,9 @@
-import React, { useCallback, useRef, useEffect } from 'react';
-import {
-  StyleSheet,
-  View,
-  Text,
-  TouchableOpacity,
-  Platform,
-  Animated,
-} from 'react-native';
-import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
-import ScreenContainer from '@/components/ScreenContainer';
+import React, { useCallback } from 'react';
+import { StyleSheet, View, Platform } from 'react-native';
+import { scale, verticalScale } from 'react-native-size-matters';
 import UnsafeScreenContainer from '@/components/UnsafeScreenContainer';
-import CircularNumericKeyboard from '@/components/keyboard/CircularNumericKeyboard';
 import PrimaryActionButton from '@/components/buttons/PrimaryActionButton';
-import PinDots from '@/components/PinDots';
+import PinInputSection from '@/components/PinInputSection';
 
 interface CreatePinStepProps {
   pin: string;
@@ -29,30 +20,6 @@ const CreatePinStep: React.FC<CreatePinStepProps> = ({
   onBack,
   isLoading,
 }) => {
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0.95)).current;
-  const translateY = useRef(new Animated.Value(20)).current;
-
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 800,
-        useNativeDriver: true,
-      }),
-      Animated.timing(scaleAnim, {
-        toValue: 1,
-        duration: 800,
-        useNativeDriver: true,
-      }),
-      Animated.timing(translateY, {
-        toValue: 0,
-        duration: 800,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, []);
-
   const handleKeyPress = useCallback(
     (key: string) => {
       if (key === 'backspace') {
@@ -66,41 +33,17 @@ const CreatePinStep: React.FC<CreatePinStepProps> = ({
 
   return (
     <UnsafeScreenContainer>
-      <View style={styles.content}>
-        {/* Header */}
-        <Animated.View
-          style={[
-            styles.header,
-            {
-              opacity: fadeAnim,
-              transform: [{ translateY }],
-            },
-          ]}
-        >
-          <Text style={styles.title}>Create Your PIN</Text>
-        </Animated.View>
+      <View style={styles.container}>
+        {/* First Section: Centered content (Title + PIN Dots + Keyboard) */}
+        <PinInputSection
+          title="Create Your PIN"
+          pin={pin}
+          onKeyPress={handleKeyPress}
+          maxLength={6}
+        />
 
-        {/* Main Content */}
-        <Animated.View
-          style={[
-            styles.mainContent,
-            {
-              opacity: fadeAnim,
-              transform: [{ scale: scaleAnim }],
-            },
-          ]}
-        >
-          {/* PIN Dots Container */}
-          <View style={styles.pinDotsContainer}>
-            <PinDots pinLength={pin.length} maxLength={6} />
-          </View>
-
-          {/* Circular Numeric Keyboard */}
-          <CircularNumericKeyboard onKeyPress={handleKeyPress} />
-        </Animated.View>
-
-        {/* Button Container */}
-        <View style={styles.buttonContainer}>
+        {/* Second Section: Bottom button */}
+        <View style={styles.bottomSection}>
           <PrimaryActionButton
             title={isLoading ? 'Creating...' : 'Continue'}
             onPress={onNext}
@@ -114,31 +57,12 @@ const CreatePinStep: React.FC<CreatePinStepProps> = ({
 };
 
 const styles = StyleSheet.create({
-  content: {
+  container: {
     flex: 1,
     paddingHorizontal: scale(20),
+    justifyContent: 'space-between',
   },
-  header: {
-    paddingTop: Platform.OS === 'ios' ? verticalScale(10) : verticalScale(20),
-    marginBottom: verticalScale(24),
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: moderateScale(28),
-    fontWeight: '600',
-    color: '#FFFFFF',
-    textAlign: 'center',
-  },
-  mainContent: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pinDotsContainer: {
-    marginBottom: verticalScale(30),
-    alignItems: 'center',
-  },
-  buttonContainer: {
+  bottomSection: {
     paddingBottom:
       Platform.OS === 'ios' ? verticalScale(34) : verticalScale(24),
   },

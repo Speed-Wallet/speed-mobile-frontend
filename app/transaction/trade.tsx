@@ -42,7 +42,7 @@ import TokenLogo from '@/components/TokenLogo';
 import CopyButton from '@/components/CopyButton';
 import TokenSelectorBottomSheet, {
   TokenSelectorBottomSheetRef,
-} from '@/components/TokenSelectorBottomSheet';
+} from '@/components/bottom-sheets/TokenSelectorBottomSheet';
 import NumericKeyboard from '@/components/keyboard/NumericKeyboard';
 import { getJupiterQuote } from '@/services/jupiterApi';
 

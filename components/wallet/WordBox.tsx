@@ -62,7 +62,7 @@ const WordBox: React.FC<WordBoxProps> = ({
 const styles = StyleSheet.create({
   // Display variant styles (matching ShowMnemonicStep)
   displayWordContainer: {
-    width: '30%',
+    width: '32%',
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.05)',

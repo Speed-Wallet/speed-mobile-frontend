@@ -6,112 +6,77 @@ import {
   TouchableOpacity,
   Animated,
   Platform,
-  ActivityIndicator,
 } from 'react-native';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import { triggerShake } from '@/utils/animations';
-import ScreenContainer from '@/components/ScreenContainer';
 import UnsafeScreenContainer from '@/components/UnsafeScreenContainer';
 import BackButton from '@/components/buttons/BackButton';
-import CircularNumericKeyboard from '@/components/keyboard/CircularNumericKeyboard';
-import CustomAlert from '@/components/CustomAlert';
-import ActionButtonGroup from '@/components/buttons/ActionButtonGroup';
-import PinDots from '@/components/PinDots';
+import PinInputSection from '@/components/PinInputSection';
 
 interface ConfirmPinStepProps {
   confirmPin: string;
+  originalPin: string; // Add original PIN to compare against
   onConfirmPinChange: (pin: string) => void;
   onConfirm: () => void;
   onBack: () => void;
   isLoading: boolean;
-  pinError?: string;
-  onClearError?: () => void;
 }
 
 const ConfirmPinStep: React.FC<ConfirmPinStepProps> = ({
   confirmPin,
+  originalPin,
   onConfirmPinChange,
   onConfirm,
   onBack,
   isLoading,
-  pinError,
-  onClearError,
 }) => {
   const shakeAnimationValue = useRef(new Animated.Value(0)).current;
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0.95)).current;
-  const translateY = useRef(new Animated.Value(20)).current;
-  const [isLocalLoading, setIsLocalLoading] = useState(false);
+  const [isValidating, setIsValidating] = useState(false);
 
+  // Auto-validate PIN when 6th digit is entered
   useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 800,
-        useNativeDriver: true,
-      }),
-      Animated.timing(scaleAnim, {
-        toValue: 1,
-        duration: 800,
-        useNativeDriver: true,
-      }),
-      Animated.timing(translateY, {
-        toValue: 0,
-        duration: 800,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, []);
+    if (confirmPin.length === 6 && !isValidating && !isLoading) {
+      setIsValidating(true);
 
-  // Combined loading state
-  const loading = isLoading || isLocalLoading;
-
-  const handleConfirm = useCallback(() => {
-    setIsLocalLoading(true);
-    // Use requestAnimationFrame to ensure UI updates before calling parent
-    requestAnimationFrame(() => {
-      onConfirm();
-    });
-  }, [onConfirm]);
-
-  // Reset local loading when external loading changes or error occurs
-  useEffect(() => {
-    if (pinError) {
-      setIsLocalLoading(false);
+      // Use requestAnimationFrame to ensure the UI updates (6th dot fills) before validation
+      requestAnimationFrame(() => {
+        if (confirmPin === originalPin) {
+          // PIN matches, proceed immediately
+          onConfirm();
+          setIsValidating(false);
+        } else {
+          // PIN doesn't match, show the dot briefly then shake
+          setTimeout(() => {
+            triggerShake(shakeAnimationValue);
+            onConfirmPinChange('');
+            setIsValidating(false);
+          }, 200); // Brief delay to see the 6th dot before shake
+        }
+      });
     }
-  }, [pinError]);
-
-  useEffect(() => {
-    if (!isLoading) {
-      setIsLocalLoading(false);
-    }
-  }, [isLoading]);
+  }, [
+    confirmPin,
+    originalPin,
+    isValidating,
+    isLoading,
+    onConfirm,
+    onConfirmPinChange,
+    shakeAnimationValue,
+  ]);
 
   const handleKeyPress = useCallback(
     (key: string) => {
+      // Don't allow input while validating or loading
+      if (isValidating || isLoading) return;
+
       if (key === 'backspace') {
         onConfirmPinChange(confirmPin.slice(0, -1));
       } else if (key >= '0' && key <= '9' && confirmPin.length < 6) {
         onConfirmPinChange(confirmPin + key);
       }
     },
-    [confirmPin, onConfirmPinChange],
+    [confirmPin, onConfirmPinChange, isValidating, isLoading],
   );
-
-  // Trigger shake animation when PIN error occurs
-  useEffect(() => {
-    if (pinError) {
-      triggerShake(shakeAnimationValue);
-    }
-  }, [pinError]);
-
-  // Handler for "Try Again" button
-  const handleTryAgain = useCallback(() => {
-    onConfirmPinChange(''); // Reset the confirm PIN to empty
-    if (onClearError) {
-      onClearError(); // Clear the error
-    }
-  }, [onConfirmPinChange, onClearError]);
 
   return (
     <UnsafeScreenContainer>
@@ -120,68 +85,27 @@ const ConfirmPinStep: React.FC<ConfirmPinStepProps> = ({
         <BackButton onPress={onBack} style={styles.devBackButton} />
       )}
 
-      <View style={styles.content}>
-        {/* Header */}
-        <Animated.View
-          style={[
-            styles.header,
-            {
-              opacity: fadeAnim,
-              transform: [{ translateY: translateY }],
-            },
-          ]}
-        >
-          <Text style={styles.title}>Confirm Your PIN</Text>
-        </Animated.View>
-
-        {/* Main Content */}
-        <Animated.View
-          style={[
-            styles.mainContent,
-            {
-              opacity: fadeAnim,
-              transform: [{ scale: scaleAnim }],
-            },
-          ]}
-        >
-          {/* PIN Dots Container */}
-          <View style={styles.pinDotsContainer}>
-            <PinDots pinLength={confirmPin.length} maxLength={6} />
-          </View>
-
-          {/* Circular Numeric Keyboard */}
-          <CircularNumericKeyboard onKeyPress={handleKeyPress} />
-        </Animated.View>
-
-        {/* Button Container */}
-        <ActionButtonGroup
-          primaryTitle={loading ? 'Confirming...' : 'Confirm'}
-          onPrimaryPress={handleConfirm}
-          primaryDisabled={loading || confirmPin.length < 6}
-          primaryLoading={loading}
-          secondaryTitle="Back to Create PIN"
-          onSecondaryPress={onBack}
-          secondaryStyle="text"
+      <View style={styles.container}>
+        {/* First Section: Centered content (Title + PIN Dots + Keyboard) */}
+        <PinInputSection
+          title="Confirm Your PIN"
+          pin={confirmPin}
+          onKeyPress={handleKeyPress}
+          maxLength={6}
+          shakeAnimation={shakeAnimationValue}
         />
+
+        {/* Second Section: Bottom button */}
+        <View style={styles.bottomSection}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={onBack}
+            disabled={isLoading}
+          >
+            <Text style={styles.backButtonText}>Back to Create PIN</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-
-      {/* Custom Alert for PIN Error */}
-      {pinError && (
-        <CustomAlert
-          visible={true}
-          type="error"
-          title="PIN Mismatch"
-          message={pinError}
-          onDismiss={handleTryAgain}
-          buttons={[
-            {
-              text: 'Try Again',
-              onPress: handleTryAgain,
-              style: 'default',
-            },
-          ]}
-        />
-      )}
     </UnsafeScreenContainer>
   );
 };
@@ -195,29 +119,24 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFB800',
     borderRadius: moderateScale(20),
   },
-  content: {
+  container: {
     flex: 1,
     paddingHorizontal: scale(20),
+    justifyContent: 'space-between',
   },
-  header: {
-    paddingTop: Platform.OS === 'ios' ? verticalScale(10) : verticalScale(20),
-    marginBottom: verticalScale(24),
+  bottomSection: {
+    paddingBottom:
+      Platform.OS === 'ios' ? verticalScale(34) : verticalScale(24),
     alignItems: 'center',
   },
-  title: {
-    fontSize: moderateScale(28),
+  backButton: {
+    paddingVertical: verticalScale(12),
+  },
+  backButtonText: {
+    fontSize: moderateScale(16),
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: '#9CA3AF',
     textAlign: 'center',
-  },
-  mainContent: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pinDotsContainer: {
-    marginBottom: verticalScale(30),
-    alignItems: 'center',
   },
 });
 

@@ -27,11 +27,11 @@ const CircularNumericKeyboard: React.FC<CircularNumericKeyboardProps> = ({
   const dynamicStyles = {
     container: {
       ...styles.container,
-      marginBottom: verticalScale(15 * scaleProp),
+      // marginBottom: verticalScale(15 * scaleProp),
     },
     row: {
       ...styles.row,
-      marginVertical: verticalScale(8 * scaleProp),
+      // marginVertical: verticalScale(8 * scaleProp),
     },
     key: {
       ...styles.key,
@@ -76,21 +76,20 @@ const CircularNumericKeyboard: React.FC<CircularNumericKeyboardProps> = ({
 
 const styles = StyleSheet.create({
   container: {
+    maxHeight: 300,
+    maxWidth: 400,
+    flexDirection: 'column',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: verticalScale(15),
+    justifyContent: 'space-between',
   },
   row: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginVertical: verticalScale(8),
+    // marginVertical: verticalScale(8),
   },
   key: {
-    width: scale(65),
-    height: scale(65),
     justifyContent: 'center',
     alignItems: 'center',
-    marginHorizontal: scale(20),
   },
   invisibleKey: {
     backgroundColor: 'transparent',

@@ -1,19 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Platform,
-  Animated,
-} from 'react-native';
+import { View, Text, StyleSheet, Platform, Animated } from 'react-native';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import { unlockApp } from '@/services/walletService';
-import CircularNumericKeyboard from '@/components/keyboard/CircularNumericKeyboard';
 import { triggerShake } from '@/utils/animations';
 import ScreenContainer from '@/components/ScreenContainer';
 import PrimaryActionButton from '@/components/buttons/PrimaryActionButton';
-import PinDots from '@/components/PinDots';
+import PinInputSection from '@/components/PinInputSection';
 
 interface EnterPinScreenProps {
   onWalletUnlocked: () => void;
@@ -104,36 +96,31 @@ const EnterPinScreen: React.FC<EnterPinScreenProps> = ({
 
   return (
     <ScreenContainer edges={['top', 'bottom']}>
-      <View style={styles.content}>
-        {/* Main Content */}
-        <View style={styles.mainContent}>
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.title}>Enter Your PIN</Text>
-            {/* Error Message */}
-            {error && (
-              <Animated.View
-                style={[
-                  styles.errorContainer,
-                  { transform: [{ translateX: shakeAnimationValue }] },
-                ]}
-              >
-                <Text style={styles.errorText}>{error}</Text>
-              </Animated.View>
-            )}
-          </View>
+      <View style={styles.container}>
+        {/* First Section: Centered content (Title + PIN Dots + Keyboard) */}
+        <View style={styles.centerSection}>
+          <PinInputSection
+            title="Enter Your PIN"
+            pin={pin}
+            onKeyPress={handleKeyPress}
+            maxLength={6}
+          />
 
-          {/* PIN Dots Container */}
-          <View style={styles.pinDotsContainer}>
-            <PinDots pinLength={pin.length} maxLength={6} />
-          </View>
-
-          {/* Circular Numeric Keyboard */}
-          <CircularNumericKeyboard onKeyPress={handleKeyPress} />
+          {/* Error Message */}
+          {error && (
+            <Animated.View
+              style={[
+                styles.errorContainer,
+                { transform: [{ translateX: shakeAnimationValue }] },
+              ]}
+            >
+              <Text style={styles.errorText}>{error}</Text>
+            </Animated.View>
+          )}
         </View>
 
-        {/* Button Container */}
-        <View style={styles.buttonContainer}>
+        {/* Second Section: Bottom button */}
+        <View style={styles.bottomSection}>
           <PrimaryActionButton
             title={isLoading ? 'Unlocking...' : 'Unlock Wallet'}
             onPress={handleUnlockWallet}
@@ -147,36 +134,21 @@ const EnterPinScreen: React.FC<EnterPinScreenProps> = ({
 };
 
 const styles = StyleSheet.create({
-  content: {
-    flex: 1,
-    paddingHorizontal: scale(20),
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: verticalScale(32),
-  },
-  mainContent: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    paddingBottom: verticalScale(20),
-  },
   container: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
     paddingHorizontal: scale(20),
+    justifyContent: 'space-between',
   },
-  title: {
-    fontSize: moderateScale(28),
-    fontWeight: '600',
-    color: '#FFFFFF',
-    textAlign: 'center',
-    marginBottom: verticalScale(8),
+  centerSection: {
+    flex: 1,
+    position: 'relative',
   },
   errorContainer: {
-    marginTop: verticalScale(8),
-    marginBottom: verticalScale(16),
+    position: 'absolute',
+    bottom: verticalScale(20),
+    left: 0,
+    right: 0,
+    marginHorizontal: scale(16),
     paddingHorizontal: scale(16),
     paddingVertical: verticalScale(8),
     backgroundColor: 'rgba(239, 68, 68, 0.1)',
@@ -190,31 +162,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '500',
   },
-  pinDotsContainer: {
-    marginBottom: verticalScale(32),
-    alignItems: 'center',
-  },
-  buttonContainer: {
+  bottomSection: {
     paddingBottom: verticalScale(Platform.OS === 'ios' ? 34 : 24),
-  },
-  unlockButton: {
-    width: '100%',
-    height: verticalScale(56),
-    backgroundColor: '#333333',
-    borderRadius: moderateScale(28),
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  unlockButtonActive: {
-    backgroundColor: '#00CFFF',
-  },
-  unlockButtonText: {
-    fontSize: moderateScale(18),
-    fontWeight: '600',
-    color: '#999999',
-  },
-  unlockButtonTextActive: {
-    color: '#000000',
   },
 });
 

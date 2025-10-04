@@ -33,7 +33,7 @@ import AmountInputWithValue from '@/components/AmountInputWithValue';
 import TokenItem from '@/components/TokenItem';
 import TokenSelectorBottomSheet, {
   TokenSelectorBottomSheetRef,
-} from '@/components/TokenSelectorBottomSheet';
+} from '@/components/bottom-sheets/TokenSelectorBottomSheet';
 import {
   prepareSendTransaction,
   confirmSendTransaction,

@@ -280,7 +280,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    paddingHorizontal: scale(2),
+    // paddingHorizontal: scale(2),
   },
   warningContainer: {
     marginBottom: 24,

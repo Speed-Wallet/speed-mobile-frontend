@@ -17,7 +17,7 @@ const PinDots: React.FC<PinDotsProps> = ({
   pinLength,
   maxLength = 6,
   dotSize = 16,
-  gap = 15,
+  gap = 12,
   dotColor = '#333333',
   filledDotColor = '#00CFFF',
   borderColor = '#555555',

@@ -23,10 +23,8 @@ export default function TabLayout() {
           backgroundColor: colors.backgroundDark,
           borderTopWidth: 0,
           // elevation: 0,
-          // height: verticalScale(28) + insets.bottom, // Add bottom safe area
-          // paddingBottom: verticalScale(52),
-          // paddingBottom: insets.bottom, // Add bottom safe area padding
-          marginTop: 6,
+          marginVertical: 4,
+          // margin
         },
         tabBarActiveTintColor: '#4682B4', // Steel Blue
         tabBarInactiveTintColor: colors.textSecondary,
@@ -37,7 +35,7 @@ export default function TabLayout() {
           // marginBottom: verticalScale(30), // Responsive margin
         },
         tabBarIconStyle: {
-          ...(isTablet ? {} : { marginBottom: verticalScale(3) }), // Responsive gap
+          // ...(isTablet ? {} : { marginBottom: verticalScale(3) }), // Responsive gap
         },
         tabBarLabelPosition: isTablet ? 'beside-icon' : 'below-icon', // Conditional layout
       }}
