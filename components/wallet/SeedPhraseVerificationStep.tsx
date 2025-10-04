@@ -16,7 +16,6 @@ import ScreenContainer from '@/components/ScreenContainer';
 import UnsafeScreenContainer from '@/components/UnsafeScreenContainer';
 import BackButton from '@/components/buttons/BackButton';
 import WordBox from '@/components/wallet/WordBox';
-import ActionButtonGroup from '@/components/buttons/ActionButtonGroup';
 import { triggerShake } from '@/utils/animations';
 
 interface SeedPhraseVerificationStepProps {
@@ -35,9 +34,7 @@ const SeedPhraseVerificationStep: React.FC<SeedPhraseVerificationStepProps> = ({
   const [shuffledWords, setShuffledWords] = useState<string[]>([]);
   const [selectedWords, setSelectedWords] = useState<string[]>([]);
   const [isVisible, setIsVisible] = useState(false);
-  const [buttonState, setButtonState] = useState<
-    'disabled' | 'try-again' | 'continue'
-  >('disabled');
+  const [isValidating, setIsValidating] = useState(false);
   const shakeAnimationValue = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.95)).current;
@@ -67,32 +64,50 @@ const SeedPhraseVerificationStep: React.FC<SeedPhraseVerificationStepProps> = ({
     ]).start();
   }, []);
 
+  // Auto-validate when all words are selected
   useEffect(() => {
-    if (selectedWords.length === words.length) {
-      // Check if the selected words are in the correct order
-      const correct = selectedWords.every(
-        (selectedWord, index) => selectedWord === words[index],
-      );
-      if (correct) {
-        setButtonState('continue');
-      } else {
-        setButtonState('try-again');
-        // Trigger shake animation when user completes all words but gets them wrong
-        triggerShake(shakeAnimationValue);
-      }
-    } else {
-      setButtonState('disabled');
+    if (selectedWords.length === words.length && !isValidating && !isLoading) {
+      setIsValidating(true);
+
+      // Use requestAnimationFrame to ensure UI updates before validation
+      requestAnimationFrame(() => {
+        const correct = selectedWords.every(
+          (selectedWord, index) => selectedWord === words[index],
+        );
+
+        if (correct) {
+          // Correct order, proceed to next step
+          onSuccess();
+          setIsValidating(false);
+        } else {
+          // Incorrect order, shake and reset
+          setTimeout(() => {
+            triggerShake(shakeAnimationValue);
+            setSelectedWords([]);
+            setIsValidating(false);
+          }, 200); // Brief delay to see the complete selection
+        }
+      });
     }
-  }, [selectedWords, words]);
+  }, [
+    selectedWords,
+    words,
+    isValidating,
+    isLoading,
+    onSuccess,
+    shakeAnimationValue,
+  ]);
 
   const shuffleWords = () => {
     const shuffled = [...words].sort(() => Math.random() - 0.5);
     setShuffledWords(shuffled);
     setSelectedWords([]);
-    setButtonState('disabled');
   };
 
   const handleWordClick = (word: string) => {
+    // Don't allow input while validating or loading
+    if (isValidating || isLoading) return;
+
     const isAlreadySelected = selectedWords.includes(word);
 
     if (isAlreadySelected) {
@@ -108,14 +123,6 @@ const SeedPhraseVerificationStep: React.FC<SeedPhraseVerificationStepProps> = ({
     if (selectedWords.length > 0) {
       setSelectedWords(selectedWords.slice(0, -1));
     }
-  };
-
-  const handleTryAgain = () => {
-    shuffleWords();
-  };
-
-  const handleContinue = () => {
-    onSuccess();
   };
 
   const getWordDisplayNumber = (word: string) => {
@@ -156,25 +163,6 @@ const SeedPhraseVerificationStep: React.FC<SeedPhraseVerificationStepProps> = ({
     return rows;
   };
 
-  const getButtonText = () => {
-    switch (buttonState) {
-      case 'try-again':
-        return 'Try Again';
-      case 'continue':
-        return 'Continue';
-      default:
-        return 'Complete the phrase';
-    }
-  };
-
-  const handleButtonPress = () => {
-    if (buttonState === 'try-again') {
-      handleTryAgain();
-    } else if (buttonState === 'continue') {
-      handleContinue();
-    }
-  };
-
   return (
     <UnsafeScreenContainer>
       {/* Development Back Button */}
@@ -184,7 +172,7 @@ const SeedPhraseVerificationStep: React.FC<SeedPhraseVerificationStepProps> = ({
 
       {/* Dev Mode Skip Button */}
       {process.env.EXPO_PUBLIC_APP_ENV === 'development' && (
-        <TouchableOpacity style={styles.skipButton} onPress={handleContinue}>
+        <TouchableOpacity style={styles.skipButton} onPress={onSuccess}>
           <Text style={styles.skipButtonText}>Skip</Text>
         </TouchableOpacity>
       )}
@@ -244,7 +232,11 @@ const SeedPhraseVerificationStep: React.FC<SeedPhraseVerificationStepProps> = ({
                   )}
                 </TouchableOpacity>
               </View>
-              {renderWordGrid()}
+              <Animated.View
+                style={{ transform: [{ translateX: shakeAnimationValue }] }}
+              >
+                {renderWordGrid()}
+              </Animated.View>
 
               {/* Controls Row */}
               <View style={styles.controlsRow}>
@@ -276,23 +268,16 @@ const SeedPhraseVerificationStep: React.FC<SeedPhraseVerificationStepProps> = ({
           </Animated.View>
         </ScrollView>
 
-        {/* Action Buttons */}
-        <ActionButtonGroup
-          primaryTitle={getButtonText()}
-          onPrimaryPress={handleButtonPress}
-          primaryDisabled={isLoading || buttonState === 'disabled'}
-          primaryLoading={isLoading}
-          primaryVariant={
-            buttonState === 'disabled'
-              ? 'primary'
-              : buttonState === 'try-again'
-                ? 'error'
-                : 'primary'
-          }
-          secondaryTitle="Back to Seed Phrase"
-          onSecondaryPress={onBack}
-          secondaryStyle="text"
-        />
+        {/* Back Button */}
+        <View style={styles.bottomSection}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={onBack}
+            disabled={isLoading}
+          >
+            <Text style={styles.backButtonText}>Back to Seed Phrase</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </UnsafeScreenContainer>
   );
@@ -402,6 +387,20 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(14),
     fontFamily: 'Inter-SemiBold',
     color: colors.backgroundDark,
+  },
+  bottomSection: {
+    paddingBottom:
+      Platform.OS === 'ios' ? verticalScale(34) : verticalScale(24),
+    alignItems: 'center',
+  },
+  backButton: {
+    paddingVertical: verticalScale(12),
+  },
+  backButtonText: {
+    fontSize: moderateScale(16),
+    fontWeight: '600',
+    color: '#9CA3AF',
+    textAlign: 'center',
   },
 });
 
