@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TextInput, StyleSheet } from 'react-native';
 import colors from '@/constants/colors'; // Assuming colors are used in styles
-import { useTokenBalance } from '@/hooks/useTokenBalance';
+import { useTokenAsset } from '@/hooks/useTokenAsset';
 import TokenLogo from '@/components/TokenLogo';
 
 interface AmountInputProps {
@@ -19,7 +19,7 @@ const AmountInput: React.FC<AmountInputProps> = ({
   // selectedPercentage, // Uncomment if using percentage selection
   // handlePercentageSelect, // Uncomment if using percentage selection
 }) => {
-  const { balance, logoURI, symbol } = useTokenBalance(address);
+  const { balance, logoURI, symbol } = useTokenAsset(address);
 
   return (
     <>

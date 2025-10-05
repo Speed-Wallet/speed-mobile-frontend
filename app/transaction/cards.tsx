@@ -51,7 +51,7 @@ import { useCards } from '@/hooks/useCards';
 import { useQueryClient } from '@tanstack/react-query';
 import { useConfig } from '@/hooks/useConfig';
 import CustomAlert from '@/components/CustomAlert';
-import { useTokenBalance } from '@/hooks/useTokenBalance';
+import { useTokenAsset } from '@/hooks/useTokenAsset';
 import { USDT_ADDRESS } from '@/constants/tokens';
 import colors from '@/constants/colors';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -113,7 +113,7 @@ export default function CardsScreen() {
   const cashwyreBaseFee = config?.cashwyreBaseFee;
 
   // Get USDT balance for validation
-  const { balance: usdtBalance } = useTokenBalance(USDT_ADDRESS);
+  const { balance: usdtBalance } = useTokenAsset(USDT_ADDRESS);
 
   // Use TanStack Query for cards data
   const {

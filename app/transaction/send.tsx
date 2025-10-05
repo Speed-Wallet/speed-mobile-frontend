@@ -249,7 +249,7 @@ export default function SendScreen() {
               <>
                 <Text style={styles.inputLabel}>Token</Text>
                 <TokenItem
-                  token={selectedToken}
+                  tokenAddress={selectedToken.address}
                   onPress={() => tokenSelectorRef.current?.expand()}
                   showSelectorIcon={true}
                 />

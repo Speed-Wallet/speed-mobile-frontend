@@ -22,7 +22,6 @@ import TokenItem from '@/components/TokenItem';
 import { EnrichedTokenEntry } from '@/data/types';
 import ScreenContainer from '@/components/ScreenContainer';
 import TabScreenHeader from '@/components/TabScreenHeader';
-import { useTokenPrices } from '@/hooks/useTokenPrices';
 
 type SortOption = 'price' | 'name' | 'change';
 type SortDirection = 'asc' | 'desc';
@@ -34,13 +33,6 @@ export default function MarketScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('price');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
-
-  // Batch fetch all token prices at once
-  const coingeckoIds = tokenData
-    .map((token) => token.extensions?.coingeckoId)
-    .filter(Boolean) as string[];
-
-  const { prices, isLoading: isPricesLoading } = useTokenPrices(coingeckoIds);
 
   useEffect(() => {
     loadData();
@@ -211,15 +203,10 @@ export default function MarketScreen() {
         renderItem={({ item, index }) => (
           <Animated.View entering={FadeInUp.delay(index * 100).duration(400)}>
             <TokenItem
-              token={item}
+              tokenAddress={item.address}
+              priceChangePercentage={item.priceChangePercentage}
               onPress={() => router.push(`/token/${item.address}`)}
               showBalance={false}
-              preloadedPrice={
-                item.extensions?.coingeckoId
-                  ? prices[item.extensions.coingeckoId]
-                  : undefined
-              }
-              isPriceLoading={isPricesLoading}
             />
           </Animated.View>
         )}

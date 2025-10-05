@@ -23,7 +23,7 @@ import PrimaryActionButton from '@/components/buttons/PrimaryActionButton';
 import TokenLogo from '@/components/TokenLogo';
 import colors from '@/constants/colors';
 import { useConfig } from '@/hooks/useConfig';
-import { useTokenBalance } from '@/hooks/useTokenBalance';
+import { useTokenAsset } from '@/hooks/useTokenAsset';
 import { USDT_ADDRESS } from '@/constants/tokens';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 
@@ -75,7 +75,7 @@ const CreateCardBottomSheet = forwardRef<
   const cashwyreBaseFee = config?.cashwyreBaseFee;
 
   // Get USDT balance for validation
-  const { balance: usdtBalance } = useTokenBalance(USDT_ADDRESS);
+  const { balance: usdtBalance } = useTokenAsset(USDT_ADDRESS);
 
   useImperativeHandle(ref, () => ({
     expand: () => {

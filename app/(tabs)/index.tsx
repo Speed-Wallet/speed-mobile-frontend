@@ -25,7 +25,7 @@ import {
 import ScreenContainer from '@/components/ScreenContainer';
 import TabSelector from '@/components/TabSelector';
 import { AuthService } from '@/services/authService';
-import { useTokenBalances } from '@/hooks/useTokenBalance';
+import { useTokenAssets } from '@/hooks/useTokenAsset';
 import { generateSignature } from '@/utils/signature';
 // import CryptoTest from '@/components/CryptoTest';
 
@@ -42,7 +42,7 @@ export default function HomeScreen() {
     isLoading: isLoadingBalances,
     error: balancesError,
     refetch: refetchBalances,
-  } = useTokenBalances(walletAddress);
+  } = useTokenAssets(walletAddress);
 
   // Generic user object for avatar
   const genericUser = {
