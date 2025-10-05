@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import colors from '@/constants/colors';
 import { formatCurrency } from '@/utils/formatters';
 import { EnrichedTokenEntry, TokenEntry } from '@/data/types';
-import { useTokenBalance } from '@/hooks/useTokenBalance';
+import { useTokenAsset } from '@/hooks/useTokenAsset';
 import TokenLogo from './TokenLogo';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 
@@ -26,7 +26,7 @@ const TokenItemAlt: React.FC<TokenItemAltProps> = ({
     name,
     symbol,
     logoURI,
-  } = useTokenBalance(token.address);
+  } = useTokenAsset(token.address);
   const price = 2;
 
   return (

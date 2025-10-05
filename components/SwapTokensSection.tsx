@@ -12,7 +12,7 @@ import colors from '@/constants/colors';
 import { formatCurrency, formatAmountInput } from '@/utils/formatters';
 import TokenLogo from '@/components/TokenLogo';
 import { EnrichedTokenEntry } from '@/data/types';
-import { useTokenBalance } from '@/hooks/useTokenBalance';
+import { useTokenAsset } from '@/hooks/useTokenAsset';
 import { useTokenPrice } from '@/hooks/useTokenPrices';
 
 // SwapBox component that combines label, token selector, and amount
@@ -43,7 +43,7 @@ const SwapBox: React.FC<SwapBoxProps> = ({
   hasInsufficientFunds = false,
   disabled = false,
 }) => {
-  const { balance: tokenBalance } = useTokenBalance(token?.address);
+  const { balance: tokenBalance } = useTokenAsset(token?.address);
   const { price: tokenPrice } = useTokenPrice(token?.extensions.coingeckoId);
 
   const usdValue =

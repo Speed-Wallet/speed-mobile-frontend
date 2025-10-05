@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TextInput, Image, StyleSheet } from 'react-native';
 import colors from '@/constants/colors';
-import { useTokenBalance } from '@/hooks/useTokenBalance';
+import { useTokenAsset } from '@/hooks/useTokenAsset';
 import { formatCurrency } from '@/utils/formatters'; // To format the USD value
 
 interface AmountInputWithValueProps {
@@ -15,7 +15,7 @@ const AmountInputWithValue: React.FC<AmountInputWithValueProps> = ({
   amount,
   setAmount,
 }) => {
-  const { logoURI } = useTokenBalance(address);
+  const { logoURI } = useTokenAsset(address);
   const price = 2; // TODO get price
 
   const numericAmount = parseFloat(amount);
@@ -66,7 +66,6 @@ const styles = StyleSheet.create({
     color: colors.white,
     paddingVertical: 0, // Ensure consistent height
     marginRight: 8, // Space before USD value
-    outlineStyle: 'none',
     minWidth: 0, // Ensure it can shrink properly
   },
   usdValueText: {

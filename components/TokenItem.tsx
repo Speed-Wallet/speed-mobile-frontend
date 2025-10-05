@@ -5,59 +5,46 @@ import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import colors from '@/constants/colors';
 import { formatCurrency, formatPercentage } from '@/utils/formatters';
 import GreyCard from './GreyCard';
-import { useTokenBalance } from '@/hooks/useTokenBalance';
-import { useTokenPrice } from '@/hooks/useTokenPrices';
-import { EnrichedTokenEntry } from '@/data/types';
+import { useTokenAsset } from '@/hooks/useTokenAsset';
 import TokenLogo from './TokenLogo';
 
 // Define constants for image sizes
 const TOKEN_SYMBOL_CONTAINER_SIZE = scale(36);
 
 type TokenItemProps = {
-  token: EnrichedTokenEntry;
+  tokenAddress: string;
   onPress: () => void;
   showBalance?: boolean;
   priceFontSize?: number; // Optional prop for dollar value size
   showSelectorIcon?: boolean; // Optional prop for showing selector icon
-  preloadedPrice?: number; // For when price is fetched in batch
-  isPriceLoading?: boolean; // For when price loading state is managed externally
+  priceChangePercentage?: number; // Optional for showing price change in market view
 };
 
 const TokenItem = ({
-  token,
+  tokenAddress,
   onPress,
   showBalance = true,
   priceFontSize = 14,
   showSelectorIcon,
-  preloadedPrice,
-  isPriceLoading: externalIsPriceLoading,
+  priceChangePercentage = 0,
 }: TokenItemProps) => {
-  const isPositiveChange = token.priceChangePercentage >= 0;
+  const isPositiveChange = priceChangePercentage >= 0;
 
-  const coingeckoId = token.extensions.coingeckoId;
-
-  // Only use the hook if no preloaded price is provided
+  // Get all token asset info (balance, price, metadata) from single hook
+  const tokenAsset = useTokenAsset(tokenAddress);
   const {
-    price: fetchedPrice,
-    isLoading: hookIsPriceLoading,
-    error: priceError,
-  } = useTokenPrice(preloadedPrice !== undefined ? undefined : coingeckoId);
-
-  // Use preloaded price first, then fetched price, then fallback to 0
-  const currentPrice = preloadedPrice ?? fetchedPrice ?? 0;
-  const isPriceLoading = externalIsPriceLoading ?? hookIsPriceLoading;
-
-  // const activeWalletPublicKey = useWalletPublicKey();
-  const {
-    balance: displayQuantity,
+    balance,
+    pricePerToken,
+    totalPrice,
+    logoURI,
+    name,
+    symbol,
     loading: isLoading,
-    error: _error,
+    error,
     decimalsShown,
-  } = useTokenBalance(token.address);
-  const displayDollarValue = displayQuantity
-    ? displayQuantity * currentPrice
-    : undefined;
-  const error = _error; // Use the error from the hook
+  } = tokenAsset;
+
+  console.log(tokenAsset);
 
   return (
     <GreyCard
@@ -67,25 +54,22 @@ const TokenItem = ({
     >
       <TouchableOpacity style={styles.touchableContent} onPress={onPress}>
         <View style={styles.leftSection}>
-          <TokenLogo
-            logoURI={token.logoURI}
-            size={TOKEN_SYMBOL_CONTAINER_SIZE}
-          />
+          <TokenLogo logoURI={logoURI} size={TOKEN_SYMBOL_CONTAINER_SIZE} />
         </View>
 
         <View style={styles.infoContainer}>
-          <Text style={styles.name}>{token.name}</Text>
+          <Text style={styles.name}>{name}</Text>
           {showBalance && (
             // Only the token quantity and symbol remain here
             // Apply styles.price instead of styles.balance and add marginTop
             <Text style={[styles.price, { marginTop: 4 }]}>
-              {/* Ensure displayQuantity is a number before calling toFixed */}
+              {/* Ensure balance is a number before calling toFixed */}
               {isLoading
                 ? '0.0000'
-                : typeof displayQuantity === 'number'
-                  ? displayQuantity.toFixed(decimalsShown)
+                : typeof balance === 'number'
+                  ? balance.toFixed(decimalsShown)
                   : '0.0000'}{' '}
-              {token.symbol}
+              {symbol}
             </Text>
           )}
         </View>
@@ -94,22 +78,18 @@ const TokenItem = ({
           {showBalance ? (
             // Display dollar value of the balance here
             <Text style={[styles.price, { fontSize: priceFontSize }]}>
-              {/* Ensure displayDollarValue is valid before formatting */}
+              {/* Ensure totalPrice is valid before formatting */}
               {isLoading
                 ? formatCurrency(0)
                 : formatCurrency(
-                    typeof displayDollarValue === 'number'
-                      ? displayDollarValue
-                      : 0,
+                    typeof totalPrice === 'number' ? totalPrice : 0,
                   )}
             </Text>
           ) : (
             // Display token's general price and change percentage
             <>
               <Text style={[styles.price, { fontSize: priceFontSize }]}>
-                {isPriceLoading
-                  ? formatCurrency(token.price)
-                  : formatCurrency(currentPrice)}
+                {formatCurrency(pricePerToken ?? 0)}
               </Text>
               <View style={styles.changeContainer}>
                 {isPositiveChange ? (
@@ -131,7 +111,7 @@ const TokenItem = ({
                     { color: isPositiveChange ? colors.success : colors.error },
                   ]}
                 >
-                  {formatPercentage(token.priceChangePercentage)}
+                  {formatPercentage(priceChangePercentage)}
                 </Text>
               </View>
             </>

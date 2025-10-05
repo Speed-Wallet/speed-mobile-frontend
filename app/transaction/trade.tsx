@@ -33,8 +33,8 @@ import PrimaryActionButton from '@/components/buttons/PrimaryActionButton';
 import PercentageButtons from '@/components/buttons/PercentageButtons';
 import { useTokenPrice } from '@/hooks/useTokenPrices';
 import { triggerShake } from '@/utils/animations';
-import { useTokenBalance } from '@/hooks/useTokenBalance';
-import { useRefetchTokenBalances } from '@/hooks/useTokenBalance';
+import { useTokenAsset } from '@/hooks/useTokenAsset';
+import { useRefetchTokenAssets } from '@/hooks/useTokenAsset';
 import { useQueryClient } from '@tanstack/react-query';
 import { SOL_ADDRESS } from '@/constants/tokens';
 import SwapTokensSection from '@/components/SwapTokensSection';
@@ -79,13 +79,12 @@ export default function TradeScreen() {
   const { price: fromTokenPrice } = useTokenPrice(
     fromToken?.extensions.coingeckoId,
   );
-  const { balance: fromTokenBalance } = useTokenBalance(fromToken?.address);
+  const { balance: fromTokenBalance } = useTokenAsset(fromToken?.address);
 
-  // Check if the output token's ATA exists (for SOL buffer calculation)
-  const { ataExists: outputTokenAtaExists } = useTokenBalance(toToken?.address);
+  // Check if output token ATA exists (needed for swap)
+  const { ataExists: outputTokenAtaExists } = useTokenAsset(toToken?.address);
 
-  // Get refetch function for after successful trades
-  const refetchTokenBalances = useRefetchTokenBalances();
+  const refetchTokenBalances = useRefetchTokenAssets();
 
   // Get config values - this is critical data that must be loaded
   const {
@@ -480,7 +479,7 @@ export default function TradeScreen() {
   }, [fromAmount, fromToken, fromTokenBalance, getMaxSolAmount]);
 
   // Get SOL balance for transaction fee checking
-  const { balance: solBalance } = useTokenBalance(SOL_ADDRESS);
+  const { balance: solBalance } = useTokenAsset(SOL_ADDRESS);
 
   // Helper function to truncate decimal places to maximum of 9
   const truncateDecimals = useCallback(

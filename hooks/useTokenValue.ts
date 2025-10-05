@@ -1,12 +1,12 @@
 import { useTokenPrice } from './useTokenPrices';
-import { useTokenBalance } from './useTokenBalance';
+import { useTokenAsset } from './useTokenAsset';
 
 export const useTokenValue = (
   address: string | undefined,
   coingeckoId: string | undefined,
 ) => {
   const { price } = useTokenPrice(coingeckoId);
-  const { balance: displayQuantity } = useTokenBalance(address);
+  const { balance: displayQuantity } = useTokenAsset(address);
 
   const currentPrice = price;
   const dollarValue =
