@@ -216,7 +216,7 @@ export default function SettingsScreen() {
   };
 
   return (
-    <ScreenContainer edges={['top', 'bottom']}>
+    <ScreenContainer edges={['top']}>
       <TabScreenHeader
         title="Settings"
         subtitle="Manage your account and preferences"

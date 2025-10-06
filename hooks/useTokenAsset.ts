@@ -80,7 +80,6 @@ export const useTokenAsset = (tokenAddress: string | null | undefined) => {
     balance: tokenBalance?.balance || 0,
     rawBalance: tokenBalance ? BigInt(tokenBalance.rawBalance) : BigInt(0),
     decimals: tokenBalance?.decimals || 0,
-    decimalsShown: tokenBalance?.decimalsShown || 0,
     symbol: tokenBalance?.symbol || '',
     name: tokenBalance?.name || '',
     logoURI: tokenBalance?.logoURI || '',

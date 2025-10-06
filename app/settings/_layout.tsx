@@ -13,7 +13,6 @@ export default function SettingsLayout() {
       <Stack.Screen name="wallets" />
       <Stack.Screen name="security" />
       <Stack.Screen name="kyc" />
-      <Stack.Screen name="country-picker" />
       <Stack.Screen name="date-picker" />
     </Stack>
   );
