@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Image } from 'expo-image';
 import { User, Eye, EyeOff, X, CheckCircle } from 'lucide-react-native';
 import { PaymentCard as PaymentCardType } from '@/utils/storage';
 
@@ -42,7 +43,7 @@ export const SuccessCard: React.FC<SuccessCardProps> = ({
           <Image
             source={getBrandLogo(card.brand)}
             style={styles.brandLogo}
-            resizeMode="contain"
+            contentFit="contain"
           />
           {process.env.EXPO_PUBLIC_APP_ENV === 'development' && (
             <TouchableOpacity

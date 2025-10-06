@@ -1,8 +1,9 @@
 import React from 'react';
-import { View, Text, TextInput, Image, StyleSheet } from 'react-native';
+import { View, Text, TextInput, StyleSheet } from 'react-native';
 import colors from '@/constants/colors';
 import { useTokenAsset } from '@/hooks/useTokenAsset';
 import { formatCurrency } from '@/utils/formatters'; // To format the USD value
+import TokenLogo from './TokenLogo';
 
 interface AmountInputWithValueProps {
   address: string | null | undefined;
@@ -25,7 +26,7 @@ const AmountInputWithValue: React.FC<AmountInputWithValueProps> = ({
     <View style={styles.container}>
       <View style={styles.inputRow}>
         {address && logoURI && (
-          <Image source={{ uri: logoURI }} style={styles.tokenIcon} />
+          <TokenLogo logoURI={logoURI} size={24} style={styles.tokenIcon} />
         )}
         <TextInput
           style={styles.amountTextInput}
@@ -54,10 +55,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   tokenIcon: {
-    width: 24,
-    height: 24,
     marginRight: 8,
-    borderRadius: 12,
   },
   amountTextInput: {
     flex: 1, // Take up available space

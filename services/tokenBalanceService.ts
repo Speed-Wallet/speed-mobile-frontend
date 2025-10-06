@@ -2,8 +2,8 @@ import { AuthService } from './authService';
 
 const BASE_BACKEND_URL = process.env.EXPO_PUBLIC_BASE_BACKEND_URL;
 
-// Types for token balance API
-export interface TokenBalance {
+// Types for token asset API
+export interface TokenAsset {
   address: string; // Mint address
   symbol: string;
   name: string;
@@ -31,7 +31,7 @@ export interface GetTokenBalancesResponse {
   success: boolean;
   data?: {
     walletAddress: string;
-    tokenBalances: TokenBalance[];
+    tokenBalances: TokenAsset[];
     total: number;
     timestamp: number;
   };

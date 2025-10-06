@@ -3,12 +3,12 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { ArrowUpRight, ArrowDownRight, ChevronDown } from 'lucide-react-native';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import colors from '@/constants/colors';
-import { formatCurrency, formatPercentage } from '@/utils/formatters';
-import GreyCard from './GreyCard';
+import {
+  formatCurrency,
+  formatPercentage,
+  getDecimalsToShow,
+} from '@/utils/formatters';
 import TokenLogo from './TokenLogo';
-
-// Define constants for image sizes
-const TOKEN_SYMBOL_CONTAINER_SIZE = scale(36);
 
 type TokenItemProps = {
   balance: number;
@@ -24,6 +24,7 @@ type TokenItemProps = {
   priceFontSize?: number; // Optional prop for dollar value size
   showSelectorIcon?: boolean; // Optional prop for showing selector icon
   priceChangePercentage?: number; // Optional for showing price change in market view
+  backgroundColor?: string; // Optional custom background color
 };
 
 const TokenItem = ({
@@ -40,35 +41,29 @@ const TokenItem = ({
   priceFontSize = 14,
   showSelectorIcon,
   priceChangePercentage = 0,
+  backgroundColor = colors.backgroundMedium,
 }: TokenItemProps) => {
   const isPositiveChange = priceChangePercentage >= 0;
-
-  const decimalsShown = Math.min(balance < 1 ? 6 : 4, decimals);
+  const decimalsShown = getDecimalsToShow(balance, decimals);
 
   return (
-    <GreyCard
-      style={styles.cardStyle}
-      contentPaddingVertical={10}
-      contentPaddingHorizontal={16}
-    >
+    <View style={[styles.cardContainer, { backgroundColor }]}>
       <TouchableOpacity style={styles.touchableContent} onPress={onPress}>
         <View style={styles.leftSection}>
-          <TokenLogo logoURI={logoURI} size={TOKEN_SYMBOL_CONTAINER_SIZE} />
+          <TokenLogo logoURI={logoURI} size={32} />
         </View>
 
         <View style={styles.infoContainer}>
-          <Text style={styles.name}>{name}</Text>
+          <Text style={styles.symbol}>{symbol}</Text>
           {showBalance && (
-            // Only the token quantity and symbol remain here
-            // Apply styles.price instead of styles.balance and add marginTop
-            <Text style={[styles.price, { marginTop: 4 }]}>
+            <Text style={[styles.price, { marginTop: 2 }]}>
               {/* Ensure balance is a number before calling toFixed */}
               {isLoading
                 ? '0.0000'
                 : typeof balance === 'number'
                   ? balance.toFixed(decimalsShown)
                   : '0.0000'}{' '}
-              {symbol}
+              {/* {symbol} */}
             </Text>
           )}
         </View>
@@ -124,17 +119,20 @@ const TokenItem = ({
           />
         )}
       </TouchableOpacity>
-    </GreyCard>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  cardStyle: {
-    // Style for the GreyCard itself
+  cardContainer: {
+    backgroundColor: colors.backgroundMedium,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     marginBottom: 4,
   },
   touchableContent: {
-    // Style for the TouchableOpacity wrapping the content inside GreyCard
+    // Style for the TouchableOpacity wrapping the content inside the card container
     flexDirection: 'row',
     alignItems: 'center',
   },
@@ -153,8 +151,8 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: scale(6), // Add some margin to prevent text from touching priceContainer when balance is not shown
   },
-  name: {
-    fontSize: moderateScale(14),
+  symbol: {
+    fontSize: 14,
     fontFamily: 'Inter-SemiBold',
     color: colors.textPrimary,
   },

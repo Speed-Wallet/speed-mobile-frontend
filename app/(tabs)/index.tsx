@@ -15,7 +15,6 @@ import colors from '@/constants/colors';
 import Avatar from '@/components/Avatar';
 import TokenItem from '@/components/TokenItem';
 import CopyButton from '@/components/CopyButton';
-import { EnrichedTokenEntry } from '@/data/types';
 import BalanceCard from '@/components/BalanceCard';
 import {
   useWalletPublicKey,
