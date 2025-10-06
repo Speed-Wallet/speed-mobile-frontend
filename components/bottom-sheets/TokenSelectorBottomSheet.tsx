@@ -14,13 +14,14 @@ import BottomSheet, {
 } from '@gorhom/bottom-sheet';
 import SettingsHeader from '@/components/SettingsHeader';
 import colors from '@/constants/colors';
-import { getAllTokenInfo } from '@/data/tokens';
-import { EnrichedTokenEntry } from '@/data/types';
-import TokenItemAlt from '@/components/TokenItemAlt';
+import TokenItem from '@/components/TokenItem';
 import { scale, verticalScale } from 'react-native-size-matters';
+import { useTokenAssets } from '@/hooks/useTokenAsset';
+import { useWalletPublicKey } from '@/services/walletService';
+import { TokenAsset } from '@/services/tokenBalanceService';
 
 interface TokenSelectorBottomSheetProps {
-  onTokenSelect: (token: EnrichedTokenEntry) => void;
+  onTokenSelect: (token: TokenAsset) => void;
   onClose: () => void;
   excludeAddress?: string;
   selectedAddress?: string;
@@ -37,18 +38,17 @@ const TokenSelectorBottomSheet = forwardRef<
 >(({ onTokenSelect, onClose, excludeAddress, selectedAddress }, ref) => {
   const [searchQuery, setSearchQuery] = useState('');
   const bottomSheetRef = useRef<BottomSheet>(null);
+  const walletAddress = useWalletPublicKey();
 
   useImperativeHandle(ref, () => ({
     expand: () => bottomSheetRef.current?.expand(),
     close: () => bottomSheetRef.current?.close(),
   }));
 
-  const tokenList = getAllTokenInfo();
+  const { data: tokenBalancesData, isLoading: isLoadingBalances } =
+    useTokenAssets(walletAddress);
 
-  // Parse selected token from address
-  const selectedToken = selectedAddress
-    ? tokenList.find((token) => token.address === selectedAddress) || null
-    : null;
+  const tokenList = tokenBalancesData?.tokenBalances || [];
 
   const filteredTokens = useMemo(() => {
     return tokenList
@@ -62,7 +62,7 @@ const TokenSelectorBottomSheet = forwardRef<
       );
   }, [tokenList, excludeAddress, searchQuery]);
 
-  const handleSelectToken = (token: EnrichedTokenEntry) => {
+  const handleSelectToken = (token: TokenAsset) => {
     // Close bottom sheet and call callback
     bottomSheetRef.current?.close();
     setTimeout(() => {
@@ -77,13 +77,29 @@ const TokenSelectorBottomSheet = forwardRef<
     }, 200);
   };
 
-  const renderTokenItem = ({ item }: { item: EnrichedTokenEntry }) => (
-    <TokenItemAlt
-      token={item}
-      selectedToken={selectedToken}
-      onSelectToken={handleSelectToken}
-    />
-  );
+  const renderTokenItem = ({ item }: { item: TokenAsset }) => {
+    const isSelected = item.address === selectedAddress;
+
+    return (
+      <TokenItem
+        balance={item.balance}
+        pricePerToken={item.pricePerToken}
+        totalPrice={item.totalPrice}
+        logoURI={item.logoURI}
+        name={item.name}
+        symbol={item.symbol}
+        decimals={item.decimals}
+        isLoading={isLoadingBalances}
+        priceChangePercentage={0}
+        onPress={() => handleSelectToken(item)}
+        showBalance={true}
+        backgroundColor={
+          isSelected ? colors.backgroundLight : colors.backgroundMedium
+        }
+        // showSelectorIcon={isSelected}
+      />
+    );
+  };
 
   return (
     <BottomSheet

@@ -3,7 +3,7 @@ import { AppState } from 'react-native';
 import { useState, useEffect } from 'react';
 import {
   getTokenBalances,
-  type TokenBalance,
+  type TokenAsset,
 } from '@/services/tokenBalanceService';
 import { useWalletPublicKey } from '@/services/walletService';
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { ArrowDown, ArrowUp, ArrowRightLeft } from 'lucide-react-native';
 import colors from '@/constants/colors';
 import { formatCurrency, formatDate } from '@/utils/formatters';

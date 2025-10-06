@@ -66,3 +66,12 @@ export const formatAmountInput = (value: string): string => {
 export const unformatAmountInput = (value: string): string => {
   return value.replace(/,/g, '');
 };
+
+// Calculate the number of decimal places to show for a token balance
+// Shows more decimals for small balances (< 1) to maintain precision
+export const getDecimalsToShow = (
+  balance: number,
+  maxDecimals: number,
+): number => {
+  return Math.min(balance < 1 ? 6 : 4, maxDecimals);
+};

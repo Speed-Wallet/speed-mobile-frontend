@@ -26,6 +26,7 @@ import { getAllTokenInfo, getTokenByAddress } from '@/data/tokens';
 
 import RecentContacts from '@/data/contacts';
 import { EnrichedTokenEntry } from '@/data/types';
+import { TokenAsset } from '@/services/tokenBalanceService';
 import ScreenHeader from '@/components/ScreenHeader';
 import ScreenContainer from '@/components/ScreenContainer';
 import PrimaryActionButton from '@/components/buttons/PrimaryActionButton';
@@ -47,9 +48,9 @@ export default function SendScreen() {
     selectedTokenAddress?: string;
   }>();
   const router = useRouter();
-  const [selectedToken, setSelectedToken] = useState<EnrichedTokenEntry | null>(
-    null,
-  );
+  const [selectedToken, setSelectedToken] = useState<
+    TokenAsset | EnrichedTokenEntry | null
+  >(null);
 
   // Get token asset data for the selected token
   const tokenAsset = useTokenAsset(selectedToken?.address);
@@ -142,7 +143,7 @@ export default function SendScreen() {
     throw new Error('tokenAddress should not be an array');
   }
 
-  const handleTokenSelect = (token: EnrichedTokenEntry) => {
+  const handleTokenSelect = (token: TokenAsset) => {
     setSelectedToken(token);
   };
 
@@ -262,7 +263,11 @@ export default function SendScreen() {
                   symbol={tokenAsset.symbol || selectedToken.symbol}
                   decimals={tokenAsset.decimals || selectedToken.decimals}
                   isLoading={tokenAsset.loading}
-                  priceChangePercentage={selectedToken.priceChangePercentage}
+                  priceChangePercentage={
+                    'priceChangePercentage' in selectedToken
+                      ? selectedToken.priceChangePercentage
+                      : 0
+                  }
                   onPress={() => tokenSelectorRef.current?.expand()}
                   showSelectorIcon={true}
                 />

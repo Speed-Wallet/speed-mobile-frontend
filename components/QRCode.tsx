@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, StyleSheet, Image } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { Image } from 'expo-image';
 import Svg, { Rect } from 'react-native-svg';
 
 type QRCodeProps = {
@@ -104,6 +105,7 @@ const QRCode = ({
               borderRadius: logoSize / 2,
             },
           ]}
+          contentFit="cover"
         />
       )}
     </View>
