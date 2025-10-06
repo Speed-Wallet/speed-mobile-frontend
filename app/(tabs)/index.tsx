@@ -6,13 +6,14 @@ import {
   ScrollView,
   TouchableOpacity,
   Linking,
+  FlatList,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import colors from '@/constants/colors';
 import Avatar from '@/components/Avatar';
-import TokenList from '@/components/TokenList';
+import TokenItem from '@/components/TokenItem';
 import CopyButton from '@/components/CopyButton';
 import { EnrichedTokenEntry } from '@/data/types';
 import BalanceCard from '@/components/BalanceCard';
@@ -27,6 +28,7 @@ import TabSelector from '@/components/TabSelector';
 import { AuthService } from '@/services/authService';
 import { useTokenAssets } from '@/hooks/useTokenAsset';
 import { generateSignature } from '@/utils/signature';
+import Animated, { FadeInRight } from 'react-native-reanimated';
 // import CryptoTest from '@/components/CryptoTest';
 
 export default function HomeScreen() {
@@ -123,64 +125,105 @@ export default function HomeScreen() {
 
   return (
     <ScreenContainer edges={['top']}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {/* Crypto Test - Remove this after testing */}
-        {/* <CryptoTest /> */}
+      {activeTab === 'tokens' ? (
+        <Animated.FlatList
+          data={tokenBalancesData?.tokenBalances || []}
+          keyExtractor={(item) => item.address}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.flatListContent}
+          ListHeaderComponent={
+            <>
+              {/* Header section */}
+              <View style={styles.header}>
+                <View style={styles.userSection}>
+                  <Avatar size={scale(32)} user={genericUser} />
+                  <View style={styles.userInfo}>
+                    <Text style={styles.usernameText}>{walletName}</Text>
+                    <Text style={styles.walletNameText}>@{username}</Text>
+                  </View>
+                </View>
+                <CopyButton
+                  textToCopy={walletAddress || ''}
+                  size={scale(18)}
+                  color={colors.textPrimary}
+                  style={styles.copyButton}
+                />
+              </View>
 
-        {/* Header section */}
-        <View style={styles.header}>
-          <View style={styles.userSection}>
-            <Avatar size={scale(32)} user={genericUser} />
-            <View style={styles.userInfo}>
-              <Text style={styles.usernameText}>{walletName}</Text>
-              <Text style={styles.walletNameText}>@{username}</Text>
-            </View>
-          </View>
-          <CopyButton
-            textToCopy={walletAddress || ''}
-            size={scale(18)}
-            color={colors.textPrimary}
-            style={styles.copyButton}
-          />
-        </View>
+              {/* Balance card */}
+              <BalanceCard onActionPress={handleBalanceCardAction} />
 
-        {/* Balance card */}
-        <BalanceCard
-          onActionPress={handleBalanceCardAction}
-          // currencySymbol="$" // Optional: if you want to override default
+              {/* Tab selector */}
+              <TabSelector activeTab={activeTab} onTabPress={setActiveTab} />
+            </>
+          }
+          renderItem={({ item, index }) => {
+            return (
+              <Animated.View
+                entering={FadeInRight.delay(100 + index * 100).duration(400)}
+              >
+                <TokenItem
+                  balance={item.balance}
+                  pricePerToken={item.pricePerToken}
+                  totalPrice={item.totalPrice}
+                  logoURI={item.logoURI}
+                  name={item.name}
+                  symbol={item.symbol}
+                  decimals={item.decimals}
+                  isLoading={isLoadingBalances}
+                  priceChangePercentage={0}
+                  onPress={() => router.push(`/token/${item.address}`)}
+                  showBalance={true}
+                />
+              </Animated.View>
+            );
+          }}
         />
-
-        {/* Tab selector */}
-        <TabSelector activeTab={activeTab} onTabPress={setActiveTab} />
-
-        {/* Content based on active tab */}
-        {activeTab === 'tokens' && (
-          <View style={styles.assetsSection}>
-            <TokenList
-              onSelectToken={(token: EnrichedTokenEntry) =>
-                router.push(`/token/${token.address}`)
-              }
+      ) : (
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
+          {/* Header section */}
+          <View style={styles.header}>
+            <View style={styles.userSection}>
+              <Avatar size={scale(32)} user={genericUser} />
+              <View style={styles.userInfo}>
+                <Text style={styles.usernameText}>{walletName}</Text>
+                <Text style={styles.walletNameText}>@{username}</Text>
+              </View>
+            </View>
+            <CopyButton
+              textToCopy={walletAddress || ''}
+              size={scale(18)}
+              color={colors.textPrimary}
+              style={styles.copyButton}
             />
           </View>
-        )}
 
-        {activeTab === 'activity' && (
+          {/* Balance card */}
+          <BalanceCard onActionPress={handleBalanceCardAction} />
+
+          {/* Tab selector */}
+          <TabSelector activeTab={activeTab} onTabPress={setActiveTab} />
+
+          {/* Activity content */}
           <View style={styles.activitySection}>
             <Text style={styles.placeholderText}>
               Activity content coming soon...
             </Text>
           </View>
-        )}
-      </ScrollView>
+        </ScrollView>
+      )}
     </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
   scrollContent: {
+    padding: scale(12),
+  },
+  flatListContent: {
     padding: scale(12),
   },
   header: {

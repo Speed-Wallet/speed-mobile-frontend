@@ -5,14 +5,20 @@ import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import colors from '@/constants/colors';
 import { formatCurrency, formatPercentage } from '@/utils/formatters';
 import GreyCard from './GreyCard';
-import { useTokenAsset } from '@/hooks/useTokenAsset';
 import TokenLogo from './TokenLogo';
 
 // Define constants for image sizes
 const TOKEN_SYMBOL_CONTAINER_SIZE = scale(36);
 
 type TokenItemProps = {
-  tokenAddress: string;
+  balance: number;
+  pricePerToken: number;
+  totalPrice: number;
+  logoURI: string;
+  name: string;
+  symbol: string;
+  decimals: number;
+  isLoading?: boolean;
   onPress: () => void;
   showBalance?: boolean;
   priceFontSize?: number; // Optional prop for dollar value size
@@ -21,7 +27,14 @@ type TokenItemProps = {
 };
 
 const TokenItem = ({
-  tokenAddress,
+  balance,
+  pricePerToken,
+  totalPrice,
+  logoURI,
+  name,
+  symbol,
+  decimals,
+  isLoading = false,
   onPress,
   showBalance = true,
   priceFontSize = 14,
@@ -30,21 +43,7 @@ const TokenItem = ({
 }: TokenItemProps) => {
   const isPositiveChange = priceChangePercentage >= 0;
 
-  // Get all token asset info (balance, price, metadata) from single hook
-  const tokenAsset = useTokenAsset(tokenAddress);
-  const {
-    balance,
-    pricePerToken,
-    totalPrice,
-    logoURI,
-    name,
-    symbol,
-    loading: isLoading,
-    error,
-    decimalsShown,
-  } = tokenAsset;
-
-  console.log(tokenAsset);
+  const decimalsShown = Math.min(balance < 1 ? 6 : 4, decimals);
 
   return (
     <GreyCard

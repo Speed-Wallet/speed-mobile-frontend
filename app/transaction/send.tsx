@@ -39,6 +39,7 @@ import {
   confirmSendTransaction,
   type PreparedSendTransaction,
 } from '@/utils/sendTransaction';
+import { useTokenAsset } from '@/hooks/useTokenAsset';
 
 export default function SendScreen() {
   const { tokenAddress, selectedTokenAddress } = useLocalSearchParams<{
@@ -49,6 +50,10 @@ export default function SendScreen() {
   const [selectedToken, setSelectedToken] = useState<EnrichedTokenEntry | null>(
     null,
   );
+
+  // Get token asset data for the selected token
+  const tokenAsset = useTokenAsset(selectedToken?.address);
+
   const [amount, setAmount] = useState<string | null>(null);
   const [recipient, setRecipient] = useState<string | null>(null);
   const [note, setNote] = useState('');
@@ -249,7 +254,15 @@ export default function SendScreen() {
               <>
                 <Text style={styles.inputLabel}>Token</Text>
                 <TokenItem
-                  tokenAddress={selectedToken.address}
+                  balance={tokenAsset.balance}
+                  pricePerToken={tokenAsset.pricePerToken}
+                  totalPrice={tokenAsset.totalPrice}
+                  logoURI={tokenAsset.logoURI}
+                  name={tokenAsset.name || selectedToken.name}
+                  symbol={tokenAsset.symbol || selectedToken.symbol}
+                  decimals={tokenAsset.decimals || selectedToken.decimals}
+                  isLoading={tokenAsset.loading}
+                  priceChangePercentage={selectedToken.priceChangePercentage}
                   onPress={() => tokenSelectorRef.current?.expand()}
                   showSelectorIcon={true}
                 />

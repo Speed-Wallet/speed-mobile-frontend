@@ -11,19 +11,16 @@ export interface TokenBalance {
   balance: number; // Human-readable balance
   rawBalance: string; // Raw balance as string to avoid precision issues
   decimals: number;
-  decimalsShown: number;
-  loading: boolean;
-  error: Error | null;
   mint: string;
   tokenStandard: string;
-  supply: string;
   // Price information
   totalPrice: number; // Total value in USD
   pricePerToken: number; // Price per single token
   currency: string; // Currency for pricing (usually USD/USDC)
-  // Token program information
-  tokenProgram: string;
-  associatedTokenAddress: string;
+  // Optional fields (not present for native SOL)
+  supply?: string;
+  tokenProgram?: string;
+  associatedTokenAddress?: string;
 }
 
 export interface GetTokenBalancesRequest {

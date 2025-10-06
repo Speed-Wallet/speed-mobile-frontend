@@ -9,23 +9,52 @@ import {
   Gift,
 } from 'lucide-react-native';
 import colors from '@/constants/colors';
+import {
+  TabBarVisibilityProvider,
+  useTabBarVisibility,
+} from '@/contexts/TabBarVisibilityContext';
+import { useEffect, useMemo } from 'react';
+import Animated, {
+  useAnimatedStyle,
+  withTiming,
+  useSharedValue,
+} from 'react-native-reanimated';
 
 const TABLET_BREAKPOINT = 600; // Define a breakpoint for tablet screens
 
-export default function TabLayout() {
+function TabsContent() {
   const { width } = useWindowDimensions(); // Use the hook to get dynamic width
   const isTablet = width >= TABLET_BREAKPOINT;
+  const { isVisible } = useTabBarVisibility();
+  const translateY = useSharedValue(0);
+
+  // Update animation when visibility changes
+  useEffect(() => {
+    translateY.value = withTiming(isVisible ? 0 : 100, { duration: 300 });
+  }, [isVisible, translateY]);
+
+  // Memoize animated style to prevent recreation
+  const animatedStyle = useAnimatedStyle(
+    () => ({
+      transform: [{ translateY: translateY.value }],
+    }),
+    [translateY],
+  );
+
+  // Memoize base tab bar style
+  const baseTabBarStyle = useMemo(
+    () => ({
+      backgroundColor: colors.backgroundDark,
+      borderTopWidth: 0,
+      position: 'absolute' as const,
+    }),
+    [],
+  );
 
   return (
     <Tabs
       screenOptions={{
-        tabBarStyle: {
-          backgroundColor: colors.backgroundDark,
-          borderTopWidth: 0,
-          // elevation: 0,
-          marginVertical: 4,
-          // margin
-        },
+        tabBarStyle: [baseTabBarStyle, animatedStyle] as any,
         tabBarActiveTintColor: '#4682B4', // Steel Blue
         tabBarInactiveTintColor: colors.textSecondary,
         headerShown: false,
@@ -87,5 +116,13 @@ export default function TabLayout() {
         }}
       />
     </Tabs>
+  );
+}
+
+export default function TabLayout() {
+  return (
+    <TabBarVisibilityProvider>
+      <TabsContent />
+    </TabBarVisibilityProvider>
   );
 }
