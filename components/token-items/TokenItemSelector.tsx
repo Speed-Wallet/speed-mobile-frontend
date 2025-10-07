@@ -13,6 +13,8 @@ interface TokenItemSelectorProps {
   showSelectorIcon?: boolean;
   isLoading?: boolean;
   backgroundColor?: string;
+  balance?: number;
+  totalPrice?: number;
 }
 
 /**
@@ -25,10 +27,36 @@ const TokenItemSelector = ({
   showSelectorIcon = false,
   isLoading = false,
   backgroundColor,
+  balance,
+  totalPrice,
 }: TokenItemSelectorProps) => {
   const bgColor =
     backgroundColor ||
     (isSelected ? colors.backgroundLight : colors.backgroundMedium);
+
+  // Create right content if balance or totalPrice is provided
+  const rightContent =
+    balance !== undefined || totalPrice !== undefined ? (
+      <>
+        {balance !== undefined && (
+          <Text style={styles.balance}>
+            {balance.toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 6,
+            })}
+          </Text>
+        )}
+        {totalPrice !== undefined && (
+          <Text style={styles.totalPrice}>
+            $
+            {totalPrice.toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
+          </Text>
+        )}
+      </>
+    ) : undefined;
 
   return (
     <TokenItemBase
@@ -38,6 +66,7 @@ const TokenItemSelector = ({
       isLoading={isLoading}
       backgroundColor={bgColor}
       secondaryContent={<Text style={styles.symbol}>{token.symbol}</Text>}
+      rightContent={rightContent}
       rightIcon={
         showSelectorIcon ? (
           <ChevronDown
@@ -57,6 +86,19 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Regular',
     color: colors.textSecondary,
     marginTop: 2,
+  },
+  balance: {
+    fontSize: moderateScale(14),
+    fontFamily: 'Inter-Regular',
+    color: colors.textPrimary,
+    textAlign: 'right',
+  },
+  totalPrice: {
+    fontSize: moderateScale(12),
+    fontFamily: 'Inter-Regular',
+    color: colors.textSecondary,
+    marginTop: 2,
+    textAlign: 'right',
   },
   selectorIcon: {
     marginLeft: scale(6),
