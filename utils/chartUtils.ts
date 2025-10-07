@@ -1,5 +1,5 @@
 // Utility functions for formatting chart data
-import { HistoricalPricesResponse } from '@/services/apis';
+import { HistoricalPricesResponse } from '@/types/birdeye';
 
 export interface FormattedChartData {
   labels: string[];
@@ -22,13 +22,19 @@ export interface TimeframeConfig {
 }
 
 export const timeframeConfigs: Record<string, TimeframeConfig> = {
+  '1H': {
+    days: 1 / 24,
+    label: '1H',
+    formatLabel: (date: Date) =>
+      date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+  },
   '1D': {
     days: 1,
     label: '24H',
     formatLabel: (date: Date) =>
       date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
   },
-  '1W': {
+  '7D': {
     days: 7,
     label: '7D',
     formatLabel: (date: Date) =>
@@ -40,23 +46,11 @@ export const timeframeConfigs: Record<string, TimeframeConfig> = {
     formatLabel: (date: Date) =>
       date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
   },
-  '3M': {
-    days: 90,
-    label: '3M',
-    formatLabel: (date: Date) =>
-      date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-  },
   '1Y': {
     days: 365,
     label: '1Y',
     formatLabel: (date: Date) =>
       date.toLocaleDateString('en-US', { month: 'short' }),
-  },
-  ALL: {
-    days: 2000, // Max supported by CoinGecko
-    label: 'MAX',
-    formatLabel: (date: Date) =>
-      date.toLocaleDateString('en-US', { year: 'numeric' }),
   },
 };
 
@@ -69,7 +63,8 @@ export function formatHistoricalDataForChart(
 ): FormattedChartData {
   if (
     !historicalResponse.success ||
-    !historicalResponse.data?.historicalData?.prices
+    !historicalResponse.data?.items ||
+    historicalResponse.data.items.length === 0
   ) {
     return {
       labels: [],
@@ -83,12 +78,12 @@ export function formatHistoricalDataForChart(
     };
   }
 
-  const { prices } = historicalResponse.data.historicalData;
+  const { items } = historicalResponse.data;
   const config = timeframeConfigs[timeframe];
 
   // For charts, we want to show a reasonable number of data points
   const maxDataPoints = 20;
-  const dataPoints = prices.length;
+  const dataPoints = items.length;
   const step = Math.max(1, Math.floor(dataPoints / maxDataPoints));
 
   const formattedData: FormattedChartData = {
@@ -104,11 +99,11 @@ export function formatHistoricalDataForChart(
 
   // Sample data points evenly
   for (let i = 0; i < dataPoints; i += step) {
-    const [timestamp, price] = prices[i];
-    const date = new Date(timestamp);
+    const item = items[i];
+    const date = new Date(item.unixTime * 1000); // Convert from seconds to milliseconds
 
     formattedData.labels.push(config.formatLabel(date));
-    formattedData.datasets[0].data.push(price);
+    formattedData.datasets[0].data.push(item.value);
   }
 
   return formattedData;
@@ -123,49 +118,47 @@ export function formatHistoricalDataForCustomChart(
 ): ChartDataPoint[] {
   if (
     !historicalResponse.success ||
-    !historicalResponse.data?.historicalData?.prices
+    !historicalResponse.data?.items ||
+    historicalResponse.data.items.length === 0
   ) {
     return [];
   }
 
-  const { prices } = historicalResponse.data.historicalData;
+  const { items } = historicalResponse.data;
 
   // For custom chart, we can handle more data points efficiently
   let maxDataPoints = 50;
 
   // Adjust based on timeframe
   switch (timeframe) {
+    case '1H':
+      maxDataPoints = 12; // 5-minute intervals
+      break;
     case '1D':
       maxDataPoints = 24; // Hourly data points
       break;
-    case '1W':
-      maxDataPoints = 30;
+    case '7D':
+      maxDataPoints = 42; // 4-hour intervals
       break;
     case '1M':
-      maxDataPoints = 30;
-      break;
-    case '3M':
-      maxDataPoints = 40;
+      maxDataPoints = 30; // Daily data points
       break;
     case '1Y':
-      maxDataPoints = 50;
-      break;
-    case 'ALL':
-      maxDataPoints = 60;
+      maxDataPoints = 52; // Weekly data points
       break;
   }
 
-  const dataPoints = prices.length;
+  const dataPoints = items.length;
   const step = Math.max(1, Math.floor(dataPoints / maxDataPoints));
 
   const formattedData: ChartDataPoint[] = [];
 
   // Sample data points evenly
   for (let i = 0; i < dataPoints; i += step) {
-    const [timestamp, price] = prices[i];
+    const item = items[i];
     formattedData.push({
-      timestamp,
-      price,
+      timestamp: item.unixTime * 1000, // Convert to milliseconds
+      price: item.value,
     });
   }
 
@@ -181,19 +174,16 @@ export function calculatePriceChange(
 ): { change: number; changePercentage: number } {
   if (
     !historicalResponse.success ||
-    !historicalResponse.data?.historicalData?.prices
+    !historicalResponse.data?.items ||
+    historicalResponse.data.items.length < 2
   ) {
     return { change: 0, changePercentage: 0 };
   }
 
-  const { prices } = historicalResponse.data.historicalData;
+  const { items } = historicalResponse.data;
 
-  if (prices.length < 2) {
-    return { change: 0, changePercentage: 0 };
-  }
-
-  const currentPrice = prices[prices.length - 1][1];
-  const startPrice = prices[0][1];
+  const currentPrice = items[items.length - 1].value;
+  const startPrice = items[0].value;
 
   const change = currentPrice - startPrice;
   const changePercentage = (change / startPrice) * 100;
@@ -247,22 +237,5 @@ export function formatLargeNumber(value: number): string {
     return `$${(value / 1e3).toFixed(2)}K`;
   } else {
     return `$${value.toFixed(2)}`;
-  }
-}
-
-/**
- * Format supply numbers (without $ sign)
- */
-export function formatSupply(value: number, symbol: string): string {
-  if (value >= 1e12) {
-    return `${(value / 1e12).toFixed(2)}T ${symbol}`;
-  } else if (value >= 1e9) {
-    return `${(value / 1e9).toFixed(2)}B ${symbol}`;
-  } else if (value >= 1e6) {
-    return `${(value / 1e6).toFixed(2)}M ${symbol}`;
-  } else if (value >= 1e3) {
-    return `${(value / 1e3).toFixed(2)}K ${symbol}`;
-  } else {
-    return `${value.toFixed(0)} ${symbol}`;
   }
 }

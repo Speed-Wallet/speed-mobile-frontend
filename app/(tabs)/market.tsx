@@ -160,7 +160,11 @@ export default function MarketScreen() {
             symbol={jupToken.symbol}
             decimals={jupToken.decimals}
             priceChangePercentage={jupToken.stats24h?.priceChange || 0}
-            onPress={() => router.push(`/token/${jupToken.id}`)}
+            onPress={() =>
+              router.push(
+                `/token/${jupToken.id}?symbol=${encodeURIComponent(jupToken.symbol)}&name=${encodeURIComponent(jupToken.name)}`,
+              )
+            }
             showBalance={false}
           />
         </Animated.View>
@@ -178,7 +182,11 @@ export default function MarketScreen() {
             symbol={curatedToken.symbol}
             decimals={curatedToken.decimals}
             priceChangePercentage={curatedToken.priceChangePercentage}
-            onPress={() => router.push(`/token/${curatedToken.address}`)}
+            onPress={() =>
+              router.push(
+                `/token/${curatedToken.address}?symbol=${encodeURIComponent(curatedToken.symbol)}&name=${encodeURIComponent(curatedToken.name)}`,
+              )
+            }
             showBalance={false}
           />
         </Animated.View>

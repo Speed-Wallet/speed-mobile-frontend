@@ -171,7 +171,11 @@ export default function HomeScreen() {
                   decimals={item.decimals}
                   isLoading={isLoadingBalances}
                   priceChangePercentage={0}
-                  onPress={() => router.push(`/token/${item.address}`)}
+                  onPress={() =>
+                    router.push(
+                      `/token/${item.address}?symbol=${encodeURIComponent(item.symbol)}&name=${encodeURIComponent(item.name)}`,
+                    )
+                  }
                   showBalance={true}
                 />
               </Animated.View>
