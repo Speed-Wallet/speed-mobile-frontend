@@ -7,12 +7,14 @@ import {
   Dimensions,
   ActivityIndicator,
 } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import {
   ArrowLeft,
   Star,
   ArrowUpRight,
   ArrowRightLeft,
   ArrowDownLeft,
+  Copy,
 } from 'lucide-react-native';
 import { useState, useEffect } from 'react';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
@@ -22,15 +24,16 @@ import { TokenPriceChart } from '@/components/charts';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
   getHistoricalPrices,
-  getTokenPrices,
-  TokenMetadata,
+  getTokenMarketData,
+  BirdeyeTokenMarketData,
+  HistoricalPricesResponse,
+  TimeframePeriod,
 } from '@/services/apis';
 import {
   formatHistoricalDataForCustomChart,
   formatPriceChangeString,
   formatPrice,
   formatLargeNumber,
-  formatSupply,
   calculatePriceChange,
   timeframeConfigs,
   ChartDataPoint,
@@ -39,12 +42,16 @@ import {
 
 const screenWidth = Dimensions.get('window').width;
 
-const timeframes = ['1D', '1W', '1M', '3M', '1Y', 'ALL'];
+const timeframes: TimeframePeriod[] = ['1H', '1D', '7D', '1M', '1Y'];
 
 export default function TokenDetailScreen() {
-  const [selectedTimeframe, setSelectedTimeframe] = useState('1D');
-  const [tokenData, setTokenData] = useState<TokenMetadata | null>(null);
-  const [historicalData, setHistoricalData] = useState<any>(null);
+  const [selectedTimeframe, setSelectedTimeframe] =
+    useState<TimeframePeriod>('1D');
+  const [tokenData, setTokenData] = useState<BirdeyeTokenMarketData | null>(
+    null,
+  );
+  const [historicalData, setHistoricalData] =
+    useState<HistoricalPricesResponse | null>(null);
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -59,36 +66,38 @@ export default function TokenDetailScreen() {
   } | null>(null);
 
   const router = useRouter();
-  const { address } = useLocalSearchParams<{ address: string }>();
+  const { address, symbol, name } = useLocalSearchParams<{
+    address: string;
+    symbol?: string;
+    name?: string;
+  }>();
 
   useEffect(() => {
     loadTokenData();
   }, [address]);
 
   useEffect(() => {
-    if (tokenData?.coingeckoId) {
+    if (address && tokenData) {
       loadHistoricalData(selectedTimeframe);
     }
-  }, [selectedTimeframe, tokenData]);
+  }, [selectedTimeframe, address, tokenData]);
 
   const loadTokenData = async () => {
+    if (!address) return;
+
     try {
       setLoading(true);
       setError(null);
 
-      const response = await getTokenPrices();
+      console.log('getting token market data for address', address);
+      const response = await getTokenMarketData(address);
+      console.log('got token market data', response);
 
-      if (!response.success) {
+      if (!response.success || !response.data) {
         throw new Error(response.error || 'Failed to load token data');
       }
 
-      const token = response.data.find((t) => t.address === address);
-
-      if (!token) {
-        throw new Error('Token not found');
-      }
-
-      setTokenData(token);
+      setTokenData(response.data);
     } catch (err) {
       console.error('Error loading token data:', err);
       setError(
@@ -99,17 +108,13 @@ export default function TokenDetailScreen() {
     }
   };
 
-  const loadHistoricalData = async (timeframe: string) => {
-    if (!tokenData?.coingeckoId) return;
+  const loadHistoricalData = async (timeframe: TimeframePeriod) => {
+    if (!address) return;
 
     try {
       setLoading(true);
-      const config = timeframeConfigs[timeframe];
 
-      const response = await getHistoricalPrices(
-        tokenData.coingeckoId,
-        config.days,
-      );
+      const response = await getHistoricalPrices(address, timeframe);
 
       if (!response.success) {
         throw new Error(response.error || 'Failed to load historical data');
@@ -135,7 +140,7 @@ export default function TokenDetailScreen() {
     }
   };
 
-  const handleTimeframeChange = (timeframe: string) => {
+  const handleTimeframeChange = (timeframe: TimeframePeriod) => {
     setSelectedTimeframe(timeframe);
   };
 
@@ -183,7 +188,7 @@ export default function TokenDetailScreen() {
     return null;
   }
 
-  const currentPrice = tokenData.priceData?.current_price || 0;
+  const currentPrice = tokenData.price || 0;
 
   const displayPriceChange = priceChange;
 
@@ -192,26 +197,44 @@ export default function TokenDetailScreen() {
   )} ${formatPriceChangeString(displayPriceChange.changePercentage)}`;
   const isNegative = displayPriceChange.changePercentage < 0;
 
+  // Format mint address for display (show first 4 and last 4 characters)
+  const formatAddress = (addr: string) => {
+    if (!addr) return 'N/A';
+    return `${addr.slice(0, 4)}...${addr.slice(-4)}`;
+  };
+
+  const handleCopyAddress = async () => {
+    if (address) {
+      await Clipboard.setStringAsync(address);
+      // Could add a toast notification here
+    }
+  };
+
   const statsData = [
     {
-      label: 'Market Cap',
-      value: formatLargeNumber(tokenData.priceData?.market_cap || 0),
+      label: 'Token Name',
+      value: name || 'N/A',
     },
     {
-      label: 'Volume (24h)',
-      value: formatLargeNumber(tokenData.priceData?.total_volume || 0),
+      label: 'Market Cap',
+      value: formatLargeNumber(tokenData?.market_cap || 0),
+    },
+    {
+      label: 'Mint Address',
+      value: formatAddress(address || ''),
+      action: handleCopyAddress,
+      icon: 'copy',
     },
     {
       label: 'Circulating Supply',
-      value: formatSupply(
-        tokenData.priceData?.circulating_supply || 0,
-        tokenData.symbol,
-      ),
+      value: tokenData?.circulating_supply
+        ? formatLargeNumber(tokenData.circulating_supply)
+        : 'N/A',
     },
     {
-      label: 'Max Supply',
-      value: tokenData.priceData?.max_supply
-        ? formatSupply(tokenData.priceData.max_supply, tokenData.symbol)
+      label: 'Total Supply',
+      value: tokenData?.total_supply
+        ? formatLargeNumber(tokenData.total_supply)
         : 'N/A',
     },
   ];
@@ -219,7 +242,7 @@ export default function TokenDetailScreen() {
   return (
     <ScreenContainer edges={['top', 'bottom']}>
       <ScreenHeader
-        title={tokenData.symbol}
+        title={symbol ? symbol : ''}
         onBack={() => router.back()}
         rightElement={
           <TouchableOpacity style={styles.headerButton}>
@@ -337,7 +360,17 @@ export default function TokenDetailScreen() {
                 ]}
               >
                 <Text style={styles.statLabel}>{stat.label}</Text>
-                <Text style={styles.statValue}>{stat.value}</Text>
+                <View style={styles.statValueContainer}>
+                  <Text style={styles.statValue}>{stat.value}</Text>
+                  {stat.icon === 'copy' && (
+                    <TouchableOpacity
+                      onPress={stat.action}
+                      style={styles.copyButton}
+                    >
+                      <Copy size={scale(14)} color="#9ca3af" />
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
             ))}
           </View>
@@ -345,10 +378,13 @@ export default function TokenDetailScreen() {
 
         {/* About Token */}
         <View style={styles.aboutSection}>
-          <Text style={styles.sectionTitle}>About {tokenData.name}</Text>
+          <Text style={styles.sectionTitle}>
+            About {name || symbol || 'Token'}
+          </Text>
           <Text style={styles.description}>
-            {tokenData.name} ({tokenData.symbol}) is a cryptocurrency token.
-            Current price data and market information are provided by CoinGecko.
+            {name || symbol || 'This token'} is a cryptocurrency token on
+            Solana. Current price data and market information are provided by
+            Birdeye.
           </Text>
         </View>
       </ScrollView>
@@ -546,10 +582,18 @@ const styles = StyleSheet.create({
     fontSize: scale(13),
     color: '#9ca3af',
   },
+  statValueContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scale(8),
+  },
   statValue: {
     fontSize: scale(13),
     fontWeight: '600',
     color: '#fff',
+  },
+  copyButton: {
+    padding: scale(4),
   },
   bottomActionContainer: {
     position: 'absolute',

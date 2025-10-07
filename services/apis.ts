@@ -6,6 +6,12 @@ import type {
   CardStatus,
   GetCardsResponse,
 } from '@/data/types';
+import type {
+  BirdeyeTokenMarketData,
+  TokenMarketDataResponse,
+  HistoricalPricesResponse,
+  TimeframePeriod,
+} from '@/types/birdeye';
 import { AuthService } from './authService';
 
 // Backend API service functions
@@ -630,6 +636,11 @@ export function convertApiCardToPaymentCard(apiCard: GetCardData): PaymentCard {
 }
 
 // Add these interfaces after the existing interfaces
+// ============================================================
+// DEPRECATED: CoinGecko Types (kept for backward compatibility)
+// Use Birdeye types from @/types/birdeye instead
+// ============================================================
+
 export interface TokenPriceData {
   current_price: number;
   market_cap: number;
@@ -664,36 +675,6 @@ export interface TokenMetadata {
   priceData?: TokenPriceData;
 }
 
-export interface HistoricalDataPoint {
-  timestamp: number;
-  price: number;
-  market_cap: number;
-  volume: number;
-}
-
-export interface HistoricalPricesResponse {
-  success: boolean;
-  coinId: string;
-  days: number;
-  data: {
-    name: string;
-    symbol: string;
-    address: string;
-    coingeckoId: string;
-    decimals: number;
-    logoURI: string;
-    priceData: TokenPriceData;
-    historicalData: {
-      prices: [number, number][];
-      market_caps: [number, number][];
-      total_volumes: [number, number][];
-    };
-  };
-  cached: boolean;
-  timestamp: string;
-  error?: string;
-}
-
 export interface TokenPricesResponse {
   success: boolean;
   data: TokenMetadata[];
@@ -702,8 +683,20 @@ export interface TokenPricesResponse {
   error?: string;
 }
 
+// ============================================================
+// Re-export Birdeye types for convenience
+// ============================================================
+export type {
+  BirdeyeTokenMarketData,
+  TokenMarketDataResponse,
+  HistoricalPricesResponse,
+  TimeframePeriod,
+};
+
 /**
- * Get all token prices from the backend
+ * @deprecated Use Birdeye API via getTokenMarketData() instead
+ * Get all token prices from the backend (CoinGecko-based)
+ * This function is kept for backward compatibility with existing hooks
  */
 export async function getTokenPrices(): Promise<TokenPricesResponse> {
   try {
@@ -737,17 +730,63 @@ export async function getTokenPrices(): Promise<TokenPricesResponse> {
 }
 
 /**
- * Get historical price data for a specific token
+ * Get token market data from Birdeye API for a specific token
+ * @param address - Solana token address
+ * @returns Token market data including price, market cap, supply, volume, etc.
+ */
+export async function getTokenMarketData(
+  address: string,
+): Promise<TokenMarketDataResponse> {
+  try {
+    const authHeaders = await AuthService.getAuthHeader();
+
+    const response = await fetch(
+      `${BASE_BACKEND_URL}/api/birdeye/token-market-data?address=${address}`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          ...authHeaders,
+        },
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error(`Backend API returned ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching token market data:', error);
+    return {
+      success: false,
+      data: null,
+      cached: false,
+      timestamp: new Date().toISOString(),
+      error:
+        error instanceof Error
+          ? error.message
+          : 'Failed to fetch token market data',
+    };
+  }
+}
+
+/**
+ * Get historical price data for a specific token from Birdeye API
+ * @param address - Solana token address
+ * @param timeframe - Timeframe period ('1H', '1D', '7D', '1M', '1Y')
+ * @returns Historical price data points for the specified timeframe
  */
 export async function getHistoricalPrices(
-  coinId: string,
-  days: number = 90,
+  address: string,
+  timeframe: TimeframePeriod = '1D',
 ): Promise<HistoricalPricesResponse> {
   try {
     const authHeaders = await AuthService.getAuthHeader();
 
     const response = await fetch(
-      `${BASE_BACKEND_URL}/api/prices/historical?coinId=${coinId}&days=${days}`,
+      `${BASE_BACKEND_URL}/api/birdeye/historical-prices?address=${address}&timeframe=${timeframe}`,
       {
         method: 'GET',
         headers: {
@@ -767,9 +806,9 @@ export async function getHistoricalPrices(
     console.error('Error fetching historical prices:', error);
     return {
       success: false,
-      coinId,
-      days,
-      data: {} as any,
+      address,
+      timeframe,
+      data: { items: [] },
       cached: false,
       timestamp: new Date().toISOString(),
       error:
