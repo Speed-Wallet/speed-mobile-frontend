@@ -5,20 +5,20 @@ import React, {
   forwardRef,
   useImperativeHandle,
 } from 'react';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import SearchBar from '@/components/SearchBar';
 import BottomSheet, {
-  BottomSheetView,
   BottomSheetBackdrop,
   BottomSheetFlatList,
 } from '@gorhom/bottom-sheet';
 import SettingsHeader from '@/components/SettingsHeader';
 import colors from '@/constants/colors';
 import { TokenItemSelector } from '@/components/token-items';
-import { scale, verticalScale } from 'react-native-size-matters';
+import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import { useTokenAssets } from '@/hooks/useTokenAsset';
 import { useWalletPublicKey } from '@/services/walletService';
-import { TokenAsset } from '@/services/tokenAssetService';
+import { TokenAsset, TokenMetadata } from '@/services/tokenAssetService';
+import { POPULAR_TOKENS } from '@/constants/popularTokens';
 
 interface TokenSelectorBottomSheetProps {
   onTokenSelect: (token: TokenAsset) => void;
@@ -50,23 +50,50 @@ const TokenSelectorBottomSheet = forwardRef<
 
   const tokenList = tokenAssets?.tokenAssets || [];
 
+  // Combine user tokens with popular tokens
+  const combinedTokenList = useMemo(() => {
+    const userTokenAddresses = new Set(
+      tokenList.map((t: TokenAsset) => t.address),
+    );
+
+    // Filter out popular tokens that user already has
+    const additionalPopularTokens = POPULAR_TOKENS.filter(
+      (token) => !userTokenAddresses.has(token.address),
+    );
+
+    // Combine: user tokens first, then popular tokens
+    return [...tokenList, ...additionalPopularTokens];
+  }, [tokenList]);
+
   const filteredTokens = useMemo(() => {
-    return tokenList
-      .filter((token: TokenAsset) =>
+    return combinedTokenList
+      .filter((token: TokenAsset | TokenMetadata) =>
         excludeAddress ? token.address !== excludeAddress : true,
       )
       .filter(
-        (token: TokenAsset) =>
+        (token: TokenAsset | TokenMetadata) =>
           token.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
           token.symbol.toLowerCase().includes(searchQuery.toLowerCase()),
       );
-  }, [tokenList, excludeAddress, searchQuery]);
+  }, [combinedTokenList, excludeAddress, searchQuery]);
 
-  const handleSelectToken = (token: TokenAsset) => {
+  const handleSelectToken = (token: TokenAsset | TokenMetadata) => {
+    // Convert TokenMetadata to TokenAsset if needed
+    const tokenAsset: TokenAsset = {
+      ...token,
+      balance: 0,
+      rawBalance: '0',
+      mint: token.address,
+      tokenStandard: 'Fungible',
+      totalPrice: 0,
+      pricePerToken: 0,
+      currency: 'USD',
+    };
+
     // Close bottom sheet and call callback
     bottomSheetRef.current?.close();
     setTimeout(() => {
-      onTokenSelect(token);
+      onTokenSelect(tokenAsset);
     }, 200);
   };
 
@@ -77,7 +104,7 @@ const TokenSelectorBottomSheet = forwardRef<
     }, 200);
   };
 
-  const renderTokenItem = ({ item }: { item: TokenAsset }) => {
+  const renderTokenItem = ({ item }: { item: TokenAsset | TokenMetadata }) => {
     const isSelected = item.address === selectedAddress;
 
     return (
@@ -118,23 +145,30 @@ const TokenSelectorBottomSheet = forwardRef<
       )}
       onClose={handleClose}
     >
-      <BottomSheetView style={styles.bottomSheetContent}>
-        <SettingsHeader title="Select Token" onClose={handleClose} />
-
-        <SearchBar
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          placeholder="Search by name or symbol"
-        />
-
-        <BottomSheetFlatList
-          data={filteredTokens}
-          keyExtractor={(token) => token.address}
-          renderItem={renderTokenItem}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-        />
-      </BottomSheetView>
+      <BottomSheetFlatList
+        data={filteredTokens}
+        keyExtractor={(token) => token.address}
+        renderItem={renderTokenItem}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+        ListHeaderComponent={
+          <View style={styles.headerContainer}>
+            <SettingsHeader
+              title="Select Token"
+              onClose={handleClose}
+              noPadding={true}
+            />
+            <View>
+              <SearchBar
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                placeholder="Search by name or symbol"
+              />
+            </View>
+          </View>
+        }
+        stickyHeaderIndices={[0]}
+      />
     </BottomSheet>
   );
 });
@@ -148,9 +182,10 @@ const styles = StyleSheet.create({
   bottomSheetHandle: {
     backgroundColor: colors.textSecondary,
   },
-  bottomSheetContent: {
-    flex: 1,
+  headerContainer: {
     backgroundColor: colors.backgroundDark,
+    // paddingHorizontal: scale(16),
+    paddingBottom: 6,
   },
   listContent: {
     paddingHorizontal: scale(16),

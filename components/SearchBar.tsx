@@ -16,7 +16,7 @@ export default function SearchBar({
   placeholder = 'Search...',
 }: SearchBarProps) {
   return (
-    <View style={styles.searchContainer}>
+    <View style={[styles.searchContainer]}>
       <Search
         size={scale(20)}
         color={colors.textSecondary}
@@ -42,8 +42,6 @@ const styles = StyleSheet.create({
     borderColor: colors.backgroundMedium,
     borderWidth: 1,
     borderRadius: scale(11),
-    marginHorizontal: scale(15),
-    marginBottom: verticalScale(15),
   },
   searchIcon: {
     marginRight: scale(7),
