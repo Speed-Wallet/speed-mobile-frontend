@@ -25,13 +25,7 @@ const TABLET_BREAKPOINT = 600; // Define a breakpoint for tablet screens
 function TabsContent() {
   const { width } = useWindowDimensions(); // Use the hook to get dynamic width
   const isTablet = width >= TABLET_BREAKPOINT;
-  const { isVisible } = useTabBarVisibility();
   const translateY = useSharedValue(0);
-
-  // Update animation when visibility changes
-  useEffect(() => {
-    translateY.value = withTiming(isVisible ? 0 : 100, { duration: 300 });
-  }, [isVisible, translateY]);
 
   // Memoize animated style to prevent recreation
   const animatedStyle = useAnimatedStyle(
@@ -47,6 +41,9 @@ function TabsContent() {
       backgroundColor: colors.backgroundDark,
       borderTopWidth: 0,
       position: 'absolute' as const,
+      height: 90, // Add explicit height for more spacing
+      paddingBottom: 8, // Add bottom padding
+      paddingTop: 8, // Add top padding
     }),
     [],
   );

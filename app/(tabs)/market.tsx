@@ -25,7 +25,7 @@ import ScreenContainer from '@/components/ScreenContainer';
 import TabScreenHeader from '@/components/TabScreenHeader';
 import SearchBar from '@/components/SearchBar';
 import {
-  useTopOrganicTokens,
+  useTopTradedTokens,
   useTrendingTokens,
 } from '@/services/jupiterService';
 import { JupiterToken } from '@/types/jupiter';
@@ -51,8 +51,8 @@ export default function MarketScreen() {
   const curatedTokens = getAllTokenInfo();
 
   // Fetch Jupiter data
-  const { data: topOrganicTokens, isLoading: isLoadingTop } =
-    useTopOrganicTokens(20);
+  const { data: topTradedTokens, isLoading: isLoadingTop } =
+    useTopTradedTokens(20);
   const { data: trendingTokens, isLoading: isLoadingTrending } =
     useTrendingTokens(20);
 
@@ -60,13 +60,13 @@ export default function MarketScreen() {
   const currentData = useMemo(() => {
     if (category === 'curated') {
       return curatedTokens;
-    } else if (category === 'top' && topOrganicTokens) {
-      return topOrganicTokens;
+    } else if (category === 'top' && topTradedTokens) {
+      return topTradedTokens;
     } else if (category === 'trending' && trendingTokens) {
       return trendingTokens;
     }
     return [];
-  }, [category, curatedTokens, topOrganicTokens, trendingTokens]);
+  }, [category, curatedTokens, topTradedTokens, trendingTokens]);
 
   // Sort data
   const sortedData = useMemo(() => {
@@ -338,7 +338,7 @@ export default function MarketScreen() {
 const styles = StyleSheet.create({
   fixedFilterContainer: {
     position: 'absolute',
-    bottom: 70, // Position above tab bar
+    bottom: 90, // Position above tab bar - matches tab bar height
     left: 0,
     right: 0,
     backgroundColor: colors.backgroundDark,
@@ -357,8 +357,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: scale(12),
-    paddingVertical: verticalScale(6), // Reduced from 12 to 6
+    paddingHorizontal: 12,
+    paddingVertical: 8, // Increased for taller bar
   },
   categoryContainer: {
     flexDirection: 'row',
@@ -368,11 +368,11 @@ const styles = StyleSheet.create({
   categoryOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: verticalScale(4), // Reduced from 8 to 4
-    paddingHorizontal: scale(10), // Reduced from 14 to 10
-    borderRadius: scale(14), // Reduced from 18 to 14
+    paddingVertical: 6, // Increased for taller buttons
+    paddingHorizontal: 12, // Increased for better spacing
+    borderRadius: 16, // Increased border radius
     backgroundColor: colors.backgroundMedium,
-    minHeight: verticalScale(28), // Reduced from 36 to 28
+    minHeight: 42, // Increased minimum height
   },
   activeCategoryOption: {
     backgroundColor: '#00CFFF',
@@ -380,7 +380,7 @@ const styles = StyleSheet.create({
   categoryOptionText: {
     color: colors.textSecondary,
     fontFamily: 'Inter-Medium',
-    fontSize: moderateScale(11), // Reduced from 12 to 11
+    fontSize: moderateScale(12), // Increased for taller buttons
     fontWeight: '600',
   },
   activeCategoryOptionText: {
@@ -390,18 +390,18 @@ const styles = StyleSheet.create({
   sortDropdownButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: verticalScale(4), // Reduced from 8 to 4
-    paddingHorizontal: scale(10), // Reduced from 12 to 10
-    borderRadius: scale(6),
+    paddingVertical: 8, // Increased to match category buttons
+    paddingHorizontal: 12, // Increased for better spacing
+    borderRadius: 6,
     backgroundColor: colors.backgroundMedium,
     borderWidth: 1,
     borderColor: colors.textSecondary + '40',
-    marginLeft: scale(6), // Reduced from 8 to 6
+    minHeight: 42,
   },
   sortDropdownButtonText: {
     color: colors.textSecondary,
     fontFamily: 'Inter-Medium',
-    fontSize: moderateScale(11), // Reduced to match category text
+    fontSize: moderateScale(12), // Increased to match category text
   },
   expandedDropdown: {
     paddingHorizontal: scale(12),
@@ -413,7 +413,7 @@ const styles = StyleSheet.create({
   expandedDropdownItem: {
     paddingVertical: verticalScale(8),
     paddingHorizontal: scale(12),
-    borderRadius: scale(6),
+    borderRadius: 6,
     marginBottom: verticalScale(4),
   },
   activeExpandedDropdownItem: {
