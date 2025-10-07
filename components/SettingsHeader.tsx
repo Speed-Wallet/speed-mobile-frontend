@@ -9,6 +9,7 @@ interface SettingsHeaderProps {
   onClose: () => void;
   backgroundColor?: string;
   textColor?: string;
+  noPadding?: boolean;
 }
 
 const SettingsHeader: React.FC<SettingsHeaderProps> = ({
@@ -16,9 +17,10 @@ const SettingsHeader: React.FC<SettingsHeaderProps> = ({
   onClose,
   // backgroundColor = colors.backgroundMedium,
   textColor = colors.textPrimary,
+  noPadding = false,
 }) => {
   return (
-    <View style={styles.header}>
+    <View style={[styles.header, noPadding && styles.noPadding]}>
       <Text style={[styles.title, { color: textColor }]}>{title}</Text>
       <TouchableOpacity
         onPress={onClose}
@@ -51,6 +53,9 @@ const styles = StyleSheet.create({
     borderRadius: scale(18),
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  noPadding: {
+    paddingHorizontal: 0,
   },
 });
 
