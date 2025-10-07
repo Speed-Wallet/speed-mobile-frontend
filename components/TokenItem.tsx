@@ -128,8 +128,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.backgroundMedium,
     borderRadius: 16,
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginBottom: 4,
+    paddingVertical: 12,
+    marginBottom: 2,
   },
   touchableContent: {
     // Style for the TouchableOpacity wrapping the content inside the card container

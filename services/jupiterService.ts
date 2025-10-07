@@ -4,6 +4,23 @@ import { JupiterTokenResponse } from '@/types/jupiter';
 const JUPITER_API_BASE = 'https://lite-api.jup.ag/tokens/v2';
 
 /**
+ * Fetch top traded tokens
+ */
+export const fetchTopTradedTokens = async (
+  limit: number = 20,
+): Promise<JupiterTokenResponse> => {
+  const response = await fetch(
+    `${JUPITER_API_BASE}/toptraded/24h?limit=${limit}`,
+  );
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch top traded tokens: ${response.status}`);
+  }
+
+  return response.json();
+};
+
+/**
  * Fetch top tokens by organic score
  */
 export const fetchTopOrganicTokens = async (
@@ -35,6 +52,20 @@ export const fetchTrendingTokens = async (
   }
 
   return response.json();
+};
+
+/**
+ * Hook to fetch top traded tokens with 1 minute cache
+ */
+export const useTopTradedTokens = (limit: number = 20) => {
+  return useQuery({
+    queryKey: ['jupiterTopTraded', limit],
+    queryFn: () => fetchTopTradedTokens(limit),
+    staleTime: 60 * 1000, // 1 minute
+    gcTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+  });
 };
 
 /**
