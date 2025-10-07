@@ -2,10 +2,10 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import colors from '@/constants/colors';
-import { EnrichedTokenEntry } from '@/data/types';
+import { TokenMetadata } from '@/services/tokenAssetService';
 
 interface PercentageButtonsProps {
-  fromToken: EnrichedTokenEntry | null;
+  fromToken: TokenMetadata | null;
   fromTokenBalance: number;
   onPercentagePress: (percentage: number) => void;
 }

@@ -635,54 +635,6 @@ export function convertApiCardToPaymentCard(apiCard: GetCardData): PaymentCard {
   };
 }
 
-// Add these interfaces after the existing interfaces
-// ============================================================
-// DEPRECATED: CoinGecko Types (kept for backward compatibility)
-// Use Birdeye types from @/types/birdeye instead
-// ============================================================
-
-export interface TokenPriceData {
-  current_price: number;
-  market_cap: number;
-  market_cap_rank: number;
-  fully_diluted_valuation: number;
-  total_volume: number;
-  high_24h: number;
-  low_24h: number;
-  price_change_24h: number;
-  price_change_percentage_24h: number;
-  market_cap_change_24h: number;
-  market_cap_change_percentage_24h: number;
-  circulating_supply: number;
-  total_supply: number;
-  max_supply: number;
-  ath: number;
-  ath_change_percentage: number;
-  ath_date: string;
-  atl: number;
-  atl_change_percentage: number;
-  atl_date: string;
-  last_updated: string;
-}
-
-export interface TokenMetadata {
-  name: string;
-  symbol: string;
-  address: string;
-  coingeckoId: string;
-  decimals: number;
-  logoURI: string;
-  priceData?: TokenPriceData;
-}
-
-export interface TokenPricesResponse {
-  success: boolean;
-  data: TokenMetadata[];
-  cached: boolean;
-  timestamp: string;
-  error?: string;
-}
-
 // ============================================================
 // Re-export Birdeye types for convenience
 // ============================================================
@@ -692,42 +644,6 @@ export type {
   HistoricalPricesResponse,
   TimeframePeriod,
 };
-
-/**
- * @deprecated Use Birdeye API via getTokenMarketData() instead
- * Get all token prices from the backend (CoinGecko-based)
- * This function is kept for backward compatibility with existing hooks
- */
-export async function getTokenPrices(): Promise<TokenPricesResponse> {
-  try {
-    const authHeaders = await AuthService.getAuthHeader();
-
-    const response = await fetch(`${BASE_BACKEND_URL}/api/prices/tokens`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        ...authHeaders,
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Backend API returned ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Error fetching token prices:', error);
-    return {
-      success: false,
-      data: [],
-      cached: false,
-      timestamp: new Date().toISOString(),
-      error:
-        error instanceof Error ? error.message : 'Failed to fetch token prices',
-    };
-  }
-}
 
 /**
  * Get token market data from Birdeye API for a specific token

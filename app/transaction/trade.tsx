@@ -19,7 +19,7 @@ import Toast from '@/components/Toast';
 import colors from '@/constants/colors';
 import { formatCurrency, unformatAmountInput } from '@/utils/formatters';
 import { getAllTokenInfo, getTokenByAddress } from '@/data/tokens';
-import { EnrichedTokenEntry } from '@/data/types';
+import { TokenMetadata } from '@/services/tokenAssetService';
 import {
   prepareJupiterSwapTransaction,
   confirmJupiterSwap,
@@ -59,8 +59,8 @@ export default function TradeScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const walletAddress = useWalletPublicKey();
-  const [fromToken, setFromToken] = useState<EnrichedTokenEntry | null>(null);
-  const [toToken, setToToken] = useState<EnrichedTokenEntry | null>(null);
+  const [fromToken, setFromToken] = useState<TokenMetadata | null>(null);
+  const [toToken, setToToken] = useState<TokenMetadata | null>(null);
   const [fromAmount, setFromAmount] = useState('');
   const [toAmount, setToAmount] = useState('');
 
@@ -76,9 +76,7 @@ export default function TradeScreen() {
   const fromTokenSelectorRef = useRef<TokenSelectorBottomSheetRef>(null);
   const toTokenSelectorRef = useRef<TokenSelectorBottomSheetRef>(null);
 
-  const { price: fromTokenPrice } = useTokenPrice(
-    fromToken?.extensions.coingeckoId,
-  );
+  const { price: fromTokenPrice } = useTokenPrice(fromToken?.address);
   const { balance: fromTokenBalance } = useTokenAsset(fromToken?.address);
 
   // Check if output token ATA exists (needed for swap)
@@ -757,7 +755,7 @@ export default function TradeScreen() {
                           <Text style={styles.swapDetailLabel}>Rate</Text>
                           <Text style={styles.swapDetailValue}>
                             {exchangeRate
-                              ? `1 ${fromToken.symbol} = ${exchangeRate.toFixed(toToken.decimalsShown)} ${toToken.symbol}`
+                              ? `1 ${fromToken.symbol} = ${exchangeRate.toFixed(toToken.decimalsShown || toToken.decimals)} ${toToken.symbol}`
                               : 'N/A'}
                           </Text>
                         </View>

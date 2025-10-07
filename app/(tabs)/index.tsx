@@ -13,7 +13,7 @@ import { useCallback } from 'react';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import colors from '@/constants/colors';
 import Avatar from '@/components/Avatar';
-import TokenItem from '@/components/TokenItem';
+import { TokenItemHome } from '@/components/token-items';
 import CopyButton from '@/components/CopyButton';
 import BalanceCard from '@/components/BalanceCard';
 import {
@@ -39,10 +39,10 @@ export default function HomeScreen() {
 
   // Token balances with automatic polling every 10 seconds when app is active
   const {
-    data: tokenBalancesData,
-    isLoading: isLoadingBalances,
-    error: balancesError,
-    refetch: refetchBalances,
+    data: tokenAssets,
+    isLoading: isLoadingAssets,
+    error: tokenAssetError,
+    refetch: refetchTokenAssets,
   } = useTokenAssets(walletAddress);
 
   // Generic user object for avatar
@@ -126,7 +126,7 @@ export default function HomeScreen() {
     <ScreenContainer edges={['top']}>
       {activeTab === 'tokens' ? (
         <Animated.FlatList
-          data={tokenBalancesData?.tokenBalances || []}
+          data={tokenAssets?.tokenAssets || []}
           keyExtractor={(item) => item.address}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.flatListContent}
@@ -161,26 +161,29 @@ export default function HomeScreen() {
               <Animated.View
                 entering={FadeInRight.delay(100 + index * 100).duration(400)}
               >
-                <TokenItem
-                  balance={item.balance}
-                  pricePerToken={item.pricePerToken}
-                  totalPrice={item.totalPrice}
-                  logoURI={item.logoURI}
-                  name={item.name}
-                  symbol={item.symbol}
-                  decimals={item.decimals}
-                  isLoading={isLoadingBalances}
-                  priceChangePercentage={0}
+                <TokenItemHome
+                  token={item}
+                  isLoading={isLoadingAssets}
                   onPress={() =>
                     router.push(
                       `/token/${item.address}?symbol=${encodeURIComponent(item.symbol)}&name=${encodeURIComponent(item.name)}`,
                     )
                   }
-                  showBalance={true}
                 />
               </Animated.View>
             );
           }}
+          ListEmptyComponent={
+            <View style={{ padding: 20, alignItems: 'center' }}>
+              <Text style={{ color: colors.textSecondary }}>
+                {isLoadingAssets
+                  ? 'Loading tokens...'
+                  : tokenAssetError
+                    ? `Error: ${tokenAssetError.message}`
+                    : 'No tokens found'}
+              </Text>
+            </View>
+          }
         />
       ) : (
         <ScrollView

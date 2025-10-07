@@ -13,7 +13,7 @@ import {
   handleCardCreationFailed,
   handleKYCVerificationComplete,
   simulateKYCVerification,
-} from './cardCreationSteps';
+} from '../utils/cardCreationSteps';
 
 // Configure notification handler
 Notifications.setNotificationHandler({

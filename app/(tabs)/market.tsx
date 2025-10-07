@@ -19,7 +19,7 @@ import Animated, {
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import colors from '@/constants/colors';
 import { getAllTokenInfo } from '@/data/tokens';
-import TokenItem from '@/components/TokenItem';
+import { TokenItemMarket } from '@/components/token-items';
 import { EnrichedTokenEntry } from '@/data/types';
 import ScreenContainer from '@/components/ScreenContainer';
 import TabScreenHeader from '@/components/TabScreenHeader';
@@ -151,21 +151,21 @@ export default function MarketScreen() {
       const jupToken = item as JupiterToken;
       return (
         <Animated.View entering={FadeInUp.delay(index * 100).duration(400)}>
-          <TokenItem
-            balance={0} // Jupiter data doesn't have user balance
-            pricePerToken={jupToken.usdPrice}
-            totalPrice={0}
-            logoURI={jupToken.icon}
-            name={jupToken.name}
-            symbol={jupToken.symbol}
-            decimals={jupToken.decimals}
+          <TokenItemMarket
+            token={{
+              address: jupToken.id,
+              name: jupToken.name,
+              symbol: jupToken.symbol,
+              logoURI: jupToken.icon,
+              decimals: jupToken.decimals,
+            }}
+            price={jupToken.usdPrice}
             priceChangePercentage={jupToken.stats24h?.priceChange || 0}
             onPress={() =>
               router.push(
                 `/token/${jupToken.id}?symbol=${encodeURIComponent(jupToken.symbol)}&name=${encodeURIComponent(jupToken.name)}`,
               )
             }
-            showBalance={false}
           />
         </Animated.View>
       );
@@ -173,21 +173,21 @@ export default function MarketScreen() {
       const curatedToken = item as EnrichedTokenEntry;
       return (
         <Animated.View entering={FadeInUp.delay(index * 100).duration(400)}>
-          <TokenItem
-            balance={curatedToken.balance}
-            pricePerToken={curatedToken.price}
-            totalPrice={curatedToken.balance * curatedToken.price}
-            logoURI={curatedToken.logoURI}
-            name={curatedToken.name}
-            symbol={curatedToken.symbol}
-            decimals={curatedToken.decimals}
+          <TokenItemMarket
+            token={{
+              address: curatedToken.address,
+              name: curatedToken.name,
+              symbol: curatedToken.symbol,
+              logoURI: curatedToken.logoURI,
+              decimals: curatedToken.decimals,
+            }}
+            price={curatedToken.price}
             priceChangePercentage={curatedToken.priceChangePercentage}
             onPress={() =>
               router.push(
                 `/token/${curatedToken.address}?symbol=${encodeURIComponent(curatedToken.symbol)}&name=${encodeURIComponent(curatedToken.name)}`,
               )
             }
-            showBalance={false}
           />
         </Animated.View>
       );

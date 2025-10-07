@@ -11,13 +11,13 @@ import { scale, moderateScale } from 'react-native-size-matters';
 import colors from '@/constants/colors';
 import { formatCurrency, formatAmountInput } from '@/utils/formatters';
 import TokenLogo from '@/components/TokenLogo';
-import { EnrichedTokenEntry } from '@/data/types';
+import { TokenMetadata } from '@/services/tokenAssetService';
 import { useTokenAsset } from '@/hooks/useTokenAsset';
 import { useTokenPrice } from '@/hooks/useTokenPrices';
 
 // SwapBox component that combines label, token selector, and amount
 interface SwapBoxProps {
-  token: EnrichedTokenEntry | null;
+  token: TokenMetadata | null;
   onTokenPress: () => void;
   labelText: string;
   amount: string;
@@ -44,7 +44,7 @@ const SwapBox: React.FC<SwapBoxProps> = ({
   disabled = false,
 }) => {
   const { balance: tokenBalance } = useTokenAsset(token?.address);
-  const { price: tokenPrice } = useTokenPrice(token?.extensions.coingeckoId);
+  const { price: tokenPrice } = useTokenPrice(token?.address);
 
   const usdValue =
     token && amount && parseFloat(amount) > 0
@@ -131,8 +131,8 @@ const SwapBox: React.FC<SwapBoxProps> = ({
 
 // Main SwapTokensSection component
 interface SwapTokensSectionProps {
-  fromToken: EnrichedTokenEntry | null;
-  toToken: EnrichedTokenEntry | null;
+  fromToken: TokenMetadata | null;
+  toToken: TokenMetadata | null;
   fromAmount: string;
   toAmount: string;
   activeInput: 'from' | 'to' | null;

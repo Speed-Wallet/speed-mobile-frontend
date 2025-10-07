@@ -1,14 +1,9 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AppState } from 'react-native';
 import { useState, useEffect } from 'react';
-import {
-  getTokenBalances,
-  type TokenAsset,
-} from '@/services/tokenBalanceService';
+import { getTokenAssets, type TokenAsset } from '@/services/tokenAssetService';
 import { useWalletPublicKey } from '@/services/walletService';
-
-// Refetch interval in milliseconds (30 seconds)
-const REFETCH_INTERVAL = 30 * 1000;
+import { CACHE_TIME, RETRY_CONFIG } from '@/constants/cache';
 
 /**
  * Hook to track if app is active/inactive for controlling refetch
@@ -43,20 +38,20 @@ export const useTokenAssets = (walletAddress: string | null | undefined) => {
         throw new Error('Wallet address is required');
       }
 
-      const response = await getTokenBalances(walletAddress);
+      const response = await getTokenAssets(walletAddress);
 
       if (!response.success || !response.data) {
-        throw new Error(response.error || 'Failed to fetch token balances');
+        throw new Error(response.error || 'Failed to fetch token assets');
       }
 
       return response.data;
     },
     enabled: !!walletAddress && appIsActive,
-    refetchInterval: REFETCH_INTERVAL,
-    staleTime: REFETCH_INTERVAL, // Keep data fresh for the full refetch interval
-    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
-    retry: 3,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
+    refetchInterval: CACHE_TIME.TOKEN_ASSETS.REFETCH_INTERVAL,
+    staleTime: CACHE_TIME.TOKEN_ASSETS.STALE_TIME,
+    gcTime: CACHE_TIME.TOKEN_ASSETS.GC_TIME,
+    retry: RETRY_CONFIG.DEFAULT_RETRIES,
+    retryDelay: RETRY_CONFIG.exponentialDelay,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
   });
@@ -70,8 +65,8 @@ export const useTokenAsset = (tokenAddress: string | null | undefined) => {
   const walletAddress = useWalletPublicKey();
   const { data, isLoading, error, refetch } = useTokenAssets(walletAddress);
 
-  const tokenBalance = data?.tokenBalances?.find(
-    (token) => token.address === tokenAddress,
+  const tokenBalance = data?.tokenAssets?.find(
+    (token: TokenAsset) => token.address === tokenAddress,
   );
 
   const ataExists = !!tokenBalance; // exists even if balance === 0

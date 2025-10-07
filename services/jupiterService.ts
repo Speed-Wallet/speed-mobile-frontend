@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { JupiterTokenResponse } from '@/types/jupiter';
+import { CACHE_TIME } from '@/constants/cache';
 
 const JUPITER_API_BASE = 'https://lite-api.jup.ag/tokens/v2';
 
@@ -61,8 +62,8 @@ export const useTopTradedTokens = (limit: number = 20) => {
   return useQuery({
     queryKey: ['jupiterTopTraded', limit],
     queryFn: () => fetchTopTradedTokens(limit),
-    staleTime: 60 * 1000, // 1 minute
-    gcTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: CACHE_TIME.JUPITER.STALE_TIME,
+    gcTime: CACHE_TIME.JUPITER.GC_TIME,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
   });
@@ -75,8 +76,8 @@ export const useTopOrganicTokens = (limit: number = 20) => {
   return useQuery({
     queryKey: ['jupiterTopOrganic', limit],
     queryFn: () => fetchTopOrganicTokens(limit),
-    staleTime: 60 * 1000, // 1 minute
-    gcTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: CACHE_TIME.JUPITER.STALE_TIME,
+    gcTime: CACHE_TIME.JUPITER.GC_TIME,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
   });
@@ -89,8 +90,8 @@ export const useTrendingTokens = (limit: number = 20) => {
   return useQuery({
     queryKey: ['jupiterTrending', limit],
     queryFn: () => fetchTrendingTokens(limit),
-    staleTime: 60 * 1000, // 1 minute
-    gcTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: CACHE_TIME.JUPITER.STALE_TIME,
+    gcTime: CACHE_TIME.JUPITER.GC_TIME,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
   });

@@ -2,15 +2,20 @@ import { AuthService } from './authService';
 
 const BASE_BACKEND_URL = process.env.EXPO_PUBLIC_BASE_BACKEND_URL;
 
-// Types for token asset API
-export interface TokenAsset {
+// Types for token metadata
+export interface TokenMetadata {
   address: string; // Mint address
-  symbol: string;
   name: string;
+  symbol: string;
   logoURI: string;
+  decimals: number;
+  decimalsShown?: number; // How many decimals to show in UI
+}
+
+// Types for token asset API
+export interface TokenAsset extends TokenMetadata {
   balance: number; // Human-readable balance
   rawBalance: string; // Raw balance as string to avoid precision issues
-  decimals: number;
   mint: string;
   tokenStandard: string;
   // Price information
@@ -23,15 +28,15 @@ export interface TokenAsset {
   associatedTokenAddress?: string;
 }
 
-export interface GetTokenBalancesRequest {
+export interface GetTokenAssetsRequest {
   walletAddress: string;
 }
 
-export interface GetTokenBalancesResponse {
+export interface GetTokenAssetsResponse {
   success: boolean;
   data?: {
     walletAddress: string;
-    tokenBalances: TokenAsset[];
+    tokenAssets: TokenAsset[];
     total: number;
     timestamp: number;
   };
@@ -40,11 +45,11 @@ export interface GetTokenBalancesResponse {
 }
 
 /**
- * Fetch token balances for a wallet address
+ * Fetch token assets for a wallet address
  */
-export const getTokenBalances = async (
+export const getTokenAssets = async (
   walletAddress: string,
-): Promise<GetTokenBalancesResponse> => {
+): Promise<GetTokenAssetsResponse> => {
   try {
     if (!BASE_BACKEND_URL) {
       throw new Error('Backend URL not configured');
@@ -72,17 +77,17 @@ export const getTokenBalances = async (
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    const data: GetTokenBalancesResponse = await response.json();
+    const data: GetTokenAssetsResponse = await response.json();
 
     if (!data.success) {
       throw new Error(
-        data.error || data.message || 'Failed to fetch token balances',
+        data.error || data.message || 'Failed to fetch token assets',
       );
     }
 
     return data;
   } catch (error) {
-    console.error('Error fetching token balances:', error);
+    console.error('Error fetching token assets:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred',
@@ -93,7 +98,7 @@ export const getTokenBalances = async (
 /**
  * Convert raw balance to human-readable balance
  */
-export const formatTokenBalance = (
+export const formatTokenAsset = (
   rawBalance: string | bigint,
   decimals: number,
 ): number => {
@@ -105,9 +110,6 @@ export const formatTokenBalance = (
 /**
  * Convert human-readable balance to raw balance
  */
-export const parseTokenBalance = (
-  balance: number,
-  decimals: number,
-): bigint => {
+export const parseTokenAsset = (balance: number, decimals: number): bigint => {
   return BigInt(Math.floor(balance * Math.pow(10, decimals)));
 };
