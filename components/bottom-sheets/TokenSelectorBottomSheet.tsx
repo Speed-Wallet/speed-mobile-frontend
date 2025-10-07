@@ -107,6 +107,9 @@ const TokenSelectorBottomSheet = forwardRef<
   const renderTokenItem = ({ item }: { item: TokenAsset | TokenMetadata }) => {
     const isSelected = item.address === selectedAddress;
 
+    // Check if item is a TokenAsset (has balance property)
+    const isTokenAsset = 'balance' in item;
+
     return (
       <TokenItemSelector
         token={{
@@ -122,6 +125,8 @@ const TokenSelectorBottomSheet = forwardRef<
         backgroundColor={
           isSelected ? colors.backgroundLight : colors.backgroundMedium
         }
+        balance={isTokenAsset ? (item as TokenAsset).balance : undefined}
+        totalPrice={isTokenAsset ? (item as TokenAsset).totalPrice : undefined}
       />
     );
   };
