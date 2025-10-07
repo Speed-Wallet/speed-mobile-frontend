@@ -9,7 +9,8 @@ import {
   getCreationStepFromStatus,
   isTransactionLoading,
   isTransactionFailed,
-} from '@/services/cardCreationSteps';
+} from '@/utils/cardCreationSteps';
+import { CACHE_TIME } from '@/constants/cache';
 
 // Demo cards for development mode
 const initialCards: PaymentCard[] = [
@@ -128,9 +129,9 @@ export const useCards = (email: string | null) => {
       }
     },
     enabled: !!email, // Only run query if email is provided
-    staleTime: 30 * 1000, // Consider data fresh for 30 seconds
-    gcTime: 5 * 60 * 1000, // Keep data in cache for 5 minutes
+    staleTime: CACHE_TIME.CARDS.STALE_TIME,
+    gcTime: CACHE_TIME.CARDS.GC_TIME,
     refetchOnWindowFocus: false, // Don't refetch when window gains focus
-    refetchInterval: 30 * 1000, // Refetch every 30 seconds
+    refetchInterval: CACHE_TIME.CARDS.REFETCH_INTERVAL,
   });
 };

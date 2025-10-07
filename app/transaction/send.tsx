@@ -26,12 +26,12 @@ import { getAllTokenInfo, getTokenByAddress } from '@/data/tokens';
 
 import RecentContacts from '@/data/contacts';
 import { EnrichedTokenEntry } from '@/data/types';
-import { TokenAsset } from '@/services/tokenBalanceService';
+import { TokenAsset } from '@/services/tokenAssetService';
 import ScreenHeader from '@/components/ScreenHeader';
 import ScreenContainer from '@/components/ScreenContainer';
 import PrimaryActionButton from '@/components/buttons/PrimaryActionButton';
 import AmountInputWithValue from '@/components/AmountInputWithValue';
-import TokenItem from '@/components/TokenItem';
+import { TokenItemSelector } from '@/components/token-items';
 import TokenSelectorBottomSheet, {
   TokenSelectorBottomSheetRef,
 } from '@/components/bottom-sheets/TokenSelectorBottomSheet';
@@ -254,20 +254,15 @@ export default function SendScreen() {
             {selectedToken && (
               <>
                 <Text style={styles.inputLabel}>Token</Text>
-                <TokenItem
-                  balance={tokenAsset.balance}
-                  pricePerToken={tokenAsset.pricePerToken}
-                  totalPrice={tokenAsset.totalPrice}
-                  logoURI={tokenAsset.logoURI}
-                  name={tokenAsset.name || selectedToken.name}
-                  symbol={tokenAsset.symbol || selectedToken.symbol}
-                  decimals={tokenAsset.decimals || selectedToken.decimals}
+                <TokenItemSelector
+                  token={{
+                    address: tokenAsset.address,
+                    name: tokenAsset.name || selectedToken.name,
+                    symbol: tokenAsset.symbol || selectedToken.symbol,
+                    logoURI: tokenAsset.logoURI,
+                    decimals: tokenAsset.decimals || selectedToken.decimals,
+                  }}
                   isLoading={tokenAsset.loading}
-                  priceChangePercentage={
-                    'priceChangePercentage' in selectedToken
-                      ? selectedToken.priceChangePercentage
-                      : 0
-                  }
                   onPress={() => tokenSelectorRef.current?.expand()}
                   showSelectorIcon={true}
                 />

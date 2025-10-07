@@ -14,11 +14,11 @@ import BottomSheet, {
 } from '@gorhom/bottom-sheet';
 import SettingsHeader from '@/components/SettingsHeader';
 import colors from '@/constants/colors';
-import TokenItem from '@/components/TokenItem';
+import { TokenItemSelector } from '@/components/token-items';
 import { scale, verticalScale } from 'react-native-size-matters';
 import { useTokenAssets } from '@/hooks/useTokenAsset';
 import { useWalletPublicKey } from '@/services/walletService';
-import { TokenAsset } from '@/services/tokenBalanceService';
+import { TokenAsset } from '@/services/tokenAssetService';
 
 interface TokenSelectorBottomSheetProps {
   onTokenSelect: (token: TokenAsset) => void;
@@ -45,18 +45,18 @@ const TokenSelectorBottomSheet = forwardRef<
     close: () => bottomSheetRef.current?.close(),
   }));
 
-  const { data: tokenBalancesData, isLoading: isLoadingBalances } =
+  const { data: tokenAssets, isLoading: isLoadingBalances } =
     useTokenAssets(walletAddress);
 
-  const tokenList = tokenBalancesData?.tokenBalances || [];
+  const tokenList = tokenAssets?.tokenAssets || [];
 
   const filteredTokens = useMemo(() => {
     return tokenList
-      .filter((token) =>
+      .filter((token: TokenAsset) =>
         excludeAddress ? token.address !== excludeAddress : true,
       )
       .filter(
-        (token) =>
+        (token: TokenAsset) =>
           token.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
           token.symbol.toLowerCase().includes(searchQuery.toLowerCase()),
       );
@@ -81,22 +81,20 @@ const TokenSelectorBottomSheet = forwardRef<
     const isSelected = item.address === selectedAddress;
 
     return (
-      <TokenItem
-        balance={item.balance}
-        pricePerToken={item.pricePerToken}
-        totalPrice={item.totalPrice}
-        logoURI={item.logoURI}
-        name={item.name}
-        symbol={item.symbol}
-        decimals={item.decimals}
+      <TokenItemSelector
+        token={{
+          address: item.address,
+          name: item.name,
+          symbol: item.symbol,
+          logoURI: item.logoURI,
+          decimals: item.decimals,
+        }}
         isLoading={isLoadingBalances}
-        priceChangePercentage={0}
         onPress={() => handleSelectToken(item)}
-        showBalance={true}
+        isSelected={isSelected}
         backgroundColor={
           isSelected ? colors.backgroundLight : colors.backgroundMedium
         }
-        // showSelectorIcon={isSelected}
       />
     );
   };

@@ -1,4 +1,5 @@
 import { QueryClient } from '@tanstack/react-query';
+import { CACHE_TIME } from '@/constants/cache';
 
 export interface AppConfig {
   platformFeeAccount: string;
@@ -27,8 +28,8 @@ export const prefetchAppConfig = async (queryClient: QueryClient) => {
     await queryClient.prefetchQuery({
       queryKey: ['app-config'],
       queryFn: fetchConfig,
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 10 * 60 * 1000, // 10 minutes
+      staleTime: CACHE_TIME.CONFIG.STALE_TIME,
+      gcTime: CACHE_TIME.CONFIG.GC_TIME,
     });
     console.log('App config prefetched successfully');
   } catch (error) {

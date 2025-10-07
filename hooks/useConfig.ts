@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { CACHE_TIME, RETRY_CONFIG } from '@/constants/cache';
 
 export interface AppConfig {
   platformFeeAccount: string;
@@ -27,10 +28,10 @@ export const useConfig = () => {
   return useQuery({
     queryKey: ['app-config'],
     queryFn: fetchConfig,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes (previously cacheTime)
-    retry: 3,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    staleTime: CACHE_TIME.CONFIG.STALE_TIME,
+    gcTime: CACHE_TIME.CONFIG.GC_TIME,
+    retry: RETRY_CONFIG.DEFAULT_RETRIES,
+    retryDelay: RETRY_CONFIG.longExponentialDelay,
   });
 };
 
