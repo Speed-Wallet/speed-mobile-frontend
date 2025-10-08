@@ -99,8 +99,8 @@ android {
         applicationId 'com.alexthelion123.boltexponativewind'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 5
-        versionName "5.0.1"
+        versionCode 6
+        versionName "6.0.1"
     }
     signingConfigs {
         debug {

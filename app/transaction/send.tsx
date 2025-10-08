@@ -25,8 +25,7 @@ import colors from '@/constants/colors';
 import { getAllTokenInfo, getTokenByAddress } from '@/data/tokens';
 
 import RecentContacts from '@/data/contacts';
-import { EnrichedTokenEntry } from '@/data/types';
-import { TokenAsset } from '@/services/tokenAssetService';
+import { TokenAsset, TokenMetadata } from '@/services/tokenAssetService';
 import ScreenHeader from '@/components/ScreenHeader';
 import ScreenContainer from '@/components/ScreenContainer';
 import PrimaryActionButton from '@/components/buttons/PrimaryActionButton';
@@ -41,6 +40,7 @@ import {
   type PreparedSendTransaction,
 } from '@/utils/sendTransaction';
 import { useTokenAsset } from '@/hooks/useTokenAsset';
+import { useSendTokenSearch } from '@/hooks/useSendTokenSearch';
 
 export default function SendScreen() {
   const { tokenAddress, selectedTokenAddress } = useLocalSearchParams<{
@@ -49,7 +49,7 @@ export default function SendScreen() {
   }>();
   const router = useRouter();
   const [selectedToken, setSelectedToken] = useState<
-    TokenAsset | EnrichedTokenEntry | null
+    TokenAsset | TokenMetadata | null
   >(null);
 
   // Get token asset data for the selected token
@@ -78,6 +78,13 @@ export default function SendScreen() {
     message: string;
     type: 'success' | 'error';
   } | null>(null);
+
+  // Token search state
+  const [tokenSearchQuery, setTokenSearchQuery] = useState('');
+
+  // Use token search hook
+  const { tokens, isLoading: isTokensLoading } =
+    useSendTokenSearch(tokenSearchQuery);
 
   // New state for prepared send workflow
   const [preparedTransaction, setPreparedTransaction] =
@@ -143,12 +150,13 @@ export default function SendScreen() {
     throw new Error('tokenAddress should not be an array');
   }
 
-  const handleTokenSelect = (token: TokenAsset) => {
+  const handleTokenSelect = (token: TokenAsset | TokenMetadata) => {
     setSelectedToken(token);
   };
 
   const handleTokenSelectorClose = () => {
-    // Bottom sheet closed, no need to do anything
+    // Bottom sheet closed, reset search query
+    setTokenSearchQuery('');
   };
 
   const handleSend = async () => {
@@ -316,53 +324,6 @@ export default function SendScreen() {
                           }}
                         />
                       </View>
-
-                      {/* <View style={styles.optionsRow}>
-                      <TouchableOpacity style={styles.optionButton}>
-                        <View style={styles.optionIconContainer}>
-                          <User size={20} color={colors.textPrimary} />
-                        </View>
-                        <Text style={styles.optionText}>Address Book</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity style={styles.optionButton}>
-                        <View style={styles.optionIconContainer}>
-                          <Send size={20} color={colors.textPrimary} />
-                        </View>
-                        <Text style={styles.optionText}>Recent</Text>
-                      </TouchableOpacity>
-                    </View>
-
-                    {filteredContacts.length > 0 ? (
-                      <ScrollView
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        contentContainerStyle={styles.contactsContainer}
-                      >
-                        {filteredContacts.map((contact) => (
-                          <TouchableOpacity
-                            key={contact.id}
-                            style={styles.contactItem}
-                            onPress={() => handleSelectContact(contact)}
-                          >
-                            <Image
-                              source={{ uri: contact.avatar }}
-                              style={styles.contactImage}
-                            />
-                            <Text style={styles.contactItemName}>{contact.name}</Text>
-                          </TouchableOpacity>
-                        ))}
-                      </ScrollView>
-                    ) : (
-                      searchQuery ? (
-                        <Text style={styles.noResults}>No contacts found</Text>
-                      ) : null
-                    )} */}
-
-                      {/* <AddressInput
-                      recipient={recipient}
-                      onChangeAddress={setRecipient}
-                      selectedToken={selectedToken}
-                    /> */}
                     </>
                   )}
                 </Animated.View>
@@ -550,6 +511,10 @@ export default function SendScreen() {
       {/* Token Selector Bottom Sheet */}
       <TokenSelectorBottomSheet
         ref={tokenSelectorRef}
+        tokens={tokens}
+        searchQuery={tokenSearchQuery}
+        onSearchChange={setTokenSearchQuery}
+        isLoading={isTokensLoading}
         onTokenSelect={handleTokenSelect}
         onClose={handleTokenSelectorClose}
         selectedAddress={selectedToken?.address}

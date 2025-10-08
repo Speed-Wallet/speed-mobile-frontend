@@ -18,7 +18,7 @@ import {
 } from '@solana/spl-token';
 import CryptoJS from 'crypto-js';
 import { useEffect, useState } from 'react';
-import { WSOL_ADDRESS } from '@/constants/tokens';
+import { WSOL_ADDRESS } from '@/constants/popularTokens';
 import {
   prepareJupiterSwap,
   submitSignedTransaction,

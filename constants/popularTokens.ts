@@ -5,6 +5,12 @@
 
 import { TokenMetadata } from '@/services/tokenAssetService';
 
+// Token address constants - single source of truth
+export const USDT_ADDRESS = 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB';
+export const USDC_ADDRESS = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
+export const WSOL_ADDRESS = 'So11111111111111111111111111111111111111112';
+export const SOL_ADDRESS = 'So11111111111111111111111111111111111111112';
+
 export const POPULAR_TOKENS: TokenMetadata[] = [
   {
     address: 'cbbtcf3aa214zXHbiAZQwf4122FBYbraNdFqgw4iMij',
@@ -114,7 +120,7 @@ export const POPULAR_TOKENS: TokenMetadata[] = [
     decimals: 9,
   },
   {
-    address: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+    address: USDC_ADDRESS,
     name: 'USD Coin',
     symbol: 'USDC',
     logoURI:
@@ -122,7 +128,7 @@ export const POPULAR_TOKENS: TokenMetadata[] = [
     decimals: 6,
   },
   {
-    address: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB',
+    address: USDT_ADDRESS,
     name: 'USDT',
     symbol: 'USDT',
     logoURI:
@@ -213,3 +219,11 @@ export const POPULAR_TOKENS: TokenMetadata[] = [
     decimals: 6,
   },
 ];
+
+export const TOKEN_MAP = Object.fromEntries(
+  POPULAR_TOKENS.map((t) => [t.symbol, t]),
+);
+
+export const TOKEN_MAP_BY_ADDRESS = Object.fromEntries(
+  POPULAR_TOKENS.map((t) => [t.address, t]),
+);
