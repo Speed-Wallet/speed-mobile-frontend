@@ -668,6 +668,7 @@ export async function getTokenMarketData(
     );
 
     if (!response.ok) {
+      console.error('Error response from backend:', await response.json());
       throw new Error(`Backend API returned ${response.status}`);
     }
 

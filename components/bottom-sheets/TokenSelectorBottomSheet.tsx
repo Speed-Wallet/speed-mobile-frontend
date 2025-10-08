@@ -1,11 +1,5 @@
-import React, {
-  useState,
-  useRef,
-  useMemo,
-  forwardRef,
-  useImperativeHandle,
-} from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useRef, forwardRef, useImperativeHandle } from 'react';
+import { StyleSheet, View } from 'react-native';
 import SearchBar from '@/components/SearchBar';
 import BottomSheet, {
   BottomSheetBackdrop,
@@ -14,16 +8,16 @@ import BottomSheet, {
 import SettingsHeader from '@/components/SettingsHeader';
 import colors from '@/constants/colors';
 import { TokenItemSelector } from '@/components/token-items';
-import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
-import { useTokenAssets } from '@/hooks/useTokenAsset';
-import { useWalletPublicKey } from '@/services/walletService';
+import { scale, verticalScale } from 'react-native-size-matters';
 import { TokenAsset, TokenMetadata } from '@/services/tokenAssetService';
-import { POPULAR_TOKENS } from '@/constants/popularTokens';
 
 interface TokenSelectorBottomSheetProps {
-  onTokenSelect: (token: TokenAsset) => void;
+  tokens: (TokenAsset | TokenMetadata)[];
+  searchQuery: string;
+  onSearchChange: (query: string) => void;
+  isLoading?: boolean;
+  onTokenSelect: (token: TokenMetadata) => void;
   onClose: () => void;
-  excludeAddress?: string;
   selectedAddress?: string;
 }
 
@@ -35,148 +29,130 @@ export interface TokenSelectorBottomSheetRef {
 const TokenSelectorBottomSheet = forwardRef<
   TokenSelectorBottomSheetRef,
   TokenSelectorBottomSheetProps
->(({ onTokenSelect, onClose, excludeAddress, selectedAddress }, ref) => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const bottomSheetRef = useRef<BottomSheet>(null);
-  const walletAddress = useWalletPublicKey();
+>(
+  (
+    {
+      tokens,
+      searchQuery,
+      onSearchChange,
+      isLoading = false,
+      onTokenSelect,
+      onClose,
+      selectedAddress,
+    },
+    ref,
+  ) => {
+    const bottomSheetRef = useRef<BottomSheet>(null);
 
-  useImperativeHandle(ref, () => ({
-    expand: () => bottomSheetRef.current?.expand(),
-    close: () => bottomSheetRef.current?.close(),
-  }));
+    useImperativeHandle(ref, () => ({
+      expand: () => bottomSheetRef.current?.expand(),
+      close: () => bottomSheetRef.current?.close(),
+    }));
 
-  const { data: tokenAssets, isLoading: isLoadingBalances } =
-    useTokenAssets(walletAddress);
+    const handleSelectToken = (token: TokenAsset | TokenMetadata) => {
+      // Convert TokenAsset to TokenMetadata if needed
+      const tokenMetadata: TokenMetadata = {
+        address: token.address,
+        name: token.name,
+        symbol: token.symbol,
+        logoURI: token.logoURI,
+        decimals: token.decimals,
+      };
 
-  const tokenList = tokenAssets?.tokenAssets || [];
-
-  // Combine user tokens with popular tokens
-  const combinedTokenList = useMemo(() => {
-    const userTokenAddresses = new Set(
-      tokenList.map((t: TokenAsset) => t.address),
-    );
-
-    // Filter out popular tokens that user already has
-    const additionalPopularTokens = POPULAR_TOKENS.filter(
-      (token) => !userTokenAddresses.has(token.address),
-    );
-
-    // Combine: user tokens first, then popular tokens
-    return [...tokenList, ...additionalPopularTokens];
-  }, [tokenList]);
-
-  const filteredTokens = useMemo(() => {
-    return combinedTokenList
-      .filter((token: TokenAsset | TokenMetadata) =>
-        excludeAddress ? token.address !== excludeAddress : true,
-      )
-      .filter(
-        (token: TokenAsset | TokenMetadata) =>
-          token.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          token.symbol.toLowerCase().includes(searchQuery.toLowerCase()),
-      );
-  }, [combinedTokenList, excludeAddress, searchQuery]);
-
-  const handleSelectToken = (token: TokenAsset | TokenMetadata) => {
-    // Convert TokenMetadata to TokenAsset if needed
-    const tokenAsset: TokenAsset = {
-      ...token,
-      balance: 0,
-      rawBalance: '0',
-      mint: token.address,
-      tokenStandard: 'Fungible',
-      totalPrice: 0,
-      pricePerToken: 0,
-      currency: 'USD',
+      // Close bottom sheet and call callback
+      bottomSheetRef.current?.close();
+      setTimeout(() => {
+        onTokenSelect(tokenMetadata);
+      }, 200);
     };
 
-    // Close bottom sheet and call callback
-    bottomSheetRef.current?.close();
-    setTimeout(() => {
-      onTokenSelect(tokenAsset);
-    }, 200);
-  };
+    const handleClose = () => {
+      bottomSheetRef.current?.close();
+      setTimeout(() => {
+        onClose();
+      }, 200);
+    };
 
-  const handleClose = () => {
-    bottomSheetRef.current?.close();
-    setTimeout(() => {
-      onClose();
-    }, 200);
-  };
+    const renderTokenItem = ({
+      item,
+    }: {
+      item: TokenAsset | TokenMetadata;
+    }) => {
+      const isSelected = item.address === selectedAddress;
 
-  const renderTokenItem = ({ item }: { item: TokenAsset | TokenMetadata }) => {
-    const isSelected = item.address === selectedAddress;
+      // Check if item is a TokenAsset (has balance property)
+      const isTokenAsset = 'balance' in item;
 
-    // Check if item is a TokenAsset (has balance property)
-    const isTokenAsset = 'balance' in item;
+      return (
+        <TokenItemSelector
+          token={{
+            address: item.address,
+            name: item.name,
+            symbol: item.symbol,
+            logoURI: item.logoURI,
+            decimals: item.decimals,
+          }}
+          isLoading={isLoading}
+          onPress={() => handleSelectToken(item)}
+          isSelected={isSelected}
+          backgroundColor={
+            isSelected ? colors.backgroundLight : colors.backgroundMedium
+          }
+          balance={isTokenAsset ? (item as TokenAsset).balance : undefined}
+          totalPrice={
+            isTokenAsset ? (item as TokenAsset).totalPrice : undefined
+          }
+        />
+      );
+    };
 
     return (
-      <TokenItemSelector
-        token={{
-          address: item.address,
-          name: item.name,
-          symbol: item.symbol,
-          logoURI: item.logoURI,
-          decimals: item.decimals,
-        }}
-        isLoading={isLoadingBalances}
-        onPress={() => handleSelectToken(item)}
-        isSelected={isSelected}
-        backgroundColor={
-          isSelected ? colors.backgroundLight : colors.backgroundMedium
-        }
-        balance={isTokenAsset ? (item as TokenAsset).balance : undefined}
-        totalPrice={isTokenAsset ? (item as TokenAsset).totalPrice : undefined}
-      />
-    );
-  };
-
-  return (
-    <BottomSheet
-      ref={bottomSheetRef}
-      index={-1}
-      snapPoints={['93%']}
-      enableDynamicSizing={false}
-      enablePanDownToClose={true}
-      backgroundStyle={styles.bottomSheetBackground}
-      handleIndicatorStyle={styles.bottomSheetHandle}
-      backdropComponent={(props) => (
-        <BottomSheetBackdrop
-          {...props}
-          appearsOnIndex={0}
-          disappearsOnIndex={-1}
-          opacity={0.4}
-        />
-      )}
-      onClose={handleClose}
-    >
-      <BottomSheetFlatList
-        data={filteredTokens}
-        keyExtractor={(token) => token.address}
-        renderItem={renderTokenItem}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-        ListHeaderComponent={
-          <View style={styles.headerContainer}>
-            <SettingsHeader
-              title="Select Token"
-              onClose={handleClose}
-              noPadding={true}
-            />
-            <View>
-              <SearchBar
-                searchQuery={searchQuery}
-                onSearchChange={setSearchQuery}
-                placeholder="Search by name or symbol"
+      <BottomSheet
+        ref={bottomSheetRef}
+        index={-1}
+        snapPoints={['93%']}
+        enableDynamicSizing={false}
+        enablePanDownToClose={true}
+        backgroundStyle={styles.bottomSheetBackground}
+        handleIndicatorStyle={styles.bottomSheetHandle}
+        backdropComponent={(props) => (
+          <BottomSheetBackdrop
+            {...props}
+            appearsOnIndex={0}
+            disappearsOnIndex={-1}
+            opacity={0.4}
+          />
+        )}
+        onClose={handleClose}
+      >
+        <BottomSheetFlatList
+          data={tokens}
+          keyExtractor={(token) => token.address}
+          renderItem={renderTokenItem}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          ListHeaderComponent={
+            <View style={styles.headerContainer}>
+              <SettingsHeader
+                title="Select Token"
+                onClose={handleClose}
+                noPadding={true}
               />
+              <View>
+                <SearchBar
+                  searchQuery={searchQuery}
+                  onSearchChange={onSearchChange}
+                  placeholder="Search by name or symbol"
+                />
+              </View>
             </View>
-          </View>
-        }
-        stickyHeaderIndices={[0]}
-      />
-    </BottomSheet>
-  );
-});
+          }
+          stickyHeaderIndices={[0]}
+        />
+      </BottomSheet>
+    );
+  },
+);
 
 TokenSelectorBottomSheet.displayName = 'TokenSelectorBottomSheet';
 

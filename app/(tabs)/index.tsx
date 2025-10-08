@@ -107,8 +107,6 @@ export default function HomeScreen() {
 
         const url = `https://sandbox--payments-widget.netlify.app/landing/${apiKey}?${params.toString()}`;
 
-        console.log('Opening YellowCard widget in browser:', url);
-
         // Open URL in external browser
         await Linking.openURL(url);
       } catch (error) {

@@ -18,7 +18,6 @@ import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import Toast from '@/components/Toast';
 import colors from '@/constants/colors';
 import { formatCurrency, unformatAmountInput } from '@/utils/formatters';
-import { getAllTokenInfo, getTokenByAddress } from '@/data/tokens';
 import { TokenMetadata } from '@/services/tokenAssetService';
 import {
   prepareJupiterSwapTransaction,
@@ -36,7 +35,7 @@ import { triggerShake } from '@/utils/animations';
 import { useTokenAsset } from '@/hooks/useTokenAsset';
 import { useRefetchTokenAssets } from '@/hooks/useTokenAsset';
 import { useQueryClient } from '@tanstack/react-query';
-import { SOL_ADDRESS } from '@/constants/tokens';
+import { SOL_ADDRESS, USDC_ADDRESS } from '@/constants/popularTokens';
 import SwapTokensSection from '@/components/SwapTokensSection';
 import TokenLogo from '@/components/TokenLogo';
 import CopyButton from '@/components/CopyButton';
@@ -45,17 +44,33 @@ import TokenSelectorBottomSheet, {
 } from '@/components/bottom-sheets/TokenSelectorBottomSheet';
 import NumericKeyboard from '@/components/keyboard/NumericKeyboard';
 import { getJupiterQuote } from '@/services/jupiterApi';
+import { TOKEN_MAP_BY_ADDRESS } from '@/constants/popularTokens';
+import { useTradeTokenSearch } from '@/hooks/useTradeTokenSearch';
 
 const WAIT_ON_AMOUNT_CHANGE = 2000;
 const LOOP_QUOTE_INTERVAL = 300000;
 
+/**
+ * Trade Screen - Token Swap Interface
+ *
+ * Navigation Examples:
+ *
+ * 1. With both tokens specified:
+ *    const fromToken: TokenMetadata = { address: '...', name: '...', symbol: '...', logoURI: '...', decimals: 9 };
+ *    const toToken: TokenMetadata = { address: '...', name: '...', symbol: '...', logoURI: '...', decimals: 6 };
+ *    router.push(`/transaction/trade?fromTokenJson=${encodeURIComponent(JSON.stringify(fromToken))}&toTokenJson=${encodeURIComponent(JSON.stringify(toToken))}`);
+ *
+ * 2. With only from token (to token will default to USDC or SOL):
+ *    router.push(`/transaction/trade?fromTokenJson=${encodeURIComponent(JSON.stringify(fromToken))}`);
+ *
+ * 3. With no tokens (will default to SOL -> USDC):
+ *    router.push('/transaction/trade');
+ */
 export default function TradeScreen() {
-  const { tokenAddress, selectedTokenAddress, returnParam } =
-    useLocalSearchParams<{
-      tokenAddress?: string;
-      selectedTokenAddress?: string;
-      returnParam?: string;
-    }>();
+  const { fromTokenJson, toTokenJson } = useLocalSearchParams<{
+    fromTokenJson?: string;
+    toTokenJson?: string;
+  }>();
   const router = useRouter();
   const queryClient = useQueryClient();
   const walletAddress = useWalletPublicKey();
@@ -75,6 +90,17 @@ export default function TradeScreen() {
   const bottomSheetRef = useRef<BottomSheet>(null);
   const fromTokenSelectorRef = useRef<TokenSelectorBottomSheetRef>(null);
   const toTokenSelectorRef = useRef<TokenSelectorBottomSheetRef>(null);
+
+  // Token search state
+  const [fromTokenSearchQuery, setFromTokenSearchQuery] = useState('');
+  const [toTokenSearchQuery, setToTokenSearchQuery] = useState('');
+
+  // Use token search hooks
+  const { tokens: fromTokens, isLoading: isFromTokensLoading } =
+    useTradeTokenSearch(fromTokenSearchQuery, toToken?.address);
+
+  const { tokens: toTokens, isLoading: isToTokensLoading } =
+    useTradeTokenSearch(toTokenSearchQuery, fromToken?.address);
 
   const { price: fromTokenPrice } = useTokenPrice(fromToken?.address);
   const { balance: fromTokenBalance } = useTokenAsset(fromToken?.address);
@@ -250,53 +276,55 @@ export default function TradeScreen() {
   useEffect(updateAmounts, [fromAmount, fromToken, toToken, swapFeeRate]);
   // Note: Removed inverse calculation useEffect since 'to' input is now disabled
 
-  // Handle token selection from the token selector page
+  // Initialize tokens from URL params or defaults
   useEffect(() => {
-    if (selectedTokenAddress && returnParam) {
-      const tokens = getAllTokenInfo();
-      const selectedToken = tokens.find(
-        (token) => token.address === selectedTokenAddress,
-      );
+    const initializeTokens = () => {
+      let initialFromToken: TokenMetadata | null = null;
+      let initialToToken: TokenMetadata | null = null;
 
-      if (selectedToken) {
-        if (returnParam === 'fromToken') {
-          setFromToken(selectedToken);
-        } else if (returnParam === 'toToken') {
-          setToToken(selectedToken);
+      // Try to parse tokens from URL params
+      if (fromTokenJson) {
+        try {
+          initialFromToken = JSON.parse(fromTokenJson) as TokenMetadata;
+        } catch (error) {
+          console.error('Error parsing fromTokenJson:', error);
         }
       }
 
-      // Clear the params to prevent re-triggering
-      router.setParams({
-        selectedTokenAddress: undefined,
-        returnParam: undefined,
-      });
-    }
-  }, [selectedTokenAddress, returnParam]);
-
-  useEffect(() => {
-    const loadData = () => {
-      const tokens = getAllTokenInfo();
-
-      if (tokenAddress) {
-        const token = getTokenByAddress(tokenAddress as string);
-        setFromToken(token);
-
-        const defaultTo = tokens.find((t) => t.address !== token.address);
-        if (defaultTo) {
-          setToToken(defaultTo);
+      if (toTokenJson) {
+        try {
+          initialToToken = JSON.parse(toTokenJson) as TokenMetadata;
+        } catch (error) {
+          console.error('Error parsing toTokenJson:', error);
         }
-      } else if (tokens.length > 1) {
-        setFromToken(tokens[0]);
-        setToToken(tokens[1]);
       }
+
+      // Set default tokens if not provided in params
+      if (!initialFromToken) {
+        // Default to SOL for from token
+        initialFromToken = TOKEN_MAP_BY_ADDRESS[SOL_ADDRESS] || null;
+      }
+
+      if (!initialToToken && initialFromToken) {
+        // Default to USDC for to token if different from from token
+        const defaultToToken = TOKEN_MAP_BY_ADDRESS[USDC_ADDRESS];
+        if (
+          defaultToToken &&
+          defaultToToken.address !== initialFromToken.address
+        ) {
+          initialToToken = defaultToToken;
+        } else {
+          // If USDC is the from token, use SOL as to token
+          initialToToken = TOKEN_MAP_BY_ADDRESS[SOL_ADDRESS] || null;
+        }
+      }
+
+      setFromToken(initialFromToken);
+      setToToken(initialToToken);
     };
-    loadData();
-  }, [tokenAddress]);
 
-  if (Array.isArray(tokenAddress)) {
-    throw new Error('tokenAddress should not be an array');
-  }
+    initializeTokens();
+  }, [fromTokenJson, toTokenJson]);
 
   const handleSwapTokens = () => {
     setFromToken(toToken);
@@ -979,17 +1007,23 @@ export default function TradeScreen() {
         {/* Token Selector Bottom Sheets - At root level for proper z-index */}
         <TokenSelectorBottomSheet
           ref={fromTokenSelectorRef}
+          tokens={fromTokens}
+          searchQuery={fromTokenSearchQuery}
+          onSearchChange={setFromTokenSearchQuery}
+          isLoading={isFromTokensLoading}
           onTokenSelect={setFromToken}
-          onClose={() => {}}
-          excludeAddress={toToken?.address}
+          onClose={() => setFromTokenSearchQuery('')}
           selectedAddress={fromToken?.address}
         />
 
         <TokenSelectorBottomSheet
           ref={toTokenSelectorRef}
+          tokens={toTokens}
+          searchQuery={toTokenSearchQuery}
+          onSearchChange={setToTokenSearchQuery}
+          isLoading={isToTokensLoading}
           onTokenSelect={setToToken}
-          onClose={() => {}}
-          excludeAddress={fromToken?.address}
+          onClose={() => setToTokenSearchQuery('')}
           selectedAddress={toToken?.address}
         />
       </ScreenContainer>

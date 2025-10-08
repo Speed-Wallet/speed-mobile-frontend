@@ -24,11 +24,11 @@ import TokenLogo from '@/components/TokenLogo';
 import colors from '@/constants/colors';
 import { useConfig } from '@/hooks/useConfig';
 import { useTokenAsset } from '@/hooks/useTokenAsset';
-import { USDT_ADDRESS } from '@/constants/tokens';
+import { USDT_ADDRESS, TOKEN_MAP_BY_ADDRESS } from '@/constants/popularTokens';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 
-// USDT Logo URI
-const USDT_LOGO_URI = 'local://usdt-logo.png';
+// Get USDT token data from the token map
+const USDT_TOKEN = TOKEN_MAP_BY_ADDRESS[USDT_ADDRESS];
 
 interface CreateCardBottomSheetProps {
   onCreateCard: (
@@ -398,7 +398,7 @@ const CreateCardBottomSheet = forwardRef<
               ]}
             >
               <TokenLogo
-                logoURI={USDT_LOGO_URI}
+                logoURI={USDT_TOKEN?.logoURI || ''}
                 size={20}
                 style={styles.inputIcon}
               />

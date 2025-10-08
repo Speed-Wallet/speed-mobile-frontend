@@ -1,69 +1,52 @@
 import { Tabs } from 'expo-router';
-import { useWindowDimensions } from 'react-native'; // Import useWindowDimensions instead of Dimensions
-import { verticalScale, moderateScale } from 'react-native-size-matters';
+import { useWindowDimensions } from 'react-native';
+import { moderateScale } from 'react-native-size-matters';
 import {
   House,
-  ChartPie as PieChart,
   ChartBar as BarChart3,
   Settings,
   Gift,
 } from 'lucide-react-native';
 import colors from '@/constants/colors';
-import {
-  TabBarVisibilityProvider,
-  useTabBarVisibility,
-} from '@/contexts/TabBarVisibilityContext';
-import { useEffect, useMemo } from 'react';
-import Animated, {
-  useAnimatedStyle,
-  withTiming,
-  useSharedValue,
-} from 'react-native-reanimated';
+import { TabBarVisibilityProvider } from '@/contexts/TabBarVisibilityContext';
+import { Easing } from 'react-native-reanimated';
 
-const TABLET_BREAKPOINT = 600; // Define a breakpoint for tablet screens
+const TABLET_BREAKPOINT = 600;
 
 function TabsContent() {
-  const { width } = useWindowDimensions(); // Use the hook to get dynamic width
+  const { width } = useWindowDimensions();
   const isTablet = width >= TABLET_BREAKPOINT;
-  const translateY = useSharedValue(0);
-
-  // Memoize animated style to prevent recreation
-  const animatedStyle = useAnimatedStyle(
-    () => ({
-      transform: [{ translateY: translateY.value }],
-    }),
-    [translateY],
-  );
-
-  // Memoize base tab bar style
-  const baseTabBarStyle = useMemo(
-    () => ({
-      backgroundColor: colors.backgroundDark,
-      borderTopWidth: 0,
-      position: 'absolute' as const,
-      height: 90, // Add explicit height for more spacing
-      paddingBottom: 8, // Add bottom padding
-      paddingTop: 8, // Add top padding
-    }),
-    [],
-  );
 
   return (
     <Tabs
       screenOptions={{
-        tabBarStyle: [baseTabBarStyle, animatedStyle] as any,
-        tabBarActiveTintColor: '#4682B4', // Steel Blue
+        tabBarStyle: {
+          backgroundColor: colors.backgroundDark,
+          borderTopWidth: 0,
+          marginTop: 4,
+        },
+        tabBarActiveTintColor: '#00CFFF',
         tabBarInactiveTintColor: colors.textSecondary,
         headerShown: false,
         tabBarLabelStyle: {
           fontWeight: '500',
           fontSize: moderateScale(10),
-          // marginBottom: verticalScale(30), // Responsive margin
         },
         tabBarIconStyle: {
-          // ...(isTablet ? {} : { marginBottom: verticalScale(3) }), // Responsive gap
+          marginBottom: 0,
         },
         tabBarLabelPosition: isTablet ? 'beside-icon' : 'below-icon', // Conditional layout
+        animation: 'shift',
+        transitionSpec: {
+          animation: 'timing',
+          config: {
+            duration: 300,
+            easing: Easing.out(Easing.cubic),
+          },
+        },
+        sceneStyle: {
+          backgroundColor: colors.backgroundDark,
+        },
       }}
     >
       <Tabs.Screen

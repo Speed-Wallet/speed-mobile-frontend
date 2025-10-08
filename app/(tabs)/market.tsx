@@ -1,35 +1,28 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import {
-  View,
-  Text,
   StyleSheet,
-  FlatList,
-  TouchableOpacity,
   NativeScrollEvent,
   NativeSyntheticEvent,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ChevronDown, Flame } from 'lucide-react-native';
 import Animated, {
   FadeInUp,
-  useAnimatedStyle,
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
-import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
-import colors from '@/constants/colors';
-import { getAllTokenInfo } from '@/data/tokens';
+import { scale, verticalScale } from 'react-native-size-matters';
 import { TokenItemMarket } from '@/components/token-items';
-import { EnrichedTokenEntry } from '@/data/types';
+import { TokenMetadata } from '@/services/tokenAssetService';
 import ScreenContainer from '@/components/ScreenContainer';
 import TabScreenHeader from '@/components/TabScreenHeader';
-import SearchBar from '@/components/SearchBar';
+import MarketFilterRow from '@/components/MarketFilterRow';
 import {
   useTopTradedTokens,
   useTrendingTokens,
 } from '@/services/jupiterService';
 import { JupiterToken } from '@/types/jupiter';
 import { useTabBarVisibility } from '@/contexts/TabBarVisibilityContext';
+import { POPULAR_TOKENS } from '@/constants/popularTokens';
 
 type CategoryOption = 'curated' | 'top' | 'trending';
 type SortMetric = 'price' | 'volume' | 'organicScore' | 'liquidity';
@@ -47,8 +40,8 @@ export default function MarketScreen() {
   const filterBarTranslateY = useSharedValue(0);
   const barsHidden = useRef(false); // Track bar visibility to avoid redundant updates
 
-  // Fetch curated tokens (existing list)
-  const curatedTokens = getAllTokenInfo();
+  // Use popular tokens for curated list
+  const curatedTokens = POPULAR_TOKENS;
 
   // Fetch Jupiter data
   const { data: topTradedTokens, isLoading: isLoadingTop } =
@@ -99,13 +92,6 @@ export default function MarketScreen() {
     return sorted;
   }, [currentData, sortMetric, category]);
 
-  const sortMetricLabels: Record<SortMetric, string> = {
-    price: 'Price',
-    volume: 'Volume',
-    organicScore: 'Organic Score',
-    liquidity: 'Liquidity',
-  };
-
   // Handle scroll with debounce/threshold - memoized for performance
   const handleScroll = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -136,14 +122,21 @@ export default function MarketScreen() {
     [hideTabBar, showTabBar, filterBarTranslateY],
   );
 
-  const animatedFilterStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: filterBarTranslateY.value }],
-  }));
+  const handleCategoryChange = (newCategory: CategoryOption) => {
+    setCategory(newCategory);
+    setShowSortDropdown(false);
+  };
 
-  const renderToken = (
-    item: EnrichedTokenEntry | JupiterToken,
-    index: number,
-  ) => {
+  const handleSortMetricChange = (metric: SortMetric) => {
+    setSortMetric(metric);
+    setShowSortDropdown(false);
+  };
+
+  const handleToggleSortDropdown = () => {
+    setShowSortDropdown(!showSortDropdown);
+  };
+
+  const renderToken = (item: TokenMetadata | JupiterToken, index: number) => {
     // Check if it's a Jupiter token or curated token
     const isJupiterToken = 'id' in item;
 
@@ -170,7 +163,7 @@ export default function MarketScreen() {
         </Animated.View>
       );
     } else {
-      const curatedToken = item as EnrichedTokenEntry;
+      const curatedToken = item as TokenMetadata;
       return (
         <Animated.View entering={FadeInUp.delay(index * 100).duration(400)}>
           <TokenItemMarket
@@ -181,8 +174,8 @@ export default function MarketScreen() {
               logoURI: curatedToken.logoURI,
               decimals: curatedToken.decimals,
             }}
-            price={curatedToken.price}
-            priceChangePercentage={curatedToken.priceChangePercentage}
+            price={undefined}
+            priceChangePercentage={undefined}
             onPress={() =>
               router.push(
                 `/token/${curatedToken.address}?symbol=${encodeURIComponent(curatedToken.symbol)}&name=${encodeURIComponent(curatedToken.name)}`,
@@ -211,231 +204,21 @@ export default function MarketScreen() {
         scrollEventThrottle={16}
       />
 
-      {/* Fixed Filter Row at Bottom - Overlaying */}
-      <Animated.View style={[styles.fixedFilterContainer, animatedFilterStyle]}>
-        <View style={styles.filterBarContent}>
-          {/* Main Filter Row */}
-          <View style={styles.mainFilterRow}>
-            {/* Category Radio Buttons */}
-            <View style={styles.categoryContainer}>
-              <TouchableOpacity
-                style={[
-                  styles.categoryOption,
-                  category === 'curated' && styles.activeCategoryOption,
-                ]}
-                onPress={() => {
-                  setCategory('curated');
-                  setShowSortDropdown(false);
-                }}
-              >
-                <Text
-                  style={[
-                    styles.categoryOptionText,
-                    category === 'curated' && styles.activeCategoryOptionText,
-                  ]}
-                >
-                  Curated
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.categoryOption,
-                  category === 'top' && styles.activeCategoryOption,
-                ]}
-                onPress={() => {
-                  setCategory('top');
-                  setShowSortDropdown(false);
-                }}
-              >
-                <Text
-                  style={[
-                    styles.categoryOptionText,
-                    category === 'top' && styles.activeCategoryOptionText,
-                  ]}
-                >
-                  Top
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.categoryOption,
-                  category === 'trending' && styles.activeCategoryOption,
-                ]}
-                onPress={() => {
-                  setCategory('trending');
-                  setShowSortDropdown(false);
-                }}
-              >
-                <Flame
-                  size={scale(12)}
-                  color={
-                    category === 'trending'
-                      ? colors.backgroundDark
-                      : colors.textSecondary
-                  }
-                  style={{ marginRight: scale(2) }}
-                />
-                <Text
-                  style={[
-                    styles.categoryOptionText,
-                    category === 'trending' && styles.activeCategoryOptionText,
-                  ]}
-                >
-                  Trending
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Sort Dropdown Button */}
-            {category !== 'curated' && (
-              <TouchableOpacity
-                style={styles.sortDropdownButton}
-                onPress={() => setShowSortDropdown(!showSortDropdown)}
-              >
-                <Text style={styles.sortDropdownButtonText}>
-                  {sortMetricLabels[sortMetric]}
-                </Text>
-                <ChevronDown
-                  size={scale(12)}
-                  color={colors.textSecondary}
-                  style={[
-                    { marginLeft: scale(4) },
-                    showSortDropdown && { transform: [{ rotate: '180deg' }] },
-                  ]}
-                />
-              </TouchableOpacity>
-            )}
-          </View>
-
-          {/* Expandable Sort Options */}
-          {showSortDropdown && category !== 'curated' && (
-            <View style={styles.expandedDropdown}>
-              {(Object.keys(sortMetricLabels) as SortMetric[]).map((metric) => (
-                <TouchableOpacity
-                  key={metric}
-                  style={[
-                    styles.expandedDropdownItem,
-                    sortMetric === metric && styles.activeExpandedDropdownItem,
-                  ]}
-                  onPress={() => {
-                    setSortMetric(metric);
-                    setShowSortDropdown(false);
-                  }}
-                >
-                  <Text
-                    style={[
-                      styles.expandedDropdownItemText,
-                      sortMetric === metric &&
-                        styles.activeExpandedDropdownItemText,
-                    ]}
-                  >
-                    {sortMetricLabels[metric]}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-        </View>
-      </Animated.View>
+      {/* Fixed Filter Row at Bottom */}
+      <MarketFilterRow
+        category={category}
+        sortMetric={sortMetric}
+        showSortDropdown={showSortDropdown}
+        filterBarTranslateY={filterBarTranslateY}
+        onCategoryChange={handleCategoryChange}
+        onSortMetricChange={handleSortMetricChange}
+        onToggleSortDropdown={handleToggleSortDropdown}
+      />
     </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  fixedFilterContainer: {
-    position: 'absolute',
-    bottom: 90, // Position above tab bar - matches tab bar height
-    left: 0,
-    right: 0,
-    backgroundColor: colors.backgroundDark,
-    borderTopWidth: 1,
-    borderTopColor: colors.backgroundMedium,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  filterBarContent: {
-    width: '100%',
-  },
-  mainFilterRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 12,
-    paddingVertical: 8, // Increased for taller bar
-  },
-  categoryContainer: {
-    flexDirection: 'row',
-    gap: scale(6), // Reduced gap
-    flex: 1,
-  },
-  categoryOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 6, // Increased for taller buttons
-    paddingHorizontal: 12, // Increased for better spacing
-    borderRadius: 16, // Increased border radius
-    backgroundColor: colors.backgroundMedium,
-    minHeight: 42, // Increased minimum height
-  },
-  activeCategoryOption: {
-    backgroundColor: '#00CFFF',
-  },
-  categoryOptionText: {
-    color: colors.textSecondary,
-    fontFamily: 'Inter-Medium',
-    fontSize: moderateScale(12), // Increased for taller buttons
-    fontWeight: '600',
-  },
-  activeCategoryOptionText: {
-    color: colors.backgroundDark,
-    fontWeight: '600',
-  },
-  sortDropdownButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 8, // Increased to match category buttons
-    paddingHorizontal: 12, // Increased for better spacing
-    borderRadius: 6,
-    backgroundColor: colors.backgroundMedium,
-    borderWidth: 1,
-    borderColor: colors.textSecondary + '40',
-    minHeight: 42,
-  },
-  sortDropdownButtonText: {
-    color: colors.textSecondary,
-    fontFamily: 'Inter-Medium',
-    fontSize: moderateScale(12), // Increased to match category text
-  },
-  expandedDropdown: {
-    paddingHorizontal: scale(12),
-    paddingTop: verticalScale(4),
-    paddingBottom: verticalScale(8),
-    borderTopWidth: 1,
-    borderTopColor: colors.backgroundMedium,
-  },
-  expandedDropdownItem: {
-    paddingVertical: verticalScale(8),
-    paddingHorizontal: scale(12),
-    borderRadius: 6,
-    marginBottom: verticalScale(4),
-  },
-  activeExpandedDropdownItem: {
-    backgroundColor: colors.backgroundMedium,
-  },
-  expandedDropdownItemText: {
-    color: colors.textPrimary,
-    fontFamily: 'Inter-Medium',
-    fontSize: moderateScale(12),
-  },
-  activeExpandedDropdownItemText: {
-    color: '#00CFFF',
-    fontWeight: '600',
-  },
   listContent: {
     paddingHorizontal: scale(12),
     paddingBottom: verticalScale(140), // Extra padding for the fixed filter bar
