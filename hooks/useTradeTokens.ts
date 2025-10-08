@@ -9,10 +9,7 @@ import { JupiterToken } from '@/types/jupiter';
  * Hook for trade screen token search
  * Combines wallet tokens, popular tokens, and Jupiter API search results
  */
-export function useTradeTokenSearch(
-  searchQuery: string,
-  excludeAddress?: string,
-) {
+export function useTradeTokens(searchQuery: string, excludeAddress?: string) {
   const walletAddress = useWalletPublicKey();
   const [jupiterSearchResults, setJupiterSearchResults] = useState<
     TokenMetadata[]
@@ -65,6 +62,15 @@ export function useTradeTokenSearch(
     // Clear previous timeout
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
+    }
+
+    // Immediately clear old results and show loading state when search query changes
+    if (searchQuery && searchQuery.length >= 2) {
+      setJupiterSearchResults([]);
+      setIsSearching(true);
+    } else {
+      setJupiterSearchResults([]);
+      setIsSearching(false);
     }
 
     // Set new timeout for 2 seconds

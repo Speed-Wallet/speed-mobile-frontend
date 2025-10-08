@@ -7,10 +7,7 @@ import { TokenAsset } from '@/services/tokenAssetService';
  * Hook for send screen token search
  * Filters wallet tokens based on search query (no Jupiter API)
  */
-export function useSendTokenSearch(
-  searchQuery: string,
-  excludeAddress?: string,
-) {
+export function useSendTokens(searchQuery: string, excludeAddress?: string) {
   const walletAddress = useWalletPublicKey();
 
   const { data: tokenAssets, isLoading } = useTokenAssets(walletAddress);

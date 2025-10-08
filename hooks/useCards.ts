@@ -4,7 +4,7 @@ import {
   getPendingTransactions,
   convertApiCardToPaymentCard,
 } from '@/services/apis';
-import { PaymentCard } from '@/data/types';
+import { PaymentCard } from '@/types/cards';
 import {
   getCreationStepFromStatus,
   isTransactionLoading,

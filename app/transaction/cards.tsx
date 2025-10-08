@@ -5,29 +5,18 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  TextInput,
   Alert,
-  Image,
-  Animated,
   ActivityIndicator,
-  Dimensions,
 } from 'react-native';
 
 import * as Clipboard from 'expo-clipboard';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import {
-  ArrowLeft,
-  Plus,
-  CreditCard,
-  DollarSign,
-  X,
-} from 'lucide-react-native';
+import { CreditCard } from 'lucide-react-native';
 import { router } from 'expo-router';
 import ScreenContainer from '@/components/ScreenContainer';
 import ScreenHeader from '@/components/ScreenHeader';
 import { StorageService } from '@/utils/storage';
-import { PaymentCard } from '@/data/types';
+import { PaymentCard } from '@/types/cards';
 import { sendUsdtToCashwyre } from '@/utils/sendTransaction';
 import { mockSendUsdtToCashwyre } from '@/utils/mockTransaction';
 import { setupNotificationListeners } from '@/services/notificationService';
@@ -37,22 +26,17 @@ import {
   getWalletAddress,
   simulateCardCreated,
   simulateCardCreationFailed,
-  getCards,
-  convertApiCardToPaymentCard,
-  getPendingTransactions,
 } from '@/services/apis';
-import LoadingSkeleton from '@/components/LoadingSkeleton';
 import { LoadingCard } from '@/components/cards/LoadingCard';
 import { SuccessCard } from '@/components/cards/SuccessCard';
 import { FailedCard } from '@/components/cards/FailedCard';
-import { triggerShake } from '@/utils/animations';
 import * as Notifications from 'expo-notifications';
 import { useCards } from '@/hooks/useCards';
 import { useQueryClient } from '@tanstack/react-query';
 import { useConfig } from '@/hooks/useConfig';
 import CustomAlert from '@/components/CustomAlert';
 import { useTokenAsset } from '@/hooks/useTokenAsset';
-import { USDT_ADDRESS } from '@/constants/tokens';
+import { USDT_ADDRESS } from '@/constants/popularTokens';
 import colors from '@/constants/colors';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import BottomActionContainer from '@/components/BottomActionContainer';

@@ -22,10 +22,8 @@ import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import { LinearGradient } from 'expo-linear-gradient';
 import Toast from '@/components/Toast';
 import colors from '@/constants/colors';
-import { getAllTokenInfo, getTokenByAddress } from '@/data/tokens';
-
-import RecentContacts from '@/data/contacts';
-import { TokenAsset, TokenMetadata } from '@/services/tokenAssetService';
+import { TokenMetadata } from '@/services/tokenAssetService';
+import { USDC_TOKEN } from '@/constants/popularTokens';
 import ScreenHeader from '@/components/ScreenHeader';
 import ScreenContainer from '@/components/ScreenContainer';
 import PrimaryActionButton from '@/components/buttons/PrimaryActionButton';
@@ -40,17 +38,28 @@ import {
   type PreparedSendTransaction,
 } from '@/utils/sendTransaction';
 import { useTokenAsset } from '@/hooks/useTokenAsset';
-import { useSendTokenSearch } from '@/hooks/useSendTokenSearch';
+import { useSendTokens } from '@/hooks/useSendTokens';
 
+/**
+ * Send Screen - Send Token Interface
+ *
+ * Navigation Examples:
+ *
+ * 1. With token specified:
+ *    const token: TokenMetadata = { address: '...', name: '...', symbol: '...', logoURI: '...', decimals: 6 };
+ *    router.push(`/transaction/send?tokenJson=${encodeURIComponent(JSON.stringify(token))}`);
+ *
+ * 2. With no token (will default to USDC):
+ *    router.push('/transaction/send');
+ */
 export default function SendScreen() {
-  const { tokenAddress, selectedTokenAddress } = useLocalSearchParams<{
-    tokenAddress?: string;
-    selectedTokenAddress?: string;
+  const { tokenJson } = useLocalSearchParams<{
+    tokenJson?: string;
   }>();
   const router = useRouter();
-  const [selectedToken, setSelectedToken] = useState<
-    TokenAsset | TokenMetadata | null
-  >(null);
+  const [selectedToken, setSelectedToken] = useState<TokenMetadata | null>(
+    null,
+  );
 
   // Get token asset data for the selected token
   const tokenAsset = useTokenAsset(selectedToken?.address);
@@ -58,9 +67,13 @@ export default function SendScreen() {
   const [amount, setAmount] = useState<string | null>(null);
   const [recipient, setRecipient] = useState<string | null>(null);
   const [note, setNote] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedContact, setSelectedContact] = useState<any>(null);
-  const [filteredContacts, setFilteredContacts] = useState(RecentContacts);
+
+  // Token search state
+  const [tokenSearchQuery, setTokenSearchQuery] = useState('');
+
+  // Use token search hook
+  const { tokens, isLoading: isTokensLoading } =
+    useSendTokens(tokenSearchQuery);
 
   // Bottom sheet states
   const previewBottomSheetRef = useRef<BottomSheet>(null);
@@ -78,13 +91,6 @@ export default function SendScreen() {
     message: string;
     type: 'success' | 'error';
   } | null>(null);
-
-  // Token search state
-  const [tokenSearchQuery, setTokenSearchQuery] = useState('');
-
-  // Use token search hook
-  const { tokens, isLoading: isTokensLoading } =
-    useSendTokenSearch(tokenSearchQuery);
 
   // New state for prepared send workflow
   const [preparedTransaction, setPreparedTransaction] =
@@ -104,53 +110,33 @@ export default function SendScreen() {
     [],
   );
 
+  // Initialize token from URL params or default to USDC
   useEffect(() => {
-    const loadData = async () => {
-      const tokens = await getAllTokenInfo();
+    const initializeToken = () => {
+      let initialToken: TokenMetadata | null = null;
 
-      if (tokenAddress) {
-        console.log('Loading token by address:', tokenAddress);
-        const token = await getTokenByAddress(tokenAddress as string);
-        setSelectedToken(token);
-      } else if (tokens.length > 0) {
-        setSelectedToken(tokens[0]);
+      // Try to parse token from URL params
+      if (tokenJson) {
+        try {
+          initialToken = JSON.parse(tokenJson) as TokenMetadata;
+        } catch (error) {
+          console.error('Error parsing tokenJson:', error);
+        }
       }
+
+      // Set default token if not provided in params
+      if (!initialToken) {
+        // Default to USDC for send screen
+        initialToken = USDC_TOKEN || null;
+      }
+
+      setSelectedToken(initialToken);
     };
-    loadData();
-  }, [tokenAddress]);
 
-  // Handle token selection from the token selector page
-  useEffect(() => {
-    if (selectedTokenAddress) {
-      const loadSelectedToken = async () => {
-        const token = await getTokenByAddress(selectedTokenAddress);
-        setSelectedToken(token);
-      };
-      loadSelectedToken();
+    initializeToken();
+  }, [tokenJson]);
 
-      // Clear the param to prevent re-triggering
-      router.setParams({ selectedTokenAddress: undefined });
-    }
-  }, [selectedTokenAddress]);
-
-  useEffect(() => {
-    if (searchQuery) {
-      const filtered = RecentContacts.filter(
-        (contact) =>
-          contact.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          contact.username.toLowerCase().includes(searchQuery.toLowerCase()),
-      );
-      setFilteredContacts(filtered);
-    } else {
-      setFilteredContacts(RecentContacts);
-    }
-  }, [searchQuery]);
-
-  if (Array.isArray(tokenAddress)) {
-    throw new Error('tokenAddress should not be an array');
-  }
-
-  const handleTokenSelect = (token: TokenAsset | TokenMetadata) => {
+  const handleTokenSelect = (token: TokenMetadata) => {
     setSelectedToken(token);
   };
 
@@ -168,7 +154,7 @@ export default function SendScreen() {
       setToast({ message: 'Please enter an amount.', type: 'error' });
       return;
     }
-    if (!recipient && !selectedContact) {
+    if (!recipient) {
       setToast({ message: 'Please enter a recipient.', type: 'error' });
       return;
     }
@@ -184,7 +170,7 @@ export default function SendScreen() {
     try {
       const prepared = await prepareSendTransaction({
         amount: amount || '',
-        recipient: recipient || selectedContact?.recipient || '',
+        recipient: recipient || '',
         tokenAddress: selectedToken.address,
         tokenSymbol: selectedToken.symbol,
         tokenDecimals: selectedToken.decimals,
@@ -233,16 +219,10 @@ export default function SendScreen() {
       setAmount('');
       setRecipient('');
       setNote('');
-      setSelectedContact(null);
       setPreparedTransaction(null);
     } else {
       console.error('Transaction failed:', result.error);
     }
-  };
-
-  const handleSelectContact = (contact: any) => {
-    setSelectedContact(contact);
-    setRecipient(contact.recipient);
   };
 
   return (
@@ -287,45 +267,15 @@ export default function SendScreen() {
                   style={styles.recipientSection}
                 >
                   <Text style={styles.inputLabel}>Send To</Text>
-
-                  {selectedContact ? (
-                    <View style={styles.selectedContactContainer}>
-                      <Image
-                        source={{ uri: selectedContact.avatar }}
-                        style={styles.contactAvatar}
-                      />
-                      <View style={styles.contactInfo}>
-                        <Text style={styles.contactName}>
-                          {selectedContact.name}
-                        </Text>
-                        <Text style={styles.contactUsername}>
-                          @{selectedContact.username}
-                        </Text>
-                      </View>
-                      <TouchableOpacity
-                        style={styles.changeButton}
-                        onPress={() => setSelectedContact(null)}
-                      >
-                        <Text style={styles.changeButtonText}>Change</Text>
-                      </TouchableOpacity>
-                    </View>
-                  ) : (
-                    <>
-                      <View style={styles.searchContainer}>
-                        <Search size={20} color={colors.textSecondary} />
-                        <TextInput
-                          style={styles.searchInput}
-                          placeholder="Search contacts or paste recipient"
-                          placeholderTextColor={colors.textSecondary}
-                          value={searchQuery}
-                          onChangeText={(value) => {
-                            setSearchQuery(value);
-                            setRecipient(value);
-                          }}
-                        />
-                      </View>
-                    </>
-                  )}
+                  <View style={styles.searchContainer}>
+                    <TextInput
+                      style={styles.recipientInput}
+                      placeholder="Paste recipient address"
+                      placeholderTextColor={colors.textSecondary}
+                      value={recipient || ''}
+                      onChangeText={setRecipient}
+                    />
+                  </View>
                 </Animated.View>
 
                 {/* Note Input */}
@@ -360,7 +310,7 @@ export default function SendScreen() {
             <PrimaryActionButton
               title="Preview Send"
               onPress={handleSend}
-              disabled={!amount || (!recipient && !selectedContact)}
+              disabled={!amount || !recipient}
             />
           </View>
 
@@ -389,9 +339,7 @@ export default function SendScreen() {
                   <View style={styles.previewRow}>
                     <Text style={styles.previewLabel}>To</Text>
                     <Text style={styles.previewValue} numberOfLines={1}>
-                      {selectedContact
-                        ? selectedContact.name
-                        : recipient?.slice(0, 6) + '...' + recipient?.slice(-4)}
+                      {recipient?.slice(0, 6) + '...' + recipient?.slice(-4)}
                     </Text>
                   </View>
 
@@ -625,6 +573,12 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     marginLeft: scale(8),
+    fontSize: moderateScale(16),
+    fontFamily: 'Inter-Regular',
+    color: colors.textPrimary,
+  },
+  recipientInput: {
+    flex: 1,
     fontSize: moderateScale(16),
     fontFamily: 'Inter-Regular',
     color: colors.textPrimary,

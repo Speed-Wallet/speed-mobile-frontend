@@ -9,9 +9,31 @@ import { TokenMetadata } from '@/services/tokenAssetService';
 export const USDT_ADDRESS = 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB';
 export const USDC_ADDRESS = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
 export const WSOL_ADDRESS = 'So11111111111111111111111111111111111111112';
-export const SOL_ADDRESS = 'So11111111111111111111111111111111111111112';
+
+export const WSOL_TOKEN = {
+  address: WSOL_ADDRESS,
+  name: 'Wrapped SOL',
+  symbol: 'SOL',
+  logoURI: `https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/${WSOL_ADDRESS}/logo.png`,
+  decimals: 9,
+};
+export const USDT_TOKEN = {
+  address: USDT_ADDRESS,
+  name: 'USDT',
+  symbol: 'USDT',
+  logoURI: `https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/${USDT_ADDRESS}/logo.svg`,
+  decimals: 6,
+};
+export const USDC_TOKEN = {
+  address: USDC_ADDRESS,
+  name: 'USD Coin',
+  symbol: 'USDC',
+  logoURI: `https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/${USDC_ADDRESS}/logo.png`,
+  decimals: 6,
+};
 
 export const POPULAR_TOKENS: TokenMetadata[] = [
+  WSOL_TOKEN,
   {
     address: 'cbbtcf3aa214zXHbiAZQwf4122FBYbraNdFqgw4iMij',
     name: 'Coinbase Wrapped BTC',
@@ -119,22 +141,8 @@ export const POPULAR_TOKENS: TokenMetadata[] = [
       'https://ipfs.io/ipfs/bafkreifbjxsikdmuhk5qi6krg3sqk2fcqvqlcffrc44kg7ecfkmwhz6s5i',
     decimals: 9,
   },
-  {
-    address: USDC_ADDRESS,
-    name: 'USD Coin',
-    symbol: 'USDC',
-    logoURI:
-      'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v/logo.png',
-    decimals: 6,
-  },
-  {
-    address: USDT_ADDRESS,
-    name: 'USDT',
-    symbol: 'USDT',
-    logoURI:
-      'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB/logo.svg',
-    decimals: 6,
-  },
+  USDC_TOKEN,
+  USDT_TOKEN,
   {
     address: '4NGbC4RRrUjS78ooSN53Up7gSg4dGrj6F6dxpMWHbonk',
     name: 'Pandu Pandas',

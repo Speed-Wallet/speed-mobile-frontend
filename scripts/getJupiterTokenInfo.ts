@@ -1,4 +1,4 @@
-import { USDT_ADDRESS } from '@/constants/tokens';
+import { USDT_ADDRESS } from '@/constants/popularTokens';
 
 async function getTokenInfo(tokenAddress: string) {
   const tokenInfoResponse = await (

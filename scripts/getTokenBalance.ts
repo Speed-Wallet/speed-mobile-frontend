@@ -1,7 +1,7 @@
+import { WSOL_ADDRESS, USDC_ADDRESS } from '@/constants/popularTokens';
 import { CONNECTION } from '@/services/walletService';
 import { getAccount, getAssociatedTokenAddressSync } from '@solana/spl-token';
 import { PublicKey } from '@solana/web3.js';
-import { USDC_ADDRESS, SOL_ADDRESS } from '@/constants/tokens';
 
 const fetchTokenBalance = async (
   token: { address: string; symbol: string; decimals: number },
@@ -51,7 +51,7 @@ fetchTokenBalance(
 fetchTokenBalance(
   {
     symbol: 'SOL',
-    address: SOL_ADDRESS,
+    address: WSOL_ADDRESS,
     decimals: 9,
   },
   new PublicKey('CQo9Xb1Xk7E82etzmSsvpRvybnfh7oTi8EuEYibyKrzv'),

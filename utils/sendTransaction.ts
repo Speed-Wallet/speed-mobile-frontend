@@ -8,7 +8,7 @@ import {
   submitSignedTransactionAndRegisterUsdt,
 } from '../services/apis';
 import { Buffer } from 'buffer';
-import { USDT_ADDRESS } from '@/constants/tokens';
+import { USDT_ADDRESS } from '@/constants/popularTokens';
 
 export interface SendTransactionParams {
   amount: string;

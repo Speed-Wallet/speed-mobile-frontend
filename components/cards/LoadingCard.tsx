@@ -17,7 +17,7 @@ import {
   MessageCircle,
   Send,
 } from 'lucide-react-native';
-import { PaymentCard as PaymentCardType } from '@/data/types';
+import { PaymentCard as PaymentCardType } from '@/types/cards';
 
 interface LoadingCardProps {
   card: PaymentCardType;

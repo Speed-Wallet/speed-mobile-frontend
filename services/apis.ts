@@ -5,7 +5,7 @@ import type {
   PaymentCard,
   CardStatus,
   GetCardsResponse,
-} from '@/data/types';
+} from '@/types/cards';
 import type {
   BirdeyeTokenMarketData,
   TokenMarketDataResponse,
