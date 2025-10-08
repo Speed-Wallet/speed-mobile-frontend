@@ -44,7 +44,6 @@ const ActionButtonGroup: React.FC<ActionButtonGroupProps> = ({
           disabled={primaryDisabled}
           loading={primaryLoading}
           variant={primaryVariant}
-          showArrow={primaryShowArrow}
         />
       </View>
 

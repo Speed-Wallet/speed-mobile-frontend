@@ -11,6 +11,7 @@ import {
   ShoppingCart,
   Eye,
   EyeOff,
+  TrendingUp,
 } from 'lucide-react-native';
 import colors from '@/constants/colors';
 import GradientCard from './GradientCard';
@@ -52,14 +53,8 @@ const BalanceCard: React.FC<BalanceCardProps> = ({
       bgColor: '#28C165',
       actionId: 'receive',
     },
-    { label: 'CARDS', icon: CreditCard, bgColor: '#F5A623', actionId: 'cards' },
-    {
-      label: 'TRADE',
-      icon: ArrowRightLeft,
-      bgColor: '#A259FF',
-      actionId: 'trade',
-    },
     { label: 'BUY', icon: ShoppingCart, bgColor: '#FF6B35', actionId: 'buy' },
+    { label: 'EARN', icon: TrendingUp, bgColor: '#9333EA', actionId: 'earn' },
   ];
 
   return (

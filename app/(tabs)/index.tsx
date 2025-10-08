@@ -14,8 +14,8 @@ import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import colors from '@/constants/colors';
 import Avatar from '@/components/Avatar';
 import { TokenItemHome } from '@/components/token-items';
-import CopyButton from '@/components/CopyButton';
 import BalanceCard from '@/components/BalanceCard';
+import { Gift } from 'lucide-react-native';
 import {
   useWalletPublicKey,
   getAllStoredWallets,
@@ -28,6 +28,7 @@ import { AuthService } from '@/services/authService';
 import { useTokenAssets } from '@/hooks/useTokenAsset';
 import { generateSignature } from '@/utils/signature';
 import Animated, { FadeInRight } from 'react-native-reanimated';
+import CustomAlert from '@/components/CustomAlert';
 // import CryptoTest from '@/components/CryptoTest';
 
 export default function HomeScreen() {
@@ -35,6 +36,8 @@ export default function HomeScreen() {
   const [username, setUsername] = useState<string>('');
   const [walletName, setWalletName] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'tokens' | 'activity'>('tokens');
+  const [showRewardsAlert, setShowRewardsAlert] = useState(false);
+  const [showEarnAlert, setShowEarnAlert] = useState(false);
   const walletAddress = useWalletPublicKey();
 
   // Token balances with automatic polling every 10 seconds when app is active
@@ -87,7 +90,7 @@ export default function HomeScreen() {
   };
 
   const handleBalanceCardAction = async (actionType: string) => {
-    // actionType will be "send", "receive", "cards", "trade", "buy"
+    // actionType will be "send", "receive", "buy", "earn"
     if (actionType === 'buy') {
       // Handle buy action with YellowCard - open in external browser
       try {
@@ -113,8 +116,9 @@ export default function HomeScreen() {
         console.error('Error opening YellowCard widget:', error);
         alert('Failed to open YellowCard widget. Please try again.');
       }
-    } else if (actionType === 'cards') {
-      router.push('/transaction/cards');
+    } else if (actionType === 'earn') {
+      // Show earn coming soon alert
+      setShowEarnAlert(true);
     } else {
       router.push(`/transaction/${actionType}` as any);
     }
@@ -132,19 +136,22 @@ export default function HomeScreen() {
             <>
               {/* Header section */}
               <View style={styles.header}>
-                <View style={styles.userSection}>
+                <TouchableOpacity
+                  style={styles.userSection}
+                  onPress={() => router.push('/settings')}
+                >
                   <Avatar size={scale(32)} user={genericUser} />
                   <View style={styles.userInfo}>
                     <Text style={styles.usernameText}>{walletName}</Text>
                     <Text style={styles.walletNameText}>@{username}</Text>
                   </View>
-                </View>
-                <CopyButton
-                  textToCopy={walletAddress || ''}
-                  size={scale(18)}
-                  color={colors.textPrimary}
-                  style={styles.copyButton}
-                />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => setShowRewardsAlert(true)}
+                  style={styles.rewardsButton}
+                >
+                  <Gift size={scale(22)} color={colors.textPrimary} />
+                </TouchableOpacity>
               </View>
 
               {/* Balance card */}
@@ -190,19 +197,22 @@ export default function HomeScreen() {
         >
           {/* Header section */}
           <View style={styles.header}>
-            <View style={styles.userSection}>
+            <TouchableOpacity
+              style={styles.userSection}
+              onPress={() => router.push('/settings')}
+            >
               <Avatar size={scale(32)} user={genericUser} />
               <View style={styles.userInfo}>
                 <Text style={styles.usernameText}>{walletName}</Text>
                 <Text style={styles.walletNameText}>@{username}</Text>
               </View>
-            </View>
-            <CopyButton
-              textToCopy={walletAddress || ''}
-              size={scale(18)}
-              color={colors.textPrimary}
-              style={styles.copyButton}
-            />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setShowRewardsAlert(true)}
+              style={styles.rewardsButton}
+            >
+              <Gift size={scale(22)} color={colors.textPrimary} />
+            </TouchableOpacity>
           </View>
 
           {/* Balance card */}
@@ -219,6 +229,38 @@ export default function HomeScreen() {
           </View>
         </ScrollView>
       )}
+
+      {/* Rewards Alert */}
+      <CustomAlert
+        visible={showRewardsAlert}
+        onDismiss={() => setShowRewardsAlert(false)}
+        title="Rewards Coming Soon"
+        message="Stay tuned! Rewards feature will be available soon."
+        type="info"
+        buttons={[
+          {
+            text: 'OK',
+            onPress: () => setShowRewardsAlert(false),
+            style: 'default',
+          },
+        ]}
+      />
+
+      {/* Earn Alert */}
+      <CustomAlert
+        visible={showEarnAlert}
+        onDismiss={() => setShowEarnAlert(false)}
+        title="Earn Coming Soon"
+        message="Stay tuned! Earn feature will be available soon."
+        type="info"
+        buttons={[
+          {
+            text: 'OK',
+            onPress: () => setShowEarnAlert(false),
+            style: 'default',
+          },
+        ]}
+      />
     </ScreenContainer>
   );
 }
@@ -254,7 +296,7 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(11),
     fontFamily: 'Inter-Regular',
   },
-  copyButton: {
+  rewardsButton: {
     padding: scale(6),
   },
   assetsSection: {
