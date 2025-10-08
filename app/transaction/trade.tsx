@@ -35,7 +35,11 @@ import { triggerShake } from '@/utils/animations';
 import { useTokenAsset } from '@/hooks/useTokenAsset';
 import { useRefetchTokenAssets } from '@/hooks/useTokenAsset';
 import { useQueryClient } from '@tanstack/react-query';
-import { SOL_ADDRESS, USDC_ADDRESS } from '@/constants/popularTokens';
+import {
+  WSOL_TOKEN,
+  USDC_TOKEN,
+  WSOL_ADDRESS,
+} from '@/constants/popularTokens';
 import SwapTokensSection from '@/components/SwapTokensSection';
 import TokenLogo from '@/components/TokenLogo';
 import CopyButton from '@/components/CopyButton';
@@ -44,8 +48,7 @@ import TokenSelectorBottomSheet, {
 } from '@/components/bottom-sheets/TokenSelectorBottomSheet';
 import NumericKeyboard from '@/components/keyboard/NumericKeyboard';
 import { getJupiterQuote } from '@/services/jupiterApi';
-import { TOKEN_MAP_BY_ADDRESS } from '@/constants/popularTokens';
-import { useTradeTokenSearch } from '@/hooks/useTradeTokenSearch';
+import { useTradeTokens } from '@/hooks/useTradeTokens';
 
 const WAIT_ON_AMOUNT_CHANGE = 2000;
 const LOOP_QUOTE_INTERVAL = 300000;
@@ -96,11 +99,15 @@ export default function TradeScreen() {
   const [toTokenSearchQuery, setToTokenSearchQuery] = useState('');
 
   // Use token search hooks
-  const { tokens: fromTokens, isLoading: isFromTokensLoading } =
-    useTradeTokenSearch(fromTokenSearchQuery, toToken?.address);
+  const { tokens: fromTokens, isLoading: isFromTokensLoading } = useTradeTokens(
+    fromTokenSearchQuery,
+    toToken?.address,
+  );
 
-  const { tokens: toTokens, isLoading: isToTokensLoading } =
-    useTradeTokenSearch(toTokenSearchQuery, fromToken?.address);
+  const { tokens: toTokens, isLoading: isToTokensLoading } = useTradeTokens(
+    toTokenSearchQuery,
+    fromToken?.address,
+  );
 
   const { price: fromTokenPrice } = useTokenPrice(fromToken?.address);
   const { balance: fromTokenBalance } = useTokenAsset(fromToken?.address);
@@ -225,42 +232,6 @@ export default function TradeScreen() {
     }
   }
 
-  // Function for inverse calculation when user types in "to" field
-  function updateInverseAmounts() {
-    // Only proceed if config is loaded and swapFeeRate is available
-    if (
-      !swapFeeRate ||
-      !fromToken ||
-      !toToken ||
-      !toAmount ||
-      parseFloat(unformatAmountInput(toAmount)) === 0
-    ) {
-      setFromAmount('');
-      return;
-    }
-
-    if (timeoutIDRef.current !== undefined) {
-      clearTimeout(timeoutIDRef.current);
-      timeoutIDRef.current = undefined;
-    }
-
-    if (intervalIDRef.current !== undefined) {
-      clearInterval(intervalIDRef.current);
-      intervalIDRef.current = undefined;
-    }
-
-    const toAmountEntered = parseFloat(unformatAmountInput(toAmount));
-    if (isNaN(toAmountEntered) || toAmountEntered === 0) {
-      setFromAmount('');
-      return;
-    }
-
-    // For inverse calculation, we estimate the from amount
-    // This is approximate since we don't have reverse quotes from Jupiter
-    const estimatedFromAmount = toAmountEntered * 1.01; // Add small buffer for slippage
-    setFromAmount(truncateDecimals(estimatedFromAmount.toString()));
-  }
-
   // Cleanup effect for timers
   useEffect(() => {
     return () => {
@@ -301,21 +272,21 @@ export default function TradeScreen() {
 
       // Set default tokens if not provided in params
       if (!initialFromToken) {
-        // Default to SOL for from token
-        initialFromToken = TOKEN_MAP_BY_ADDRESS[SOL_ADDRESS] || null;
+        // Default to WSOL for from token
+        initialFromToken = WSOL_TOKEN;
       }
 
       if (!initialToToken && initialFromToken) {
         // Default to USDC for to token if different from from token
-        const defaultToToken = TOKEN_MAP_BY_ADDRESS[USDC_ADDRESS];
+        const defaultToToken = USDC_TOKEN;
         if (
           defaultToToken &&
           defaultToToken.address !== initialFromToken.address
         ) {
           initialToToken = defaultToToken;
         } else {
-          // If USDC is the from token, use SOL as to token
-          initialToToken = TOKEN_MAP_BY_ADDRESS[SOL_ADDRESS] || null;
+          // If USDC is the from token, use WSOL as to token
+          initialToToken = WSOL_TOKEN;
         }
       }
 
@@ -482,7 +453,7 @@ export default function TradeScreen() {
 
   // Calculate max allowable SOL amount (with buffer)
   const getMaxSolAmount = useCallback(() => {
-    if (!fromToken || fromToken.address !== SOL_ADDRESS)
+    if (!fromToken || fromToken.address !== WSOL_ADDRESS)
       return fromTokenBalance;
     const buffer = getSolBuffer();
     return Math.max(0, fromTokenBalance - buffer);
@@ -494,8 +465,8 @@ export default function TradeScreen() {
     const amount = parseFloat(unformatAmountInput(fromAmount));
     if (isNaN(amount) || amount === 0) return false;
 
-    // For SOL, compare against max allowable amount (already has buffer subtracted)
-    if (fromToken.address === SOL_ADDRESS) {
+    // For WSOL, compare against max allowable amount (already has buffer subtracted)
+    if (fromToken.address === WSOL_ADDRESS) {
       const maxAllowable = getMaxSolAmount();
       return amount > maxAllowable;
     }
@@ -504,8 +475,8 @@ export default function TradeScreen() {
     return amount > fromTokenBalance;
   }, [fromAmount, fromToken, fromTokenBalance, getMaxSolAmount]);
 
-  // Get SOL balance for transaction fee checking
-  const { balance: solBalance } = useTokenAsset(SOL_ADDRESS);
+  // Get WSOL balance for transaction fee checking
+  const { balance: wsolBalance } = useTokenAsset(WSOL_ADDRESS);
 
   // Helper function to truncate decimal places to maximum of 9
   const truncateDecimals = useCallback(
@@ -534,9 +505,9 @@ export default function TradeScreen() {
 
   // Check for insufficient SOL considering buffer for transaction fees
   const isInsufficientSol = useMemo(() => {
-    // Require at least 0.01 SOL for any swap operation
-    return solBalance < 0.01;
-  }, [solBalance]);
+    // Require at least 0.01 WSOL for any swap operation
+    return wsolBalance < 0.01;
+  }, [wsolBalance]);
 
   const isButtonDisabled =
     !fromAmount ||
@@ -617,8 +588,8 @@ export default function TradeScreen() {
 
       let amount;
 
-      // For SOL, use the max allowable amount when clicking 100%
-      if (fromToken.address === SOL_ADDRESS && percentage === 100) {
+      // For WSOL, use the max allowable amount when clicking 100%
+      if (fromToken.address === WSOL_ADDRESS && percentage === 100) {
         amount = getMaxSolAmount();
       } else {
         // For other percentages or non-SOL tokens, calculate normally

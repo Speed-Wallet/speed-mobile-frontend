@@ -1,5 +1,5 @@
 import React, { useRef, forwardRef, useImperativeHandle } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, ActivityIndicator, Text } from 'react-native';
 import SearchBar from '@/components/SearchBar';
 import BottomSheet, {
   BottomSheetBackdrop,
@@ -8,7 +8,7 @@ import BottomSheet, {
 import SettingsHeader from '@/components/SettingsHeader';
 import colors from '@/constants/colors';
 import { TokenItemSelector } from '@/components/token-items';
-import { scale, verticalScale } from 'react-native-size-matters';
+import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import { TokenAsset, TokenMetadata } from '@/services/tokenAssetService';
 
 interface TokenSelectorBottomSheetProps {
@@ -16,7 +16,7 @@ interface TokenSelectorBottomSheetProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
   isLoading?: boolean;
-  onTokenSelect: (token: TokenMetadata) => void;
+  onTokenSelect: (token: TokenAsset | TokenMetadata) => void;
   onClose: () => void;
   selectedAddress?: string;
 }
@@ -50,19 +50,10 @@ const TokenSelectorBottomSheet = forwardRef<
     }));
 
     const handleSelectToken = (token: TokenAsset | TokenMetadata) => {
-      // Convert TokenAsset to TokenMetadata if needed
-      const tokenMetadata: TokenMetadata = {
-        address: token.address,
-        name: token.name,
-        symbol: token.symbol,
-        logoURI: token.logoURI,
-        decimals: token.decimals,
-      };
-
-      // Close bottom sheet and call callback
+      // Close bottom sheet and call callback with the token as-is
       bottomSheetRef.current?.close();
       setTimeout(() => {
-        onTokenSelect(tokenMetadata);
+        onTokenSelect(token);
       }, 200);
     };
 
@@ -92,7 +83,6 @@ const TokenSelectorBottomSheet = forwardRef<
             logoURI: item.logoURI,
             decimals: item.decimals,
           }}
-          isLoading={isLoading}
           onPress={() => handleSelectToken(item)}
           isSelected={isSelected}
           backgroundColor={
@@ -103,6 +93,31 @@ const TokenSelectorBottomSheet = forwardRef<
             isTokenAsset ? (item as TokenAsset).totalPrice : undefined
           }
         />
+      );
+    };
+
+    const renderFooter = () => {
+      if (!isLoading) return null;
+      return (
+        <View style={styles.footerLoader}>
+          <ActivityIndicator size="small" color={colors.textSecondary} />
+        </View>
+      );
+    };
+
+    const renderEmptyComponent = () => {
+      // Don't show empty state while loading
+      if (isLoading) return null;
+
+      return (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>
+            {searchQuery ? 'No tokens found' : 'No tokens available'}
+          </Text>
+          {searchQuery && (
+            <Text style={styles.emptySubtext}>Try a different search term</Text>
+          )}
+        </View>
       );
     };
 
@@ -147,6 +162,8 @@ const TokenSelectorBottomSheet = forwardRef<
               </View>
             </View>
           }
+          ListEmptyComponent={renderEmptyComponent}
+          ListFooterComponent={renderFooter}
           stickyHeaderIndices={[0]}
         />
       </BottomSheet>
@@ -171,6 +188,27 @@ const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: scale(16),
     paddingBottom: verticalScale(24),
+  },
+  footerLoader: {
+    paddingVertical: verticalScale(16),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyContainer: {
+    paddingVertical: verticalScale(40),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyText: {
+    fontSize: moderateScale(16),
+    fontFamily: 'Inter-SemiBold',
+    color: colors.textPrimary,
+    marginBottom: verticalScale(8),
+  },
+  emptySubtext: {
+    fontSize: moderateScale(14),
+    fontFamily: 'Inter-Regular',
+    color: colors.textSecondary,
   },
 });
 

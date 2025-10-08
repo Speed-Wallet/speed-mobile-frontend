@@ -1,4 +1,4 @@
-import { PaymentCard, TransactionStatus } from '@/data/types';
+import { PaymentCard, TransactionStatus } from '@/types/cards';
 
 /**
  * Convert transaction status to creation step number
