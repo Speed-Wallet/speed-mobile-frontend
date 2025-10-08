@@ -4,8 +4,8 @@ import { moderateScale } from 'react-native-size-matters';
 import {
   House,
   ChartBar as BarChart3,
-  Settings,
-  Gift,
+  ArrowLeftRight,
+  CreditCard,
 } from 'lucide-react-native';
 import colors from '@/constants/colors';
 import { TabBarVisibilityProvider } from '@/contexts/TabBarVisibilityContext';
@@ -65,34 +65,35 @@ function TabsContent() {
           ),
         }}
       />
-      {/* <Tabs.Screen
-        name="portfolio"
+      <Tabs.Screen
+        name="trade"
         options={{
-          title: 'Portfolio',
+          title: 'Trade',
           tabBarIcon: ({ color, size }) => (
-            <PieChart size={size} color={color} />
+            <ArrowLeftRight size={size} color={color} />
           ),
         }}
-      /> */}
+      />
+      <Tabs.Screen
+        name="spend"
+        options={{
+          title: 'Spend',
+          tabBarIcon: ({ color, size }) => (
+            <CreditCard size={size} color={color} />
+          ),
+        }}
+      />
+      {/* Hide rewards and settings from tabs */}
       <Tabs.Screen
         name="rewards"
         options={{
-          title: 'Rewards',
-          tabBarIcon: ({ color, size }) => <Gift size={size} color={color} />,
-        }}
-        listeners={{
-          tabPress: (e) => {
-            e.preventDefault();
-          },
+          href: null,
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
-          title: 'Settings',
-          tabBarIcon: ({ color, size }) => (
-            <Settings size={size} color={color} />
-          ),
+          href: null,
         }}
       />
     </Tabs>

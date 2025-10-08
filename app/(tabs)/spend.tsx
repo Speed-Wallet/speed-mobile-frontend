@@ -650,7 +650,7 @@ export default function CardsScreen() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <ScreenContainer edges={['top', 'bottom']}>
+      <ScreenContainer edges={['top']}>
         <ScreenHeader
           title="Virtual Cards"
           onBack={() => router.push('/' as any)}

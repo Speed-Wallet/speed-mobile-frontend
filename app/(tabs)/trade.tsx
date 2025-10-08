@@ -616,7 +616,7 @@ export default function TradeScreen() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <ScreenContainer edges={['top', 'bottom']} style={styles.container}>
+      <ScreenContainer edges={['top']} style={styles.container}>
         <ScreenHeader
           title="Swap Tokens"
           onBack={() => router.push('/' as any)}

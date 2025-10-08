@@ -13,13 +13,13 @@ import {
   Star,
   ArrowUpRight,
   ArrowRightLeft,
-  ArrowDownLeft,
   Copy,
 } from 'lucide-react-native';
 import { useState, useEffect } from 'react';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import ScreenHeader from '@/components/ScreenHeader';
 import ScreenContainer from '@/components/ScreenContainer';
+import BottomActionContainer from '@/components/BottomActionContainer';
 import { TokenPriceChart } from '@/components/charts';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
@@ -390,29 +390,24 @@ export default function TokenDetailScreen() {
       </ScrollView>
 
       {/* Bottom Action Buttons */}
-      <View style={styles.bottomActionContainer}>
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => router.push(`/transaction/trade?fromToken=${address}`)}
-        >
-          <ArrowRightLeft size={scale(18)} color="#fff" />
-          <Text style={styles.actionButtonText}>Trade</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => router.push(`/transaction/send?token=${address}`)}
-        >
-          <ArrowUpRight size={scale(18)} color="#fff" />
-          <Text style={styles.actionButtonText}>Send</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => router.push('/transaction/receive')}
-        >
-          <ArrowDownLeft size={scale(18)} color="#fff" />
-          <Text style={styles.actionButtonText}>Receive</Text>
-        </TouchableOpacity>
-      </View>
+      <BottomActionContainer>
+        <View style={styles.actionsRow}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => router.push(`/trade?fromToken=${address}`)}
+          >
+            <ArrowRightLeft size={scale(18)} color="#000" />
+            <Text style={styles.actionButtonText}>Trade</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => router.push(`/transaction/send?token=${address}`)}
+          >
+            <ArrowUpRight size={scale(18)} color="#000" />
+            <Text style={styles.actionButtonText}>Send</Text>
+          </TouchableOpacity>
+        </View>
+      </BottomActionContainer>
     </ScreenContainer>
   );
 }
@@ -532,7 +527,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#2a2a2a',
   },
   timeframeButtonActive: {
-    backgroundColor: '#6366f1',
+    backgroundColor: '#00CFFF',
   },
   timeframeText: {
     fontSize: scale(12),
@@ -540,7 +535,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   timeframeTextActive: {
-    color: '#fff',
+    color: '#000',
   },
   section: {
     paddingHorizontal: scale(16),
@@ -548,7 +543,7 @@ const styles = StyleSheet.create({
   },
   aboutSection: {
     paddingHorizontal: scale(16),
-    marginBottom: verticalScale(80), // Extra space for bottom buttons
+    marginBottom: verticalScale(20),
   },
   sectionTitle: {
     fontSize: scale(16),
@@ -595,33 +590,23 @@ const styles = StyleSheet.create({
   copyButton: {
     padding: scale(4),
   },
-  bottomActionContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
+  actionsRow: {
     flexDirection: 'row',
-    backgroundColor: '#1a1a1a',
-    paddingHorizontal: scale(12),
-    paddingVertical: verticalScale(12),
-    paddingBottom: verticalScale(12),
-    borderTopWidth: 1,
-    borderTopColor: '#333',
     gap: scale(8),
   },
   actionButton: {
     flex: 1,
-    backgroundColor: '#6366f1',
+    backgroundColor: '#00CFFF',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: verticalScale(12),
-    borderRadius: scale(12),
+    borderRadius: scale(16),
     gap: scale(6),
   },
   actionButtonText: {
     fontSize: scale(15),
     fontWeight: '600',
-    color: '#fff',
+    color: '#000',
   },
 });
