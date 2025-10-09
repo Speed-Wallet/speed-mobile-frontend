@@ -12,7 +12,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { scale, verticalScale } from 'react-native-size-matters';
 import { TokenItemMarket } from '@/components/token-items';
-import { TokenMetadata } from '@/services/tokenAssetService';
 import ScreenContainer from '@/components/ScreenContainer';
 import TabScreenHeader from '@/components/TabScreenHeader';
 import MarketFilterRow from '@/components/MarketFilterRow';
@@ -22,14 +21,13 @@ import {
 } from '@/services/jupiterService';
 import { JupiterToken } from '@/types/jupiter';
 import { useTabBarVisibility } from '@/contexts/TabBarVisibilityContext';
-import { POPULAR_TOKENS } from '@/constants/popularTokens';
 
-type CategoryOption = 'curated' | 'top' | 'trending';
+type CategoryOption = 'top' | 'trending';
 type SortMetric = 'price' | 'volume' | 'organicScore' | 'liquidity';
 
 export default function MarketScreen() {
   const router = useRouter();
-  const [category, setCategory] = useState<CategoryOption>('curated');
+  const [category, setCategory] = useState<CategoryOption>('top');
   const [sortMetric, setSortMetric] = useState<SortMetric>('price');
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   const { hideTabBar, showTabBar } = useTabBarVisibility();
@@ -40,9 +38,6 @@ export default function MarketScreen() {
   const filterBarTranslateY = useSharedValue(0);
   const barsHidden = useRef(false); // Track bar visibility to avoid redundant updates
 
-  // Use popular tokens for curated list
-  const curatedTokens = POPULAR_TOKENS;
-
   // Fetch Jupiter data
   const { data: topTradedTokens, isLoading: isLoadingTop } =
     useTopTradedTokens(20);
@@ -51,22 +46,20 @@ export default function MarketScreen() {
 
   // Get current data based on selected category
   const currentData = useMemo(() => {
-    if (category === 'curated') {
-      return curatedTokens;
-    } else if (category === 'top' && topTradedTokens) {
+    if (category === 'top' && topTradedTokens) {
       return topTradedTokens;
     } else if (category === 'trending' && trendingTokens) {
       return trendingTokens;
     }
     return [];
-  }, [category, curatedTokens, topTradedTokens, trendingTokens]);
+  }, [category, topTradedTokens, trendingTokens]);
 
   // Sort data
   const sortedData = useMemo(() => {
     let sorted = [...currentData];
 
-    // Sort based on selected metric (only for Jupiter data)
-    if (category !== 'curated' && sorted.length > 0) {
+    // Sort based on selected metric
+    if (sorted.length > 0) {
       sorted.sort((a, b) => {
         const tokenA = a as JupiterToken;
         const tokenB = b as JupiterToken;
@@ -136,68 +129,35 @@ export default function MarketScreen() {
     setShowSortDropdown(!showSortDropdown);
   };
 
-  const renderToken = (item: TokenMetadata | JupiterToken, index: number) => {
-    // Check if it's a Jupiter token or curated token
-    const isJupiterToken = 'id' in item;
-
-    if (isJupiterToken) {
-      const jupToken = item as JupiterToken;
-      return (
-        <Animated.View entering={FadeInUp.delay(index * 100).duration(400)}>
-          <TokenItemMarket
-            token={{
-              address: jupToken.id,
-              name: jupToken.name,
-              symbol: jupToken.symbol,
-              logoURI: jupToken.icon,
-              decimals: jupToken.decimals,
-            }}
-            price={jupToken.usdPrice}
-            priceChangePercentage={jupToken.stats24h?.priceChange || 0}
-            onPress={() =>
-              router.push(
-                `/token/${jupToken.id}?symbol=${encodeURIComponent(jupToken.symbol)}&name=${encodeURIComponent(jupToken.name)}`,
-              )
-            }
-          />
-        </Animated.View>
-      );
-    } else {
-      const curatedToken = item as TokenMetadata;
-      return (
-        <Animated.View entering={FadeInUp.delay(index * 100).duration(400)}>
-          <TokenItemMarket
-            token={{
-              address: curatedToken.address,
-              name: curatedToken.name,
-              symbol: curatedToken.symbol,
-              logoURI: curatedToken.logoURI,
-              decimals: curatedToken.decimals,
-            }}
-            price={undefined}
-            priceChangePercentage={undefined}
-            onPress={() =>
-              router.push(
-                `/token/${curatedToken.address}?symbol=${encodeURIComponent(curatedToken.symbol)}&name=${encodeURIComponent(curatedToken.name)}`,
-              )
-            }
-          />
-        </Animated.View>
-      );
-    }
+  const renderToken = (item: JupiterToken, index: number) => {
+    return (
+      <Animated.View entering={FadeInUp.delay(index * 100).duration(400)}>
+        <TokenItemMarket
+          token={{
+            address: item.id,
+            name: item.name,
+            symbol: item.symbol,
+            logoURI: item.icon,
+            decimals: item.decimals,
+          }}
+          price={item.usdPrice}
+          priceChangePercentage={item.stats24h?.priceChange || 0}
+          onPress={() =>
+            router.push(
+              `/token/${item.id}?symbol=${encodeURIComponent(item.symbol)}&name=${encodeURIComponent(item.name)}`,
+            )
+          }
+        />
+      </Animated.View>
+    );
   };
 
   return (
     <ScreenContainer edges={['top']}>
-      <TabScreenHeader
-        title="Market"
-        subtitle="Discover and track cryptocurrencies"
-      />
-
       {/* Token List */}
       <Animated.FlatList
         data={sortedData}
-        keyExtractor={(item) => ('id' in item ? item.id : item.address)}
+        keyExtractor={(item) => item.id}
         renderItem={({ item, index }) => renderToken(item, index)}
         contentContainerStyle={styles.listContent}
         onScroll={handleScroll}

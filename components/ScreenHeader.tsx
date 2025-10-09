@@ -20,7 +20,13 @@ export default function ScreenHeader({
   style,
 }: ScreenHeaderProps) {
   return (
-    <View style={[styles.header, style]}>
+    <View
+      style={[
+        styles.header,
+        { minHeight: showBackButton ? scale(48) : scale(36) },
+        style,
+      ]}
+    >
       {showBackButton && <BackButton onPress={onBack} />}
 
       {title && <Text style={styles.title}>{title}</Text>}
@@ -37,7 +43,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: scale(12),
     // paddingVertical: verticalScale(10),
-    minHeight: scale(48),
     position: 'relative',
     borderBottomColor: '#E0E0E0',
   },

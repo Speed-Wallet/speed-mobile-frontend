@@ -4,7 +4,7 @@ import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import colors from '@/constants/colors';
 
-type CategoryOption = 'curated' | 'top' | 'trending';
+type CategoryOption = 'top' | 'trending';
 type SortMetric = 'price' | 'volume' | 'organicScore' | 'liquidity';
 
 interface MarketFilterRowProps {
@@ -53,23 +53,6 @@ export default function MarketFilterRow({
             <TouchableOpacity
               style={[
                 styles.buttons,
-                category === 'curated' && styles.activeCategoryOption,
-              ]}
-              onPress={() => onCategoryChange('curated')}
-            >
-              <Text
-                style={[
-                  styles.categoryOptionText,
-                  category === 'curated' && styles.activeCategoryOptionText,
-                ]}
-              >
-                Curated
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.buttons,
                 category === 'top' && styles.activeCategoryOption,
               ]}
               onPress={() => onCategoryChange('top')}
@@ -110,28 +93,26 @@ export default function MarketFilterRow({
           </View>
 
           {/* Sort Dropdown Button */}
-          {category !== 'curated' && (
-            <TouchableOpacity
-              style={[styles.buttons, styles.sortDropdownButton]}
-              onPress={onToggleSortDropdown}
-            >
-              <Text style={styles.sortDropdownButtonText}>
-                {sortMetricLabels[sortMetric]}
-              </Text>
-              <ChevronDown
-                size={scale(12)}
-                color={colors.textSecondary}
-                style={[
-                  { marginLeft: scale(4) },
-                  showSortDropdown && { transform: [{ rotate: '180deg' }] },
-                ]}
-              />
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity
+            style={[styles.buttons, styles.sortDropdownButton]}
+            onPress={onToggleSortDropdown}
+          >
+            <Text style={styles.sortDropdownButtonText}>
+              {sortMetricLabels[sortMetric]}
+            </Text>
+            <ChevronDown
+              size={scale(12)}
+              color={colors.textSecondary}
+              style={[
+                { marginLeft: scale(4) },
+                showSortDropdown && { transform: [{ rotate: '180deg' }] },
+              ]}
+            />
+          </TouchableOpacity>
         </View>
 
         {/* Expandable Sort Options */}
-        {showSortDropdown && category !== 'curated' && (
+        {showSortDropdown && (
           <View style={styles.expandedDropdown}>
             {(Object.keys(sortMetricLabels) as SortMetric[]).map((metric) => (
               <TouchableOpacity

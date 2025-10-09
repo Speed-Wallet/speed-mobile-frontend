@@ -12,7 +12,7 @@ export const WSOL_ADDRESS = 'So11111111111111111111111111111111111111112';
 
 export const WSOL_TOKEN = {
   address: WSOL_ADDRESS,
-  name: 'Wrapped SOL',
+  name: 'Solana',
   symbol: 'SOL',
   logoURI: `https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/${WSOL_ADDRESS}/logo.png`,
   decimals: 9,
