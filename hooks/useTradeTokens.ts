@@ -3,7 +3,7 @@ import { useTokenAssets } from '@/hooks/useTokenAsset';
 import { useWalletPublicKey } from '@/services/walletService';
 import { TokenAsset, TokenMetadata } from '@/services/tokenAssetService';
 import { POPULAR_TOKENS } from '@/constants/popularTokens';
-import { JupiterToken } from '@/types/jupiter';
+import { fetchJupiterTokens } from '@/services/jupiterService';
 
 /**
  * Hook for trade screen token search
@@ -32,10 +32,7 @@ export function useTradeTokens(searchQuery: string, excludeAddress?: string) {
 
     try {
       setIsSearching(true);
-      const response = await fetch(
-        `https://lite-api.jup.ag/tokens/v2/search?query=${encodeURIComponent(query)}`,
-      );
-      const searchResults: JupiterToken[] = await response.json();
+      const searchResults = await fetchJupiterTokens(query);
 
       // Convert JupiterToken to TokenMetadata immediately
       const convertedResults: TokenMetadata[] = searchResults.map(
