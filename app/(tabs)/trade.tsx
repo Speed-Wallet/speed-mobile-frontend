@@ -61,13 +61,13 @@ const LOOP_QUOTE_INTERVAL = 300000;
  * 1. With both tokens specified:
  *    const fromToken: TokenMetadata = { address: '...', name: '...', symbol: '...', logoURI: '...', decimals: 9 };
  *    const toToken: TokenMetadata = { address: '...', name: '...', symbol: '...', logoURI: '...', decimals: 6 };
- *    router.push(`/transaction/trade?fromTokenJson=${encodeURIComponent(JSON.stringify(fromToken))}&toTokenJson=${encodeURIComponent(JSON.stringify(toToken))}`);
+ *    router.push(`/(tabs)/trade?fromTokenJson=${encodeURIComponent(JSON.stringify(fromToken))}&toTokenJson=${encodeURIComponent(JSON.stringify(toToken))}`);
  *
  * 2. With only from token (to token will default to USDC or SOL):
- *    router.push(`/transaction/trade?fromTokenJson=${encodeURIComponent(JSON.stringify(fromToken))}`);
+ *    router.push(`/(tabs)/trade?fromTokenJson=${encodeURIComponent(JSON.stringify(fromToken))}`);
  *
  * 3. With no tokens (will default to SOL -> USDC):
- *    router.push('/transaction/trade');
+ *    router.push('/(tabs)/trade');
  */
 export default function TradeScreen() {
   const { fromTokenJson, toTokenJson } = useLocalSearchParams<{

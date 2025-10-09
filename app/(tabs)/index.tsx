@@ -6,10 +6,10 @@ import {
   ScrollView,
   TouchableOpacity,
   Linking,
-  FlatList,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
+import { FlashList } from '@shopify/flash-list';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import colors from '@/constants/colors';
 import Avatar from '@/components/Avatar';
@@ -127,7 +127,7 @@ export default function HomeScreen() {
   return (
     <ScreenContainer edges={['top']}>
       {activeTab === 'tokens' ? (
-        <Animated.FlatList
+        <FlashList
           data={tokenAssets?.tokenAssets || []}
           keyExtractor={(item) => item.address}
           showsVerticalScrollIndicator={false}

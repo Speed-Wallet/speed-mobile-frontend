@@ -15,10 +15,11 @@ import {
   Dimensions,
 } from 'react-native';
 import { Search } from 'lucide-react-native';
+import { FlashList } from '@shopify/flash-list';
 import BottomSheet, {
   BottomSheetView,
   BottomSheetBackdrop,
-  BottomSheetFlatList,
+  useBottomSheetScrollableCreator,
 } from '@gorhom/bottom-sheet';
 import SettingsHeader from '@/components/SettingsHeader';
 import colors from '@/constants/colors';
@@ -121,6 +122,9 @@ const CountryPickerBottomSheet = forwardRef<
     </TouchableOpacity>
   );
 
+  // Create scrollable component for FlashList
+  const BottomSheetFlashListScrollable = useBottomSheetScrollableCreator();
+
   return (
     <BottomSheet
       ref={bottomSheetRef}
@@ -158,12 +162,13 @@ const CountryPickerBottomSheet = forwardRef<
           />
         </View>
 
-        <BottomSheetFlatList
+        <FlashList
           data={filteredCountries}
           keyExtractor={(country) => country.code}
           renderItem={renderCountryItem}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
+          renderScrollComponent={BottomSheetFlashListScrollable}
         />
       </BottomSheetView>
     </BottomSheet>

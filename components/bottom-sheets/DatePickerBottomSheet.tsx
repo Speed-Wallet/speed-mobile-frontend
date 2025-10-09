@@ -6,16 +6,12 @@ import React, {
   forwardRef,
   useImperativeHandle,
 } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  FlatList,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import BottomSheet, {
   BottomSheetView,
   BottomSheetBackdrop,
+  useBottomSheetScrollableCreator,
 } from '@gorhom/bottom-sheet';
 import SettingsHeader from '@/components/SettingsHeader';
 import colors from '@/constants/colors';
@@ -204,6 +200,9 @@ const DatePickerBottomSheet = forwardRef<
   const isDateValid =
     selectedYear !== null && selectedMonth !== null && selectedDay !== null;
 
+  // Create scrollable component for FlashList
+  const BottomSheetFlashListScrollable = useBottomSheetScrollableCreator();
+
   return (
     <BottomSheet
       ref={bottomSheetRef}
@@ -229,7 +228,7 @@ const DatePickerBottomSheet = forwardRef<
         <View style={styles.datePickerContainer}>
           <View style={styles.pickerColumn}>
             <Text style={styles.pickerColumnTitle}>Month</Text>
-            <FlatList
+            <FlashList
               data={months.map((_, index) => index)}
               renderItem={({ item }) =>
                 renderPickerItem(item, 'month', item === selectedMonth)
@@ -237,18 +236,13 @@ const DatePickerBottomSheet = forwardRef<
               keyExtractor={(item) => item.toString()}
               style={styles.pickerList}
               showsVerticalScrollIndicator={false}
-              getItemLayout={(data, index) => ({
-                length: verticalScale(50),
-                offset: verticalScale(50) * index,
-                index,
-              })}
-              initialScrollIndex={selectedMonth || 0}
+              renderScrollComponent={BottomSheetFlashListScrollable}
             />
           </View>
 
           <View style={styles.pickerColumn}>
             <Text style={styles.pickerColumnTitle}>Day</Text>
-            <FlatList
+            <FlashList
               data={days}
               renderItem={({ item }) =>
                 renderPickerItem(item, 'day', item === selectedDay)
@@ -256,18 +250,13 @@ const DatePickerBottomSheet = forwardRef<
               keyExtractor={(item) => item.toString()}
               style={styles.pickerList}
               showsVerticalScrollIndicator={false}
-              getItemLayout={(data, index) => ({
-                length: verticalScale(50),
-                offset: verticalScale(50) * index,
-                index,
-              })}
-              initialScrollIndex={selectedDay ? selectedDay - 1 : 0}
+              renderScrollComponent={BottomSheetFlashListScrollable}
             />
           </View>
 
           <View style={styles.pickerColumn}>
             <Text style={styles.pickerColumnTitle}>Year</Text>
-            <FlatList
+            <FlashList
               data={years}
               renderItem={({ item }) =>
                 renderPickerItem(item, 'year', item === selectedYear)
@@ -275,16 +264,7 @@ const DatePickerBottomSheet = forwardRef<
               keyExtractor={(item) => item.toString()}
               style={styles.pickerList}
               showsVerticalScrollIndicator={false}
-              getItemLayout={(data, index) => ({
-                length: verticalScale(50),
-                offset: verticalScale(50) * index,
-                index,
-              })}
-              initialScrollIndex={
-                selectedYear
-                  ? years.indexOf(selectedYear)
-                  : years.indexOf(defaultYear)
-              }
+              renderScrollComponent={BottomSheetFlashListScrollable}
             />
           </View>
         </View>

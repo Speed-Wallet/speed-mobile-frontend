@@ -159,7 +159,7 @@ async function handleCardCreationFailedNotification(
         [
           {
             text: 'Try Again',
-            onPress: () => router.push('/transaction/cards'),
+            onPress: () => router.push('/(tabs)/spend'),
           },
           {
             text: 'OK',
@@ -290,7 +290,7 @@ export function setupNotificationListeners(onCardsUpdated?: () => void) {
       if (data?.type === 'usdt_received') {
         console.log('💰 USDT received notification tapped');
         // Navigate to cards screen
-        router.push('/transaction/cards');
+        router.push('/(tabs)/spend');
       } else if (data?.type === 'card_created') {
         console.log('💳 Card created notification tapped');
         // If we haven't handled it yet, handle it now
@@ -300,7 +300,7 @@ export function setupNotificationListeners(onCardsUpdated?: () => void) {
           onCardsUpdated?.();
         }
         // Navigate to cards screen to show new card
-        router.push('/transaction/cards');
+        router.push('/(tabs)/spend');
       } else if (data?.type === 'card_creation_failed') {
         console.log('❌ Card creation failed notification tapped');
         // Handle the failed notification if not already handled
@@ -310,11 +310,11 @@ export function setupNotificationListeners(onCardsUpdated?: () => void) {
           onCardsUpdated?.();
         }
         // Navigate to cards screen where user can try again
-        router.push('/transaction/cards');
+        router.push('/(tabs)/spend');
       } else if (data?.type === 'kyc_verified') {
         console.log('✅ KYC verified notification tapped');
         // Navigate to cards screen to see progress
-        router.push('/transaction/cards');
+        router.push('/(tabs)/spend');
       } else if (data?.type === 'kyc_failed') {
         console.log('❌ KYC failed notification tapped');
         // Navigate to KYC screen to retry
