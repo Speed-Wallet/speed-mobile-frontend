@@ -226,3 +226,124 @@ export function formatPriceChange(priceChange: number): string {
 
 // Export formatLargeNumber from formatters.ts for convenience
 export { formatLargeNumber };
+
+/**
+ * Calculate adaptive padding multiplier based on volatility
+ */
+export function calculatePaddingMultiplier(
+  volatilityPercentage: number,
+  avgPrice: number,
+): number {
+  let paddingMultiplier: number;
+  if (volatilityPercentage < 0.5) {
+    paddingMultiplier = 0.2; // Very low vol
+  } else if (volatilityPercentage < 2) {
+    paddingMultiplier = 0.4; // Low vol
+  } else if (volatilityPercentage < 10) {
+    paddingMultiplier = 0.8; // Medium vol
+  } else {
+    paddingMultiplier = 1.0; // High vol
+  }
+
+  // Boost padding slightly for very low prices to ensure visibility without flattening
+  if (avgPrice < 0.0001) {
+    paddingMultiplier = Math.max(paddingMultiplier, 1.2);
+  }
+
+  return paddingMultiplier;
+}
+
+/**
+ * Calculate linear scale parameters with adaptive padding
+ */
+export function calculateLinearScale(
+  minPrice: number,
+  maxPrice: number,
+  priceRange: number,
+  volatilityPercentage: number,
+  paddingMultiplier: number,
+) {
+  const desiredDataSpanFraction = 0.5;
+  const desiredRange = priceRange / desiredDataSpanFraction;
+  const basePaddedRange = Math.max(
+    priceRange * (1 + paddingMultiplier),
+    desiredRange,
+  );
+
+  // Enforce minimum padded range ONLY for low vol to zoom out and avoid amplifying tiny changes
+  let minPaddedRange = 0.0005;
+  if (volatilityPercentage < 0.5) {
+    minPaddedRange = 0.001; // Larger for ultra-low vol to flatten more
+  }
+  let paddedPriceRange = basePaddedRange;
+  if (volatilityPercentage < 2) {
+    paddedPriceRange = Math.max(basePaddedRange, minPaddedRange);
+  }
+
+  const targetMaxPosition = 0.75;
+  let paddedMinPrice = maxPrice - targetMaxPosition * paddedPriceRange;
+
+  // Clamp to prevent negative prices
+  paddedMinPrice = Math.max(0, paddedMinPrice);
+
+  // Ensure min is >=25% - shift upward if needed
+  let minPosition = (minPrice - paddedMinPrice) / paddedPriceRange;
+  if (minPosition < 0.25) {
+    const adjustment = (0.25 - minPosition) * paddedPriceRange;
+    paddedMinPrice -= adjustment;
+    paddedMinPrice = Math.max(0, paddedMinPrice);
+  }
+
+  // If still <0.25 after shift (due to clamp), cap paddedRange to enforce min >=0.25 if possible
+  minPosition = (minPrice - paddedMinPrice) / paddedPriceRange;
+  if (paddedMinPrice === 0 && minPosition < 0.25) {
+    const maxAllowableRangeForMin = minPrice / 0.25;
+    const minRangeForMax = maxPrice;
+    if (maxAllowableRangeForMin >= minRangeForMax) {
+      paddedPriceRange = Math.min(paddedPriceRange, maxAllowableRangeForMin);
+    }
+  }
+
+  return { paddedMinPrice, paddedPriceRange, minPaddedRange };
+}
+
+/**
+ * Calculate logarithmic scale parameters with adaptive padding
+ */
+export function calculateLogScale(
+  minPrice: number,
+  maxPrice: number,
+  volatilityPercentage: number,
+  paddingMultiplier: number,
+  avgPrice: number,
+  minPaddedRange: number,
+) {
+  const desiredDataSpanFraction = 0.5;
+  const logMinData = Math.log(minPrice);
+  const logMaxData = Math.log(maxPrice);
+  const logRangeData = logMaxData - logMinData;
+
+  const desiredLogRange = logRangeData / desiredDataSpanFraction;
+  const basePaddedLogRange = Math.max(
+    logRangeData * (1 + paddingMultiplier),
+    desiredLogRange,
+  );
+
+  let paddedLogRange = basePaddedLogRange;
+  if (volatilityPercentage < 2) {
+    const minLogRange = Math.log(1 + minPaddedRange / avgPrice);
+    paddedLogRange = Math.max(basePaddedLogRange, minLogRange);
+  }
+
+  const targetMaxPosition = 0.75;
+  let paddedLogMin = logMaxData - targetMaxPosition * paddedLogRange;
+
+  // Ensure min is >=25% - shift if needed
+  let minPositionLog = (logMinData - paddedLogMin) / paddedLogRange;
+  if (minPositionLog < 0.25) {
+    const adjustment = (0.25 - minPositionLog) * paddedLogRange;
+    paddedLogMin -= adjustment;
+  }
+
+  return { paddedLogMin, paddedLogRange };
+}
