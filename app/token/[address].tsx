@@ -24,8 +24,6 @@ import { TokenPriceChart } from '@/components/charts';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
   getHistoricalPrices,
-  getTokenMarketData,
-  BirdeyeTokenMarketData,
   HistoricalPricesResponse,
   TimeframePeriod,
 } from '@/services/apis';
@@ -39,6 +37,9 @@ import {
   ChartDataPoint,
   formatPriceChange,
 } from '@/utils/chartUtils';
+import { useJupiterToken } from '@/services/jupiterService';
+import { useTokenAssets } from '@/hooks/useTokenAsset';
+import { useWalletPublicKey } from '@/services/walletService';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -47,13 +48,10 @@ const timeframes: TimeframePeriod[] = ['1H', '1D', '7D', '1M', '1Y'];
 export default function TokenDetailScreen() {
   const [selectedTimeframe, setSelectedTimeframe] =
     useState<TimeframePeriod>('1D');
-  const [tokenData, setTokenData] = useState<BirdeyeTokenMarketData | null>(
-    null,
-  );
   const [historicalData, setHistoricalData] =
     useState<HistoricalPricesResponse | null>(null);
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [priceChange, setPriceChange] = useState({
     change: 0,
@@ -72,39 +70,27 @@ export default function TokenDetailScreen() {
     name?: string;
   }>();
 
-  useEffect(() => {
-    loadTokenData();
-  }, [address]);
+  // Use Jupiter API to fetch token data
+  const {
+    data: tokenData,
+    isLoading: isLoadingToken,
+    error: tokenError,
+  } = useJupiterToken(address || '', !!address);
+
+  // Get user's wallet and token holdings
+  const walletAddress = useWalletPublicKey();
+  const { data: tokenAssets } = useTokenAssets(walletAddress);
+
+  // Find the user's holding for this token
+  const userHolding = tokenAssets?.tokenAssets?.find(
+    (asset) => asset.address === address,
+  );
 
   useEffect(() => {
     if (address && tokenData) {
       loadHistoricalData(selectedTimeframe);
     }
   }, [selectedTimeframe, address, tokenData]);
-
-  const loadTokenData = async () => {
-    if (!address) return;
-
-    try {
-      setLoading(true);
-      setError(null);
-
-      const response = await getTokenMarketData(address);
-
-      if (!response.success || !response.data) {
-        throw new Error(response.error || 'Failed to load token data');
-      }
-
-      setTokenData(response.data);
-    } catch (err) {
-      console.error('Error loading token data:', err);
-      setError(
-        err instanceof Error ? err.message : 'Failed to load token data',
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const loadHistoricalData = async (timeframe: TimeframePeriod) => {
     if (!address) return;
@@ -152,7 +138,7 @@ export default function TokenDetailScreen() {
     setChartSelectedData(data);
   };
 
-  if (loading && !tokenData) {
+  if (isLoadingToken && !tokenData) {
     return (
       <ScreenContainer edges={['top', 'bottom']}>
         <ScreenHeader title="Loading..." onBack={() => router.back()} />
@@ -165,17 +151,19 @@ export default function TokenDetailScreen() {
   }
 
   // Show error state
-  if (error) {
+  if (tokenError || error) {
     return (
       <ScreenContainer edges={['top', 'bottom']}>
         <ScreenHeader title="Error" onBack={() => router.back()} />
         <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>{error}</Text>
+          <Text style={styles.errorText}>
+            {error || 'Failed to load token data'}
+          </Text>
           <TouchableOpacity
             style={styles.retryButton}
-            onPress={() => loadTokenData()}
+            onPress={() => router.back()}
           >
-            <Text style={styles.retryButtonText}>Retry</Text>
+            <Text style={styles.retryButtonText}>Go Back</Text>
           </TouchableOpacity>
         </View>
       </ScreenContainer>
@@ -186,7 +174,7 @@ export default function TokenDetailScreen() {
     return null;
   }
 
-  const currentPrice = tokenData.price || 0;
+  const currentPrice = tokenData.usdPrice || 0;
 
   const displayPriceChange = priceChange;
 
@@ -208,14 +196,31 @@ export default function TokenDetailScreen() {
     }
   };
 
+  // Calculate 24h volume (buy + sell volume)
+  const volume24h = tokenData.stats24h
+    ? tokenData.stats24h.buyVolume + tokenData.stats24h.sellVolume
+    : 0;
+
   const statsData = [
     {
       label: 'Token Name',
-      value: name || 'N/A',
+      value: tokenData.name || name || 'N/A',
     },
     {
       label: 'Market Cap',
-      value: formatLargeNumber(tokenData?.market_cap || 0),
+      value: formatLargeNumber(tokenData?.mcap || 0),
+    },
+    {
+      label: 'Volume 24h',
+      value: formatLargeNumber(volume24h),
+    },
+    {
+      label: 'Liquidity',
+      value: formatLargeNumber(tokenData?.liquidity || 0),
+    },
+    {
+      label: 'Holders',
+      value: formatLargeNumber(tokenData?.holderCount || 0),
     },
     {
       label: 'Mint Address',
@@ -225,22 +230,39 @@ export default function TokenDetailScreen() {
     },
     {
       label: 'Circulating Supply',
-      value: tokenData?.circulating_supply
-        ? formatLargeNumber(tokenData.circulating_supply)
+      value: tokenData?.circSupply
+        ? formatLargeNumber(tokenData.circSupply)
         : 'N/A',
     },
     {
       label: 'Total Supply',
-      value: tokenData?.total_supply
-        ? formatLargeNumber(tokenData.total_supply)
+      value: tokenData?.totalSupply
+        ? formatLargeNumber(tokenData.totalSupply)
         : 'N/A',
     },
   ];
 
+  // Holdings data (only if user has this token)
+  const holdingsData = userHolding
+    ? [
+        {
+          label: 'Balance',
+          value: `${userHolding.balance.toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 6,
+          })} ${tokenData.symbol}`,
+        },
+        {
+          label: 'Value',
+          value: formatPrice(userHolding.totalPrice || 0),
+        },
+      ]
+    : null;
+
   return (
     <ScreenContainer edges={['top', 'bottom']}>
       <ScreenHeader
-        title={symbol ? symbol : ''}
+        title={tokenData.symbol || symbol || ''}
         onBack={() => router.back()}
         rightElement={
           <TouchableOpacity style={styles.headerButton}>
@@ -345,6 +367,27 @@ export default function TokenDetailScreen() {
           ))}
         </View>
 
+        {/* Your Holdings Section - Only show if user holds this token */}
+        {holdingsData && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Your Holdings</Text>
+            <View style={styles.statsContainer}>
+              {holdingsData.map((stat, index) => (
+                <View
+                  key={index}
+                  style={[
+                    styles.statRow,
+                    index === holdingsData.length - 1 && styles.lastStatRow,
+                  ]}
+                >
+                  <Text style={styles.statLabel}>{stat.label}</Text>
+                  <Text style={styles.statValue}>{stat.value}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
         {/* Market Info */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Market Info</Text>
@@ -377,12 +420,12 @@ export default function TokenDetailScreen() {
         {/* About Token */}
         <View style={styles.aboutSection}>
           <Text style={styles.sectionTitle}>
-            About {name || symbol || 'Token'}
+            About {tokenData.name || tokenData.symbol || 'Token'}
           </Text>
           <Text style={styles.description}>
-            {name || symbol || 'This token'} is a cryptocurrency token on
-            Solana. Current price data and market information are provided by
-            Birdeye.
+            {tokenData.name || tokenData.symbol || 'This token'} is a
+            cryptocurrency token on Solana. Current price data and market
+            information are provided by Jupiter.
           </Text>
         </View>
       </ScrollView>

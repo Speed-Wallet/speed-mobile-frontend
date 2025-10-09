@@ -25,6 +25,7 @@ import MarketFilterRow, {
 import {
   useTopTradedTokens,
   useTrendingTokens,
+  fetchJupiterTokens,
 } from '@/services/jupiterService';
 import { JupiterToken } from '@/types/jupiter';
 import { useTabBarVisibility } from '@/contexts/TabBarVisibilityContext';
@@ -66,10 +67,7 @@ export default function MarketScreen() {
 
     try {
       setIsSearching(true);
-      const response = await fetch(
-        `https://lite-api.jup.ag/tokens/v2/search?query=${encodeURIComponent(query)}`,
-      );
-      const searchResults: JupiterToken[] = await response.json();
+      const searchResults = await fetchJupiterTokens(query);
       setJupiterSearchResults(searchResults);
     } catch (error) {
       console.error('Error searching Jupiter tokens:', error);
@@ -297,7 +295,7 @@ export default function MarketScreen() {
   };
 
   return (
-    <ScreenContainer edges={['top']}>
+    <ScreenContainer edges={['top']} style={{ marginTop: 12 }}>
       {/* Token List */}
       <FlashList
         data={filteredData}

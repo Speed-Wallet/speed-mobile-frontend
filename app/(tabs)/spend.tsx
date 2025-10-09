@@ -654,6 +654,7 @@ export default function CardsScreen() {
         <ScreenHeader
           title="Virtual Cards"
           onBack={() => router.push('/' as any)}
+          showBackButton={false}
         />
 
         {/* Config Loading/Error States */}
