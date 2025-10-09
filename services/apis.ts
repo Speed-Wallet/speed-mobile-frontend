@@ -364,8 +364,6 @@ export async function getCards(
   try {
     const authHeaders = await AuthService.getAuthHeader();
 
-    console.log('virtual cards authHeaders', authHeaders);
-
     const response = await fetch(`${BASE_BACKEND_URL}/api/cashwyre/cards`, {
       method: 'POST',
       headers: {
@@ -376,7 +374,6 @@ export async function getCards(
     });
 
     const data = await response.json();
-    console.log('virtual cards response', data);
     return data;
   } catch (error) {
     console.error('Error fetching cards:', error);
