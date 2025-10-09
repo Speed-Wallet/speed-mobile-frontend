@@ -1,9 +1,10 @@
 import React, { useRef, forwardRef, useImperativeHandle } from 'react';
 import { StyleSheet, View, ActivityIndicator, Text } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import SearchBar from '@/components/SearchBar';
 import BottomSheet, {
   BottomSheetBackdrop,
-  BottomSheetFlatList,
+  useBottomSheetScrollableCreator,
 } from '@gorhom/bottom-sheet';
 import SettingsHeader from '@/components/SettingsHeader';
 import colors from '@/constants/colors';
@@ -121,6 +122,9 @@ const TokenSelectorBottomSheet = forwardRef<
       );
     };
 
+    // Create scrollable component for FlashList
+    const BottomSheetFlashListScrollable = useBottomSheetScrollableCreator();
+
     return (
       <BottomSheet
         ref={bottomSheetRef}
@@ -140,7 +144,7 @@ const TokenSelectorBottomSheet = forwardRef<
         )}
         onClose={handleClose}
       >
-        <BottomSheetFlatList
+        <FlashList
           data={tokens}
           keyExtractor={(token) => token.address}
           renderItem={renderTokenItem}
@@ -164,7 +168,7 @@ const TokenSelectorBottomSheet = forwardRef<
           }
           ListEmptyComponent={renderEmptyComponent}
           ListFooterComponent={renderFooter}
-          stickyHeaderIndices={[0]}
+          renderScrollComponent={BottomSheetFlashListScrollable}
         />
       </BottomSheet>
     );
@@ -182,7 +186,7 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     backgroundColor: colors.backgroundDark,
-    // paddingHorizontal: scale(16),
+    paddingHorizontal: scale(16),
     paddingBottom: 6,
   },
   listContent: {

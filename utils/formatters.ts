@@ -75,3 +75,20 @@ export const getDecimalsToShow = (
 ): number => {
   return Math.min(balance < 1 ? 6 : 4, maxDecimals);
 };
+
+/**
+ * Format large numbers (for market cap, volume, liquidity, etc.)
+ */
+export const formatLargeNumber = (value: number): string => {
+  if (value >= 1e12) {
+    return `$${(value / 1e12).toFixed(2)}T`;
+  } else if (value >= 1e9) {
+    return `$${(value / 1e9).toFixed(2)}B`;
+  } else if (value >= 1e6) {
+    return `$${(value / 1e6).toFixed(2)}M`;
+  } else if (value >= 1e3) {
+    return `$${(value / 1e3).toFixed(2)}K`;
+  } else {
+    return `$${value.toFixed(2)}`;
+  }
+};

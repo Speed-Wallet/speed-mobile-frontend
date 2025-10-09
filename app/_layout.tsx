@@ -247,18 +247,6 @@ export default function RootLayout() {
                 options={{ presentation: 'modal' }}
               />
               <Stack.Screen
-                name="transaction/buy"
-                options={{ presentation: 'modal' }}
-              />
-              <Stack.Screen
-                name="transaction/trade"
-                options={{ presentation: 'modal' }}
-              />
-              <Stack.Screen
-                name="transaction/cards"
-                options={{ presentation: 'modal' }}
-              />
-              <Stack.Screen
                 name="wallet/manage"
                 options={{ presentation: 'modal' }}
               />

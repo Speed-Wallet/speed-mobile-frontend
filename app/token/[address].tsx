@@ -89,9 +89,7 @@ export default function TokenDetailScreen() {
       setLoading(true);
       setError(null);
 
-      console.log('getting token market data for address', address);
       const response = await getTokenMarketData(address);
-      console.log('got token market data', response);
 
       if (!response.success || !response.data) {
         throw new Error(response.error || 'Failed to load token data');
@@ -394,7 +392,7 @@ export default function TokenDetailScreen() {
         <View style={styles.actionsRow}>
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => router.push(`/trade?fromToken=${address}`)}
+            onPress={() => router.push(`/(tabs)/trade?fromToken=${address}`)}
           >
             <ArrowRightLeft size={scale(18)} color="#000" />
             <Text style={styles.actionButtonText}>Trade</Text>

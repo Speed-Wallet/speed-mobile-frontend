@@ -1,5 +1,6 @@
 // Utility functions for formatting chart data
 import { HistoricalPricesResponse } from '@/types/birdeye';
+import { formatLargeNumber } from './formatters';
 
 export interface FormattedChartData {
   labels: string[];
@@ -223,19 +224,5 @@ export function formatPriceChange(priceChange: number): string {
   return `${sign}$${formatted}`;
 }
 
-/**
- * Format large numbers (for market cap, volume, etc.)
- */
-export function formatLargeNumber(value: number): string {
-  if (value >= 1e12) {
-    return `$${(value / 1e12).toFixed(2)}T`;
-  } else if (value >= 1e9) {
-    return `$${(value / 1e9).toFixed(2)}B`;
-  } else if (value >= 1e6) {
-    return `$${(value / 1e6).toFixed(2)}M`;
-  } else if (value >= 1e3) {
-    return `$${(value / 1e3).toFixed(2)}K`;
-  } else {
-    return `$${value.toFixed(2)}`;
-  }
-}
+// Export formatLargeNumber from formatters.ts for convenience
+export { formatLargeNumber };

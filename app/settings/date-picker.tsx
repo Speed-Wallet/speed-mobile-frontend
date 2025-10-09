@@ -1,13 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  FlatList,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { FlashList } from '@shopify/flash-list';
 import SettingsHeader from '@/components/SettingsHeader';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import colors from '@/constants/colors';
@@ -190,7 +185,7 @@ export default function DatePickerScreen() {
       <View style={styles.datePickerContainer}>
         <View style={styles.pickerColumn}>
           <Text style={styles.pickerColumnTitle}>Month</Text>
-          <FlatList
+          <FlashList
             data={months.map((_, index) => index)}
             renderItem={({ item }) =>
               renderPickerItem(item, 'month', item === selectedMonth)
@@ -204,7 +199,7 @@ export default function DatePickerScreen() {
 
         <View style={styles.pickerColumn}>
           <Text style={styles.pickerColumnTitle}>Day</Text>
-          <FlatList
+          <FlashList
             data={generateDays()}
             renderItem={({ item }) =>
               renderPickerItem(item, 'day', item === selectedDay)
@@ -218,7 +213,7 @@ export default function DatePickerScreen() {
 
         <View style={styles.pickerColumn}>
           <Text style={styles.pickerColumnTitle}>Year</Text>
-          <FlatList
+          <FlashList
             data={generateYears()}
             renderItem={({ item }) =>
               renderPickerItem(item, 'year', item === selectedYear)
