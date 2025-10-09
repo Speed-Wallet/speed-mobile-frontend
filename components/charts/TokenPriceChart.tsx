@@ -17,6 +17,11 @@ import Svg, {
   G,
   Circle,
 } from 'react-native-svg';
+import {
+  calculatePaddingMultiplier,
+  calculateLinearScale,
+  calculateLogScale,
+} from '@/utils/chartUtils';
 
 interface DataPoint {
   timestamp: number;
@@ -42,8 +47,8 @@ const screenWidth = Dimensions.get('window').width;
 
 const TokenPriceChart: React.FC<TokenPriceChartProps> = ({
   data,
-  width = screenWidth - 32,
-  height = 200,
+  width = screenWidth,
+  height = 250,
   timeframe,
   isPositive = true,
   onInteraction,
@@ -60,22 +65,89 @@ const TokenPriceChart: React.FC<TokenPriceChartProps> = ({
   }
 
   // Chart dimensions
-  const padding = scale(20);
-  const rightPadding = scale(60); // Extra space for Y-axis labels
-  const topPadding = scale(20); // Reduced since we're showing info at the top now
+  const padding = 0;
+  const rightPadding = 0; // No extra space needed
+  const topPadding = 10;
   const chartWidth = width - padding - rightPadding;
-  const chartHeight = height - padding - topPadding - scale(30); // Extra space for x-axis labels
+  const chartHeight = height - padding - topPadding;
 
-  // Get min/max values for scaling
-  const prices = data.map((d) => d.price);
+  // Extract prices from data
+  const prices = data.map((item) => item.price);
   const minPrice = Math.min(...prices);
   const maxPrice = Math.max(...prices);
-  const priceRange = maxPrice - minPrice || 1; // Avoid division by zero
+  const priceRange = maxPrice - minPrice;
+  const avgPrice = (minPrice + maxPrice) / 2;
+
+  // Calculate volatility as percentage of average price
+  const volatilityPercentage = (priceRange / avgPrice) * 100;
+
+  // Calculate adaptive padding multiplier
+  const paddingMultiplier = calculatePaddingMultiplier(
+    volatilityPercentage,
+    avgPrice,
+  );
+
+  // Calculate linear scale parameters
+  const { paddedMinPrice, paddedPriceRange, minPaddedRange } =
+    calculateLinearScale(
+      minPrice,
+      maxPrice,
+      priceRange,
+      volatilityPercentage,
+      paddingMultiplier,
+    );
 
   // Scale functions
   const scaleX = (index: number) => (index / (data.length - 1)) * chartWidth;
-  const scaleY = (price: number) =>
-    chartHeight - ((price - minPrice) / priceRange) * chartHeight;
+  let scaleY: (price: number) => number;
+
+  // Logarithmic scale option: Enable for very low prices or high vol to focus on % changes
+  const useLogScale = avgPrice < 0.001 || volatilityPercentage > 20;
+  if (useLogScale) {
+    const { paddedLogMin, paddedLogRange } = calculateLogScale(
+      minPrice,
+      maxPrice,
+      volatilityPercentage,
+      paddingMultiplier,
+      avgPrice,
+      minPaddedRange,
+    );
+    scaleY = (price: number) =>
+      chartHeight -
+      ((Math.log(price) - paddedLogMin) / paddedLogRange) * chartHeight;
+  } else {
+    // Linear scale for normal cases
+    scaleY = (price: number) =>
+      chartHeight - ((price - paddedMinPrice) / paddedPriceRange) * chartHeight;
+  }
+
+  // Debug logging
+  console.log('===== CHART DEBUG =====');
+  console.log('Price Stats:', {
+    minPrice,
+    maxPrice,
+    priceRange,
+    avgPrice,
+    volatilityPercentage: volatilityPercentage.toFixed(4) + '%',
+  });
+  console.log('Scaling:', {
+    paddingMultiplier,
+    paddedPriceRange,
+    paddedMinPrice,
+    minPaddedRange,
+    useLogScale,
+  });
+  console.log('Chart Dimensions:', {
+    chartWidth,
+    chartHeight,
+  });
+  console.log('All Coordinates:');
+  data.forEach((point, index) => {
+    console.log(
+      `  [${index}] price: ${point.price.toFixed(6)}, x: ${scaleX(index).toFixed(2)}, y: ${scaleY(point.price).toFixed(2)}`,
+    );
+  });
+  console.log('=======================');
 
   // Get the current price (last data point) for comparison
   const currentPrice = data[data.length - 1]?.price || 0;
@@ -384,19 +456,6 @@ const TokenPriceChart: React.FC<TokenPriceChartProps> = ({
             </Defs>
 
             <G x={padding} y={topPadding}>
-              {yAxisLabels.map((label, index) => (
-                <Line
-                  key={index}
-                  x1={0}
-                  y1={label.y}
-                  x2={chartWidth}
-                  y2={label.y}
-                  stroke="#333"
-                  strokeWidth={scale(0.5)}
-                  opacity="0.3"
-                />
-              ))}
-
               <Path d={generateFillPath()} fill="url(#priceGradient)" />
 
               {isInteracting && selectedIndex !== null ? (
@@ -453,32 +512,6 @@ const TokenPriceChart: React.FC<TokenPriceChartProps> = ({
                   strokeLinejoin="round"
                 />
               )}
-
-              {yAxisLabels.map((label, index) => (
-                <SvgText
-                  key={index}
-                  x={chartWidth + scale(10)}
-                  y={label.y + scale(4)} // Slight vertical offset for better alignment
-                  fontSize={scale(11)}
-                  fill="#9ca3af"
-                  textAnchor="start"
-                >
-                  {formatYAxisPrice(label.price)}
-                </SvgText>
-              ))}
-
-              {labelsToShow.map((dataIndex, index) => (
-                <SvgText
-                  key={index}
-                  x={scaleX(dataIndex)}
-                  y={chartHeight + scale(20)}
-                  fontSize={scale(11)}
-                  fill="#9ca3af"
-                  textAnchor="middle"
-                >
-                  {formatTimeLabel(data[dataIndex].timestamp, dataIndex)}
-                </SvgText>
-              ))}
             </G>
           </Svg>
         </View>
@@ -490,7 +523,6 @@ const TokenPriceChart: React.FC<TokenPriceChartProps> = ({
 const styles = StyleSheet.create({
   container: {
     position: 'relative',
-    borderRadius: scale(12),
   },
   noDataText: {
     color: '#9ca3af',

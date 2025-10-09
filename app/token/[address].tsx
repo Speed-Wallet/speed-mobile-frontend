@@ -331,8 +331,6 @@ export default function TokenDetailScreen() {
           ) : chartData && chartData.length > 0 ? (
             <TokenPriceChart
               data={chartData}
-              width={screenWidth - 32}
-              height={scale(200)}
               timeframe={selectedTimeframe}
               isPositive={priceChange.changePercentage >= 0}
               onInteraction={handleChartInteraction}
