@@ -186,8 +186,7 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     backgroundColor: colors.backgroundDark,
-    paddingHorizontal: scale(16),
-    paddingBottom: 6,
+    marginBottom: 6,
   },
   listContent: {
     paddingHorizontal: scale(16),

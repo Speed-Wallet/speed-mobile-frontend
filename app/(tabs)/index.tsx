@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -15,7 +15,7 @@ import colors from '@/constants/colors';
 import Avatar from '@/components/Avatar';
 import { TokenItemHome } from '@/components/token-items';
 import BalanceCard from '@/components/BalanceCard';
-import { Gift } from 'lucide-react-native';
+import { Gift, Settings } from 'lucide-react-native';
 import {
   useWalletPublicKey,
   getAllStoredWallets,
@@ -29,16 +29,24 @@ import { useTokenAssets } from '@/hooks/useTokenAsset';
 import { generateSignature } from '@/utils/signature';
 import Animated, { FadeInRight } from 'react-native-reanimated';
 import CustomAlert from '@/components/CustomAlert';
+import WalletSwitcherBottomSheet, {
+  WalletSwitcherBottomSheetRef,
+} from '@/components/bottom-sheets/WalletSwitcherBottomSheet';
+import { useAlert } from '@/providers/AlertProvider';
+import { removeWalletFromList } from '@/services/walletService';
 // import CryptoTest from '@/components/CryptoTest';
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { alert, error: showError, success, confirm } = useAlert();
   const [username, setUsername] = useState<string>('');
   const [walletName, setWalletName] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'tokens' | 'activity'>('tokens');
   const [showRewardsAlert, setShowRewardsAlert] = useState(false);
   const [showEarnAlert, setShowEarnAlert] = useState(false);
   const walletAddress = useWalletPublicKey();
+
+  const walletSwitcherRef = useRef<WalletSwitcherBottomSheetRef>(null);
 
   // Token balances with automatic polling every 10 seconds when app is active
   const {
@@ -124,6 +132,50 @@ export default function HomeScreen() {
     }
   };
 
+  const handleProfileClick = () => {
+    walletSwitcherRef.current?.expand();
+  };
+
+  const handleWalletSuccess = async () => {
+    await loadUserData();
+    await refetchTokenAssets();
+    success('Wallet operation successful!');
+  };
+
+  const handleDeleteWallet = (walletId: string, isMasterWallet?: boolean) => {
+    if (isMasterWallet) {
+      alert(
+        'Cannot Delete Main Wallet',
+        'The main wallet cannot be deleted as it contains the master seed phrase for your account.',
+        [{ text: 'OK', style: 'default' }],
+        'warning',
+      );
+      return;
+    }
+
+    confirm(
+      'Delete Wallet',
+      'Are you sure you want to delete this wallet? This action cannot be undone.',
+      async () => {
+        try {
+          await removeWalletFromList(walletId);
+          await loadUserData();
+          await refetchTokenAssets();
+          success('Wallet deleted successfully.');
+          walletSwitcherRef.current?.expand(); // Reopen the bottom sheet to show updated list
+        } catch (error) {
+          showError('Failed to delete wallet.');
+          console.error('Error deleting wallet:', error);
+        }
+      },
+    );
+  };
+
+  const handleWalletSwitch = async () => {
+    await loadUserData();
+    await refetchTokenAssets();
+  };
+
   return (
     <ScreenContainer edges={['top']}>
       {activeTab === 'tokens' ? (
@@ -138,7 +190,7 @@ export default function HomeScreen() {
               <View style={styles.header}>
                 <TouchableOpacity
                   style={styles.userSection}
-                  onPress={() => router.push('/settings')}
+                  onPress={handleProfileClick}
                 >
                   <Avatar size={scale(32)} user={genericUser} />
                   <View style={styles.userInfo}>
@@ -146,12 +198,20 @@ export default function HomeScreen() {
                     <Text style={styles.walletNameText}>@{username}</Text>
                   </View>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => setShowRewardsAlert(true)}
-                  style={styles.rewardsButton}
-                >
-                  <Gift size={scale(22)} color={colors.textPrimary} />
-                </TouchableOpacity>
+                <View style={styles.headerIcons}>
+                  <TouchableOpacity
+                    onPress={() => setShowRewardsAlert(true)}
+                    style={styles.iconButton}
+                  >
+                    <Gift size={scale(22)} color={colors.textPrimary} />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => router.push('/settings')}
+                    style={styles.iconButton}
+                  >
+                    <Settings size={scale(22)} color={colors.textPrimary} />
+                  </TouchableOpacity>
+                </View>
               </View>
 
               {/* Balance card */}
@@ -199,7 +259,7 @@ export default function HomeScreen() {
           <View style={styles.header}>
             <TouchableOpacity
               style={styles.userSection}
-              onPress={() => router.push('/settings')}
+              onPress={handleProfileClick}
             >
               <Avatar size={scale(32)} user={genericUser} />
               <View style={styles.userInfo}>
@@ -207,12 +267,20 @@ export default function HomeScreen() {
                 <Text style={styles.walletNameText}>@{username}</Text>
               </View>
             </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => setShowRewardsAlert(true)}
-              style={styles.rewardsButton}
-            >
-              <Gift size={scale(22)} color={colors.textPrimary} />
-            </TouchableOpacity>
+            <View style={styles.headerIcons}>
+              <TouchableOpacity
+                onPress={() => setShowRewardsAlert(true)}
+                style={styles.iconButton}
+              >
+                <Gift size={scale(22)} color={colors.textPrimary} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => router.push('/settings')}
+                style={styles.iconButton}
+              >
+                <Settings size={scale(22)} color={colors.textPrimary} />
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Balance card */}
@@ -261,6 +329,14 @@ export default function HomeScreen() {
           },
         ]}
       />
+
+      {/* Wallet Switcher Bottom Sheet */}
+      <WalletSwitcherBottomSheet
+        ref={walletSwitcherRef}
+        onDeleteWallet={handleDeleteWallet}
+        onWalletSwitch={handleWalletSwitch}
+        onSuccess={handleWalletSuccess}
+      />
     </ScreenContainer>
   );
 }
@@ -296,7 +372,12 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(11),
     fontFamily: 'Inter-Regular',
   },
-  rewardsButton: {
+  headerIcons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scale(8),
+  },
+  iconButton: {
     padding: scale(6),
   },
   assetsSection: {

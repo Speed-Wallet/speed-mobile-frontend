@@ -10,8 +10,9 @@ export default {
   textSecondary: '#9E9E9E',
 
   // Brand colors
-  primary: '#5D5FEF',
-  primaryLight: '#7577FF',
+  primary: '#00CFFF',
+  primaryText: '#000',
+  primaryLight: '#75B7FF',
 
   // Accent colors
   white: '#FFFFFF',
