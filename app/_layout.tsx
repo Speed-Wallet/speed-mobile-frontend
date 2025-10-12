@@ -23,6 +23,7 @@ import colors from '@/constants/colors';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { AuthService } from '@/services/authService';
 import { AlertProvider } from '@/providers/AlertProvider';
 import { prefetchAppConfig } from '@/utils/configPrefetch';
@@ -230,48 +231,50 @@ export default function RootLayout() {
       <GestureHandlerRootView style={{ flex: 1 }}>
         <AlertProvider>
           <QueryClientProvider client={queryClient}>
-            <Stack
-              screenOptions={{
-                headerShown: false,
-                contentStyle: { backgroundColor: colors.backgroundDark },
-              }}
-            >
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen name="+not-found" options={{ title: 'Oops!' }} />
-              <Stack.Screen
-                name="transaction/send"
-                options={{ presentation: 'modal' }}
-              />
-              <Stack.Screen
-                name="transaction/receive"
-                options={{ presentation: 'modal' }}
-              />
-              <Stack.Screen
-                name="wallet/manage"
-                options={{ presentation: 'modal' }}
-              />
-              <Stack.Screen
-                name="wallet/WelcomeScreen"
-                options={{ presentation: 'modal' }}
-              />
-              <Stack.Screen
-                name="wallet/SetupWalletScreen"
-                options={{ presentation: 'modal' }}
-              />
-              <Stack.Screen
-                name="wallet/connect"
-                options={{ presentation: 'modal' }}
-              />
-              <Stack.Screen
-                name="wallet/import"
-                options={{ presentation: 'modal' }}
-              />
-              <Stack.Screen
-                name="token/[address]"
-                options={{ animation: 'slide_from_right' }}
-              />
-            </Stack>
-            <StatusBar style="light" />
+            <BottomSheetModalProvider>
+              <Stack
+                screenOptions={{
+                  headerShown: false,
+                  contentStyle: { backgroundColor: colors.backgroundDark },
+                }}
+              >
+                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                <Stack.Screen name="+not-found" options={{ title: 'Oops!' }} />
+                <Stack.Screen
+                  name="transaction/send"
+                  options={{ presentation: 'modal' }}
+                />
+                <Stack.Screen
+                  name="transaction/receive"
+                  options={{ presentation: 'modal' }}
+                />
+                <Stack.Screen
+                  name="wallet/manage"
+                  options={{ presentation: 'modal' }}
+                />
+                <Stack.Screen
+                  name="wallet/WelcomeScreen"
+                  options={{ presentation: 'modal' }}
+                />
+                <Stack.Screen
+                  name="wallet/SetupWalletScreen"
+                  options={{ presentation: 'modal' }}
+                />
+                <Stack.Screen
+                  name="wallet/connect"
+                  options={{ presentation: 'modal' }}
+                />
+                <Stack.Screen
+                  name="wallet/import"
+                  options={{ presentation: 'modal' }}
+                />
+                <Stack.Screen
+                  name="token/[address]"
+                  options={{ animation: 'slide_from_right' }}
+                />
+              </Stack>
+              <StatusBar style="light" />
+            </BottomSheetModalProvider>
           </QueryClientProvider>
         </AlertProvider>
       </GestureHandlerRootView>
