@@ -8,7 +8,8 @@ import React, {
 } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-import BottomSheet, {
+import {
+  BottomSheetModal,
   BottomSheetView,
   BottomSheetBackdrop,
   useBottomSheetScrollableCreator,
@@ -24,22 +25,22 @@ interface DatePickerBottomSheetProps {
 }
 
 export interface DatePickerBottomSheetRef {
-  expand: () => void;
-  close: () => void;
+  present: () => void;
+  dismiss: () => void;
 }
 
 const DatePickerBottomSheet = forwardRef<
   DatePickerBottomSheetRef,
   DatePickerBottomSheetProps
 >(({ onDateSelect, onClose }, ref) => {
-  const bottomSheetRef = useRef<BottomSheet>(null);
+  const bottomSheetRef = useRef<BottomSheetModal>(null);
 
   // Load current date from storage
   const [initialDate, setInitialDate] = useState<Date | null>(null);
 
   useImperativeHandle(ref, () => ({
-    expand: () => bottomSheetRef.current?.expand(),
-    close: () => bottomSheetRef.current?.close(),
+    present: () => bottomSheetRef.current?.present(),
+    dismiss: () => bottomSheetRef.current?.dismiss(),
   }));
 
   useEffect(() => {
@@ -156,14 +157,14 @@ const DatePickerBottomSheet = forwardRef<
     }
 
     // Close bottom sheet and call callback
-    bottomSheetRef.current?.close();
+    bottomSheetRef.current?.dismiss();
     setTimeout(() => {
       onDateSelect(selectedDate);
     }, 200);
   };
 
   const handleClose = () => {
-    bottomSheetRef.current?.close();
+    bottomSheetRef.current?.dismiss();
     setTimeout(() => {
       onClose();
     }, 200);
@@ -204,9 +205,8 @@ const DatePickerBottomSheet = forwardRef<
   const BottomSheetFlashListScrollable = useBottomSheetScrollableCreator();
 
   return (
-    <BottomSheet
+    <BottomSheetModal
       ref={bottomSheetRef}
-      index={-1}
       snapPoints={['93%']}
       enableDynamicSizing={false}
       enablePanDownToClose={true}
@@ -220,7 +220,6 @@ const DatePickerBottomSheet = forwardRef<
           opacity={0.4}
         />
       )}
-      onClose={handleClose}
     >
       <BottomSheetView style={styles.bottomSheetContent}>
         <SettingsHeader title="Select Date of Birth" onClose={handleClose} />
@@ -289,7 +288,7 @@ const DatePickerBottomSheet = forwardRef<
           </TouchableOpacity>
         </View>
       </BottomSheetView>
-    </BottomSheet>
+    </BottomSheetModal>
   );
 });
 

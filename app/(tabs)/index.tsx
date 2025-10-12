@@ -133,7 +133,7 @@ export default function HomeScreen() {
   };
 
   const handleProfileClick = () => {
-    walletSwitcherRef.current?.expand();
+    walletSwitcherRef.current?.present();
   };
 
   const handleWalletSuccess = async () => {
@@ -162,7 +162,7 @@ export default function HomeScreen() {
           await loadUserData();
           await refetchTokenAssets();
           success('Wallet deleted successfully.');
-          walletSwitcherRef.current?.expand(); // Reopen the bottom sheet to show updated list
+          walletSwitcherRef.current?.present(); // Reopen the bottom sheet to show updated list
         } catch (error) {
           showError('Failed to delete wallet.');
           console.error('Error deleting wallet:', error);

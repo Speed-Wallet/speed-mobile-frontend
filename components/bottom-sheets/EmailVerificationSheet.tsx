@@ -8,7 +8,7 @@ import {
   Alert,
   Dimensions,
 } from 'react-native';
-import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
+import { BottomSheetModal, BottomSheetView } from '@gorhom/bottom-sheet';
 import { X, Mail, RefreshCw } from 'lucide-react-native';
 import { verifyOtp, sendOtp } from '@/services/otpService';
 
@@ -34,7 +34,7 @@ const EmailVerificationSheet: React.FC<EmailVerificationSheetProps> = ({
   const [resendCooldown, setResendCooldown] = useState(0);
   const [error, setError] = useState('');
 
-  const bottomSheetRef = useRef<BottomSheet>(null);
+  const bottomSheetRef = useRef<BottomSheetModal>(null);
   const inputRefs = useRef<TextInput[]>([]);
   const cooldownIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const hasClosed = useRef(false);
@@ -56,9 +56,9 @@ const EmailVerificationSheet: React.FC<EmailVerificationSheetProps> = ({
   useEffect(() => {
     if (visible) {
       hasClosed.current = false; // Reset closed flag when opening
-      bottomSheetRef.current?.expand();
+      bottomSheetRef.current?.present();
     } else {
-      bottomSheetRef.current?.close();
+      bottomSheetRef.current?.dismiss();
     }
   }, [visible]);
 
@@ -204,12 +204,10 @@ const EmailVerificationSheet: React.FC<EmailVerificationSheetProps> = ({
   };
 
   return (
-    <BottomSheet
+    <BottomSheetModal
       ref={bottomSheetRef}
-      index={-1}
       snapPoints={snapPoints}
       enablePanDownToClose={true}
-      onClose={handleClose}
       backgroundStyle={bottomSheetStyle}
       handleIndicatorStyle={indicatorStyle}
     >
@@ -300,7 +298,7 @@ const EmailVerificationSheet: React.FC<EmailVerificationSheetProps> = ({
           </TouchableOpacity>
         </View>
       </BottomSheetView>
-    </BottomSheet>
+    </BottomSheetModal>
   );
 };
 

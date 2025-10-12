@@ -51,12 +51,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.backgroundLight,
   },
   avatarPlaceholder: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
   initialsText: {
-    color: colors.white,
+    color: colors.primaryText,
     fontFamily: 'Inter-SemiBold',
   },
 });

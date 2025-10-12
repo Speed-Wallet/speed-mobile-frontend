@@ -251,7 +251,7 @@ export default function SendScreen() {
                     decimals: tokenAsset.decimals || selectedToken.decimals,
                   }}
                   isLoading={tokenAsset.loading}
-                  onPress={() => tokenSelectorRef.current?.expand()}
+                  onPress={() => tokenSelectorRef.current?.present()}
                   showSelectorIcon={true}
                 />
                 <Text style={styles.inputLabel}>Amount</Text>

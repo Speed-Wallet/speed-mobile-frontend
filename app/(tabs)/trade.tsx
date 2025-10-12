@@ -667,8 +667,10 @@ export default function TradeScreen() {
                 onFromInputFocus={handleInputFocus}
                 onToInputFocus={() => {}} // No-op since to input is disabled
                 onSwapTokens={handleSwapTokens}
-                onFromTokenSelect={() => fromTokenSelectorRef.current?.expand()}
-                onToTokenSelect={() => toTokenSelectorRef.current?.expand()}
+                onFromTokenSelect={() =>
+                  fromTokenSelectorRef.current?.present()
+                }
+                onToTokenSelect={() => toTokenSelectorRef.current?.present()}
                 hasInsufficientFunds={isInsufficientBalance}
               />
 

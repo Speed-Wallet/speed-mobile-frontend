@@ -2,7 +2,8 @@ import React, { useRef, forwardRef, useImperativeHandle } from 'react';
 import { StyleSheet, View, ActivityIndicator, Text } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import SearchBar from '@/components/SearchBar';
-import BottomSheet, {
+import {
+  BottomSheetModal,
   BottomSheetBackdrop,
   useBottomSheetScrollableCreator,
 } from '@gorhom/bottom-sheet';
@@ -23,8 +24,8 @@ interface TokenSelectorBottomSheetProps {
 }
 
 export interface TokenSelectorBottomSheetRef {
-  expand: () => void;
-  close: () => void;
+  present: () => void;
+  dismiss: () => void;
 }
 
 const TokenSelectorBottomSheet = forwardRef<
@@ -43,23 +44,23 @@ const TokenSelectorBottomSheet = forwardRef<
     },
     ref,
   ) => {
-    const bottomSheetRef = useRef<BottomSheet>(null);
+    const bottomSheetRef = useRef<BottomSheetModal>(null);
 
     useImperativeHandle(ref, () => ({
-      expand: () => bottomSheetRef.current?.expand(),
-      close: () => bottomSheetRef.current?.close(),
+      present: () => bottomSheetRef.current?.present(),
+      dismiss: () => bottomSheetRef.current?.dismiss(),
     }));
 
     const handleSelectToken = (token: TokenAsset | TokenMetadata) => {
       // Close bottom sheet and call callback with the token as-is
-      bottomSheetRef.current?.close();
+      bottomSheetRef.current?.dismiss();
       setTimeout(() => {
         onTokenSelect(token);
       }, 200);
     };
 
     const handleClose = () => {
-      bottomSheetRef.current?.close();
+      bottomSheetRef.current?.dismiss();
       setTimeout(() => {
         onClose();
       }, 200);
@@ -126,9 +127,8 @@ const TokenSelectorBottomSheet = forwardRef<
     const BottomSheetFlashListScrollable = useBottomSheetScrollableCreator();
 
     return (
-      <BottomSheet
+      <BottomSheetModal
         ref={bottomSheetRef}
-        index={-1}
         snapPoints={['93%']}
         enableDynamicSizing={false}
         enablePanDownToClose={true}
@@ -142,7 +142,6 @@ const TokenSelectorBottomSheet = forwardRef<
             opacity={0.4}
           />
         )}
-        onClose={handleClose}
       >
         <FlashList
           data={tokens}
@@ -170,7 +169,7 @@ const TokenSelectorBottomSheet = forwardRef<
           ListFooterComponent={renderFooter}
           renderScrollComponent={BottomSheetFlashListScrollable}
         />
-      </BottomSheet>
+      </BottomSheetModal>
     );
   },
 );
