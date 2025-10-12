@@ -14,7 +14,8 @@ import {
   ActivityIndicator,
   BackHandler,
 } from 'react-native';
-import BottomSheet, {
+import {
+  BottomSheetModal,
   BottomSheetView,
   BottomSheetBackdrop,
 } from '@gorhom/bottom-sheet';
@@ -68,15 +69,15 @@ const WalletSwitcherBottomSheet = forwardRef<
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [importedSeedPhrase, setImportedSeedPhrase] = useState<string>('');
-  const bottomSheetRef = useRef<BottomSheet>(null);
+  const bottomSheetRef = useRef<BottomSheetModal>(null);
 
   useImperativeHandle(ref, () => ({
     expand: () => {
       setViewMode('list');
       loadWallets();
-      bottomSheetRef.current?.expand();
+      bottomSheetRef.current?.present();
     },
-    close: () => bottomSheetRef.current?.close(),
+    close: () => bottomSheetRef.current?.dismiss(),
   }));
 
   // Handle hardware back button
@@ -98,7 +99,7 @@ const WalletSwitcherBottomSheet = forwardRef<
           setViewMode('list');
           return true; // Prevent default behavior
         } else if (viewMode === 'list') {
-          bottomSheetRef.current?.close();
+          bottomSheetRef.current?.dismiss();
           return true; // Prevent default behavior
         }
 
@@ -136,7 +137,7 @@ const WalletSwitcherBottomSheet = forwardRef<
         await loadWallets();
         onWalletSwitch?.();
         // Close the bottom sheet after successful switch
-        bottomSheetRef.current?.close();
+        bottomSheetRef.current?.dismiss();
       }
     } catch (error) {
       console.error('Error switching wallet:', error);
@@ -227,7 +228,7 @@ const WalletSwitcherBottomSheet = forwardRef<
     } else if (viewMode === 'add') {
       setViewMode('list');
     } else {
-      bottomSheetRef.current?.close();
+      bottomSheetRef.current?.dismiss();
     }
   };
 
@@ -302,15 +303,14 @@ const WalletSwitcherBottomSheet = forwardRef<
   };
 
   return (
-    <BottomSheet
+    <BottomSheetModal
       ref={bottomSheetRef}
-      index={-1}
       enablePanDownToClose
       backdropComponent={renderBackdrop}
       backgroundStyle={styles.bottomSheetBackground}
       handleIndicatorStyle={styles.handleIndicator}
       enableDynamicSizing
-      onChange={(index) => {
+      onChange={(index: number) => {
         setIsSheetOpen(index >= 0);
       }}
     >
@@ -329,7 +329,7 @@ const WalletSwitcherBottomSheet = forwardRef<
           </View>
         )}
       </BottomSheetView>
-    </BottomSheet>
+    </BottomSheetModal>
   );
 });
 
@@ -345,6 +345,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: scale(16),
+    paddingBottom: 24,
   },
   scrollView: {
     flex: 1,
