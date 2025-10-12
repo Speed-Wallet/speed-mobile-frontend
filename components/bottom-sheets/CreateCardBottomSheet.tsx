@@ -13,7 +13,8 @@ import {
   TextInput,
   Animated as RNAnimated,
 } from 'react-native';
-import BottomSheet, {
+import {
+  BottomSheetModal,
   BottomSheetView,
   BottomSheetBackdrop,
 } from '@gorhom/bottom-sheet';
@@ -41,8 +42,8 @@ interface CreateCardBottomSheetProps {
 }
 
 export interface CreateCardBottomSheetRef {
-  expand: () => void;
-  close: () => void;
+  present: () => void;
+  dismiss: () => void;
 }
 
 const CreateCardBottomSheet = forwardRef<
@@ -58,7 +59,7 @@ const CreateCardBottomSheet = forwardRef<
   const [cardBalanceTouched, setCardBalanceTouched] = useState(false);
   const [showDevButtons, setShowDevButtons] = useState(true);
 
-  const bottomSheetRef = useRef<BottomSheet>(null);
+  const bottomSheetRef = useRef<BottomSheetModal>(null);
 
   // TextInput refs for focusing on errors
   const cardNameRef = useRef<TextInput>(null);
@@ -78,7 +79,7 @@ const CreateCardBottomSheet = forwardRef<
   const { balance: usdtBalance } = useTokenAsset(USDT_ADDRESS);
 
   useImperativeHandle(ref, () => ({
-    expand: () => {
+    present: () => {
       // Reset form state when opening
       setCardName('');
       setCardBalance('');
@@ -88,9 +89,9 @@ const CreateCardBottomSheet = forwardRef<
       setCardNameTouched(false);
       setCardBalanceTouched(false);
       setShowDevButtons(true);
-      bottomSheetRef.current?.expand();
+      bottomSheetRef.current?.present();
     },
-    close: () => bottomSheetRef.current?.close(),
+    dismiss: () => bottomSheetRef.current?.dismiss(),
   }));
 
   const validateCardBalance = (balance: string) => {
@@ -160,7 +161,7 @@ const CreateCardBottomSheet = forwardRef<
   };
 
   const handleClose = () => {
-    bottomSheetRef.current?.close();
+    bottomSheetRef.current?.dismiss();
     setTimeout(() => {
       onClose();
     }, 200);
@@ -302,9 +303,8 @@ const CreateCardBottomSheet = forwardRef<
   };
 
   return (
-    <BottomSheet
+    <BottomSheetModal
       ref={bottomSheetRef}
-      index={-1}
       enableDynamicSizing={true}
       enablePanDownToClose={true}
       backgroundStyle={styles.bottomSheetBackground}
@@ -317,7 +317,6 @@ const CreateCardBottomSheet = forwardRef<
           opacity={0.4}
         />
       )}
-      onClose={handleClose}
     >
       <BottomSheetView style={styles.bottomSheetContent}>
         <SettingsHeader title="Create New Card" onClose={handleClose} />
@@ -563,7 +562,7 @@ const CreateCardBottomSheet = forwardRef<
           </RNAnimated.View>
         </View>
       </BottomSheetView>
-    </BottomSheet>
+    </BottomSheetModal>
   );
 });
 

@@ -657,7 +657,7 @@ export default function AccountScreen() {
 
   const handleCountrySelect = () => {
     // Open the country picker bottom sheet
-    countryPickerRef.current?.expand();
+    countryPickerRef.current?.present();
   };
 
   const handleCountryPicked = (country: any) => {
@@ -682,7 +682,7 @@ export default function AccountScreen() {
 
   const handleDateSelect = () => {
     // Open date picker bottom sheet
-    datePickerRef.current?.expand();
+    datePickerRef.current?.present();
   };
 
   const handleBackPress = async () => {

@@ -16,7 +16,8 @@ import {
 } from 'react-native';
 import { Search } from 'lucide-react-native';
 import { FlashList } from '@shopify/flash-list';
-import BottomSheet, {
+import {
+  BottomSheetModal,
   BottomSheetView,
   BottomSheetBackdrop,
   useBottomSheetScrollableCreator,
@@ -33,8 +34,8 @@ interface CountryPickerBottomSheetProps {
 }
 
 export interface CountryPickerBottomSheetRef {
-  expand: () => void;
-  close: () => void;
+  present: () => void;
+  dismiss: () => void;
 }
 
 const CountryPickerBottomSheet = forwardRef<
@@ -42,7 +43,7 @@ const CountryPickerBottomSheet = forwardRef<
   CountryPickerBottomSheetProps
 >(({ onCountrySelect, onClose }, ref) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const bottomSheetRef = useRef<BottomSheet>(null);
+  const bottomSheetRef = useRef<BottomSheetModal>(null);
 
   // Calculate 90% of screen height
   const screenHeight = Dimensions.get('window').height;
@@ -52,8 +53,8 @@ const CountryPickerBottomSheet = forwardRef<
   const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
 
   useImperativeHandle(ref, () => ({
-    expand: () => bottomSheetRef.current?.expand(),
-    close: () => bottomSheetRef.current?.close(),
+    present: () => bottomSheetRef.current?.present(),
+    dismiss: () => bottomSheetRef.current?.dismiss(),
   }));
 
   useEffect(() => {
@@ -95,14 +96,14 @@ const CountryPickerBottomSheet = forwardRef<
     }
 
     // Close bottom sheet and call callback
-    bottomSheetRef.current?.close();
+    bottomSheetRef.current?.dismiss();
     setTimeout(() => {
       onCountrySelect(country);
     }, 200);
   };
 
   const handleClose = () => {
-    bottomSheetRef.current?.close();
+    bottomSheetRef.current?.dismiss();
     setTimeout(() => {
       onClose();
     }, 200);
@@ -126,9 +127,8 @@ const CountryPickerBottomSheet = forwardRef<
   const BottomSheetFlashListScrollable = useBottomSheetScrollableCreator();
 
   return (
-    <BottomSheet
+    <BottomSheetModal
       ref={bottomSheetRef}
-      index={-1}
       snapPoints={['93%']}
       enableDynamicSizing={false}
       enablePanDownToClose={true}
@@ -142,7 +142,6 @@ const CountryPickerBottomSheet = forwardRef<
           opacity={0.4}
         />
       )}
-      onClose={handleClose}
     >
       <BottomSheetView style={styles.bottomSheetContent}>
         <SettingsHeader title="Select Country" onClose={handleClose} />
@@ -171,7 +170,7 @@ const CountryPickerBottomSheet = forwardRef<
           renderScrollComponent={BottomSheetFlashListScrollable}
         />
       </BottomSheetView>
-    </BottomSheet>
+    </BottomSheetModal>
   );
 });
 

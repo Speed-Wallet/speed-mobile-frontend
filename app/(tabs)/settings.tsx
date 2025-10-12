@@ -23,7 +23,6 @@ import {
   Gift,
   TrendingUp,
   Link,
-  Wallet,
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
@@ -148,28 +147,21 @@ export default function SettingsScreen() {
   // Create dynamic account options based on current verification level
   const getAccountOptions = () => {
     return [
-      {
-        id: 1,
-        title: 'Personal Info',
-        icon: User,
-        color: getVerificationColor(verificationLevel),
-        showKyc: verificationLevel >= 1,
-        kycLevel: verificationLevel,
-        route: '/settings/kyc',
-      },
+      // {
+      //   id: 1,
+      //   title: 'Personal Info',
+      //   icon: User,
+      //   color: getVerificationColor(verificationLevel),
+      //   showKyc: verificationLevel >= 1,
+      //   kycLevel: verificationLevel,
+      //   route: '/settings/kyc',
+      // },
       {
         id: 2,
         title: 'Security',
         icon: Shield,
         color: '#1e40af',
         route: '/settings/security',
-      },
-      {
-        id: 3,
-        title: 'Wallets',
-        icon: Wallet,
-        color: '#ea580c',
-        route: '/settings/wallets',
       },
     ];
   };
@@ -244,14 +236,14 @@ export default function SettingsScreen() {
         </View>
 
         {/* Referrals & Affiliates Section */}
-        <View style={styles.section}>
+        {/* <View style={styles.section}>
           <Text style={styles.sectionTitle}>Referrals & Affiliates</Text>
           <View style={styles.sectionContent}>
             {referralOptions.map((option, index, array) =>
               renderSettingItem(option, index, array),
             )}
           </View>
-        </View>
+        </View> */}
 
         {/* Support Section */}
         <View style={styles.section}>

@@ -193,7 +193,7 @@ export default function CardsScreen() {
   };
 
   const handleCloseAddCard = () => {
-    addCardBottomSheetRef.current?.close();
+    addCardBottomSheetRef.current?.dismiss();
   };
 
   const handleAddCardPress = async () => {
@@ -222,7 +222,7 @@ export default function CardsScreen() {
     }
 
     // Open bottom sheet
-    addCardBottomSheetRef.current?.expand();
+    addCardBottomSheetRef.current?.present();
   };
 
   const simulateCardFailureFlow = async (
@@ -444,7 +444,7 @@ export default function CardsScreen() {
       }
 
       // Close the bottom sheet and reset form
-      addCardBottomSheetRef.current?.close();
+      addCardBottomSheetRef.current?.dismiss();
 
       setIsLoading(false);
 

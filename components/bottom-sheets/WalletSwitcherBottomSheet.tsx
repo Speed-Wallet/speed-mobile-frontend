@@ -55,8 +55,8 @@ interface WalletSwitcherBottomSheetProps {
 }
 
 export interface WalletSwitcherBottomSheetRef {
-  expand: () => void;
-  close: () => void;
+  present: () => void;
+  dismiss: () => void;
 }
 
 const WalletSwitcherBottomSheet = forwardRef<
@@ -72,12 +72,12 @@ const WalletSwitcherBottomSheet = forwardRef<
   const bottomSheetRef = useRef<BottomSheetModal>(null);
 
   useImperativeHandle(ref, () => ({
-    expand: () => {
+    present: () => {
       setViewMode('list');
       loadWallets();
       bottomSheetRef.current?.present();
     },
-    close: () => bottomSheetRef.current?.dismiss(),
+    dismiss: () => bottomSheetRef.current?.dismiss(),
   }));
 
   // Handle hardware back button
