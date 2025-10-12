@@ -44,14 +44,16 @@ const PrimaryActionButton: React.FC<PrimaryActionButtonProps> = ({
         return colors.backgroundMedium;
       case 'primary':
       default:
-        return '#00CFFF';
+        return colors.primary;
     }
   };
 
   const getTextColor = () => {
     if (disabled) return colors.textSecondary;
     if (variant === 'secondary') return colors.textSecondary;
-    return variant === 'success' || variant === 'error' ? colors.white : '#000';
+    return variant === 'success' || variant === 'error'
+      ? colors.white
+      : colors.primaryText;
   };
 
   const renderIcon = () => {

@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
   enterButtonText: {
     fontSize: moderateScale(18), // Reduced from 20
     fontFamily: 'Inter-Bold',
-    color: colors.white,
+    color: colors.primaryText,
     textAlign: 'center',
   },
   enterButtonTextDisabled: {
@@ -199,7 +199,7 @@ const styles = StyleSheet.create({
   enterButtonSubtext: {
     fontSize: moderateScale(12), // Reduced from 14
     fontFamily: 'Inter-Regular',
-    color: colors.white + '80',
+    color: colors.primaryText,
     textAlign: 'center',
   },
   enterButtonSubtextDisabled: {
