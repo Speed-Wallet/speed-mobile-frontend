@@ -23,13 +23,20 @@ import {
   Gift,
   TrendingUp,
   Link,
+  Eye,
+  KeyRound,
+  Twitter,
+  Send,
+  MessageSquare,
 } from 'lucide-react-native';
+import { Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import colors from '@/constants/colors';
 import { getCurrentVerificationLevel } from '@/utils/verification';
 import ScreenContainer from '@/components/ScreenContainer';
 import TabScreenHeader from '@/components/TabScreenHeader';
+import { useAlert } from '@/providers/AlertProvider';
 
 const preferencesOptions = [
   {
@@ -86,32 +93,30 @@ const referralOptions = [
   },
 ];
 
-const supportOptions = [
+const socialLinks = [
   {
-    id: 11,
-    title: 'Help Center',
-    icon: HelpCircle,
-    color: '#ef4444',
-    route: null,
+    id: 'twitter',
+    icon: Twitter,
+    url: 'https://x.com/speed__wallet?t=xybdvDybtg2mZz16g2SHcg&s=09',
+    color: '#1DA1F2',
   },
   {
-    id: 12,
-    title: 'Contact Support',
-    icon: MessageCircle,
-    color: '#f97316',
-    route: null,
+    id: 'telegram',
+    icon: Send,
+    url: 'https://t.me/speedwalletexchange',
+    color: '#0088cc',
   },
   {
-    id: 13,
-    title: 'Terms & Privacy',
-    icon: FileText,
-    color: '#84cc16',
-    route: null,
+    id: 'discord',
+    icon: MessageSquare,
+    url: 'https://discord.gg/CpF9vSw3z',
+    color: '#5865F2',
   },
 ];
 
 export default function SettingsScreen() {
   const router = useRouter();
+  const { alert, success } = useAlert();
   const [verificationLevel, setVerificationLevel] = useState(0);
 
   // Recalculate verification level whenever screen comes into focus
@@ -158,12 +163,35 @@ export default function SettingsScreen() {
       // },
       {
         id: 2,
-        title: 'Security',
-        icon: Shield,
+        title: 'Change PIN',
+        icon: KeyRound,
         color: '#1e40af',
-        route: '/settings/security',
+        route: '/settings/change-pin',
+        action: 'changePin',
+      },
+      {
+        id: 3,
+        title: 'View Seed Phrase',
+        icon: Eye,
+        color: '#dc2626',
+        route: '/settings/view-seed-phrase',
+        action: 'viewSeedPhrase',
       },
     ];
+  };
+
+  const handleSocialLinkPress = async (url: string) => {
+    try {
+      const supported = await Linking.canOpenURL(url);
+      if (supported) {
+        await Linking.openURL(url);
+      } else {
+        alert('Error', `Unable to open URL: ${url}`);
+      }
+    } catch (error) {
+      console.error('Error opening URL:', error);
+      alert('Error', 'Failed to open the link');
+    }
   };
 
   const handlePress = (option: any) => {
@@ -245,21 +273,29 @@ export default function SettingsScreen() {
           </View>
         </View> */}
 
-        {/* Support Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Support</Text>
-          <View style={styles.sectionContent}>
-            {supportOptions.map((option, index, array) =>
-              renderSettingItem(option, index, array),
-            )}
-          </View>
-        </View>
-
         {/* App Version */}
         <View style={styles.versionSection}>
           <Text style={styles.versionText}>Version 1.0.0</Text>
         </View>
       </ScrollView>
+
+      {/* Social Media Links - Sticky Bottom */}
+      <View style={styles.socialContainer}>
+        <View style={styles.socialIconsRow}>
+          {socialLinks.map((social) => (
+            <TouchableOpacity
+              key={social.id}
+              style={[
+                styles.socialIconButton,
+                { backgroundColor: social.color },
+              ]}
+              onPress={() => handleSocialLinkPress(social.url)}
+            >
+              <social.icon size={20} color="#ffffff" />
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
     </ScreenContainer>
   );
 }
@@ -351,5 +387,151 @@ const styles = StyleSheet.create({
     fontSize: 14, // Keep same size
     fontFamily: 'Inter-Regular',
     color: colors.textSecondary,
+  },
+  // PIN Entry Styles
+  pinEntrySection: {
+    paddingTop: verticalScale(12),
+  },
+  pinEntryContainer: {
+    padding: 15,
+    backgroundColor: colors.backgroundMedium,
+    borderRadius: 12,
+  },
+  pinPrompt: {
+    fontSize: 16,
+    fontFamily: 'Inter-Regular',
+    color: colors.textPrimary,
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  pinInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.backgroundLight,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: colors.backgroundLight,
+  },
+  pinInput: {
+    flex: 1,
+    color: colors.textPrimary,
+    fontFamily: 'Inter-Regular',
+    fontSize: 18,
+    paddingVertical: 12,
+  },
+  eyeIcon: {
+    padding: 8,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 20,
+  },
+  button: {
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  submitButton: {
+    flex: 1,
+    backgroundColor: colors.primary,
+  },
+  cancelButton: {
+    flex: 1,
+    backgroundColor: colors.backgroundLight,
+    borderWidth: 1,
+    borderColor: colors.textSecondary,
+  },
+  buttonDisabled: {
+    backgroundColor: colors.primary + '80',
+  },
+  buttonText: {
+    color: colors.white,
+    fontSize: 16,
+    fontFamily: 'Inter-SemiBold',
+  },
+  cancelButtonText: {
+    color: colors.textPrimary,
+    fontSize: 16,
+    fontFamily: 'Inter-SemiBold',
+  },
+  errorText: {
+    color: colors.error,
+    fontFamily: 'Inter-Regular',
+    textAlign: 'center',
+    marginTop: 10,
+    fontSize: 14,
+  },
+  // Seed Phrase Styles
+  seedPhraseSection: {
+    paddingTop: verticalScale(12),
+  },
+  seedPhraseContainer: {
+    padding: 15,
+    backgroundColor: colors.backgroundMedium,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  seedPhraseWarningTitle: {
+    fontSize: 18,
+    fontFamily: 'Inter-Bold',
+    color: colors.warning,
+    marginBottom: 10,
+  },
+  seedPhraseWarning: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: 15,
+  },
+  mnemonicDisplay: {
+    backgroundColor: colors.backgroundDark,
+    padding: 20,
+    borderRadius: 8,
+    marginBottom: 20,
+    width: '100%',
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  mnemonicText: {
+    fontSize: 17,
+    fontFamily: 'Inter-SemiBold',
+    color: colors.textPrimary,
+    textAlign: 'center',
+    lineHeight: 26,
+  },
+  copyButton: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+  },
+  hideButton: {
+    flex: 1,
+    backgroundColor: colors.textSecondary,
+  },
+  // Social Media Styles
+  socialContainer: {
+    backgroundColor: colors.backgroundDark,
+    paddingVertical: verticalScale(12),
+    paddingHorizontal: scale(12),
+  },
+  socialIconsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: scale(12),
+  },
+  socialIconButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

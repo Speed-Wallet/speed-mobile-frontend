@@ -6,19 +6,10 @@ import {
   TouchableOpacity,
   Animated,
   Platform,
-  Clipboard,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import {
-  Copy,
-  Eye,
-  EyeOff,
-  ShieldCheck,
-  AlertTriangle,
-} from 'lucide-react-native';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import UnsafeScreenContainer from '../UnsafeScreenContainer';
-import WordBox from './WordBox';
+import SeedPhraseDisplay from '../SeedPhraseDisplay';
 import PrimaryActionButton from '../buttons/PrimaryActionButton';
 
 interface ShowMnemonicStepProps {
@@ -35,7 +26,6 @@ const ShowMnemonicStep: React.FC<ShowMnemonicStepProps> = ({
   isLoading,
 }) => {
   const [isVisible, setIsVisible] = useState(false);
-  const [copied, setCopied] = useState(false);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.95)).current;
@@ -60,12 +50,6 @@ const ShowMnemonicStep: React.FC<ShowMnemonicStepProps> = ({
       }),
     ]).start();
   }, []);
-
-  const handleCopy = async () => {
-    await Clipboard.setString(mnemonic);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
 
   return (
     <UnsafeScreenContainer style={styles.container}>
@@ -115,46 +99,11 @@ const ShowMnemonicStep: React.FC<ShowMnemonicStepProps> = ({
             },
           ]}
         >
-          <LinearGradient
-            colors={['#1a1a1a', '#1f1f1f']}
-            style={styles.seedPhraseCard}
-          >
-            <View style={styles.seedPhraseHeader}>
-              <TouchableOpacity
-                style={[styles.copyButton, copied && styles.copyButtonActive]}
-                onPress={handleCopy}
-              >
-                <Copy size={scale(20)} color={copied ? '#00CFFF' : '#9ca3af'} />
-                <Text
-                  style={[styles.copyText, copied && styles.copyTextActive]}
-                >
-                  {copied ? 'Copied!' : 'Copy'}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.visibilityButton}
-                onPress={() => setIsVisible(!isVisible)}
-              >
-                {isVisible ? (
-                  <EyeOff size={scale(20)} color="#9ca3af" />
-                ) : (
-                  <Eye size={scale(20)} color="#9ca3af" />
-                )}
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.phraseGrid}>
-              {mnemonic.split(' ').map((word, index) => (
-                <WordBox
-                  key={index}
-                  word={word}
-                  index={index}
-                  isVisible={isVisible}
-                  variant="display"
-                />
-              ))}
-            </View>
-          </LinearGradient>
+          <SeedPhraseDisplay
+            seedPhrase={mnemonic}
+            isVisible={isVisible}
+            onToggleVisibility={() => setIsVisible(!isVisible)}
+          />
         </Animated.View>
 
         {/* Warning Card */}
@@ -246,73 +195,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: verticalScale(10),
     maxHeight: '50%',
-  },
-  seedPhraseCard: {
-    borderRadius: scale(12),
-    padding: scale(12),
-  },
-  seedPhraseHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: verticalScale(16),
-  },
-  visibilityButton: {
-    padding: scale(8),
-  },
-  copyButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: scale(8),
-  },
-  copyButtonActive: {
-    opacity: 0.8,
-  },
-  copyText: {
-    color: '#9ca3af',
-    marginLeft: scale(6),
-    fontSize: moderateScale(14),
-  },
-  copyTextActive: {
-    color: '#00CFFF',
-  },
-  phraseGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    // paddingHorizontal: scale(2),
-  },
-  warningContainer: {
-    marginBottom: 24,
-  },
-  warningCard: {
-    borderRadius: 16,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 184, 0, 0.3)',
-  },
-  warningContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  warningIcon: {
-    marginRight: 16,
-  },
-  warningTextContainer: {
-    flex: 1,
-  },
-  warningTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#FFB800',
-    marginBottom: 4,
-    letterSpacing: 0.5,
-  },
-  warningText: {
-    fontSize: 14,
-    color: '#FFB800',
-    opacity: 0.9,
-    lineHeight: 20,
   },
   buttonContainer: {
     flex: 0,
