@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import { triggerShake } from '@/utils/animations';
-import UnsafeScreenContainer from '@/components/UnsafeScreenContainer';
+import ScreenContainer from '@/components/ScreenContainer';
 import BackButton from '@/components/buttons/BackButton';
 import PinInputSection from '@/components/PinInputSection';
 
@@ -79,7 +79,7 @@ const ConfirmPinStep: React.FC<ConfirmPinStepProps> = ({
   );
 
   return (
-    <UnsafeScreenContainer>
+    <ScreenContainer edges={['top', 'bottom']}>
       {/* Development Back Button */}
       {process.env.EXPO_PUBLIC_APP_ENV === 'development' && (
         <BackButton onPress={onBack} style={styles.devBackButton} />
@@ -106,14 +106,14 @@ const ConfirmPinStep: React.FC<ConfirmPinStepProps> = ({
           </TouchableOpacity>
         </View>
       </View>
-    </UnsafeScreenContainer>
+    </ScreenContainer>
   );
 };
 
 const styles = StyleSheet.create({
   devBackButton: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? verticalScale(50) : verticalScale(20),
+    top: verticalScale(50),
     left: scale(20),
     zIndex: 1000,
     backgroundColor: '#FFB800',
@@ -125,8 +125,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   bottomSection: {
-    paddingBottom:
-      Platform.OS === 'ios' ? verticalScale(34) : verticalScale(24),
     alignItems: 'center',
   },
   backButton: {

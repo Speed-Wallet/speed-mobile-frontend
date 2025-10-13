@@ -11,6 +11,7 @@ import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import UnsafeScreenContainer from '../UnsafeScreenContainer';
 import SeedPhraseDisplay from '../SeedPhraseDisplay';
 import PrimaryActionButton from '../buttons/PrimaryActionButton';
+import ScreenContainer from '@/components/ScreenContainer';
 
 interface ShowMnemonicStepProps {
   mnemonic: string;
@@ -52,7 +53,7 @@ const ShowMnemonicStep: React.FC<ShowMnemonicStepProps> = ({
   }, []);
 
   return (
-    <UnsafeScreenContainer style={styles.container}>
+    <ScreenContainer edges={['top', 'bottom']}>
       {/* Dev Mode Skip Button */}
       {process.env.EXPO_PUBLIC_APP_ENV === 'development' && (
         <TouchableOpacity style={styles.skipButton} onPress={onNext}>
@@ -140,7 +141,7 @@ const ShowMnemonicStep: React.FC<ShowMnemonicStepProps> = ({
           />
         </View>
       </View>
-    </UnsafeScreenContainer>
+    </ScreenContainer>
   );
 };
 
@@ -154,7 +155,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   header: {
-    paddingTop: Platform.OS === 'ios' ? verticalScale(10) : verticalScale(20),
     flex: 0,
     minHeight: '25%',
     justifyContent: 'center',
@@ -199,8 +199,6 @@ const styles = StyleSheet.create({
   buttonContainer: {
     flex: 0,
     paddingTop: verticalScale(20),
-    paddingBottom:
-      Platform.OS === 'ios' ? verticalScale(34) : verticalScale(24),
     minHeight: '15%',
     justifyContent: 'flex-end',
   },

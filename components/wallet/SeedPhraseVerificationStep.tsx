@@ -13,7 +13,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import colors from '@/constants/colors';
 import ScreenContainer from '@/components/ScreenContainer';
-import UnsafeScreenContainer from '@/components/UnsafeScreenContainer';
 import BackButton from '@/components/buttons/BackButton';
 import WordBox from '@/components/wallet/WordBox';
 import { triggerShake } from '@/utils/animations';
@@ -164,7 +163,7 @@ const SeedPhraseVerificationStep: React.FC<SeedPhraseVerificationStepProps> = ({
   };
 
   return (
-    <UnsafeScreenContainer>
+    <ScreenContainer edges={['top', 'bottom']}>
       {/* Development Back Button */}
       {process.env.EXPO_PUBLIC_APP_ENV === 'development' && (
         <BackButton onPress={onBack} style={styles.devBackButton} />
@@ -279,14 +278,14 @@ const SeedPhraseVerificationStep: React.FC<SeedPhraseVerificationStepProps> = ({
           </TouchableOpacity>
         </View>
       </View>
-    </UnsafeScreenContainer>
+    </ScreenContainer>
   );
 };
 
 const styles = StyleSheet.create({
   devBackButton: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? verticalScale(50) : verticalScale(20),
+    top: verticalScale(50),
     left: scale(20),
     zIndex: 1000,
     backgroundColor: '#FFB800',
@@ -305,7 +304,6 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   titleSection: {
-    paddingTop: Platform.OS === 'ios' ? verticalScale(10) : verticalScale(20),
     marginBottom: verticalScale(24),
   },
   title: {
@@ -374,7 +372,7 @@ const styles = StyleSheet.create({
   },
   skipButton: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? verticalScale(50) : verticalScale(20),
+    top: verticalScale(50),
     right: scale(20),
     zIndex: 1000,
     backgroundColor: colors.warning,
@@ -389,8 +387,6 @@ const styles = StyleSheet.create({
     color: colors.backgroundDark,
   },
   bottomSection: {
-    paddingBottom:
-      Platform.OS === 'ios' ? verticalScale(34) : verticalScale(24),
     alignItems: 'center',
   },
   backButton: {

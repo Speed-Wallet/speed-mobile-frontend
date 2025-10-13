@@ -14,7 +14,6 @@ import { verticalScale, scale, moderateScale } from 'react-native-size-matters';
 import colors from '@/constants/colors';
 import ScreenHeader from '@/components/ScreenHeader';
 import ScreenContainer from '@/components/ScreenContainer';
-import UnsafeScreenContainer from '@/components/UnsafeScreenContainer';
 import PrimaryActionButton from '@/components/buttons/PrimaryActionButton';
 import BackButton from '@/components/buttons/BackButton';
 import { triggerShake } from '@/utils/animations';
@@ -104,7 +103,7 @@ export default function CreateUsernameStep({
   };
 
   return (
-    <UnsafeScreenContainer>
+    <ScreenContainer edges={['top', 'bottom']}>
       {/* Development Back Button */}
       {process.env.EXPO_PUBLIC_APP_ENV === 'development' && onBack && (
         <BackButton onPress={onBack} style={styles.devBackButton} />
@@ -207,14 +206,14 @@ export default function CreateUsernameStep({
           </View>
         </KeyboardAvoidingView>
       </View>
-    </UnsafeScreenContainer>
+    </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
   devBackButton: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 50 : 20,
+    top: 50,
     left: 20,
     zIndex: 1000,
     backgroundColor: '#FFB800',
@@ -229,7 +228,6 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'flex-start',
-    paddingTop: Platform.OS === 'ios' ? verticalScale(10) : verticalScale(20),
     marginBottom: verticalScale(24),
   },
   title: {
@@ -307,6 +305,5 @@ const styles = StyleSheet.create({
   },
   buttonWrapper: {
     marginTop: 'auto',
-    paddingBottom: Platform.OS === 'ios' ? 34 : 24,
   },
 });
