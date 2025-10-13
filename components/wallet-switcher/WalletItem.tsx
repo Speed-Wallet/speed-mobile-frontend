@@ -26,51 +26,55 @@ const WalletItem: React.FC<WalletItemProps> = ({
   onCopyAddress,
 }) => {
   return (
-    <TouchableOpacity
-      style={[styles.walletCard, isActive && styles.activeWalletCard]}
-      onPress={onPress}
-      activeOpacity={0.7}
-      disabled={loading || isActive}
-    >
-      <View style={styles.walletInfo}>
-        <View style={styles.walletHeader}>
-          <Text style={styles.walletName}>{name}</Text>
-        </View>
-        <TouchableOpacity
-          style={styles.addressContainer}
-          onPress={(e) => {
-            e.stopPropagation();
-            onCopyAddress(publicKey, id);
-          }}
-        >
+    <View style={[styles.walletCard, isActive && styles.activeWalletCard]}>
+      <TouchableOpacity
+        style={styles.walletMainArea}
+        onPress={onPress}
+        activeOpacity={0.7}
+        disabled={loading || isActive}
+      >
+        <View style={styles.walletInfo}>
+          <View style={styles.walletHeader}>
+            <Text style={styles.walletName}>{name}</Text>
+          </View>
           <Text style={styles.walletAddress}>
             {publicKey.slice(0, 8)}...{publicKey.slice(-8)}
           </Text>
-          {isCopied ? (
-            <Check size={14} color={colors.success} />
-          ) : (
-            <Copy size={14} color={colors.textSecondary} />
-          )}
-        </TouchableOpacity>
-      </View>
-    </TouchableOpacity>
+        </View>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.copyButton}
+        onPress={() => onCopyAddress(publicKey, id)}
+        activeOpacity={0.7}
+      >
+        {isCopied ? (
+          <Check size={20} color={colors.success} />
+        ) : (
+          <Copy size={20} color={colors.textSecondary} />
+        )}
+      </TouchableOpacity>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   walletCard: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'stretch',
     backgroundColor: colors.backgroundMedium,
     borderRadius: 12,
-    paddingHorizontal: scale(16),
-    paddingVertical: 8,
+    overflow: 'hidden',
     borderWidth: 2,
     borderColor: 'transparent',
   },
   activeWalletCard: {
-    // borderColor: colors.primary,
     backgroundColor: colors.backgroundLight,
+  },
+  walletMainArea: {
+    flex: 1,
+    paddingHorizontal: scale(16),
+    paddingVertical: verticalScale(8),
+    justifyContent: 'center',
   },
   walletInfo: {
     flex: 1,
@@ -85,16 +89,18 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-SemiBold',
     color: colors.textPrimary,
   },
-  addressContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-  },
   walletAddress: {
     fontSize: moderateScale(12),
     fontFamily: 'Inter-Regular',
     color: colors.textSecondary,
-    marginRight: scale(8),
+  },
+  copyButton: {
+    width: scale(50),
+    justifyContent: 'center',
+    alignItems: 'center',
+    // backgroundColor: colors.backgroundLight,
+    // borderLeftWidth: 1,
+    borderLeftColor: colors.backgroundDark,
   },
 });
 
