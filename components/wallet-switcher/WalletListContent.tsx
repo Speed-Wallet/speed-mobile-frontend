@@ -12,6 +12,7 @@ import colors from '@/constants/colors';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import WalletItem from './WalletItem';
 import SettingsHeader from '@/components/SettingsHeader';
+import BottomSheetScreenContainer from '@/components/BottomSheetScreenContainer';
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 
@@ -68,7 +69,7 @@ const WalletListContent: React.FC<WalletListContentProps> = ({
   const renderItemSeparator = () => <View style={{ height: 2 }} />;
 
   return (
-    <>
+    <BottomSheetScreenContainer edges={['bottom']}>
       <View style={styles.headerContainer}>
         <SettingsHeader title={title} onClose={onClose} noPadding={true} />
       </View>
@@ -77,7 +78,6 @@ const WalletListContent: React.FC<WalletListContentProps> = ({
         keyExtractor={(item) => item.id}
         renderItem={renderWalletItem}
         contentContainerStyle={styles.listContent}
-        style={styles.flashList}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={renderEmptyComponent}
         ItemSeparatorComponent={renderItemSeparator}
@@ -92,17 +92,14 @@ const WalletListContent: React.FC<WalletListContentProps> = ({
           <Plus size={20} color={colors.primaryText} />
         </TouchableOpacity>
       </View>
-    </>
+    </BottomSheetScreenContainer>
   );
 };
 
 const styles = StyleSheet.create({
-  flashList: {
-    maxHeight: SCREEN_HEIGHT * 0.65,
-  },
   headerContainer: {
     backgroundColor: colors.backgroundDark,
-    marginBottom: verticalScale(6),
+    // marginBottom: verticalScale(6),
     paddingHorizontal: scale(16),
   },
   listContent: {
