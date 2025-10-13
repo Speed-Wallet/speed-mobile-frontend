@@ -4,15 +4,16 @@ import {
   Text,
   TouchableOpacity,
   Animated,
-  SafeAreaView,
   Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useRef, useEffect } from 'react';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Plus, Download, Zap } from 'lucide-react-native';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
-import SpeedLogo from '@/components/SpeedLogo';
-import ActionButtonGroup from '@/components/buttons/ActionButtonGroup';
+import colors from '@/constants/colors';
 import 'react-native-get-random-values';
 
 interface CreateWalletIntroStepProps {
@@ -48,24 +49,85 @@ export default function CreateWalletIntroStep({
     ]).start();
   }, []);
 
+  // Pulsing animation for the glow
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.1,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+      ]),
+    ).start();
+  }, []);
+
   return (
     <SafeAreaView style={styles.container}>
+      <LinearGradient
+        colors={['#009FCC', '#0d2a35', '#0A0A0A']}
+        locations={[0, 0.4, 1]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      />
+
       <View style={styles.content}>
-        {/* Logo */}
+        {/* Logo with Glow Effect */}
         <Animated.View
           style={[
-            styles.logoContainer,
+            styles.logoSection,
             {
               opacity: fadeAnim,
               transform: [{ translateY: translateY }],
             },
           ]}
         >
-          <SpeedLogo size={scale(140)} />
+          <View style={styles.logoWrapper}>
+            <LinearGradient
+              colors={['#22d3ee', '#06b6d4']}
+              style={styles.logoCircle}
+            >
+              <Zap
+                size={scale(80)}
+                color="#0f172a"
+                strokeWidth={2.5}
+                fill="#0f172a"
+              />
+            </LinearGradient>
+
+            {/* Glow effect */}
+            <Animated.View
+              style={[
+                styles.glowEffect,
+                {
+                  transform: [{ scale: pulseAnim }],
+                },
+              ]}
+            >
+              <LinearGradient
+                colors={['#22d3ee', '#06b6d4']}
+                style={styles.glowGradient}
+              />
+            </Animated.View>
+          </View>
+
+          {/* Info Text */}
+          <Text style={styles.infoText}>
+            Start using Speed Wallet to swap, send, receive, and spend
+            instantly.
+          </Text>
         </Animated.View>
       </View>
 
-      {/* Create wallet button */}
+      {/* Action Buttons */}
       <Animated.View
         style={[
           styles.buttonContainer,
@@ -75,19 +137,35 @@ export default function CreateWalletIntroStep({
           },
         ]}
       >
-        <ActionButtonGroup
-          primaryTitle="Create new wallet"
-          onPrimaryPress={onCreateWallet}
-          primaryDisabled={isLoading}
-          primaryLoading={isLoading}
-          secondaryTitle="Import wallet"
-          onSecondaryPress={() => {
+        <TouchableOpacity
+          style={styles.primaryButton}
+          onPress={onCreateWallet}
+          disabled={isLoading}
+          activeOpacity={0.8}
+        >
+          <LinearGradient
+            colors={['#22d3ee', '#06b6d4']}
+            style={styles.primaryButtonGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+          >
+            <Plus size={scale(20)} color="#0f172a" strokeWidth={2.5} />
+            <Text style={styles.primaryButtonText}>Create new wallet</Text>
+          </LinearGradient>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.secondaryButton}
+          onPress={() => {
             if (onImportWallet) {
               onImportWallet();
             }
           }}
-          secondaryStyle="text"
-        />
+          activeOpacity={0.8}
+        >
+          <Download size={scale(20)} color="#22d3ee" strokeWidth={2.5} />
+          <Text style={styles.secondaryButtonText}>Import wallet</Text>
+        </TouchableOpacity>
       </Animated.View>
     </SafeAreaView>
   );
@@ -96,7 +174,7 @@ export default function CreateWalletIntroStep({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#121212',
+    backgroundColor: '#0A0A0A',
   },
   content: {
     flex: 1,
@@ -104,10 +182,47 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  logoContainer: {
+  logoSection: {
     alignItems: 'center',
     justifyContent: 'center',
-    flex: 1,
+  },
+  logoWrapper: {
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: verticalScale(40),
+  },
+  logoCircle: {
+    width: scale(160),
+    height: scale(160),
+    borderRadius: scale(80),
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 20,
+    shadowColor: '#22d3ee',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.4,
+    shadowRadius: 20,
+  },
+  glowEffect: {
+    position: 'absolute',
+    width: scale(160),
+    height: scale(160),
+    borderRadius: scale(80),
+    zIndex: -1,
+  },
+  glowGradient: {
+    width: '100%',
+    height: '100%',
+    borderRadius: scale(80),
+    opacity: 0.5,
+  },
+  infoText: {
+    fontSize: moderateScale(14),
+    color: 'rgba(255, 255, 255, 0.6)',
+    textAlign: 'center',
+    lineHeight: moderateScale(22),
+    paddingHorizontal: scale(16),
   },
   buttonContainer: {
     width: '100%',
@@ -115,5 +230,48 @@ const styles = StyleSheet.create({
     paddingBottom:
       Platform.OS === 'ios' ? verticalScale(34) : verticalScale(24),
     paddingTop: verticalScale(20),
+  },
+  primaryButton: {
+    width: '100%',
+    marginBottom: verticalScale(16),
+    borderRadius: scale(16),
+    overflow: 'hidden',
+    elevation: 10,
+    shadowColor: '#22d3ee',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  primaryButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: verticalScale(20),
+    paddingHorizontal: scale(24),
+    gap: scale(12),
+  },
+  primaryButtonText: {
+    fontSize: moderateScale(18),
+    fontWeight: '600',
+    color: '#0f172a',
+  },
+  secondaryButton: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: verticalScale(20),
+    paddingHorizontal: scale(24),
+    borderRadius: scale(16),
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(34, 211, 238, 0.3)',
+    gap: scale(12),
+    marginBottom: verticalScale(16),
+  },
+  secondaryButtonText: {
+    fontSize: moderateScale(18),
+    fontWeight: '600',
+    color: '#22d3ee',
   },
 });
