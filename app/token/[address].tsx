@@ -40,6 +40,7 @@ import {
 import { useJupiterToken } from '@/services/jupiterService';
 import { useTokenAssets } from '@/hooks/useTokenAsset';
 import { useWalletPublicKey } from '@/services/walletService';
+import { HORIZONTAL_MARGIN } from '@/constants/layout';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -58,6 +59,7 @@ export default function TokenDetailScreen() {
     changePercentage: 0,
   });
   const [chartSelectedData, setChartSelectedData] = useState<{
+    selectedPrice: number;
     priceChange: number;
     percentageChange: number;
     isInteracting: boolean;
@@ -130,6 +132,7 @@ export default function TokenDetailScreen() {
 
   const handleChartInteraction = (
     data: {
+      selectedPrice: number;
       priceChange: number;
       percentageChange: number;
       isInteracting: boolean;
@@ -277,13 +280,17 @@ export default function TokenDetailScreen() {
       >
         {/* Price Section */}
         <View style={styles.priceSection}>
-          <Text style={styles.price}>{formatPrice(currentPrice)}</Text>
+          <Text style={styles.price}>
+            {chartSelectedData?.isInteracting
+              ? formatPrice(chartSelectedData.selectedPrice)
+              : formatPrice(currentPrice)}
+          </Text>
 
           {chartSelectedData?.isInteracting ? (
             <View style={styles.chartSelectedDisplay}>
               <Text
                 style={[
-                  styles.chartSelectedPrice,
+                  styles.priceChange,
                   {
                     color:
                       chartSelectedData.percentageChange < 0
@@ -296,7 +303,7 @@ export default function TokenDetailScreen() {
               </Text>
               <Text
                 style={[
-                  styles.chartSelectedPercentage,
+                  styles.priceChange,
                   {
                     color:
                       chartSelectedData.percentageChange < 0
@@ -512,29 +519,21 @@ const styles = StyleSheet.create({
   chartSelectedDisplay: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: verticalScale(3),
     gap: scale(6),
-  },
-  chartSelectedPrice: {
-    fontSize: scale(12),
-    fontWeight: '600',
-  },
-  chartSelectedPercentage: {
-    fontSize: scale(10),
-    fontWeight: '500',
   },
   chartContainer: {
     // backgroundColor: '#2a2a2a', // Using colors.backgroundMedium equivalent
     borderRadius: 16,
     alignItems: 'flex-start',
     justifyContent: 'center',
-    marginHorizontal: scale(16),
+    marginHorizontal: scale(HORIZONTAL_MARGIN),
+    marginBottom: 10,
   },
   chartLoadingContainer: {
     alignItems: 'center',
     justifyContent: 'center',
     height: scale(200),
-    width: screenWidth - 32,
+    width: screenWidth - scale(HORIZONTAL_MARGIN * 2),
   },
   chartLoadingText: {
     fontSize: scale(12),
@@ -545,7 +544,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     height: scale(200),
-    width: screenWidth - 32,
+    width: screenWidth - scale(HORIZONTAL_MARGIN * 2),
     backgroundColor: '#2a2a2a',
     borderRadius: scale(16),
   },
@@ -556,7 +555,7 @@ const styles = StyleSheet.create({
   timeframeContainer: {
     flexDirection: 'row',
     paddingHorizontal: scale(16),
-    marginBottom: verticalScale(16),
+    marginBottom: 10,
     justifyContent: 'space-between',
   },
   timeframeButton: {

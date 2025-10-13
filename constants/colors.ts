@@ -22,6 +22,7 @@ export default {
 
   // Accent colors
   white: '#FFFFFF',
+  offWhite: '#F5F5F5',
 
   // Status colors
   success: '#00C853',

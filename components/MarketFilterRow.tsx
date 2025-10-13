@@ -63,6 +63,8 @@ export default function MarketFilterRow({
     transform: [{ translateY: filterBarTranslateY.value }],
   }));
 
+  const ICON_SIZE = 16;
+
   return (
     <Animated.View
       style={[
@@ -148,7 +150,7 @@ export default function MarketFilterRow({
                   style={[styles.buttons, styles.sortDropdownButton]}
                   onPress={onToggleSortDropdown}
                 >
-                  <Filter size={scale(14)} color={colors.textSecondary} />
+                  <Filter size={ICON_SIZE} color={colors.textSecondary} />
                 </TouchableOpacity>
 
                 {/* Sort Order Toggle Button */}
@@ -156,7 +158,7 @@ export default function MarketFilterRow({
                   style={[styles.buttons, styles.sortOrderButton]}
                   onPress={onToggleSortOrder}
                 >
-                  <ArrowUpDown size={scale(14)} color={colors.textSecondary} />
+                  <ArrowUpDown size={ICON_SIZE} color={colors.textSecondary} />
                 </TouchableOpacity>
 
                 {/* Search Toggle Button */}
@@ -164,7 +166,7 @@ export default function MarketFilterRow({
                   style={[styles.buttons, styles.sortOrderButton]}
                   onPress={onToggleSearch}
                 >
-                  <Search size={scale(14)} color={colors.textSecondary} />
+                  <Search size={ICON_SIZE} color={colors.textSecondary} />
                 </TouchableOpacity>
               </View>
             </View>

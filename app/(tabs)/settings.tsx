@@ -273,29 +273,24 @@ export default function SettingsScreen() {
           </View>
         </View> */}
 
-        {/* App Version */}
+        {/* Social Media Links */}
         <View style={styles.versionSection}>
-          <Text style={styles.versionText}>Version 1.0.0</Text>
+          <View style={styles.socialIconsRow}>
+            {socialLinks.map((social) => (
+              <TouchableOpacity
+                key={social.id}
+                style={[
+                  styles.socialIconButton,
+                  { backgroundColor: social.color },
+                ]}
+                onPress={() => handleSocialLinkPress(social.url)}
+              >
+                <social.icon size={20} color="#ffffff" />
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
       </ScrollView>
-
-      {/* Social Media Links - Sticky Bottom */}
-      <View style={styles.socialContainer}>
-        <View style={styles.socialIconsRow}>
-          {socialLinks.map((social) => (
-            <TouchableOpacity
-              key={social.id}
-              style={[
-                styles.socialIconButton,
-                { backgroundColor: social.color },
-              ]}
-              onPress={() => handleSocialLinkPress(social.url)}
-            >
-              <social.icon size={20} color="#ffffff" />
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
     </ScreenContainer>
   );
 }

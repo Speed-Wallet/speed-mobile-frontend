@@ -208,9 +208,7 @@ export default function ChangePinScreen() {
     <ScreenContainer edges={['top']}>
       <View style={styles.container}>
         {/* Header */}
-        <View style={styles.header}>
-          <ScreenHeader title="Change PIN" onBack={handleClose} />
-        </View>
+        <ScreenHeader title="Change PIN" onBack={handleClose} />
 
         {/* Main Content */}
         <View style={styles.content}>
@@ -231,11 +229,6 @@ export default function ChangePinScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: scale(20),
-  },
-  header: {
-    paddingTop: verticalScale(12),
-    paddingBottom: verticalScale(16),
   },
   content: {
     flex: 1,
