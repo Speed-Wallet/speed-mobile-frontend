@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import colors from '@/constants/colors';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
+import BottomSheetScreenContainer from '../BottomSheetScreenContainer';
 import PrimaryActionButton from '@/components/buttons/PrimaryActionButton';
 import { triggerShake } from '@/utils/animations';
 
@@ -63,57 +64,59 @@ const ImportWalletContent: React.FC<ImportWalletContentProps> = ({
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.keyboardView}
-    >
-      <View style={styles.content}>
-        <Text style={styles.subtitle}>
-          Enter your 12 or 24 word seed phrase
-        </Text>
+    <BottomSheetScreenContainer edges={['bottom']}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardView}
+      >
+        <View style={styles.content}>
+          <Text style={styles.subtitle}>
+            Enter your 12 or 24 word seed phrase
+          </Text>
 
-        <Animated.View
-          style={{
-            transform: [{ translateX: shakeAnimation }],
-          }}
-        >
-          <TextInput
-            ref={inputRef}
-            style={[
-              styles.input,
-              styles.textArea,
-              seedPhraseError && styles.inputError,
-            ]}
-            placeholder="Enter your seed phrase"
-            placeholderTextColor={colors.textSecondary}
-            value={importPhrase}
-            onChangeText={(text) => {
-              setImportPhrase(text);
-              if (seedPhraseError) setSeedPhraseError('');
+          <Animated.View
+            style={{
+              transform: [{ translateX: shakeAnimation }],
             }}
-            onBlur={handleSeedPhraseBlur}
-            multiline
-            numberOfLines={4}
-            textAlignVertical="top"
-            autoCapitalize="none"
-            autoCorrect={false}
-            autoFocus
-          />
-          {seedPhraseError && (
-            <Text style={styles.errorText}>* {seedPhraseError}</Text>
-          )}
-        </Animated.View>
+          >
+            <TextInput
+              ref={inputRef}
+              style={[
+                styles.input,
+                styles.textArea,
+                seedPhraseError && styles.inputError,
+              ]}
+              placeholder="Enter your seed phrase"
+              placeholderTextColor={colors.textSecondary}
+              value={importPhrase}
+              onChangeText={(text) => {
+                setImportPhrase(text);
+                if (seedPhraseError) setSeedPhraseError('');
+              }}
+              onBlur={handleSeedPhraseBlur}
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
+              autoCapitalize="none"
+              autoCorrect={false}
+              autoFocus
+            />
+            {seedPhraseError && (
+              <Text style={styles.errorText}>* {seedPhraseError}</Text>
+            )}
+          </Animated.View>
 
-        <View style={styles.buttonContainer}>
-          <PrimaryActionButton
-            title={loading ? 'Confirming...' : 'Confirm Seed Phrase'}
-            onPress={handleImportWallet}
-            disabled={loading}
-            loading={loading}
-          />
+          <View style={styles.buttonContainer}>
+            <PrimaryActionButton
+              title={loading ? 'Confirming...' : 'Confirm Seed Phrase'}
+              onPress={handleImportWallet}
+              disabled={loading}
+              loading={loading}
+            />
+          </View>
         </View>
-      </View>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </BottomSheetScreenContainer>
   );
 };
 
