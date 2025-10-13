@@ -22,7 +22,8 @@ import {
   calculateLinearScale,
   calculateLogScale,
 } from '@/utils/chartUtils';
-import { HORIZONTAL_MARGIN } from '@/constants/layout';
+import { CHART_HORIZONTAL_MARGIN } from '@/constants/layout';
+import colors from '@/constants/colors';
 
 interface DataPoint {
   timestamp: number;
@@ -40,6 +41,7 @@ interface TokenPriceChartProps {
       selectedPrice: number;
       priceChange: number;
       percentageChange: number;
+      timestamp: number;
       isInteracting: boolean;
     } | null,
   ) => void;
@@ -49,7 +51,7 @@ const screenWidth = Dimensions.get('window').width;
 
 const TokenPriceChart: React.FC<TokenPriceChartProps> = ({
   data,
-  width = screenWidth - HORIZONTAL_MARGIN * 2, // Account for container's horizontal margins
+  width = screenWidth - CHART_HORIZONTAL_MARGIN * 2, // Account for container's horizontal margins
   height = 250,
   timeframe,
   isPositive = true,
@@ -122,9 +124,6 @@ const TokenPriceChart: React.FC<TokenPriceChartProps> = ({
     scaleY = (price: number) =>
       chartHeight - ((price - paddedMinPrice) / paddedPriceRange) * chartHeight;
   }
-
-  // Get the current price (last data point) for comparison
-  const currentPrice = data[data.length - 1]?.price || 0;
 
   // Get the first price (starting point) for percentage change calculation
   const firstPrice = data[0]?.price || 0;
@@ -330,6 +329,7 @@ const TokenPriceChart: React.FC<TokenPriceChartProps> = ({
             selectedPrice: changeInfo.selectedPrice,
             priceChange: changeInfo.priceChange,
             percentageChange: changeInfo.percentageChange,
+            timestamp: data[clampedIndex].timestamp,
             isInteracting: true,
           });
         }
@@ -391,21 +391,7 @@ const TokenPriceChart: React.FC<TokenPriceChartProps> = ({
 
   return (
     <View style={[styles.container, { width, height }]}>
-      {isInteracting && selectedIndex !== null && (
-        <View
-          style={[
-            styles.timeDisplay,
-            {
-              left: padding + scaleX(selectedIndex) - scale(40),
-              top: topPadding,
-            },
-          ]}
-        >
-          <Text style={styles.timeText}>
-            {formatTimeAndDate(data[selectedIndex].timestamp)}
-          </Text>
-        </View>
-      )}
+      {/* Date label removed - now displayed in price section above chart */}
 
       <PanGestureHandler
         onGestureEvent={onGestureEvent}
@@ -428,8 +414,8 @@ const TokenPriceChart: React.FC<TokenPriceChartProps> = ({
                 />
                 <Stop
                   offset="100%"
-                  stopColor={gradientColorStart}
-                  stopOpacity="0.05"
+                  stopColor={colors.backgroundDark}
+                  stopOpacity="1"
                 />
               </LinearGradient>
             </Defs>
