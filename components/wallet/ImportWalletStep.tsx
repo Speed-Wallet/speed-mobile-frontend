@@ -14,7 +14,6 @@ import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import colors from '@/constants/colors';
 import ScreenHeader from '@/components/ScreenHeader';
 import ScreenContainer from '@/components/ScreenContainer';
-import UnsafeScreenContainer from '@/components/UnsafeScreenContainer';
 import BackButton from '@/components/buttons/BackButton';
 import PrimaryActionButton from '@/components/buttons/PrimaryActionButton';
 import { triggerShake } from '@/utils/animations';
@@ -106,7 +105,7 @@ export default function ImportWalletStep({
   };
 
   return (
-    <UnsafeScreenContainer style={styles.container}>
+    <ScreenContainer edges={['top', 'bottom']}>
       {/* Development Back Button */}
       {process.env.EXPO_PUBLIC_APP_ENV === 'development' && onBack && (
         <BackButton onPress={onBack} style={styles.devBackButton} />
@@ -217,17 +216,17 @@ export default function ImportWalletStep({
           />
         </View>
       </View>
-    </UnsafeScreenContainer>
+    </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    // UnsafeScreenContainer provides flex: 1 and backgroundColor
+    // ScreenContainer provides flex: 1 and backgroundColor
   },
   devBackButton: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? verticalScale(50) : verticalScale(20),
+    top: verticalScale(50),
     left: scale(20),
     zIndex: 1000,
     backgroundColor: '#FFB800',
@@ -238,9 +237,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(20),
     justifyContent: 'space-between',
   },
-  header: {
-    paddingTop: Platform.OS === 'ios' ? verticalScale(10) : verticalScale(20),
-  },
+  header: {},
   headerContent: {
     alignItems: 'flex-start',
   },
@@ -294,7 +291,7 @@ const styles = StyleSheet.create({
   },
   devButton: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? verticalScale(50) : verticalScale(20),
+    top: verticalScale(50),
     right: scale(20),
     zIndex: 1000,
     backgroundColor: '#FFB800',
@@ -326,8 +323,6 @@ const styles = StyleSheet.create({
   buttonContainer: {
     flex: 0,
     paddingTop: verticalScale(20),
-    paddingBottom:
-      Platform.OS === 'ios' ? verticalScale(34) : verticalScale(24),
     minHeight: '15%',
     justifyContent: 'flex-end',
   },

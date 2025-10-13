@@ -16,7 +16,6 @@ import ShowMnemonicStep from '@/components/wallet/ShowMnemonicStep';
 import SeedPhraseVerificationStep from '@/components/wallet/SeedPhraseVerificationStep';
 import CreateUsernameStep from '@/components/wallet/CreateUsernameStep';
 import CreatePinStep from '@/components/wallet/CreatePinStep';
-import ConfirmPinStep from '@/components/wallet/ConfirmPinStep';
 import WalletSetupSuccessStep from '@/components/wallet/WalletSetupSuccessStep';
 import ImportWalletStep from '@/components/wallet/ImportWalletStep';
 import ProgressBar from '@/components/ProgressBar';
@@ -30,7 +29,7 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
   onWalletSetupComplete,
 }) => {
   const { alert, error: showError, success } = useAlert();
-  const [step, setStep] = useState(1); // 1: Initial, 2: Show Mnemonic, 3: Verify Mnemonic, 4: Username, 5: Create PIN, 6: Confirm PIN, 7: Success, 9: Import
+  const [step, setStep] = useState(1); // 1: Initial, 2: Show Mnemonic, 3: Verify Mnemonic, 4: Username, 5: Create PIN, 6: Success, 9: Import
   const [mnemonic, setMnemonic] = useState<string | null>(null);
   const [publicKey, setPublicKey] = useState<string | null>(null);
   const [accountIndex, setAccountIndex] = useState<number | undefined>(
@@ -42,8 +41,6 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
   const [username, setUsername] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [pin, setPin] = useState('');
-  const [confirmPin, setConfirmPin] = useState('');
-  const [pinError, setPinError] = useState<string>('');
   const [isImporting, setIsImporting] = useState(false);
 
   const handleCreateWallet = async () => {
@@ -125,13 +122,39 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
     }
   };
 
-  const handleSetPin = () => {
+  const handleSetPin = async () => {
+    if (!mnemonic || !publicKey) return;
+
     if (pin.length < 6) {
-      // Basic PIN validation
       showError('Invalid PIN', 'PIN must be at least 6 digits.');
       return;
     }
-    setStep(6); // Move to PIN confirmation
+
+    setIsLoading(true);
+
+    try {
+      // Create the app-level PIN first (this is the first wallet)
+      await createAppPin(pin);
+
+      // Generate unique wallet ID and save to multi-wallet system using app PIN
+      const walletId = `wallet-${Date.now()}`;
+      const walletName = 'Main';
+      await saveWalletToList(
+        walletId,
+        walletName,
+        mnemonic,
+        publicKey,
+        pin,
+        accountIndex,
+        derivationPath,
+      );
+
+      setStep(6); // Go to success screen
+    } catch (error) {
+      showError('Error', 'Could not save wallet. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleImportWallet = () => {
@@ -154,86 +177,27 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
     setIsImporting(false);
   };
 
-  const handleConfirmPinChange = (newPin: string) => {
-    setConfirmPin(newPin);
-    // Clear error when user starts typing
-    if (pinError) {
-      setPinError('');
-    }
-  };
-
-  const handleConfirmSave = async () => {
-    if (!mnemonic || !publicKey) return;
-
-    // Set loading immediately before any validation
-    setIsLoading(true);
-
-    if (pin !== confirmPin) {
-      setIsLoading(false);
-      setPinError(
-        'Incorrect PIN entered. The PINs do not match. Please try again.',
-      );
-      return;
-    }
-    if (pin.length < 6) {
-      setIsLoading(false);
-      setPinError('Invalid PIN. PIN must be at least 6 digits.');
-      return;
-    }
-
-    try {
-      // Create the app-level PIN first (this is the first wallet)
-      await createAppPin(pin);
-
-      // Generate unique wallet ID and save to multi-wallet system using app PIN
-      const walletId = `wallet-${Date.now()}`;
-      const walletName = 'Main';
-      await saveWalletToList(
-        walletId,
-        walletName,
-        mnemonic,
-        publicKey,
-        pin,
-        accountIndex,
-        derivationPath,
-      );
-
-      setStep(7); // Go to success screen
-    } catch (error) {
-      showError('Error', 'Could not save wallet. Please try again.');
-    }
-    setIsLoading(false);
-  };
-
-  const handleBackToCreatePin = () => {
-    setPin('');
-    setConfirmPin('');
-    setPinError('');
-    setStep(5);
-  };
-
   // Helper function to get progress bar info
   const getProgressInfo = () => {
-    if (step === 1 || step === 9) return { current: 0, total: 6 }; // Initial or import screen - no progress bar
-    if (step === 7) return { current: 6, total: 6 }; // Success screen - full progress (step 6 of 6)
+    if (step === 1 || step === 9) return { current: 0, total: 5 }; // Initial or import screen - no progress bar
+    if (step === 6) return { current: 5, total: 5 }; // Success screen - full progress (step 5 of 5)
 
-    // Normal flow: steps 2-6 map to progress 1-5
+    // Normal flow: steps 2-5 map to progress 1-4
     const progressMap: { [key: number]: number } = {
       2: 1, // Show Mnemonic
       3: 2, // Verify Mnemonic
       4: 3, // Username
-      5: 4, // Create PIN
-      6: 5, // Confirm PIN
+      5: 4, // Create PIN (includes confirm)
     };
 
     return {
       current: progressMap[step] || 0,
-      total: 6,
+      total: 5,
     };
   };
 
   const progressInfo = getProgressInfo();
-  const showProgressBar = (step > 1 && step !== 9) || step === 7; // Show on all steps except initial and import, but include success screen
+  const showProgressBar = (step > 1 && step !== 9) || step === 6; // Show on all steps except initial and import, but include success screen
 
   return (
     <ScreenContainer edges={['top', 'bottom']}>
@@ -292,17 +256,6 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
       )}
 
       {step === 6 && (
-        <ConfirmPinStep
-          confirmPin={confirmPin}
-          originalPin={pin}
-          onConfirmPinChange={handleConfirmPinChange}
-          onConfirm={handleConfirmSave}
-          onBack={handleBackToCreatePin}
-          isLoading={isLoading}
-        />
-      )}
-
-      {step === 7 && (
         <WalletSetupSuccessStep
           username={username}
           onComplete={onWalletSetupComplete}

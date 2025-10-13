@@ -2,6 +2,7 @@ import React from 'react';
 import { View, StyleSheet, ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import colors from '@/constants/colors';
+import UnsafeScreenContainer from './UnsafeScreenContainer';
 
 interface ScreenContainerProps {
   children: React.ReactNode;
@@ -15,15 +16,18 @@ export default function ScreenContainer({
   edges = ['bottom'],
 }: ScreenContainerProps) {
   return (
-    <SafeAreaView edges={edges} style={[styles.container, style]}>
-      {children}
-    </SafeAreaView>
+    <UnsafeScreenContainer>
+      <SafeAreaView edges={edges} style={[styles.safeArea, style]}>
+        {children}
+      </SafeAreaView>
+    </UnsafeScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
-    backgroundColor: colors.backgroundDark,
+    // backgroundColor: colors.backgroundDark,
+    // backgroundColor: 'red'
   },
 });
