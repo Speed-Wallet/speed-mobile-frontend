@@ -16,9 +16,7 @@ const BottomActionContainer: React.FC<BottomActionContainerProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: colors.backgroundMedium,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    backgroundColor: colors.backgroundDark,
     padding: 16,
   },
 });

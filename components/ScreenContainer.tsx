@@ -27,7 +27,5 @@ export default function ScreenContainer({
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    // backgroundColor: colors.backgroundDark,
-    // backgroundColor: 'red'
   },
 });
