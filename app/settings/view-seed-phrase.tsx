@@ -115,9 +115,7 @@ export default function ViewSeedPhraseScreen() {
     <ScreenContainer edges={['top']}>
       <View style={styles.container}>
         {/* Header */}
-        <View style={styles.header}>
-          <ScreenHeader title="Recovery Phrase" onBack={handleClose} />
-        </View>
+        <ScreenHeader title="Recovery Phrase" onBack={handleClose} />
 
         {/* Main Content */}
         <ScrollView
@@ -147,11 +145,6 @@ export default function ViewSeedPhraseScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: scale(20),
-  },
-  header: {
-    paddingTop: verticalScale(12),
-    paddingBottom: verticalScale(16),
   },
   scrollContent: {
     flex: 1,

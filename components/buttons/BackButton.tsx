@@ -23,7 +23,7 @@ const BackButton: React.FC<BackButtonProps> = ({ style, onPress }) => {
 
   return (
     <TouchableOpacity onPress={handlePress} style={[styles.backButton, style]}>
-      <ChevronLeft size={moderateScale(20)} color="#e5e7eb" />
+      <ChevronLeft size={moderateScale(20)} color={colors.offWhite} />
     </TouchableOpacity>
   );
 };

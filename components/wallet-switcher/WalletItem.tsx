@@ -85,7 +85,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   walletName: {
-    fontSize: moderateScale(16),
+    fontSize: moderateScale(14),
     fontFamily: 'Inter-SemiBold',
     color: colors.textPrimary,
   },

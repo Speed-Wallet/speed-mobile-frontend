@@ -22,6 +22,7 @@ import {
   calculateLinearScale,
   calculateLogScale,
 } from '@/utils/chartUtils';
+import { HORIZONTAL_MARGIN } from '@/constants/layout';
 
 interface DataPoint {
   timestamp: number;
@@ -36,6 +37,7 @@ interface TokenPriceChartProps {
   isPositive?: boolean;
   onInteraction?: (
     data: {
+      selectedPrice: number;
       priceChange: number;
       percentageChange: number;
       isInteracting: boolean;
@@ -47,7 +49,7 @@ const screenWidth = Dimensions.get('window').width;
 
 const TokenPriceChart: React.FC<TokenPriceChartProps> = ({
   data,
-  width = screenWidth,
+  width = screenWidth - HORIZONTAL_MARGIN * 2, // Account for container's horizontal margins
   height = 250,
   timeframe,
   isPositive = true,
@@ -121,44 +123,20 @@ const TokenPriceChart: React.FC<TokenPriceChartProps> = ({
       chartHeight - ((price - paddedMinPrice) / paddedPriceRange) * chartHeight;
   }
 
-  // Debug logging
-  console.log('===== CHART DEBUG =====');
-  console.log('Price Stats:', {
-    minPrice,
-    maxPrice,
-    priceRange,
-    avgPrice,
-    volatilityPercentage: volatilityPercentage.toFixed(4) + '%',
-  });
-  console.log('Scaling:', {
-    paddingMultiplier,
-    paddedPriceRange,
-    paddedMinPrice,
-    minPaddedRange,
-    useLogScale,
-  });
-  console.log('Chart Dimensions:', {
-    chartWidth,
-    chartHeight,
-  });
-  console.log('All Coordinates:');
-  data.forEach((point, index) => {
-    console.log(
-      `  [${index}] price: ${point.price.toFixed(6)}, x: ${scaleX(index).toFixed(2)}, y: ${scaleY(point.price).toFixed(2)}`,
-    );
-  });
-  console.log('=======================');
-
   // Get the current price (last data point) for comparison
   const currentPrice = data[data.length - 1]?.price || 0;
+
+  // Get the first price (starting point) for percentage change calculation
+  const firstPrice = data[0]?.price || 0;
 
   // Calculate price change and percentage when a point is selected
   const getPriceChangeInfo = (selectedIndex: number) => {
     const selectedPrice = data[selectedIndex].price;
-    const priceChange = selectedPrice - currentPrice;
-    const percentageChange = (priceChange / currentPrice) * 100;
+    const priceChange = selectedPrice - firstPrice;
+    const percentageChange = (priceChange / firstPrice) * 100;
 
     return {
+      selectedPrice,
       priceChange,
       percentageChange,
       isPositive: priceChange >= 0,
@@ -349,6 +327,7 @@ const TokenPriceChart: React.FC<TokenPriceChartProps> = ({
         if (onInteraction) {
           const changeInfo = getPriceChangeInfo(clampedIndex);
           onInteraction({
+            selectedPrice: changeInfo.selectedPrice,
             priceChange: changeInfo.priceChange,
             percentageChange: changeInfo.percentageChange,
             isInteracting: true,
@@ -418,7 +397,7 @@ const TokenPriceChart: React.FC<TokenPriceChartProps> = ({
             styles.timeDisplay,
             {
               left: padding + scaleX(selectedIndex) - scale(40),
-              top: topPadding - scale(25),
+              top: topPadding,
             },
           ]}
         >
