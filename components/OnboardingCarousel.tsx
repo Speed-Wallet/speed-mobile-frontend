@@ -1,124 +1,91 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   Dimensions,
   TouchableOpacity,
-  PanResponder,
   Animated,
+  FlatList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, { Circle, Path } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
-  ChevronLeft,
-  ChevronRight,
   TrendingUp,
   CreditCard,
   Rocket,
+  User,
+  MessageCircle,
+  Activity,
 } from 'lucide-react-native';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import colors from '@/constants/colors';
+import UnsafeScreenContainer from '@/components/UnsafeScreenContainer';
+import ScreenContainer from '@/components/ScreenContainer';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
-const TRANSITION_DISTANCE = screenWidth * 0.8;
-const ORBITAL_SIZE = Math.min(screenWidth * 0.8, screenHeight * 0.4);
 
 interface OnboardingCarouselProps {
   onComplete: () => void;
 }
 
-interface OnboardingSlide {
+interface CarouselItem {
   id: number;
+  icon: any;
   title: string;
-  subtitle: string;
-  icon: 'chart' | 'card' | 'rocket';
+  description: string;
 }
 
-const slides: OnboardingSlide[] = [
+const carouselItems: CarouselItem[] = [
   {
     id: 1,
-    title: 'BUY, SPEND,\nRECEIVE & SWAP',
-    subtitle: 'Do more with your crypto in the real\nworld on chain',
-    icon: 'chart',
+    icon: TrendingUp,
+    title: 'Buy, Send, Receive & Swap',
+    description: 'Do more with your crypto in the real world on chain',
   },
   {
     id: 2,
-    title: 'CREATE A\nVIRTUAL CARD',
-    subtitle: 'Create a virtual card and top up in\ncrypto to spend globally',
-    icon: 'card',
+    icon: CreditCard,
+    title: 'Create Virtual Cards',
+    description: 'Create a virtual card and top up in crypto to spend globally',
   },
   {
     id: 3,
-    title: 'SWAP ANY SOL\nTOKEN',
-    subtitle: 'Swap between any token on the\nSOLANA Chain',
-    icon: 'rocket',
+    icon: Rocket,
+    title: 'Swap Tokens & Stocks',
+    description: 'Swap between tokens and stocks on the Solana blockchain',
   },
 ];
 
-const OrbitalDesign = ({ icon }: { icon: 'chart' | 'card' | 'rocket' }) => {
-  const renderIcon = () => {
-    const iconProps = {
-      size: ORBITAL_SIZE * 0.125,
-      color: '#FFFFFF',
-      strokeWidth: 2.5,
-    };
-
-    switch (icon) {
-      case 'chart':
-        return <TrendingUp {...iconProps} />;
-      case 'card':
-        return <CreditCard {...iconProps} />;
-      case 'rocket':
-        return <Rocket {...iconProps} />;
-      default:
-        return <TrendingUp {...iconProps} />;
-    }
-  };
+const CarouselItemComponent = ({ item }: { item: CarouselItem }) => {
+  const IconComponent = item.icon;
 
   return (
-    <View style={styles.orbitalContainer}>
-      <Svg
-        height={ORBITAL_SIZE}
-        width={ORBITAL_SIZE}
-        viewBox="0 0 400 400"
-        style={styles.orbitalSvg}
-      >
-        {/* Main orbital circle */}
-        <Circle
-          cx="200"
-          cy="200"
-          r="160"
-          stroke="#00CFFF"
-          strokeWidth="1.5"
-          fill="none"
-          strokeOpacity="0.6"
-        />
-
-        {/* Small orbital dots */}
-        <Circle cx="360" cy="200" r="16" fill="#00CFFF" opacity="0.8" />
-        <Circle cx="40" cy="200" r="12" fill="#4a90e2" opacity="0.6" />
-      </Svg>
-
-      {/* Central icon circle */}
-      <View style={styles.centralIcon}>{renderIcon()}</View>
+    <View style={styles.carouselItem}>
+      <View style={styles.iconContainer}>
+        <IconComponent size={scale(32)} color="#00CFFF" />
+      </View>
+      <Text style={styles.carouselTitle}>{item.title}</Text>
+      <Text style={styles.carouselDescription}>{item.description}</Text>
     </View>
   );
 };
 
-const NavigationDots = ({
-  currentSlide,
-  totalSlides,
+const CarouselDots = ({
+  currentIndex,
+  total,
 }: {
-  currentSlide: number;
-  totalSlides: number;
+  currentIndex: number;
+  total: number;
 }) => (
-  <View style={styles.dotsContainer}>
-    {Array.from({ length: totalSlides }, (_, index) => (
+  <View style={styles.carouselDotsContainer}>
+    {Array.from({ length: total }, (_, index) => (
       <View
         key={index}
-        style={[styles.dot, index === currentSlide && styles.activeDot]}
+        style={[
+          styles.carouselDot,
+          index === currentIndex && styles.carouselDotActive,
+        ]}
       />
     ))}
   </View>
@@ -127,102 +94,36 @@ const NavigationDots = ({
 export default function OnboardingCarousel({
   onComplete,
 }: OnboardingCarouselProps) {
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const slideAnim = useRef(new Animated.Value(0)).current;
-  const [isAnimating, setIsAnimating] = useState(false);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const flatListRef = useRef<FlatList>(null);
+  const scrollX = useRef(new Animated.Value(0)).current;
 
-  const animateToSlide = (
-    slideIndex: number,
-    direction: 'left' | 'right' = 'right',
-  ) => {
-    if (slideIndex < 0 || slideIndex >= slides.length || isAnimating) return;
-
-    setIsAnimating(true);
-
-    // Animate out current screen (reduced distance for smaller gap)
-    const exitValue =
-      direction === 'right' ? -TRANSITION_DISTANCE : TRANSITION_DISTANCE;
-
-    Animated.timing(slideAnim, {
-      toValue: exitValue,
-      duration: 200,
-      useNativeDriver: true,
-    }).start(() => {
-      // Update slide and reset position for entrance
-      setCurrentSlide(slideIndex);
-      const entryValue =
-        direction === 'right' ? TRANSITION_DISTANCE : -TRANSITION_DISTANCE;
-      slideAnim.setValue(entryValue);
-
-      // Animate in new screen
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }).start(() => {
-        setIsAnimating(false);
+  // Auto-scroll carousel
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const nextIndex = (currentIndex + 1) % carouselItems.length;
+      flatListRef.current?.scrollToIndex({
+        index: nextIndex,
+        animated: true,
       });
-    });
-  };
+      setCurrentIndex(nextIndex);
+    }, 3000); // Change slide every 3 seconds
 
-  const goToNextSlide = () => {
-    if (currentSlide === slides.length - 1) {
-      onComplete();
-    } else {
-      animateToSlide(currentSlide + 1, 'right');
+    return () => clearInterval(timer);
+  }, [currentIndex]);
+
+  const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
+    if (viewableItems.length > 0) {
+      setCurrentIndex(viewableItems[0].index || 0);
     }
-  };
+  }).current;
 
-  const goToPrevSlide = () => {
-    if (currentSlide > 0) {
-      animateToSlide(currentSlide - 1, 'left');
-    }
-  };
-
-  const panResponder = PanResponder.create({
-    onMoveShouldSetPanResponder: (_, gestureState) => {
-      return (
-        Math.abs(gestureState.dx) > Math.abs(gestureState.dy) &&
-        Math.abs(gestureState.dx) > 10 &&
-        !isAnimating
-      );
-    },
-    onPanResponderMove: (_, gestureState) => {
-      if (!isAnimating) {
-        slideAnim.setValue(gestureState.dx);
-      }
-    },
-    onPanResponderRelease: (_, gestureState) => {
-      if (isAnimating) return;
-
-      const threshold = screenWidth * 0.25;
-
-      if (gestureState.dx > threshold && currentSlide > 0) {
-        goToPrevSlide();
-      } else if (
-        gestureState.dx < -threshold &&
-        currentSlide < slides.length - 1
-      ) {
-        goToNextSlide();
-      } else if (
-        gestureState.dx < -threshold &&
-        currentSlide === slides.length - 1
-      ) {
-        onComplete();
-      } else {
-        // Snap back to center
-        Animated.spring(slideAnim, {
-          toValue: 0,
-          useNativeDriver: true,
-        }).start();
-      }
-    },
-  });
-
-  const currentSlideData = slides[currentSlide];
+  const viewabilityConfig = useRef({
+    itemVisiblePercentThreshold: 50,
+  }).current;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <UnsafeScreenContainer style={styles.container}>
       {/* Linear gradient background */}
       <LinearGradient
         colors={['#009FCC', '#0d2a35', '#0A0A0A']}
@@ -232,56 +133,49 @@ export default function OnboardingCarousel({
         style={StyleSheet.absoluteFill}
       />
 
-      <Animated.View
-        style={[
-          styles.content,
-          {
-            transform: [{ translateX: slideAnim }],
-          },
-        ]}
-        {...panResponder.panHandlers}
-      >
-        <OrbitalDesign icon={currentSlideData.icon} />
-
-        <View style={styles.textContainer}>
-          <Text style={styles.title}>{currentSlideData.title}</Text>
-          <Text style={styles.subtitle}>{currentSlideData.subtitle}</Text>
+      <View style={styles.content}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.welcomeText}>Welcome to</Text>
+          <Text style={styles.appNameText}>Speed Wallet</Text>
         </View>
-      </Animated.View>
 
-      {/* Navigation */}
-      <View style={styles.navigation}>
-        <TouchableOpacity
-          style={[
-            styles.navButton,
-            (currentSlide === 0 || isAnimating) && styles.navButtonDisabled,
-          ]}
-          onPress={goToPrevSlide}
-          disabled={currentSlide === 0 || isAnimating}
-        >
-          <ChevronLeft
-            size={scale(24)}
-            color={currentSlide === 0 || isAnimating ? '#666' : '#CCCCCC'}
+        {/* Carousel */}
+        <View style={styles.carouselContainer}>
+          <FlatList
+            ref={flatListRef}
+            data={carouselItems}
+            renderItem={({ item }) => <CarouselItemComponent item={item} />}
+            keyExtractor={(item) => item.id.toString()}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onScroll={Animated.event(
+              [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+              { useNativeDriver: false },
+            )}
+            onViewableItemsChanged={onViewableItemsChanged}
+            viewabilityConfig={viewabilityConfig}
+            scrollEventThrottle={16}
+            getItemLayout={(data, index) => ({
+              length: screenWidth,
+              offset: screenWidth * index,
+              index,
+            })}
           />
-        </TouchableOpacity>
+        </View>
 
-        <NavigationDots
-          currentSlide={currentSlide}
-          totalSlides={slides.length}
+        <CarouselDots
+          currentIndex={currentIndex}
+          total={carouselItems.length}
         />
 
-        <TouchableOpacity
-          style={[styles.navButton, isAnimating && styles.navButtonDisabled]}
-          onPress={goToNextSlide}
-          disabled={isAnimating}
-        >
-          <ChevronRight
-            size={scale(24)}
-            color={isAnimating ? '#666' : '#CCCCCC'}
-          />
+        {/* Get Started Button */}
+        <TouchableOpacity style={styles.getStartedButton} onPress={onComplete}>
+          <Text style={styles.getStartedText}>Get Started</Text>
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </UnsafeScreenContainer>
   );
 }
 
@@ -289,95 +183,93 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0A0A0A',
+    paddingVertical: 20,
   },
   content: {
     flex: 1,
-    justifyContent: 'space-between',
+    paddingTop: verticalScale(40),
+    paddingBottom: verticalScale(40),
+  },
+  header: {
     alignItems: 'center',
-    paddingHorizontal: scale(20),
-    paddingTop: verticalScale(20),
-    paddingBottom: verticalScale(20),
+    marginBottom: verticalScale(40),
+    paddingHorizontal: scale(24),
   },
-  orbitalContainer: {
-    position: 'relative',
-    width: ORBITAL_SIZE,
-    height: ORBITAL_SIZE,
-    justifyContent: 'center',
-    alignItems: 'center',
-    flex: 2,
-    maxHeight: '50%',
-    marginBottom: verticalScale(-40),
+  welcomeText: {
+    fontSize: moderateScale(28),
+    fontWeight: '600',
+    color: '#FFFFFF',
+    textAlign: 'center',
+    marginBottom: verticalScale(4),
   },
-  orbitalSvg: {
-    position: 'absolute',
-  },
-  centralIcon: {
-    width: ORBITAL_SIZE * 0.375,
-    height: ORBITAL_SIZE * 0.375,
-    borderRadius: ORBITAL_SIZE * 0.1875,
-    backgroundColor: '#00CFFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 8,
-    shadowColor: '#00CFFF',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-  },
-  textContainer: {
-    alignItems: 'center',
-    flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: scale(10),
-    minHeight: '25%',
-  },
-  title: {
+  appNameText: {
     fontSize: moderateScale(32),
     fontWeight: 'bold',
     color: '#00CFFF',
     textAlign: 'center',
-    marginBottom: verticalScale(16),
-    fontFamily: 'Inter-Bold',
-    letterSpacing: scale(1),
   },
-  subtitle: {
-    fontSize: moderateScale(16),
-    color: colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: moderateScale(24),
-    fontFamily: 'Inter-Regular',
+  carouselContainer: {
+    flex: 1,
+    justifyContent: 'center',
   },
-  navigation: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  carouselItem: {
+    width: screenWidth,
+    paddingHorizontal: scale(40),
     alignItems: 'center',
-    paddingHorizontal: scale(20),
-    paddingVertical: verticalScale(20),
-    minHeight: scale(70),
+    justifyContent: 'center',
   },
-  navButton: {
-    width: scale(50),
-    height: scale(50),
+  iconContainer: {
+    width: scale(80),
+    height: scale(80),
+    borderRadius: scale(40),
+    backgroundColor: 'rgba(0, 207, 255, 0.15)',
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: verticalScale(24),
   },
-  navButtonDisabled: {
-    opacity: 0.3,
+  carouselTitle: {
+    fontSize: moderateScale(22),
+    fontWeight: '600',
+    color: '#FFFFFF',
+    textAlign: 'center',
+    marginBottom: verticalScale(12),
   },
-  dotsContainer: {
+  carouselDescription: {
+    fontSize: moderateScale(15),
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: moderateScale(22),
+  },
+  carouselDotsContainer: {
     flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
+    // marginTop: verticalScale(16),
   },
-  dot: {
+  carouselDot: {
     width: scale(8),
     height: scale(8),
     borderRadius: scale(4),
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
     marginHorizontal: scale(4),
   },
-  activeDot: {
+  carouselDotActive: {
     backgroundColor: '#00CFFF',
     width: scale(24),
-    borderRadius: scale(4),
+  },
+  getStartedButton: {
+    backgroundColor: '#00CFFF',
+    paddingVertical: verticalScale(16),
+    paddingHorizontal: scale(32),
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: verticalScale(32),
+    marginHorizontal: scale(24),
+  },
+  getStartedText: {
+    fontSize: moderateScale(16),
+    fontWeight: '600',
+    color: '#000000',
   },
 });

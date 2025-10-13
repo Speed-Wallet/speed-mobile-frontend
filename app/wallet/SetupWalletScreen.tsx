@@ -199,8 +199,13 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
   const progressInfo = getProgressInfo();
   const showProgressBar = (step > 1 && step !== 9) || step === 6; // Show on all steps except initial and import, but include success screen
 
+  // Adjust edges based on step - no edges for step 1 to allow gradient to extend fully
+  const screenEdges = step === 1 ? [] : ['top', 'bottom'];
+
   return (
-    <ScreenContainer edges={['top', 'bottom']}>
+    <ScreenContainer
+      edges={screenEdges as ('top' | 'bottom' | 'left' | 'right')[]}
+    >
       {/* Progress Bar */}
       {showProgressBar && (
         <View>

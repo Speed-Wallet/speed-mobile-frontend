@@ -16,7 +16,6 @@ import {
 } from '@/services/walletService';
 import SetupWalletScreen from '@/app/wallet/SetupWalletScreen';
 import EnterPinScreen from '@/app/wallet/EnterPinScreen';
-import WelcomeScreen from '@/app/wallet/WelcomeScreen';
 import OnboardingCarousel from '@/components/OnboardingCarousel';
 import DevStartupScreen from '@/components/DevStartupScreen';
 import colors from '@/constants/colors';
@@ -125,18 +124,6 @@ export default function RootLayout() {
   }
 
   if (walletState === 'welcome') {
-    return (
-      <SafeAreaProvider>
-        <GestureHandlerRootView style={{ flex: 1 }}>
-          <AlertProvider>
-            <WelcomeScreen onGetStarted={() => setWalletState('onboarding')} />
-          </AlertProvider>
-        </GestureHandlerRootView>
-      </SafeAreaProvider>
-    );
-  }
-
-  if (walletState === 'onboarding') {
     return (
       <SafeAreaProvider>
         <GestureHandlerRootView style={{ flex: 1 }}>
