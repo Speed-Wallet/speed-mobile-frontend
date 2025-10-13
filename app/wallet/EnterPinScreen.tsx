@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, StyleSheet, Platform, Animated } from 'react-native';
-import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
+import { View, StyleSheet, Animated } from 'react-native';
+import { scale } from 'react-native-size-matters';
 import { unlockApp } from '@/services/walletService';
 import { triggerShake } from '@/utils/animations';
 import ScreenContainer from '@/components/ScreenContainer';
-import PrimaryActionButton from '@/components/buttons/PrimaryActionButton';
 import PinInputSection from '@/components/PinInputSection';
 
 interface EnterPinScreenProps {
@@ -17,7 +16,7 @@ const EnterPinScreen: React.FC<EnterPinScreenProps> = ({
   publicKey,
 }) => {
   const [pin, setPin] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isValidating, setIsValidating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const shakeAnimationValue = useRef(new Animated.Value(0)).current;
 
@@ -31,7 +30,7 @@ const EnterPinScreen: React.FC<EnterPinScreenProps> = ({
           console.log(
             `Development mode: Attempting auto-unlock with EXPO_PUBLIC_DEV_PIN ${devPin}`,
           );
-          setIsLoading(true);
+          setIsValidating(true);
           try {
             const success = await unlockApp(devPin);
             if (success) {
@@ -45,7 +44,7 @@ const EnterPinScreen: React.FC<EnterPinScreenProps> = ({
             console.error('Development mode: Auto-unlock error:', err);
             setError('Error during dev auto-unlock.');
           } finally {
-            setIsLoading(false);
+            setIsValidating(false);
           }
         }
       }
@@ -54,9 +53,46 @@ const EnterPinScreen: React.FC<EnterPinScreenProps> = ({
     autoUnlockDev();
   }, [onWalletUnlocked]);
 
+  // Auto-validate PIN when 6th digit is entered
+  useEffect(() => {
+    if (pin.length === 6 && !isValidating) {
+      setIsValidating(true);
+      setError(null);
+
+      // Use requestAnimationFrame to ensure the UI updates (6th dot fills) before validation
+      requestAnimationFrame(async () => {
+        try {
+          const success = await unlockApp(pin);
+          if (success) {
+            onWalletUnlocked();
+          } else {
+            // Invalid PIN, show the dot briefly then shake and reset
+            setTimeout(() => {
+              setError('Incorrect PIN');
+              triggerShake(shakeAnimationValue);
+              setPin('');
+              setIsValidating(false);
+            }, 200); // Brief delay to see the 6th dot before shake
+          }
+        } catch (err) {
+          console.error('Unlock error:', err);
+          setTimeout(() => {
+            setError('Failed to unlock');
+            triggerShake(shakeAnimationValue);
+            setPin('');
+            setIsValidating(false);
+          }, 200);
+        }
+      });
+    }
+  }, [pin, isValidating, onWalletUnlocked, shakeAnimationValue]);
+
   // Handle keyboard input
   const handleKeyPress = useCallback(
     (key: string) => {
+      // Don't allow input while validating
+      if (isValidating) return;
+
       if (key === 'backspace') {
         setPin((prev) => prev.slice(0, -1));
         if (error) setError(null);
@@ -65,69 +101,27 @@ const EnterPinScreen: React.FC<EnterPinScreenProps> = ({
         if (error) setError(null);
       }
     },
-    [pin, error],
+    [pin, error, isValidating],
   );
 
-  const handleUnlockWallet = async () => {
-    if (pin.length < 6) {
-      setError('PIN must be at least 6 digits.');
-      triggerShake(shakeAnimationValue);
-      return;
+  const getTitle = () => {
+    if (error) {
+      return error;
     }
-    setIsLoading(true);
-    setError(null);
-    try {
-      const success = await unlockApp(pin);
-      if (success) {
-        onWalletUnlocked();
-      } else {
-        setError('Invalid PIN. Please try again.');
-        setPin('');
-        triggerShake(shakeAnimationValue);
-      }
-    } catch (err) {
-      console.error('Unlock error:', err);
-      setError('Failed to unlock wallet. Please try again.');
-      setPin('');
-      triggerShake(shakeAnimationValue);
-    }
-    setIsLoading(false);
+    return 'Enter Your PIN';
   };
 
   return (
     <ScreenContainer edges={['top', 'bottom']}>
       <View style={styles.container}>
-        {/* First Section: Centered content (Title + PIN Dots + Keyboard) */}
-        <View style={styles.centerSection}>
-          <PinInputSection
-            title="Enter Your PIN"
-            pin={pin}
-            onKeyPress={handleKeyPress}
-            maxLength={6}
-          />
-
-          {/* Error Message */}
-          {error && (
-            <Animated.View
-              style={[
-                styles.errorContainer,
-                { transform: [{ translateX: shakeAnimationValue }] },
-              ]}
-            >
-              <Text style={styles.errorText}>{error}</Text>
-            </Animated.View>
-          )}
-        </View>
-
-        {/* Second Section: Bottom button */}
-        <View style={styles.bottomSection}>
-          <PrimaryActionButton
-            title={isLoading ? 'Unlocking...' : 'Unlock Wallet'}
-            onPress={handleUnlockWallet}
-            disabled={isLoading || pin.length < 6}
-            loading={isLoading}
-          />
-        </View>
+        {/* Centered content (Title + PIN Dots + Keyboard) */}
+        <PinInputSection
+          title={getTitle()}
+          pin={pin}
+          onKeyPress={handleKeyPress}
+          maxLength={6}
+          shakeAnimation={shakeAnimationValue}
+        />
       </View>
     </ScreenContainer>
   );
@@ -137,33 +131,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: scale(20),
-    justifyContent: 'space-between',
-  },
-  centerSection: {
-    flex: 1,
-    position: 'relative',
-  },
-  errorContainer: {
-    position: 'absolute',
-    bottom: verticalScale(20),
-    left: 0,
-    right: 0,
-    marginHorizontal: scale(16),
-    paddingHorizontal: scale(16),
-    paddingVertical: verticalScale(8),
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    borderRadius: moderateScale(8),
-    borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.3)',
-  },
-  errorText: {
-    color: '#ef4444',
-    fontSize: moderateScale(14),
-    textAlign: 'center',
-    fontWeight: '500',
-  },
-  bottomSection: {
-    paddingBottom: verticalScale(Platform.OS === 'ios' ? 34 : 24),
   },
 });
 

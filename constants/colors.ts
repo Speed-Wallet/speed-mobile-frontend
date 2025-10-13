@@ -14,6 +14,12 @@ export default {
   primaryText: '#000',
   primaryLight: '#75B7FF',
 
+  purple: '#9333EA',
+  orange: '#FF6B35',
+  green: '#28C165',
+  darkBlue: '#5B68F6',
+  yellow: '#FFC107',
+
   // Accent colors
   white: '#FFFFFF',
 

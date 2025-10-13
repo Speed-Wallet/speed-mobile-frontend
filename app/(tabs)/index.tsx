@@ -36,6 +36,9 @@ import { useAlert } from '@/providers/AlertProvider';
 import { removeWalletFromList } from '@/services/walletService';
 // import CryptoTest from '@/components/CryptoTest';
 
+const ICON_SIZE = 26;
+const ICON_STROKE_WIDTH = 1.5;
+
 export default function HomeScreen() {
   const router = useRouter();
   const { alert, error: showError, success, confirm } = useAlert();
@@ -139,7 +142,6 @@ export default function HomeScreen() {
   const handleWalletSuccess = async () => {
     await loadUserData();
     await refetchTokenAssets();
-    success('Wallet operation successful!');
   };
 
   const handleDeleteWallet = (walletId: string, isMasterWallet?: boolean) => {
@@ -203,13 +205,21 @@ export default function HomeScreen() {
                     onPress={() => setShowRewardsAlert(true)}
                     style={styles.iconButton}
                   >
-                    <Gift size={scale(22)} color={colors.textPrimary} />
+                    <Gift
+                      size={scale(ICON_SIZE)}
+                      color={colors.textPrimary}
+                      strokeWidth={ICON_STROKE_WIDTH}
+                    />
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => router.push('/settings')}
                     style={styles.iconButton}
                   >
-                    <Settings size={scale(22)} color={colors.textPrimary} />
+                    <Settings
+                      size={scale(ICON_SIZE)}
+                      color={colors.textPrimary}
+                      strokeWidth={ICON_STROKE_WIDTH}
+                    />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -272,13 +282,21 @@ export default function HomeScreen() {
                 onPress={() => setShowRewardsAlert(true)}
                 style={styles.iconButton}
               >
-                <Gift size={scale(22)} color={colors.textPrimary} />
+                <Gift
+                  size={scale(22)}
+                  color={colors.textPrimary}
+                  strokeWidth={ICON_STROKE_WIDTH}
+                />
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => router.push('/settings')}
                 style={styles.iconButton}
               >
-                <Settings size={scale(22)} color={colors.textPrimary} />
+                <Settings
+                  size={scale(22)}
+                  color={colors.textPrimary}
+                  strokeWidth={ICON_STROKE_WIDTH}
+                />
               </TouchableOpacity>
             </View>
           </View>

@@ -10,14 +10,14 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  ScrollView,
-  ActivityIndicator,
   BackHandler,
+  Dimensions,
 } from 'react-native';
 import {
   BottomSheetModal,
   BottomSheetView,
   BottomSheetBackdrop,
+  useBottomSheetScrollableCreator,
 } from '@gorhom/bottom-sheet';
 import SettingsHeader from '@/components/SettingsHeader';
 import colors from '@/constants/colors';
@@ -70,6 +70,9 @@ const WalletSwitcherBottomSheet = forwardRef<
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [importedSeedPhrase, setImportedSeedPhrase] = useState<string>('');
   const bottomSheetRef = useRef<BottomSheetModal>(null);
+
+  // Create scrollable component for FlashList
+  const BottomSheetFlashListScrollable = useBottomSheetScrollableCreator();
 
   useImperativeHandle(ref, () => ({
     present: () => {
@@ -221,15 +224,7 @@ const WalletSwitcherBottomSheet = forwardRef<
   );
 
   const handleClose = () => {
-    if (viewMode === 'create' || viewMode === 'import') {
-      setViewMode('add');
-    } else if (viewMode === 'name-import') {
-      setViewMode('import');
-    } else if (viewMode === 'add') {
-      setViewMode('list');
-    } else {
-      bottomSheetRef.current?.dismiss();
-    }
+    bottomSheetRef.current?.dismiss();
   };
 
   const getTitle = () => {
@@ -283,22 +278,7 @@ const WalletSwitcherBottomSheet = forwardRef<
           />
         );
       default:
-        return (
-          <ScrollView
-            style={styles.scrollView}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.scrollContent}
-          >
-            <WalletListContent
-              wallets={wallets}
-              loading={loading}
-              copiedAddressId={copiedAddressId}
-              onSwitchWallet={handleSwitchWallet}
-              onCopyAddress={copyAddress}
-              onAddWalletPress={() => setViewMode('add')}
-            />
-          </ScrollView>
-        );
+        return null; // List view is handled separately in the return statement
     }
   };
 
@@ -314,21 +294,29 @@ const WalletSwitcherBottomSheet = forwardRef<
         setIsSheetOpen(index >= 0);
       }}
     >
-      <BottomSheetView style={styles.container}>
-        <SettingsHeader
+      {viewMode === 'list' ? (
+        <WalletListContent
+          wallets={wallets}
+          loading={loading}
+          copiedAddressId={copiedAddressId}
+          onSwitchWallet={handleSwitchWallet}
+          onCopyAddress={copyAddress}
+          onAddWalletPress={() => setViewMode('add')}
+          renderScrollComponent={BottomSheetFlashListScrollable}
           title={getTitle()}
           onClose={handleClose}
-          noPadding={false}
         />
+      ) : (
+        <BottomSheetView style={styles.container}>
+          <SettingsHeader
+            title={getTitle()}
+            onClose={handleClose}
+            noPadding={false}
+          />
 
-        {renderContent()}
-
-        {loading && (
-          <View style={styles.loadingOverlay}>
-            <ActivityIndicator size="large" color={colors.primary} />
-          </View>
-        )}
-      </BottomSheetView>
+          {renderContent()}
+        </BottomSheetView>
+      )}
     </BottomSheetModal>
   );
 });
@@ -346,12 +334,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: scale(16),
     paddingBottom: 24,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: verticalScale(20),
   },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
