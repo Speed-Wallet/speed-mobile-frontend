@@ -249,23 +249,11 @@ export default function RootLayout() {
                   options={{ presentation: 'modal' }}
                 />
                 <Stack.Screen
-                  name="wallet/manage"
-                  options={{ presentation: 'modal' }}
-                />
-                <Stack.Screen
                   name="wallet/WelcomeScreen"
                   options={{ presentation: 'modal' }}
                 />
                 <Stack.Screen
                   name="wallet/SetupWalletScreen"
-                  options={{ presentation: 'modal' }}
-                />
-                <Stack.Screen
-                  name="wallet/connect"
-                  options={{ presentation: 'modal' }}
-                />
-                <Stack.Screen
-                  name="wallet/import"
                   options={{ presentation: 'modal' }}
                 />
                 <Stack.Screen

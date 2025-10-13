@@ -48,15 +48,15 @@ const Avatar = ({ user, size = 40 }: AvatarProps) => {
 
 const styles = StyleSheet.create({
   avatar: {
-    backgroundColor: colors.backgroundLight,
+    // backgroundColor: colors.backgroundLight,
   },
   avatarPlaceholder: {
-    backgroundColor: colors.primaryLight,
+    backgroundColor: colors.darkBlue,
     alignItems: 'center',
     justifyContent: 'center',
   },
   initialsText: {
-    color: colors.primaryText,
+    color: colors.textPrimary,
     fontFamily: 'Inter-SemiBold',
   },
 });

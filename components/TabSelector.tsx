@@ -102,7 +102,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#00CFFF',
   },
   tabText: {
-    fontSize: moderateScale(12),
+    fontSize: moderateScale(13),
     fontFamily: 'Inter-Medium',
     color: colors.textSecondary,
   },

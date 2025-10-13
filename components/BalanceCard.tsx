@@ -46,15 +46,25 @@ const BalanceCard: React.FC<BalanceCardProps> = ({
   };
 
   const actions = [
-    { label: 'SEND', icon: ArrowUp, bgColor: '#5B68F6', actionId: 'send' },
+    { label: 'SEND', icon: ArrowUp, bgColor: colors.purple, actionId: 'send' },
     {
       label: 'RECEIVE',
       icon: ArrowDown,
-      bgColor: '#28C165',
+      bgColor: colors.green,
       actionId: 'receive',
     },
-    { label: 'BUY', icon: ShoppingCart, bgColor: '#FF6B35', actionId: 'buy' },
-    { label: 'EARN', icon: TrendingUp, bgColor: '#9333EA', actionId: 'earn' },
+    {
+      label: 'BUY',
+      icon: ShoppingCart,
+      bgColor: colors.orange,
+      actionId: 'buy',
+    },
+    {
+      label: 'EARN',
+      icon: TrendingUp,
+      bgColor: colors.yellow,
+      actionId: 'earn',
+    },
   ];
 
   return (
