@@ -5,7 +5,7 @@ import colors from '@/constants/colors';
 import BackButton from './buttons/BackButton';
 
 interface ScreenHeaderProps {
-  title?: string;
+  title?: string | React.ReactNode;
   onBack?: () => void;
   showBackButton?: boolean;
   rightElement?: React.ReactNode;
@@ -29,7 +29,12 @@ export default function ScreenHeader({
     >
       {showBackButton && <BackButton onPress={onBack} />}
 
-      {title && <Text style={styles.title}>{title}</Text>}
+      {title &&
+        (typeof title === 'string' ? (
+          <Text style={styles.title}>{title}</Text>
+        ) : (
+          <View style={styles.titleContainer}>{title}</View>
+        ))}
 
       {rightElement && <View style={styles.rightElement}>{rightElement}</View>}
     </View>
@@ -54,6 +59,15 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     textAlign: 'center',
+    zIndex: -1,
+  },
+  titleContainer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     zIndex: -1,
   },
   rightElement: {

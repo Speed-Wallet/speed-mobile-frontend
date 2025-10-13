@@ -18,6 +18,7 @@ import {
 import { useState, useEffect } from 'react';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import ScreenHeader from '@/components/ScreenHeader';
+import TokenLogo from '@/components/TokenLogo';
 import ScreenContainer from '@/components/ScreenContainer';
 import BottomActionContainer from '@/components/BottomActionContainer';
 import { TokenPriceChart } from '@/components/charts';
@@ -40,7 +41,7 @@ import {
 import { useJupiterToken } from '@/services/jupiterService';
 import { useTokenAssets } from '@/hooks/useTokenAsset';
 import { useWalletPublicKey } from '@/services/walletService';
-import { HORIZONTAL_MARGIN } from '@/constants/layout';
+import { CHART_HORIZONTAL_MARGIN } from '@/constants/layout';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -62,6 +63,7 @@ export default function TokenDetailScreen() {
     selectedPrice: number;
     priceChange: number;
     percentageChange: number;
+    timestamp: number;
     isInteracting: boolean;
   } | null>(null);
 
@@ -135,6 +137,7 @@ export default function TokenDetailScreen() {
       selectedPrice: number;
       priceChange: number;
       percentageChange: number;
+      timestamp: number;
       isInteracting: boolean;
     } | null,
   ) => {
@@ -185,6 +188,21 @@ export default function TokenDetailScreen() {
     displayPriceChange.change,
   )} ${formatPriceChangeString(displayPriceChange.changePercentage)}`;
   const isNegative = displayPriceChange.changePercentage < 0;
+
+  // Format date for display
+  const formatDisplayDate = (timestamp: number) => {
+    const date = new Date(timestamp);
+    const time = date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+    const dateStr = date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+    });
+    return `${time}, ${dateStr}`;
+  };
 
   // Format mint address for display (show first 4 and last 4 characters)
   const formatAddress = (addr: string) => {
@@ -265,13 +283,21 @@ export default function TokenDetailScreen() {
   return (
     <ScreenContainer edges={['top', 'bottom']}>
       <ScreenHeader
-        title={tokenData.symbol || symbol || ''}
-        onBack={() => router.back()}
-        rightElement={
-          <TouchableOpacity style={styles.headerButton}>
-            <Star size={scale(20)} color="#fff" />
-          </TouchableOpacity>
+        title={
+          <View style={styles.headerTitleContainer}>
+            <TokenLogo logoURI={tokenData.icon} size={scale(24)} />
+            <Text style={styles.headerTitle}>
+              {tokenData.symbol || symbol || ''}
+            </Text>
+          </View>
         }
+        // onBack={() => router.back()}
+        // rightElement={
+        //   <TouchableOpacity style={styles.headerButton}>
+        //     <Star size={scale(20)} color="#fff" />
+        //   </TouchableOpacity>
+        // }
+        // showBackButton={true}
       />
 
       <ScrollView
@@ -280,52 +306,63 @@ export default function TokenDetailScreen() {
       >
         {/* Price Section */}
         <View style={styles.priceSection}>
-          <Text style={styles.price}>
-            {chartSelectedData?.isInteracting
-              ? formatPrice(chartSelectedData.selectedPrice)
-              : formatPrice(currentPrice)}
-          </Text>
+          <View style={styles.priceRow}>
+            {/* Left: Price */}
+            <Text style={styles.price}>
+              {chartSelectedData?.isInteracting
+                ? formatPrice(chartSelectedData.selectedPrice)
+                : formatPrice(currentPrice)}
+            </Text>
 
-          {chartSelectedData?.isInteracting ? (
-            <View style={styles.chartSelectedDisplay}>
-              <Text
-                style={[
-                  styles.priceChange,
-                  {
-                    color:
-                      chartSelectedData.percentageChange < 0
-                        ? '#ef4444'
-                        : '#10b981',
-                  },
-                ]}
-              >
-                {formatPriceChange(chartSelectedData.priceChange)}
-              </Text>
-              <Text
-                style={[
-                  styles.priceChange,
-                  {
-                    color:
-                      chartSelectedData.percentageChange < 0
-                        ? '#ef4444'
-                        : '#10b981',
-                  },
-                ]}
-              >
-                {chartSelectedData.percentageChange >= 0 ? '+' : ''}
-                {chartSelectedData.percentageChange.toFixed(2)}%
-              </Text>
-            </View>
-          ) : (
+            {/* Right: Percentage Change */}
             <Text
               style={[
-                styles.priceChange,
-                { color: isNegative ? '#ef4444' : '#10b981' },
+                styles.percentageChange,
+                {
+                  color: chartSelectedData?.isInteracting
+                    ? chartSelectedData.percentageChange < 0
+                      ? '#ef4444'
+                      : '#10b981'
+                    : isNegative
+                      ? '#ef4444'
+                      : '#10b981',
+                },
               ]}
             >
-              {currentChange}
+              {chartSelectedData?.isInteracting
+                ? `${chartSelectedData.percentageChange >= 0 ? '↑' : '↓'} ${Math.abs(chartSelectedData.percentageChange).toFixed(2)}%`
+                : `${displayPriceChange.changePercentage >= 0 ? '↑' : '↓'} ${Math.abs(displayPriceChange.changePercentage).toFixed(2)}%`}
             </Text>
-          )}
+          </View>
+
+          <View style={styles.priceBottomRow}>
+            {/* Left: Dollar Change */}
+            <Text
+              style={[
+                styles.dollarChange,
+                {
+                  color: chartSelectedData?.isInteracting
+                    ? chartSelectedData.percentageChange < 0
+                      ? '#ef4444'
+                      : '#10b981'
+                    : isNegative
+                      ? '#ef4444'
+                      : '#10b981',
+                },
+              ]}
+            >
+              {chartSelectedData?.isInteracting
+                ? formatPriceChange(chartSelectedData.priceChange)
+                : formatPriceChange(displayPriceChange.change)}
+            </Text>
+
+            {/* Right: Date/Timeframe */}
+            <Text style={styles.dateLabel}>
+              {chartSelectedData?.isInteracting
+                ? formatDisplayDate(chartSelectedData.timestamp)
+                : 'Today'}
+            </Text>
+          </View>
         </View>
 
         {/* Chart */}
@@ -468,6 +505,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  headerTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scale(8),
+  },
+  headerTitle: {
+    fontSize: scale(16),
+    fontFamily: 'Inter-SemiBold',
+    color: '#fff',
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -503,14 +550,37 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   priceSection: {
-    alignItems: 'center',
-    paddingVertical: verticalScale(4),
+    paddingHorizontal: scale(18),
+    paddingVertical: verticalScale(8),
+  },
+  priceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: verticalScale(4),
   },
   price: {
-    fontSize: scale(30),
+    fontSize: scale(24),
     fontWeight: '700',
     color: '#fff',
-    marginBottom: verticalScale(3),
+  },
+  percentageChange: {
+    fontSize: scale(20),
+    fontWeight: '700',
+  },
+  priceBottomRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  dollarChange: {
+    fontSize: scale(13),
+    fontWeight: '600',
+  },
+  dateLabel: {
+    fontSize: scale(13),
+    fontWeight: '500',
+    color: '#9ca3af',
   },
   priceChange: {
     fontSize: scale(14),
@@ -526,14 +596,14 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: 'flex-start',
     justifyContent: 'center',
-    marginHorizontal: scale(HORIZONTAL_MARGIN),
+    marginHorizontal: scale(CHART_HORIZONTAL_MARGIN),
     marginBottom: 10,
   },
   chartLoadingContainer: {
     alignItems: 'center',
     justifyContent: 'center',
     height: scale(200),
-    width: screenWidth - scale(HORIZONTAL_MARGIN * 2),
+    width: screenWidth - scale(CHART_HORIZONTAL_MARGIN * 2),
   },
   chartLoadingText: {
     fontSize: scale(12),
@@ -544,7 +614,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     height: scale(200),
-    width: screenWidth - scale(HORIZONTAL_MARGIN * 2),
+    width: screenWidth - scale(CHART_HORIZONTAL_MARGIN * 2),
     backgroundColor: '#2a2a2a',
     borderRadius: scale(16),
   },

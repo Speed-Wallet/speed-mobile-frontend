@@ -280,24 +280,24 @@ export function calculateLinearScale(
     paddedPriceRange = Math.max(basePaddedRange, minPaddedRange);
   }
 
-  const targetMaxPosition = 0.75;
+  const targetMaxPosition = 0.9;
   let paddedMinPrice = maxPrice - targetMaxPosition * paddedPriceRange;
 
   // Clamp to prevent negative prices
   paddedMinPrice = Math.max(0, paddedMinPrice);
 
-  // Ensure min is >=25% - shift upward if needed
+  // Ensure min is >=40% - shift upward if needed
   let minPosition = (minPrice - paddedMinPrice) / paddedPriceRange;
-  if (minPosition < 0.25) {
-    const adjustment = (0.25 - minPosition) * paddedPriceRange;
+  if (minPosition < 0.4) {
+    const adjustment = (0.4 - minPosition) * paddedPriceRange;
     paddedMinPrice -= adjustment;
     paddedMinPrice = Math.max(0, paddedMinPrice);
   }
 
-  // If still <0.25 after shift (due to clamp), cap paddedRange to enforce min >=0.25 if possible
+  // If still <0.40 after shift (due to clamp), cap paddedRange to enforce min >=0.40 if possible
   minPosition = (minPrice - paddedMinPrice) / paddedPriceRange;
-  if (paddedMinPrice === 0 && minPosition < 0.25) {
-    const maxAllowableRangeForMin = minPrice / 0.25;
+  if (paddedMinPrice === 0 && minPosition < 0.4) {
+    const maxAllowableRangeForMin = minPrice / 0.4;
     const minRangeForMax = maxPrice;
     if (maxAllowableRangeForMin >= minRangeForMax) {
       paddedPriceRange = Math.min(paddedPriceRange, maxAllowableRangeForMin);
@@ -335,13 +335,13 @@ export function calculateLogScale(
     paddedLogRange = Math.max(basePaddedLogRange, minLogRange);
   }
 
-  const targetMaxPosition = 0.75;
+  const targetMaxPosition = 0.9;
   let paddedLogMin = logMaxData - targetMaxPosition * paddedLogRange;
 
-  // Ensure min is >=25% - shift if needed
+  // Ensure min is >=40% - shift if needed
   let minPositionLog = (logMinData - paddedLogMin) / paddedLogRange;
-  if (minPositionLog < 0.25) {
-    const adjustment = (0.25 - minPositionLog) * paddedLogRange;
+  if (minPositionLog < 0.4) {
+    const adjustment = (0.4 - minPositionLog) * paddedLogRange;
     paddedLogMin -= adjustment;
   }
 
