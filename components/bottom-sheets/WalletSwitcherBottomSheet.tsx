@@ -5,14 +5,7 @@ import React, {
   forwardRef,
   useImperativeHandle,
 } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  BackHandler,
-  Dimensions,
-} from 'react-native';
+import { StyleSheet, BackHandler } from 'react-native';
 import {
   BottomSheetModal,
   BottomSheetView,
@@ -21,7 +14,7 @@ import {
 } from '@gorhom/bottom-sheet';
 import SettingsHeader from '@/components/SettingsHeader';
 import colors from '@/constants/colors';
-import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
+import { scale } from 'react-native-size-matters';
 import { setStringAsync } from 'expo-clipboard';
 import {
   getAllStoredWallets,
@@ -333,7 +326,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: scale(16),
-    paddingBottom: 24,
+    // paddingBottom: 24,
   },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,

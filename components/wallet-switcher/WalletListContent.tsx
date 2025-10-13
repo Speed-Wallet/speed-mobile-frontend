@@ -65,37 +65,34 @@ const WalletListContent: React.FC<WalletListContentProps> = ({
     </View>
   );
 
-  const renderHeaderComponent = () => (
-    <View style={styles.headerContainer}>
-      <SettingsHeader title={title} onClose={onClose} noPadding={true} />
-    </View>
-  );
-
-  const renderFooterComponent = () => (
-    <View style={styles.addButtonContainer}>
-      <TouchableOpacity
-        style={styles.addButton}
-        onPress={onAddWalletPress}
-        disabled={loading}
-      >
-        <Plus size={20} color={colors.primaryText} />
-      </TouchableOpacity>
-    </View>
-  );
+  const renderItemSeparator = () => <View style={{ height: 2 }} />;
 
   return (
-    <FlashList
-      data={wallets}
-      keyExtractor={(item) => item.id}
-      renderItem={renderWalletItem}
-      contentContainerStyle={styles.listContent}
-      style={styles.flashList}
-      showsVerticalScrollIndicator={false}
-      ListHeaderComponent={renderHeaderComponent}
-      ListEmptyComponent={renderEmptyComponent}
-      ListFooterComponent={renderFooterComponent}
-      renderScrollComponent={renderScrollComponent}
-    />
+    <>
+      <View style={styles.headerContainer}>
+        <SettingsHeader title={title} onClose={onClose} noPadding={true} />
+      </View>
+      <FlashList
+        data={wallets}
+        keyExtractor={(item) => item.id}
+        renderItem={renderWalletItem}
+        contentContainerStyle={styles.listContent}
+        style={styles.flashList}
+        showsVerticalScrollIndicator={false}
+        ListEmptyComponent={renderEmptyComponent}
+        ItemSeparatorComponent={renderItemSeparator}
+        renderScrollComponent={renderScrollComponent}
+      />
+      <View style={styles.addButtonContainer}>
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={onAddWalletPress}
+          disabled={loading}
+        >
+          <Plus size={20} color={colors.primaryText} />
+        </TouchableOpacity>
+      </View>
+    </>
   );
 };
 
@@ -106,10 +103,11 @@ const styles = StyleSheet.create({
   headerContainer: {
     backgroundColor: colors.backgroundDark,
     marginBottom: verticalScale(6),
+    paddingHorizontal: scale(16),
   },
   listContent: {
     paddingHorizontal: scale(16),
-    paddingBottom: verticalScale(24),
+    // paddingBottom: 12,
   },
   emptyState: {
     alignItems: 'center',

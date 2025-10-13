@@ -121,6 +121,7 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingTop: verticalScale(8),
+    // marginBottom: 12,
   },
   subtitle: {
     fontSize: moderateScale(14),
