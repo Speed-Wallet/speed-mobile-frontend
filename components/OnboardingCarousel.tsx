@@ -9,7 +9,6 @@ import {
   FlatList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import {
   TrendingUp,
   CreditCard,
@@ -20,6 +19,7 @@ import {
 } from 'lucide-react-native';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import colors from '@/constants/colors';
+import GradientBackground from '@/components/GradientBackground';
 import UnsafeScreenContainer from '@/components/UnsafeScreenContainer';
 import ScreenContainer from '@/components/ScreenContainer';
 
@@ -124,14 +124,7 @@ export default function OnboardingCarousel({
 
   return (
     <UnsafeScreenContainer style={styles.container}>
-      {/* Linear gradient background */}
-      <LinearGradient
-        colors={['#009FCC', '#0d2a35', '#0A0A0A']}
-        locations={[0, 0.4, 1]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={StyleSheet.absoluteFill}
-      />
+      <GradientBackground />
 
       <View style={styles.content}>
         {/* Header */}

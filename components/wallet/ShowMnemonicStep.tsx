@@ -12,6 +12,8 @@ import UnsafeScreenContainer from '../UnsafeScreenContainer';
 import SeedPhraseDisplay from '../SeedPhraseDisplay';
 import PrimaryActionButton from '../buttons/PrimaryActionButton';
 import ScreenContainer from '@/components/ScreenContainer';
+import { useAlert } from '@/providers/AlertProvider';
+import IntroHeader from './IntroHeader';
 
 interface ShowMnemonicStepProps {
   mnemonic: string;
@@ -27,6 +29,7 @@ const ShowMnemonicStep: React.FC<ShowMnemonicStepProps> = ({
   isLoading,
 }) => {
   const [isVisible, setIsVisible] = useState(false);
+  const { alert } = useAlert();
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.95)).current;
@@ -63,32 +66,10 @@ const ShowMnemonicStep: React.FC<ShowMnemonicStepProps> = ({
 
       <View style={styles.content}>
         {/* Header */}
-        <Animated.View
-          style={[
-            styles.header,
-            {
-              opacity: fadeAnim,
-              transform: [{ translateY }],
-            },
-          ]}
-        >
-          <View style={styles.headerContent}>
-            {/* <LinearGradient
-              colors={['rgba(124, 92, 255, 0.15)', 'rgba(124, 92, 255, 0.05)']}
-              style={styles.headerBadge}>
-              <ShieldCheck size={20} color="#00CFFF" />
-              <Text style={styles.headerBadgeText}>SECURE BACKUP</Text>
-            </LinearGradient> */}
-            <Text style={styles.title}>Your Seed Phrase</Text>
-            <Text style={styles.subtitle}>
-              Write down these 12 words in order and keep them in a safe place.
-              Never share them with anyone.{' '}
-              <Text style={{ fontWeight: 'bold', color: '#d1d5db' }}>
-                Anyone with these words can access the funds in your wallet.
-              </Text>
-            </Text>
-          </View>
-        </Animated.View>
+        <IntroHeader
+          title="Your Seed Phrase"
+          subtitle="Don't share your seed phrase with anyone."
+        />
 
         {/* Seed Phrase Card */}
         <Animated.View
@@ -135,7 +116,13 @@ const ShowMnemonicStep: React.FC<ShowMnemonicStepProps> = ({
         <View style={styles.buttonContainer}>
           <PrimaryActionButton
             title="I've Saved My Phrase"
-            onPress={onNext}
+            onPress={() => {
+              alert(
+                'Security Reminder',
+                'Never share your seed phrase with anyone. Anyone who has your seed phrase can access your funds.',
+              );
+              onNext();
+            }}
             disabled={isLoading}
             loading={isLoading}
           />
@@ -153,42 +140,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: scale(20),
     justifyContent: 'space-between',
-  },
-  header: {
-    flex: 0,
-    minHeight: '25%',
-    justifyContent: 'center',
-  },
-  headerContent: {
-    alignItems: 'flex-start',
-  },
-  headerBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    marginBottom: 16,
-  },
-  headerBadgeText: {
-    color: '#00CFFF',
-    fontSize: 13,
-    fontWeight: '600',
-    marginLeft: 6,
-    letterSpacing: 0.5,
-  },
-  title: {
-    fontSize: moderateScale(24),
-    fontWeight: '900',
-    color: '#ffffff',
-    marginBottom: verticalScale(8),
-    textAlign: 'left',
-  },
-  subtitle: {
-    fontSize: moderateScale(16),
-    color: '#9ca3af',
-    textAlign: 'left',
-    lineHeight: moderateScale(22),
   },
   seedPhraseContainer: {
     flex: 1,
