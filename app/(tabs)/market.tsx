@@ -12,7 +12,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
-import { FlashList } from '@shopify/flash-list';
+import { FlashList, FlashListRef } from '@shopify/flash-list';
 import { scale, verticalScale } from 'react-native-size-matters';
 import { TokenItemMarket } from '@/components/token-items';
 import ScreenContainer from '@/components/ScreenContainer';
@@ -44,6 +44,9 @@ export default function MarketScreen() {
   const [isSearching, setIsSearching] = useState(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout>();
   const { hideTabBar, showTabBar } = useTabBarVisibility();
+
+  // Add ref for FlashList
+  const flashListRef = useRef<FlashListRef<JupiterToken> | null>(null);
 
   // Scroll tracking
   const scrollY = useRef(0);
@@ -229,10 +232,14 @@ export default function MarketScreen() {
   const handleSortMetricChange = (metric: SortMetric) => {
     setSortMetric(metric);
     setShowSortDropdown(false);
+    // Scroll to top when sort metric changes
+    flashListRef.current?.scrollToIndex({ index: 0, animated: true });
   };
 
   const handleToggleSortOrder = () => {
     setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    // Scroll to top when sort order changes
+    flashListRef.current?.scrollToIndex({ index: 0, animated: true });
   };
 
   const handleToggleSortDropdown = () => {
@@ -298,6 +305,7 @@ export default function MarketScreen() {
     <ScreenContainer edges={['top']} style={{ marginTop: 12 }}>
       {/* Token List */}
       <FlashList
+        ref={flashListRef}
         data={filteredData}
         keyExtractor={(item) => item.id}
         renderItem={({ item, index }) => renderToken(item, index)}

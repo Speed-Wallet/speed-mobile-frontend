@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { useWindowDimensions } from 'react-native';
+import { useWindowDimensions, View, TouchableOpacity } from 'react-native';
 import { moderateScale } from 'react-native-size-matters';
 import {
   House,
@@ -23,7 +23,7 @@ function TabsContent() {
         tabBarStyle: {
           backgroundColor: colors.backgroundDark,
           borderTopWidth: 0,
-          marginTop: 4,
+          marginVertical: 4,
         },
         tabBarActiveTintColor: '#00CFFF',
         tabBarInactiveTintColor: colors.textSecondary,
@@ -80,6 +80,11 @@ function TabsContent() {
           title: 'Spend',
           tabBarIcon: ({ color, size }) => (
             <CreditCard size={size} color={color} />
+          ),
+          tabBarButton: (props: any) => (
+            <View style={{ flex: 1, opacity: 0.5 }}>
+              <TouchableOpacity {...props} disabled={true} />
+            </View>
           ),
         }}
       />
