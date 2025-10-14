@@ -15,8 +15,9 @@ import {
   ArrowRightLeft,
   Copy,
 } from 'lucide-react-native';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
+import { useSharedValue, withTiming } from 'react-native-reanimated';
 import ScreenHeader from '@/components/ScreenHeader';
 import TokenLogo from '@/components/TokenLogo';
 import ScreenContainer from '@/components/ScreenContainer';
@@ -66,6 +67,9 @@ export default function TokenDetailScreen() {
     timestamp: number;
     isInteracting: boolean;
   } | null>(null);
+
+  const bottomActionTranslateY = useSharedValue(0);
+  const lastScrollY = useRef(0);
 
   const router = useRouter();
   const { address, symbol, name } = useLocalSearchParams<{
@@ -142,6 +146,22 @@ export default function TokenDetailScreen() {
     } | null,
   ) => {
     setChartSelectedData(data);
+  };
+
+  const handleScroll = (event: any) => {
+    const currentOffset = event.nativeEvent.contentOffset.y;
+    const diff = currentOffset - lastScrollY.current;
+
+    // Hide bottom actions when scrolling down, show when scrolling up
+    if (diff > 5 && currentOffset > 20) {
+      // Scrolling down
+      bottomActionTranslateY.value = withTiming(150, { duration: 200 });
+    } else if (diff < -5 || currentOffset <= 0) {
+      // Scrolling up or at top
+      bottomActionTranslateY.value = withTiming(0, { duration: 200 });
+    }
+
+    lastScrollY.current = currentOffset;
   };
 
   if (isLoadingToken && !tokenData) {
@@ -303,6 +323,8 @@ export default function TokenDetailScreen() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         style={styles.scrollView}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
       >
         {/* Price Section */}
         <View style={styles.priceSection}>
@@ -473,7 +495,7 @@ export default function TokenDetailScreen() {
       </ScrollView>
 
       {/* Bottom Action Buttons */}
-      <BottomActionContainer>
+      <BottomActionContainer translateY={bottomActionTranslateY}>
         <View style={styles.actionsRow}>
           <TouchableOpacity
             style={styles.actionButton}

@@ -12,6 +12,8 @@ import colors from '@/constants/colors';
 import { TokenItemSelector } from '@/components/token-items';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import { TokenAsset, TokenMetadata } from '@/services/tokenAssetService';
+import { useSharedValue, withTiming } from 'react-native-reanimated';
+import BottomActionContainer from '@/components/BottomActionContainer';
 
 interface TokenSelectorBottomSheetProps {
   tokens: (TokenAsset | TokenMetadata)[];
@@ -45,6 +47,9 @@ const TokenSelectorBottomSheet = forwardRef<
     ref,
   ) => {
     const bottomSheetRef = useRef<BottomSheetModal>(null);
+    const scrollOffset = useSharedValue(0);
+    const searchBarTranslateY = useSharedValue(0);
+    const lastScrollY = useRef(0);
 
     useImperativeHandle(ref, () => ({
       present: () => bottomSheetRef.current?.present(),
@@ -123,6 +128,22 @@ const TokenSelectorBottomSheet = forwardRef<
       );
     };
 
+    const handleScroll = (event: any) => {
+      const currentOffset = event.nativeEvent.contentOffset.y;
+      const diff = currentOffset - lastScrollY.current;
+
+      // Hide search bar when scrolling down, show when scrolling up
+      if (diff > 5 && currentOffset > 20) {
+        // Scrolling down
+        searchBarTranslateY.value = withTiming(100, { duration: 200 });
+      } else if (diff < -5 || currentOffset <= 0) {
+        // Scrolling up or at top
+        searchBarTranslateY.value = withTiming(0, { duration: 200 });
+      }
+
+      lastScrollY.current = currentOffset;
+    };
+
     // Create scrollable component for FlashList
     const BottomSheetFlashListScrollable = useBottomSheetScrollableCreator();
 
@@ -151,13 +172,6 @@ const TokenSelectorBottomSheet = forwardRef<
               onClose={handleClose}
               noPadding={true}
             />
-            <View>
-              <SearchBar
-                searchQuery={searchQuery}
-                onSearchChange={onSearchChange}
-                placeholder="Search by name or symbol"
-              />
-            </View>
           </View>
 
           {/* Scrollable List */}
@@ -170,7 +184,18 @@ const TokenSelectorBottomSheet = forwardRef<
             ListEmptyComponent={renderEmptyComponent}
             ListFooterComponent={renderFooter}
             renderScrollComponent={BottomSheetFlashListScrollable}
+            onScroll={handleScroll}
+            scrollEventThrottle={16}
           />
+
+          {/* Search Bar - Using BottomActionContainer */}
+          <BottomActionContainer translateY={searchBarTranslateY}>
+            <SearchBar
+              searchQuery={searchQuery}
+              onSearchChange={onSearchChange}
+              placeholder="Search by name or symbol"
+            />
+          </BottomActionContainer>
         </View>
       </BottomSheetModal>
     );
@@ -197,7 +222,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: scale(16),
-    paddingBottom: verticalScale(24),
+    paddingBottom: verticalScale(100), // Extra padding for search bar at bottom
   },
   footerLoader: {
     paddingVertical: verticalScale(16),

@@ -109,27 +109,27 @@ export default function ReceiveScreen() {
           </View>
 
           <SecondaryActionButton
-            title={formatAddress(walletAddress || '')}
-            onPress={handleAddressClick}
-            icon={
-              <CopyButton
-                ref={copyButtonRef}
-                textToCopy={walletAddress || ''}
-                size={scale(16)}
-                color={colors.textPrimary}
-                style={styles.copyButtonInSecondary}
-                onCopyComplete={handleCopyComplete}
-              />
-            }
+            title="Share"
+            onPress={handleShare}
+            icon={<ShareIcon size={scale(18)} color={colors.textPrimary} />}
             style={styles.addressSecondaryButton}
           />
         </View>
 
         <PrimaryActionButton
-          title="Share"
-          onPress={handleShare}
+          title={formatAddress(walletAddress || '')}
+          onPress={handleAddressClick}
           variant="primary"
-          icon={<ShareIcon size={scale(18)} color="#000" />}
+          icon={
+            <CopyButton
+              ref={copyButtonRef}
+              textToCopy={walletAddress || ''}
+              size={scale(16)}
+              color="#000"
+              style={styles.copyButtonInSecondary}
+              onCopyComplete={handleCopyComplete}
+            />
+          }
           style={styles.shareButtonStyle}
         />
       </View>
