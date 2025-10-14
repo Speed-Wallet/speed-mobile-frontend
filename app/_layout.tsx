@@ -236,10 +236,6 @@ export default function RootLayout() {
                   options={{ presentation: 'modal' }}
                 />
                 <Stack.Screen
-                  name="wallet/WelcomeScreen"
-                  options={{ presentation: 'modal' }}
-                />
-                <Stack.Screen
                   name="wallet/SetupWalletScreen"
                   options={{ presentation: 'modal' }}
                 />

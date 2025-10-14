@@ -17,6 +17,7 @@ import ScreenContainer from '@/components/ScreenContainer';
 import BackButton from '@/components/buttons/BackButton';
 import PrimaryActionButton from '@/components/buttons/PrimaryActionButton';
 import { triggerShake } from '@/utils/animations';
+import IntroHeader from './IntroHeader';
 
 interface ImportWalletStepProps {
   onNext: (seedPhrase: string) => Promise<void>;
@@ -127,22 +128,10 @@ export default function ImportWalletStep({
 
       <View style={styles.content}>
         {/* Header */}
-        <Animated.View
-          style={[
-            styles.header,
-            {
-              opacity: fadeAnim,
-              transform: [{ translateY }],
-            },
-          ]}
-        >
-          <View style={styles.headerContent}>
-            <Text style={styles.title}>Import Wallet</Text>
-            <Text style={styles.subtitle}>
-              Enter your existing wallet's seed phrase to recover your wallet
-            </Text>
-          </View>
-        </Animated.View>
+        <IntroHeader
+          title="Import Wallet"
+          subtitle="Enter your existing wallet's seed phrase to recover your wallet"
+        />
 
         {/* Form Section */}
         <Animated.View
@@ -236,23 +225,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: scale(20),
     justifyContent: 'space-between',
-  },
-  header: {},
-  headerContent: {
-    alignItems: 'flex-start',
-  },
-  title: {
-    fontSize: moderateScale(24),
-    fontWeight: '900',
-    color: '#ffffff',
-    marginBottom: verticalScale(8),
-    textAlign: 'left',
-  },
-  subtitle: {
-    fontSize: moderateScale(16),
-    color: '#9ca3af',
-    textAlign: 'left',
-    lineHeight: moderateScale(22),
   },
   form: {
     flex: 1,

@@ -8,15 +8,17 @@ interface ScreenContainerProps {
   children: React.ReactNode;
   style?: ViewStyle;
   edges?: ('top' | 'bottom' | 'left' | 'right')[];
+  backgroundColor?: string;
 }
 
 export default function ScreenContainer({
   children,
   style,
   edges = ['bottom'],
+  backgroundColor = colors.backgroundDark,
 }: ScreenContainerProps) {
   return (
-    <UnsafeScreenContainer>
+    <UnsafeScreenContainer style={{ backgroundColor }}>
       <SafeAreaView edges={edges} style={[styles.safeArea, style]}>
         {children}
       </SafeAreaView>
