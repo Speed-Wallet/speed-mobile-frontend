@@ -47,6 +47,7 @@ export default function HomeScreen() {
   const [activeTab, setActiveTab] = useState<'tokens' | 'activity'>('tokens');
   const [showRewardsAlert, setShowRewardsAlert] = useState(false);
   const [showEarnAlert, setShowEarnAlert] = useState(false);
+  const [showActivityAlert, setShowActivityAlert] = useState(false);
   const walletAddress = useWalletPublicKey();
 
   const walletSwitcherRef = useRef<WalletSwitcherBottomSheetRef>(null);
@@ -228,7 +229,11 @@ export default function HomeScreen() {
               <BalanceCard onActionPress={handleBalanceCardAction} />
 
               {/* Tab selector */}
-              <TabSelector activeTab={activeTab} onTabPress={setActiveTab} />
+              <TabSelector
+                activeTab={activeTab}
+                onTabPress={setActiveTab}
+                onActivityPress={() => setShowActivityAlert(true)}
+              />
             </>
           }
           renderItem={({ item, index }) => {
@@ -305,7 +310,11 @@ export default function HomeScreen() {
           <BalanceCard onActionPress={handleBalanceCardAction} />
 
           {/* Tab selector */}
-          <TabSelector activeTab={activeTab} onTabPress={setActiveTab} />
+          <TabSelector
+            activeTab={activeTab}
+            onTabPress={setActiveTab}
+            onActivityPress={() => setShowActivityAlert(true)}
+          />
 
           {/* Activity content */}
           <View style={styles.activitySection}>
@@ -343,6 +352,22 @@ export default function HomeScreen() {
           {
             text: 'OK',
             onPress: () => setShowEarnAlert(false),
+            style: 'default',
+          },
+        ]}
+      />
+
+      {/* Activity Alert */}
+      <CustomAlert
+        visible={showActivityAlert}
+        onDismiss={() => setShowActivityAlert(false)}
+        title="Activity Coming Soon"
+        message="Stay tuned! Activity view will be available soon."
+        type="info"
+        buttons={[
+          {
+            text: 'OK',
+            onPress: () => setShowActivityAlert(false),
             style: 'default',
           },
         ]}

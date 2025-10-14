@@ -1,42 +1,32 @@
-import React, { useRef } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Animated,
-} from 'react-native';
+import React from 'react';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import colors from '@/constants/colors';
-import { triggerShake } from '@/utils/animations';
 
 type TabSelectorProps = {
   activeTab: 'tokens' | 'activity';
   onTabPress: (tab: 'tokens' | 'activity') => void;
+  onActivityPress?: () => void;
 };
 
-const TabSelector = ({ activeTab, onTabPress }: TabSelectorProps) => {
-  const shakeAnimation = useRef(new Animated.Value(0)).current;
-
+const TabSelector = ({
+  activeTab,
+  onTabPress,
+  onActivityPress,
+}: TabSelectorProps) => {
   const handleTabPress = (tab: 'tokens' | 'activity') => {
     if (tab === 'activity') {
-      // Trigger shake animation for disabled activity tab
-      triggerShake(shakeAnimation);
-      return;
+      // Call the callback if provided, otherwise call onTabPress
+      if (onActivityPress) {
+        onActivityPress();
+        return;
+      }
     }
     onTabPress(tab);
   };
 
-  const animatedStyle = {
-    transform: [
-      {
-        translateX: shakeAnimation,
-      },
-    ],
-  };
-
   return (
-    <Animated.View style={[styles.container, animatedStyle]}>
+    <View style={styles.container}>
       <TouchableOpacity
         style={[
           styles.tab,
@@ -72,7 +62,7 @@ const TabSelector = ({ activeTab, onTabPress }: TabSelectorProps) => {
           Activity
         </Text>
       </TouchableOpacity>
-    </Animated.View>
+    </View>
   );
 };
 
