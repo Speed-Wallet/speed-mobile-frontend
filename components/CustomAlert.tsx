@@ -46,12 +46,12 @@ const CustomAlert: React.FC<CustomAlertProps> = ({
         Animated.timing(scaleAnim, {
           toValue: 1,
           duration: 200,
-          useNativeDriver: true,
+          useNativeDriver: false,
         }),
         Animated.timing(opacityAnim, {
           toValue: 1,
           duration: 200,
-          useNativeDriver: true,
+          useNativeDriver: false,
         }),
       ]).start();
     } else {
@@ -59,12 +59,12 @@ const CustomAlert: React.FC<CustomAlertProps> = ({
         Animated.timing(scaleAnim, {
           toValue: 0,
           duration: 150,
-          useNativeDriver: true,
+          useNativeDriver: false,
         }),
         Animated.timing(opacityAnim, {
           toValue: 0,
           duration: 150,
-          useNativeDriver: true,
+          useNativeDriver: false,
         }),
       ]).start();
     }

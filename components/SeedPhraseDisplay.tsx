@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: scale(16),
+    marginBottom: 8,
   },
   visibilityButton: {
     padding: scale(8),

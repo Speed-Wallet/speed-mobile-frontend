@@ -17,6 +17,7 @@ import ScreenContainer from '@/components/ScreenContainer';
 import PrimaryActionButton from '@/components/buttons/PrimaryActionButton';
 import BackButton from '@/components/buttons/BackButton';
 import { triggerShake } from '@/utils/animations';
+import IntroHeader from './IntroHeader';
 
 interface CreateUsernameStepProps {
   onNext: (username: string) => Promise<void>;
@@ -115,25 +116,10 @@ export default function CreateUsernameStep({
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
           {/* Header Section */}
-          <Animated.View
-            style={[
-              styles.header,
-              {
-                opacity: fadeAnim,
-                transform: [{ translateY }],
-              },
-            ]}
-          >
-            <Text style={styles.title}>
-              Welcome
-              {username.length > 0 && (
-                <Text style={styles.usernameText}> {username}</Text>
-              )}
-            </Text>
-            <Text style={styles.subtitle}>
-              Please enter your username to get started with your wallet setup
-            </Text>
-          </Animated.View>
+          <IntroHeader
+            title={`Welcome${username.length > 0 ? ` ${username}` : ''}`}
+            subtitle="Please enter your username to get started with your wallet setup"
+          />
 
           {/* Form Section */}
           <Animated.View

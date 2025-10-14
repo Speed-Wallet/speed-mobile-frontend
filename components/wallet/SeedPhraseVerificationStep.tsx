@@ -16,6 +16,7 @@ import ScreenContainer from '@/components/ScreenContainer';
 import BackButton from '@/components/buttons/BackButton';
 import WordBox from '@/components/wallet/WordBox';
 import { triggerShake } from '@/utils/animations';
+import IntroHeader from './IntroHeader';
 
 interface SeedPhraseVerificationStepProps {
   words: string[];
@@ -182,21 +183,10 @@ const SeedPhraseVerificationStep: React.FC<SeedPhraseVerificationStepProps> = ({
           showsVerticalScrollIndicator={false}
         >
           {/* Title and Description */}
-          <Animated.View
-            style={[
-              styles.titleSection,
-              {
-                opacity: fadeAnim,
-                transform: [{ translateY }],
-              },
-            ]}
-          >
-            <Text style={styles.title}>Verify Your Seed Phrase</Text>
-            <Text style={styles.description}>
-              Tap the words in the correct order to verify you've saved your
-              seed phrase.
-            </Text>
-          </Animated.View>
+          <IntroHeader
+            title="Verify Your Seed Phrase"
+            subtitle="Tap the words in the correct order to verify you've saved your seed phrase."
+          />
 
           {/* Seed Phrase Box */}
           <Animated.View

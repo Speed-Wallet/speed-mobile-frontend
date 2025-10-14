@@ -11,6 +11,7 @@ import { useRouter } from 'expo-router';
 import { useRef, useEffect } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Plus, Download, Zap } from 'lucide-react-native';
+import GradientBackground from '@/components/GradientBackground';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import colors from '@/constants/colors';
@@ -71,13 +72,7 @@ export default function CreateWalletIntroStep({
 
   return (
     <SafeAreaView style={styles.container}>
-      <LinearGradient
-        colors={['#009FCC', '#0d2a35', '#0A0A0A']}
-        locations={[0, 0.4, 1]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={StyleSheet.absoluteFill}
-      />
+      <GradientBackground />
 
       <View style={styles.content}>
         {/* Logo with Glow Effect */}
