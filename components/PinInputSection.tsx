@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
   },
   keyboardSection: {
     alignItems: 'center',
-    // paddingBottom: 5,
+    paddingBottom: moderateScale(5, 20),
   },
 });
 

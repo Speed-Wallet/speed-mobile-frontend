@@ -11,8 +11,6 @@ import { Plus } from 'lucide-react-native';
 import colors from '@/constants/colors';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import WalletItem from './WalletItem';
-import SettingsHeader from '@/components/SettingsHeader';
-import BottomSheetScreenContainer from '@/components/BottomSheetScreenContainer';
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 
@@ -32,8 +30,6 @@ interface WalletListContentProps {
   onCopyAddress: (publicKey: string, walletId: string) => void;
   onAddWalletPress: () => void;
   renderScrollComponent?: any;
-  title: string;
-  onClose: () => void;
 }
 
 const WalletListContent: React.FC<WalletListContentProps> = ({
@@ -44,8 +40,6 @@ const WalletListContent: React.FC<WalletListContentProps> = ({
   onCopyAddress,
   onAddWalletPress,
   renderScrollComponent,
-  title,
-  onClose,
 }) => {
   const renderWalletItem = ({ item }: { item: WalletInfo }) => (
     <WalletItem
@@ -69,10 +63,7 @@ const WalletListContent: React.FC<WalletListContentProps> = ({
   const renderItemSeparator = () => <View style={{ height: 2 }} />;
 
   return (
-    <BottomSheetScreenContainer edges={['bottom']}>
-      <View style={styles.headerContainer}>
-        <SettingsHeader title={title} onClose={onClose} noPadding={true} />
-      </View>
+    <>
       <FlashList
         data={wallets}
         keyExtractor={(item) => item.id}
@@ -82,6 +73,7 @@ const WalletListContent: React.FC<WalletListContentProps> = ({
         ListEmptyComponent={renderEmptyComponent}
         ItemSeparatorComponent={renderItemSeparator}
         renderScrollComponent={renderScrollComponent}
+        style={styles.flashList}
       />
       <View style={styles.addButtonContainer}>
         <TouchableOpacity
@@ -92,19 +84,16 @@ const WalletListContent: React.FC<WalletListContentProps> = ({
           <Plus size={20} color={colors.primaryText} />
         </TouchableOpacity>
       </View>
-    </BottomSheetScreenContainer>
+    </>
   );
 };
 
 const styles = StyleSheet.create({
-  headerContainer: {
-    backgroundColor: colors.backgroundDark,
-    // marginBottom: verticalScale(6),
-    paddingHorizontal: scale(16),
+  flashList: {
+    maxHeight: SCREEN_HEIGHT * 0.65,
   },
   listContent: {
-    paddingHorizontal: scale(16),
-    // paddingBottom: 12,
+    paddingHorizontal: 0,
   },
   emptyState: {
     alignItems: 'center',

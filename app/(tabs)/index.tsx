@@ -370,7 +370,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: verticalScale(18),
+    marginBottom: 8,
     // marginTop: verticalScale(40),
   },
   userSection: {
