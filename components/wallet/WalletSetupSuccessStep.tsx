@@ -9,9 +9,12 @@ import {
   ActivityIndicator,
   SafeAreaView,
 } from 'react-native';
-import { CheckCircle } from 'lucide-react-native';
+import { CheckCircle, ArrowRight } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
-import PrimaryActionButton from '@/components/buttons/PrimaryActionButton';
+import GradientBackground from '@/components/GradientBackground';
+import 'react-native-get-random-values';
+import ScreenContainer from '@/components/ScreenContainer';
 
 interface WalletSetupSuccessStepProps {
   onComplete: () => void;
@@ -23,7 +26,7 @@ const WalletSetupSuccessStep: React.FC<WalletSetupSuccessStepProps> = ({
   username,
 }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0.95)).current;
+  const scaleAnim = useRef(new Animated.Value(0.8)).current;
   const translateY = useRef(new Animated.Value(20)).current;
   const [isLoading, setIsLoading] = useState(false);
 
@@ -41,9 +44,10 @@ const WalletSetupSuccessStep: React.FC<WalletSetupSuccessStepProps> = ({
         duration: 800,
         useNativeDriver: true,
       }),
-      Animated.timing(scaleAnim, {
+      Animated.spring(scaleAnim, {
         toValue: 1,
-        duration: 800,
+        tension: 50,
+        friction: 7,
         useNativeDriver: true,
       }),
       Animated.timing(translateY, {
@@ -54,104 +58,205 @@ const WalletSetupSuccessStep: React.FC<WalletSetupSuccessStepProps> = ({
     ]).start();
   }, []);
 
-  return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        {/* Success Icon and Message */}
-        <Animated.View
-          style={[
-            styles.messageArea,
-            {
-              opacity: fadeAnim,
-              transform: [{ scale: scaleAnim }, { translateY }],
-            },
-          ]}
-        >
-          <View style={styles.iconContainer}>
-            <View style={styles.iconBackground}>
-              <CheckCircle size={scale(64)} color="#22C55E" />
-            </View>
-          </View>
+  // Pulsing animation for the glow
+  const pulseAnim = useRef(new Animated.Value(1)).current;
 
-          <View style={styles.messageContainer}>
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.1,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+      ]),
+    ).start();
+  }, []);
+
+  return (
+    <View style={styles.container}>
+      <GradientBackground />
+      <ScreenContainer edges={['bottom']} backgroundColor="transparent">
+        <View style={styles.content}>
+          {/* Success Icon with Glow Effect */}
+          <Animated.View
+            style={[
+              styles.logoSection,
+              {
+                opacity: fadeAnim,
+                transform: [{ translateY: translateY }, { scale: scaleAnim }],
+              },
+            ]}
+          >
+            <View style={styles.logoWrapper}>
+              <View style={styles.logoCircle}>
+                <View style={styles.outerRing} />
+                <CheckCircle
+                  size={scale(80)}
+                  color="#34d399"
+                  strokeWidth={3}
+                  fill="none"
+                />
+              </View>
+
+              {/* Glow effect */}
+              <Animated.View
+                style={[
+                  styles.glowEffect,
+                  {
+                    transform: [{ scale: pulseAnim }],
+                  },
+                ]}
+              >
+                <LinearGradient
+                  colors={['#10b981', '#059669']}
+                  style={styles.glowGradient}
+                />
+              </Animated.View>
+            </View>
+
+            {/* Success Message */}
             <Text style={styles.title}>Wallet Created Successfully!</Text>
             <Text style={styles.subtitle}>
               Welcome <Text style={styles.username}>{username}</Text>! Your
-              wallet has been created and secured with a PIN. Keep your seed
-              phrase and PIN safe!
+              wallet has been created and secured with a PIN.
             </Text>
-          </View>
-        </Animated.View>
-      </View>
+            <Text style={styles.infoText}>
+              Keep your seed phrase and PIN safe!
+            </Text>
+          </Animated.View>
+        </View>
 
-      {/* Continue Button */}
-      <Animated.View
-        style={[
-          styles.buttonContainer,
-          {
-            opacity: fadeAnim,
-            transform: [{ translateY }],
-          },
-        ]}
-      >
-        <PrimaryActionButton
-          title={isLoading ? 'Loading...' : 'Go to Wallet'}
-          onPress={handleComplete}
-          disabled={isLoading}
-          loading={isLoading}
-        />
-      </Animated.View>
-    </SafeAreaView>
+        {/* Continue Button */}
+        <Animated.View
+          style={[
+            styles.buttonContainer,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY }],
+            },
+          ]}
+        >
+          <TouchableOpacity
+            style={styles.primaryButton}
+            onPress={handleComplete}
+            disabled={isLoading}
+            activeOpacity={0.8}
+          >
+            <LinearGradient
+              colors={['#22d3ee', '#06b6d4']}
+              style={styles.primaryButtonGradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+            >
+              {isLoading ? (
+                <ActivityIndicator color="#0f172a" size="small" />
+              ) : (
+                <>
+                  <Text style={styles.primaryButtonText}>
+                    Continue to Wallet
+                  </Text>
+                  <ArrowRight
+                    size={scale(20)}
+                    color="#0f172a"
+                    strokeWidth={2.5}
+                  />
+                </>
+              )}
+            </LinearGradient>
+          </TouchableOpacity>
+        </Animated.View>
+      </ScreenContainer>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#121212',
+    backgroundColor: '#0A0A0A',
   },
   content: {
     flex: 1,
     paddingHorizontal: scale(24),
-    paddingTop: Platform.OS === 'ios' ? verticalScale(60) : verticalScale(80),
-  },
-  messageArea: {
-    alignItems: 'center',
-  },
-  iconContainer: {
-    alignItems: 'center',
-    marginBottom: verticalScale(40),
-  },
-  iconBackground: {
-    width: scale(140),
-    height: scale(140),
-    borderRadius: scale(70),
-    backgroundColor: 'rgba(34, 197, 94, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: 'rgba(34, 197, 94, 0.3)',
   },
-  messageContainer: {
+  logoSection: {
     alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logoWrapper: {
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: verticalScale(40),
+  },
+  logoCircle: {
+    width: scale(160),
+    height: scale(160),
+    borderRadius: scale(80),
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    elevation: 20,
+    shadowColor: '#10b981',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.4,
+    shadowRadius: 20,
+  },
+  outerRing: {
+    position: 'absolute',
+    width: scale(160),
+    height: scale(160),
+    borderRadius: scale(80),
+    borderWidth: 5,
+    borderColor: 'rgba(16, 185, 129, 0.6)',
+  },
+  glowEffect: {
+    position: 'absolute',
+    width: scale(160),
+    height: scale(160),
+    borderRadius: scale(80),
+    zIndex: -1,
+  },
+  glowGradient: {
+    width: '100%',
+    height: '100%',
+    borderRadius: scale(80),
+    opacity: 0.5,
   },
   title: {
     fontSize: moderateScale(28),
-    fontWeight: '900',
+    fontWeight: '700',
     color: '#ffffff',
     textAlign: 'center',
     marginBottom: verticalScale(16),
+    paddingHorizontal: scale(16),
   },
   subtitle: {
     fontSize: moderateScale(16),
-    color: '#9ca3af',
+    color: 'rgba(255, 255, 255, 0.8)',
     textAlign: 'center',
-    lineHeight: verticalScale(24),
-    paddingHorizontal: scale(20),
+    lineHeight: moderateScale(24),
+    paddingHorizontal: scale(16),
+    marginBottom: verticalScale(12),
   },
   username: {
     fontWeight: '700',
-    color: '#ffffff',
+    color: '#22d3ee',
+  },
+  infoText: {
+    fontSize: moderateScale(14),
+    color: 'rgba(255, 255, 255, 0.6)',
+    textAlign: 'center',
+    lineHeight: moderateScale(22),
+    paddingHorizontal: scale(16),
   },
   buttonContainer: {
     width: '100%',
@@ -159,6 +264,29 @@ const styles = StyleSheet.create({
     paddingBottom:
       Platform.OS === 'ios' ? verticalScale(34) : verticalScale(24),
     paddingTop: verticalScale(20),
+  },
+  primaryButton: {
+    width: '100%',
+    borderRadius: scale(16),
+    overflow: 'hidden',
+    elevation: 10,
+    shadowColor: '#22d3ee',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  primaryButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: verticalScale(20),
+    paddingHorizontal: scale(24),
+    gap: scale(12),
+  },
+  primaryButtonText: {
+    fontSize: moderateScale(18),
+    fontWeight: '600',
+    color: '#0f172a',
   },
 });
 

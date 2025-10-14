@@ -179,7 +179,8 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
 
   // Helper function to get progress bar info
   const getProgressInfo = () => {
-    if (step === 1 || step === 9) return { current: 0, total: 5 }; // Initial or import screen - no progress bar
+    if (step === 1) return { current: 0, total: 5 }; // Initial screen - no progress bar
+    if (step === 9) return { current: 1, total: 5 }; // Import wallet - step 1 of 5
     if (step === 6) return { current: 5, total: 5 }; // Success screen - full progress (step 5 of 5)
 
     // Normal flow: steps 2-5 map to progress 1-4
@@ -197,10 +198,10 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
   };
 
   const progressInfo = getProgressInfo();
-  const showProgressBar = (step > 1 && step !== 9) || step === 6; // Show on all steps except initial and import, but include success screen
+  const showProgressBar = step > 1 && step !== 6; // Show on all steps except initial (step 1) and success (step 6)
 
-  // Adjust edges based on step - no edges for step 1 to allow gradient to extend fully
-  const screenEdges = step === 1 ? [] : ['top', 'bottom'];
+  // Adjust edges based on step - no edges for step 1 and step 6 to allow gradient to extend fully
+  const screenEdges = step === 1 || step === 6 ? [] : ['top', 'bottom'];
 
   return (
     <ScreenContainer

@@ -46,42 +46,60 @@ const PinInputSection: React.FC<PinInputSectionProps> = ({
   }, []);
 
   return (
-    <Animated.View
-      style={[
-        styles.centerSection,
-        {
-          opacity: fadeAnim,
-          transform: [{ scale: scaleAnim }],
-        },
-      ]}
-    >
+    <View style={styles.container}>
+      {/* Centered Title and Pin Dots */}
       <Animated.View
         style={[
-          styles.titleContainer,
+          styles.centerSection,
           {
-            transform: [{ translateY }],
+            opacity: fadeAnim,
+            transform: [{ scale: scaleAnim }],
           },
         ]}
       >
-        <Text style={styles.title}>{title}</Text>
-        {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+        <Animated.View
+          style={[
+            styles.titleContainer,
+            {
+              transform: [{ translateY }],
+            },
+          ]}
+        >
+          <Text style={styles.title}>{title}</Text>
+          {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+        </Animated.View>
+
+        <Animated.View
+          style={[
+            styles.pinDotsContainer,
+            shakeAnimation && { transform: [{ translateX: shakeAnimation }] },
+          ]}
+        >
+          <PinDots pinLength={pin.length} maxLength={maxLength} />
+        </Animated.View>
       </Animated.View>
 
+      {/* Keyboard at Bottom */}
       <Animated.View
         style={[
-          styles.pinDotsContainer,
-          shakeAnimation && { transform: [{ translateX: shakeAnimation }] },
+          styles.keyboardSection,
+          {
+            opacity: fadeAnim,
+          },
         ]}
       >
-        <PinDots pinLength={pin.length} maxLength={maxLength} />
+        <CircularNumericKeyboard onKeyPress={onKeyPress} />
       </Animated.View>
-
-      <CircularNumericKeyboard onKeyPress={onKeyPress} />
-    </Animated.View>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    flexDirection: 'column',
+    justifyContent: 'space-between',
+  },
   centerSection: {
     flex: 1,
     alignItems: 'center',
@@ -107,6 +125,10 @@ const styles = StyleSheet.create({
   pinDotsContainer: {
     marginBottom: 24,
     alignItems: 'center',
+  },
+  keyboardSection: {
+    alignItems: 'center',
+    // paddingBottom: 5,
   },
 });
 
