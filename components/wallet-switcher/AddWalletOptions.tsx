@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Plus, Key } from 'lucide-react-native';
 import colors from '@/constants/colors';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
-import BottomSheetScreenContainer from '@/components/BottomSheetScreenContainer';
 
 interface AddWalletOptionsProps {
   onCreateWallet: () => void;
@@ -19,39 +18,33 @@ const AddWalletOptions: React.FC<AddWalletOptionsProps> = ({
   loading,
 }) => {
   return (
-    <BottomSheetScreenContainer edges={['bottom']}>
-      <View style={styles.container}>
-        <TouchableOpacity
-          style={styles.actionCard}
-          onPress={onCreateWallet}
-          disabled={loading}
-        >
-          <View
-            style={[styles.actionIcon, { backgroundColor: colors.primary }]}
-          >
-            <Plus size={ICON_SIZE} color={colors.primaryText} />
-          </View>
-          <View style={styles.actionContent}>
-            <Text style={styles.actionTitle}>Create New Wallet</Text>
-          </View>
-        </TouchableOpacity>
+    <View style={styles.container}>
+      <TouchableOpacity
+        style={styles.actionCard}
+        onPress={onCreateWallet}
+        disabled={loading}
+      >
+        <View style={[styles.actionIcon, { backgroundColor: colors.primary }]}>
+          <Plus size={ICON_SIZE} color={colors.primaryText} />
+        </View>
+        <View style={styles.actionContent}>
+          <Text style={styles.actionTitle}>Create New Wallet</Text>
+        </View>
+      </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.actionCard}
-          onPress={onImportWallet}
-          disabled={loading}
-        >
-          <View
-            style={[styles.actionIcon, { backgroundColor: colors.success }]}
-          >
-            <Key size={ICON_SIZE} color={colors.primaryText} />
-          </View>
-          <View style={styles.actionContent}>
-            <Text style={styles.actionTitle}>Import Wallet</Text>
-          </View>
-        </TouchableOpacity>
-      </View>
-    </BottomSheetScreenContainer>
+      <TouchableOpacity
+        style={styles.actionCard}
+        onPress={onImportWallet}
+        disabled={loading}
+      >
+        <View style={[styles.actionIcon, { backgroundColor: colors.success }]}>
+          <Key size={ICON_SIZE} color={colors.primaryText} />
+        </View>
+        <View style={styles.actionContent}>
+          <Text style={styles.actionTitle}>Import Wallet</Text>
+        </View>
+      </TouchableOpacity>
+    </View>
   );
 };
 

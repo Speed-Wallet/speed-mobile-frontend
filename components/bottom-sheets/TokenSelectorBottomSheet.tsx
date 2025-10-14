@@ -143,32 +143,35 @@ const TokenSelectorBottomSheet = forwardRef<
           />
         )}
       >
-        <FlashList
-          data={tokens}
-          keyExtractor={(token) => token.address}
-          renderItem={renderTokenItem}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-          ListHeaderComponent={
-            <View style={styles.headerContainer}>
-              <SettingsHeader
-                title="Select Token"
-                onClose={handleClose}
-                noPadding={true}
+        <View style={styles.container}>
+          {/* Fixed Header */}
+          <View style={styles.headerContainer}>
+            <SettingsHeader
+              title="Select Token"
+              onClose={handleClose}
+              noPadding={true}
+            />
+            <View>
+              <SearchBar
+                searchQuery={searchQuery}
+                onSearchChange={onSearchChange}
+                placeholder="Search by name or symbol"
               />
-              <View>
-                <SearchBar
-                  searchQuery={searchQuery}
-                  onSearchChange={onSearchChange}
-                  placeholder="Search by name or symbol"
-                />
-              </View>
             </View>
-          }
-          ListEmptyComponent={renderEmptyComponent}
-          ListFooterComponent={renderFooter}
-          renderScrollComponent={BottomSheetFlashListScrollable}
-        />
+          </View>
+
+          {/* Scrollable List */}
+          <FlashList
+            data={tokens}
+            keyExtractor={(token) => token.address}
+            renderItem={renderTokenItem}
+            contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={false}
+            ListEmptyComponent={renderEmptyComponent}
+            ListFooterComponent={renderFooter}
+            renderScrollComponent={BottomSheetFlashListScrollable}
+          />
+        </View>
       </BottomSheetModal>
     );
   },
@@ -183,8 +186,13 @@ const styles = StyleSheet.create({
   bottomSheetHandle: {
     backgroundColor: colors.textSecondary,
   },
+  container: {
+    flex: 1,
+    backgroundColor: colors.backgroundDark,
+  },
   headerContainer: {
     backgroundColor: colors.backgroundDark,
+    paddingHorizontal: scale(16),
     marginBottom: 6,
   },
   listContent: {

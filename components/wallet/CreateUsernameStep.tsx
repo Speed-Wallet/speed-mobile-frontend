@@ -3,7 +3,6 @@ import {
   Text,
   StyleSheet,
   TextInput,
-  TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
   Animated,
@@ -12,12 +11,10 @@ import { useState, useRef, useEffect } from 'react';
 import { User } from 'lucide-react-native';
 import { verticalScale, scale, moderateScale } from 'react-native-size-matters';
 import colors from '@/constants/colors';
-import ScreenHeader from '@/components/ScreenHeader';
-import ScreenContainer from '@/components/ScreenContainer';
-import PrimaryActionButton from '@/components/buttons/PrimaryActionButton';
 import BackButton from '@/components/buttons/BackButton';
+import PrimaryActionButton from '@/components/buttons/PrimaryActionButton';
 import { triggerShake } from '@/utils/animations';
-import IntroHeader from './IntroHeader';
+import IntroScreen from './IntroScreen';
 
 interface CreateUsernameStepProps {
   onNext: (username: string) => Promise<void>;
@@ -104,95 +101,88 @@ export default function CreateUsernameStep({
   };
 
   return (
-    <ScreenContainer edges={['top', 'bottom']}>
+    <IntroScreen
+      title={`Welcome${username.length > 0 ? ` ${username}` : ''}`}
+      subtitle="Please enter your username to get started with your wallet setup"
+      footer={
+        <PrimaryActionButton
+          title={
+            isLoading
+              ? 'Loading...'
+              : isUsernameTaken
+                ? 'Username Taken'
+                : 'Continue'
+          }
+          onPress={handleContinue}
+          disabled={!isValid || isLoading}
+          loading={isLoading}
+          variant={isUsernameTaken ? 'error' : 'primary'}
+        />
+      }
+    >
       {/* Development Back Button */}
       {process.env.EXPO_PUBLIC_APP_ENV === 'development' && onBack && (
         <BackButton onPress={onBack} style={styles.devBackButton} />
       )}
 
-      <View style={styles.content}>
-        <KeyboardAvoidingView
-          style={styles.keyboardView}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      <KeyboardAvoidingView
+        style={styles.keyboardView}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        {/* Form Section */}
+        <Animated.View
+          style={[
+            styles.form,
+            {
+              opacity: fadeAnim,
+              transform: [{ scale: scaleAnim }],
+            },
+          ]}
         >
-          {/* Header Section */}
-          <IntroHeader
-            title={`Welcome${username.length > 0 ? ` ${username}` : ''}`}
-            subtitle="Please enter your username to get started with your wallet setup"
-          />
+          <Text style={styles.label}>Username</Text>
 
-          {/* Form Section */}
           <Animated.View
             style={[
-              styles.form,
+              styles.inputContainer,
+              username.length > 0 &&
+                (isUsernameTaken || (!isValid && error)
+                  ? styles.inputError
+                  : isValid
+                    ? styles.inputValid
+                    : styles.inputContainer),
               {
-                opacity: fadeAnim,
-                transform: [{ scale: scaleAnim }],
+                transform: [{ translateX: shakeAnimationValue }],
               },
             ]}
           >
-            <Text style={styles.label}>Username</Text>
-
-            <Animated.View
-              style={[
-                styles.inputContainer,
-                username.length > 0 &&
-                  (isUsernameTaken || (!isValid && error)
-                    ? styles.inputError
-                    : isValid
-                      ? styles.inputValid
-                      : styles.inputContainer),
-                {
-                  transform: [{ translateX: shakeAnimationValue }],
-                },
-              ]}
-            >
-              <View style={styles.inputWrapper}>
-                <Text style={styles.atSymbol}>@</Text>
-                <TextInput
-                  style={styles.input}
-                  value={username}
-                  onChangeText={handleUsernameChange}
-                  placeholder="username"
-                  placeholderTextColor={colors.textSecondary}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  maxLength={20}
-                  editable={!isLoading}
-                />
-              </View>
-            </Animated.View>
-
-            <View style={styles.helperContainer}>
-              {error ? (
-                <Text style={styles.errorText}>{error}</Text>
-              ) : (
-                <Text style={styles.helperText}>
-                  3-20 characters, letters, numbers, and underscores only
-                </Text>
-              )}
+            <View style={styles.inputWrapper}>
+              <Text style={styles.atSymbol}>@</Text>
+              <TextInput
+                style={styles.input}
+                value={username}
+                onChangeText={handleUsernameChange}
+                placeholder="username"
+                placeholderTextColor={colors.textSecondary}
+                autoCapitalize="none"
+                autoCorrect={false}
+                maxLength={20}
+                editable={!isLoading}
+              />
             </View>
           </Animated.View>
 
-          {/* Continue Button */}
-          <View style={styles.buttonWrapper}>
-            <PrimaryActionButton
-              title={
-                isLoading
-                  ? 'Loading...'
-                  : isUsernameTaken
-                    ? 'Username Taken'
-                    : 'Continue'
-              }
-              onPress={handleContinue}
-              disabled={!isValid || isLoading}
-              loading={isLoading}
-              variant={isUsernameTaken ? 'error' : 'primary'}
-            />
+          <View style={styles.helperContainer}>
+            {error ? (
+              <Text style={styles.errorText}>{error}</Text>
+            ) : (
+              <Text style={styles.helperText}>
+                3-20 characters, letters, numbers, and underscores only
+              </Text>
+            )}
           </View>
-        </KeyboardAvoidingView>
-      </View>
-    </ScreenContainer>
+        </Animated.View>
+      </KeyboardAvoidingView>
+    </IntroScreen>
   );
 }
 
@@ -209,9 +199,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: scale(20),
   },
-  keyboardView: {
-    flex: 1,
-  },
+  keyboardView: {},
   header: {
     alignItems: 'flex-start',
     marginBottom: verticalScale(24),
@@ -232,10 +220,7 @@ const styles = StyleSheet.create({
     textAlign: 'left',
     lineHeight: moderateScale(22),
   },
-  form: {
-    marginTop: 20,
-    marginBottom: 32,
-  },
+  form: {},
   label: {
     fontSize: 16,
     fontFamily: 'Inter-SemiBold',

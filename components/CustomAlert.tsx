@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { AlertTriangle, CheckCircle, Info, X } from 'lucide-react-native';
+import colors from '@/constants/colors';
 
 interface AlertButton {
   text: string;
@@ -255,7 +256,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   defaultButton: {
-    backgroundColor: '#7c5cff',
+    backgroundColor: colors.primary,
   },
   cancelButton: {
     backgroundColor: '#374151',
@@ -264,7 +265,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ef4444',
   },
   defaultButtonText: {
-    color: '#ffffff',
+    color: colors.primaryText,
     fontSize: 16,
     fontWeight: '600',
   },

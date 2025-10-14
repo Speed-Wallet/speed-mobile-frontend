@@ -4,19 +4,16 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  ScrollView,
   Animated,
-  Platform,
 } from 'react-native';
 import { Eye, EyeOff, RotateCcw } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import colors from '@/constants/colors';
-import ScreenContainer from '@/components/ScreenContainer';
 import BackButton from '@/components/buttons/BackButton';
 import WordBox from '@/components/wallet/WordBox';
 import { triggerShake } from '@/utils/animations';
-import IntroHeader from './IntroHeader';
+import IntroScreen from './IntroScreen';
 
 interface SeedPhraseVerificationStepProps {
   words: string[];
@@ -164,111 +161,89 @@ const SeedPhraseVerificationStep: React.FC<SeedPhraseVerificationStepProps> = ({
   };
 
   return (
-    <ScreenContainer edges={['top', 'bottom']}>
+    <IntroScreen
+      title="Verify Your Seed Phrase"
+      subtitle="Tap the words in the correct order to verify you've saved your seed phrase."
+      showDevSkip={true}
+      onDevSkip={onSuccess}
+      footer={
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={onBack}
+          disabled={isLoading}
+        >
+          <Text style={styles.backButtonText}>Back to Seed Phrase</Text>
+        </TouchableOpacity>
+      }
+    >
       {/* Development Back Button */}
       {process.env.EXPO_PUBLIC_APP_ENV === 'development' && (
         <BackButton onPress={onBack} style={styles.devBackButton} />
       )}
 
-      {/* Dev Mode Skip Button */}
-      {process.env.EXPO_PUBLIC_APP_ENV === 'development' && (
-        <TouchableOpacity style={styles.skipButton} onPress={onSuccess}>
-          <Text style={styles.skipButtonText}>Skip</Text>
-        </TouchableOpacity>
-      )}
-
-      <View style={styles.content}>
-        <ScrollView
-          style={styles.scrollView}
-          showsVerticalScrollIndicator={false}
+      <Animated.View
+        style={[
+          styles.seedPhraseContainer,
+          {
+            opacity: fadeAnim,
+            transform: [{ scale: scaleAnim }],
+          },
+        ]}
+      >
+        <LinearGradient
+          colors={['#1a1a1a', '#1f1f1f']}
+          style={styles.seedPhraseBox}
         >
-          {/* Title and Description */}
-          <IntroHeader
-            title="Verify Your Seed Phrase"
-            subtitle="Tap the words in the correct order to verify you've saved your seed phrase."
-          />
+          <View style={styles.seedPhraseHeader}>
+            <TouchableOpacity style={styles.iconButton} onPress={shuffleWords}>
+              <RotateCcw size={scale(20)} color="#9ca3af" />
+            </TouchableOpacity>
 
-          {/* Seed Phrase Box */}
-          <Animated.View
-            style={[
-              styles.seedPhraseContainer,
-              {
-                opacity: fadeAnim,
-                transform: [{ scale: scaleAnim }],
-              },
-            ]}
-          >
-            <LinearGradient
-              colors={['#1a1a1a', '#1f1f1f']}
-              style={styles.seedPhraseBox}
+            <TouchableOpacity
+              style={styles.iconButton}
+              onPress={() => setIsVisible(!isVisible)}
             >
-              <View style={styles.seedPhraseHeader}>
-                <TouchableOpacity
-                  style={styles.iconButton}
-                  onPress={shuffleWords}
-                >
-                  <RotateCcw size={scale(20)} color="#9ca3af" />
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.iconButton}
-                  onPress={() => setIsVisible(!isVisible)}
-                >
-                  {isVisible ? (
-                    <EyeOff size={scale(20)} color="#9ca3af" />
-                  ) : (
-                    <Eye size={scale(20)} color="#9ca3af" />
-                  )}
-                </TouchableOpacity>
-              </View>
-              <Animated.View
-                style={{ transform: [{ translateX: shakeAnimationValue }] }}
-              >
-                {renderWordGrid()}
-              </Animated.View>
-
-              {/* Controls Row */}
-              <View style={styles.controlsRow}>
-                <TouchableOpacity
-                  style={[
-                    styles.backspaceButton,
-                    selectedWords.length === 0 &&
-                      styles.backspaceButtonDisabled,
-                  ]}
-                  onPress={handleBackspace}
-                  disabled={selectedWords.length === 0}
-                >
-                  <Text
-                    style={[
-                      styles.backspaceButtonText,
-                      selectedWords.length === 0 &&
-                        styles.backspaceButtonTextDisabled,
-                    ]}
-                  >
-                    ← Backspace
-                  </Text>
-                </TouchableOpacity>
-
-                <Text style={styles.wordCounter}>
-                  {selectedWords.length}/{words.length} words
-                </Text>
-              </View>
-            </LinearGradient>
-          </Animated.View>
-        </ScrollView>
-
-        {/* Back Button */}
-        <View style={styles.bottomSection}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={onBack}
-            disabled={isLoading}
+              {isVisible ? (
+                <EyeOff size={scale(20)} color="#9ca3af" />
+              ) : (
+                <Eye size={scale(20)} color="#9ca3af" />
+              )}
+            </TouchableOpacity>
+          </View>
+          <Animated.View
+            style={{ transform: [{ translateX: shakeAnimationValue }] }}
           >
-            <Text style={styles.backButtonText}>Back to Seed Phrase</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </ScreenContainer>
+            {renderWordGrid()}
+          </Animated.View>
+
+          {/* Controls Row */}
+          <View style={styles.controlsRow}>
+            <TouchableOpacity
+              style={[
+                styles.backspaceButton,
+                selectedWords.length === 0 && styles.backspaceButtonDisabled,
+              ]}
+              onPress={handleBackspace}
+              disabled={selectedWords.length === 0}
+            >
+              <Text
+                style={[
+                  styles.backspaceButtonText,
+                  selectedWords.length === 0 &&
+                    styles.backspaceButtonTextDisabled,
+                ]}
+              >
+                ← Backspace
+              </Text>
+            </TouchableOpacity>
+
+            <Text style={styles.wordCounter}>
+              {selectedWords.length}/{words.length} words
+            </Text>
+          </View>
+        </LinearGradient>
+      </Animated.View>
+    </IntroScreen>
   );
 };
 

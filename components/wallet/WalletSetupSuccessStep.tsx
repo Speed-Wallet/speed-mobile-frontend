@@ -279,7 +279,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: verticalScale(20),
+    height: verticalScale(64),
     paddingHorizontal: scale(24),
     gap: scale(12),
   },

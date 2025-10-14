@@ -12,7 +12,6 @@ import colors from '@/constants/colors';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import PrimaryActionButton from '@/components/buttons/PrimaryActionButton';
 import { triggerShake } from '@/utils/animations';
-import BottomSheetScreenContainer from '@/components/BottomSheetScreenContainer';
 
 interface WalletNameInputProps {
   onSubmit: (walletName: string) => void;
@@ -72,49 +71,47 @@ const WalletNameInput: React.FC<WalletNameInputProps> = ({
   };
 
   return (
-    <BottomSheetScreenContainer edges={['bottom']}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
-      >
-        <View style={styles.content}>
-          <Text style={styles.subtitle}>Wallet Name</Text>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={styles.keyboardView}
+    >
+      <View style={styles.content}>
+        <Text style={styles.subtitle}>Wallet Name</Text>
 
-          <Animated.View
-            style={{
-              transform: [{ translateX: shakeAnimation }],
-              ...styles.inputContainer,
+        <Animated.View
+          style={{
+            transform: [{ translateX: shakeAnimation }],
+            ...styles.inputContainer,
+          }}
+        >
+          <TextInput
+            ref={inputRef}
+            style={[styles.input, walletNameError && styles.inputError]}
+            placeholder="Enter wallet name"
+            placeholderTextColor={colors.textSecondary}
+            value={walletName}
+            onChangeText={(text) => {
+              setWalletName(text);
+              if (walletNameError) setWalletNameError('');
             }}
-          >
-            <TextInput
-              ref={inputRef}
-              style={[styles.input, walletNameError && styles.inputError]}
-              placeholder="Enter wallet name"
-              placeholderTextColor={colors.textSecondary}
-              value={walletName}
-              onChangeText={(text) => {
-                setWalletName(text);
-                if (walletNameError) setWalletNameError('');
-              }}
-              onBlur={handleWalletNameBlur}
-              autoFocus
-            />
-            {walletNameError && (
-              <Text style={styles.errorText}>* {walletNameError}</Text>
-            )}
-          </Animated.View>
+            onBlur={handleWalletNameBlur}
+            autoFocus
+          />
+          {walletNameError && (
+            <Text style={styles.errorText}>* {walletNameError}</Text>
+          )}
+        </Animated.View>
 
-          <View style={styles.buttonContainer}>
-            <PrimaryActionButton
-              title={loading ? loadingTitle : buttonTitle}
-              onPress={handleSubmit}
-              disabled={loading}
-              loading={loading}
-            />
-          </View>
+        <View style={styles.buttonContainer}>
+          <PrimaryActionButton
+            title={loading ? loadingTitle : buttonTitle}
+            onPress={handleSubmit}
+            disabled={loading}
+            loading={loading}
+          />
         </View>
-      </KeyboardAvoidingView>
-    </BottomSheetScreenContainer>
+      </View>
+    </KeyboardAvoidingView>
   );
 };
 

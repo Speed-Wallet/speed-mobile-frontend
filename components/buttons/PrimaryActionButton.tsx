@@ -33,27 +33,25 @@ const PrimaryActionButton: React.FC<PrimaryActionButtonProps> = ({
   style,
 }) => {
   const getBackgroundColor = () => {
-    if (disabled) return colors.backgroundMedium;
+    if (disabled && !loading) return colors.backgroundMedium;
 
     switch (variant) {
       case 'success':
-        return colors.primary;
+        return '#00CFFF';
       case 'error':
         return '#ff5252';
       case 'secondary':
         return colors.backgroundMedium;
       case 'primary':
       default:
-        return colors.primary;
+        return '#00CFFF';
     }
   };
 
   const getTextColor = () => {
-    if (disabled) return colors.textSecondary;
+    if (disabled && !loading) return colors.textSecondary;
     if (variant === 'secondary') return colors.textSecondary;
-    return variant === 'success' || variant === 'error'
-      ? colors.white
-      : colors.primaryText;
+    return variant === 'success' || variant === 'error' ? '#000000' : '#000000';
   };
 
   const renderIcon = () => {
@@ -92,25 +90,22 @@ const PrimaryActionButton: React.FC<PrimaryActionButtonProps> = ({
 
 const styles = StyleSheet.create({
   button: {
-    height: moderateScale(44, 0.8),
     width: '100%',
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderRadius: 12,
     overflow: 'hidden',
   },
   buttonBackground: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
-    height: '100%',
+    height: verticalScale(52),
+    paddingHorizontal: scale(32),
     gap: scale(4),
   },
   buttonText: {
-    fontSize: moderateScale(16, 0.1),
-    fontFamily: 'Inter-SemiBold',
+    fontSize: moderateScale(16),
+    fontWeight: '600',
   },
 });
 

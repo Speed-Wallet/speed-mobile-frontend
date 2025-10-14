@@ -13,6 +13,7 @@ import {
   useBottomSheetScrollableCreator,
 } from '@gorhom/bottom-sheet';
 import SettingsHeader from '@/components/SettingsHeader';
+import BottomSheetScreenContainer from '@/components/BottomSheetScreenContainer';
 import colors from '@/constants/colors';
 import { scale } from 'react-native-size-matters';
 import { setStringAsync } from 'expo-clipboard';
@@ -82,27 +83,26 @@ const WalletSwitcherBottomSheet = forwardRef<
       'hardwareBackPress',
       () => {
         if (!isSheetOpen) {
-          return false; // Let default behavior handle it
+          return false;
         }
 
         if (viewMode === 'create' || viewMode === 'import') {
           setViewMode('add');
-          return true; // Prevent default behavior
+          return true;
         } else if (viewMode === 'name-import') {
           setViewMode('import');
-          return true; // Prevent default behavior
+          return true;
         } else if (viewMode === 'add') {
           setViewMode('list');
-          return true; // Prevent default behavior
+          return true;
         } else if (viewMode === 'list') {
           bottomSheetRef.current?.dismiss();
-          return true; // Prevent default behavior
+          return true;
         }
 
         return false;
       },
     );
-
     return () => backHandler.remove();
   }, [viewMode, isSheetOpen]);
 
@@ -237,6 +237,18 @@ const WalletSwitcherBottomSheet = forwardRef<
 
   const renderContent = () => {
     switch (viewMode) {
+      case 'list':
+        return (
+          <WalletListContent
+            wallets={wallets}
+            loading={loading}
+            copiedAddressId={copiedAddressId}
+            onSwitchWallet={handleSwitchWallet}
+            onCopyAddress={copyAddress}
+            onAddWalletPress={() => setViewMode('add')}
+            renderScrollComponent={BottomSheetFlashListScrollable}
+          />
+        );
       case 'add':
         return (
           <AddWalletOptions
@@ -271,7 +283,7 @@ const WalletSwitcherBottomSheet = forwardRef<
           />
         );
       default:
-        return null; // List view is handled separately in the return statement
+        return null;
     }
   };
 
@@ -287,29 +299,17 @@ const WalletSwitcherBottomSheet = forwardRef<
         setIsSheetOpen(index >= 0);
       }}
     >
-      {viewMode === 'list' ? (
-        <WalletListContent
-          wallets={wallets}
-          loading={loading}
-          copiedAddressId={copiedAddressId}
-          onSwitchWallet={handleSwitchWallet}
-          onCopyAddress={copyAddress}
-          onAddWalletPress={() => setViewMode('add')}
-          renderScrollComponent={BottomSheetFlashListScrollable}
+      <BottomSheetView key={viewMode} style={styles.container}>
+        <SettingsHeader
           title={getTitle()}
           onClose={handleClose}
+          noPadding={false}
         />
-      ) : (
-        <BottomSheetView style={styles.container}>
-          <SettingsHeader
-            title={getTitle()}
-            onClose={handleClose}
-            noPadding={false}
-          />
 
+        <BottomSheetScreenContainer edges={['bottom']}>
           {renderContent()}
-        </BottomSheetView>
-      )}
+        </BottomSheetScreenContainer>
+      </BottomSheetView>
     </BottomSheetModal>
   );
 });
