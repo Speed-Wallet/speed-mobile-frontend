@@ -3,7 +3,6 @@ import {
   Text,
   StyleSheet,
   TextInput,
-  KeyboardAvoidingView,
   Platform,
   Animated,
 } from 'react-native';
@@ -126,67 +125,61 @@ export default function CreateUsernameStep({
         <BackButton onPress={onBack} style={styles.devBackButton} />
       )}
 
-      <KeyboardAvoidingView
-        style={styles.keyboardView}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      {/* Form Section */}
+      <Animated.View
+        style={[
+          styles.form,
+          {
+            opacity: fadeAnim,
+            transform: [{ scale: scaleAnim }],
+          },
+        ]}
       >
-        {/* Form Section */}
+        <Text style={styles.label}>Username</Text>
+
         <Animated.View
           style={[
-            styles.form,
+            styles.inputContainer,
+            username.length > 0 &&
+              (isUsernameTaken || (!isValid && error)
+                ? styles.inputError
+                : isValid
+                  ? styles.inputValid
+                  : styles.inputContainer),
             {
-              opacity: fadeAnim,
-              transform: [{ scale: scaleAnim }],
+              transform: [{ translateX: shakeAnimationValue }],
             },
           ]}
         >
-          <Text style={styles.label}>Username</Text>
-
-          <Animated.View
-            style={[
-              styles.inputContainer,
-              username.length > 0 &&
-                (isUsernameTaken || (!isValid && error)
-                  ? styles.inputError
-                  : isValid
-                    ? styles.inputValid
-                    : styles.inputContainer),
-              {
-                transform: [{ translateX: shakeAnimationValue }],
-              },
-            ]}
-          >
-            <View style={styles.inputWrapper}>
-              <Text style={styles.atSymbol}>@</Text>
-              <TextInput
-                style={styles.input}
-                value={username}
-                onChangeText={handleUsernameChange}
-                placeholder="username"
-                placeholderTextColor={colors.textSecondary}
-                autoCapitalize="none"
-                autoCorrect={false}
-                maxLength={20}
-                editable={!isLoading}
-              />
-            </View>
-          </Animated.View>
-
-          <View style={styles.helperContainer}>
-            {error ? (
-              <Text style={styles.errorText}>{error}</Text>
-            ) : (
-              <Text style={styles.helperText}>
-                3-20 characters, letters, numbers, and underscores only
-              </Text>
-            )}
+          <View style={styles.inputWrapper}>
+            <Text style={styles.atSymbol}>@</Text>
+            <TextInput
+              style={styles.input}
+              value={username}
+              onChangeText={handleUsernameChange}
+              placeholder="username"
+              placeholderTextColor={colors.textSecondary}
+              autoCapitalize="none"
+              autoCorrect={false}
+              maxLength={20}
+              editable={!isLoading}
+            />
           </View>
         </Animated.View>
-      </KeyboardAvoidingView>
+
+        <View style={styles.helperContainer}>
+          {error ? (
+            <Text style={styles.errorText}>{error}</Text>
+          ) : (
+            <Text style={styles.helperText}>
+              3-20 characters, letters, numbers, and underscores only
+            </Text>
+          )}
+        </View>
+      </Animated.View>
     </IntroScreen>
   );
 }
-
 const styles = StyleSheet.create({
   devBackButton: {
     position: 'absolute',
@@ -196,32 +189,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFB800',
     borderRadius: 20,
   },
-  content: {
+  form: {
     flex: 1,
-    paddingHorizontal: scale(20),
+    justifyContent: 'center',
+    paddingVertical: verticalScale(10),
   },
-  keyboardView: {},
-  header: {
-    alignItems: 'flex-start',
-    marginBottom: verticalScale(24),
-  },
-  title: {
-    fontSize: moderateScale(24),
-    fontWeight: '900',
-    color: '#ffffff',
-    marginBottom: verticalScale(8),
-    textAlign: 'left',
-  },
-  usernameText: {
-    color: '#00CFFF',
-  },
-  subtitle: {
-    fontSize: moderateScale(16),
-    color: '#9ca3af',
-    textAlign: 'left',
-    lineHeight: moderateScale(22),
-  },
-  form: {},
   label: {
     fontSize: 16,
     fontFamily: 'Inter-SemiBold',

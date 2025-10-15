@@ -1,4 +1,11 @@
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
 import {
   ChevronDown,
   Flame,
@@ -66,143 +73,154 @@ export default function MarketFilterRow({
   const ICON_SIZE = 16;
 
   return (
-    <Animated.View
-      style={[
-        styles.fixedFilterContainer,
-        // { bottom: tabBarHeight/1000 },
-        animatedFilterStyle,
-      ]}
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'position' : 'position'}
+      keyboardVerticalOffset={0}
+      style={{ position: 'absolute', left: 0, right: 0, bottom: 0 }}
     >
-      <View style={styles.filterBarContent}>
-        {showSearch ? (
-          /* Search Mode */
-          <View style={styles.searchModeContainer}>
-            <View style={styles.searchBarWrapper}>
-              <SearchBar
-                searchQuery={searchQuery}
-                onSearchChange={onSearchChange}
-                placeholder="Search tokens..."
-                padding={scale(10)}
-                showSearchIcon={false}
-                autoFocus={true}
-              />
-            </View>
-            <TouchableOpacity
-              style={[styles.buttons, styles.searchButton]}
-              onPress={onToggleSearch}
-            >
-              <Search size={scale(14)} color={colors.textSecondary} />
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <>
-            {/* Main Filter Row */}
-            <View style={styles.mainFilterRow}>
-              {/* Category Radio Buttons */}
-              <View style={styles.categoryContainer}>
-                <TouchableOpacity
-                  style={[
-                    styles.buttons,
-                    category === 'top' && styles.activeCategoryOption,
-                  ]}
-                  onPress={() => onCategoryChange('top')}
-                >
-                  <Text
-                    style={[
-                      styles.categoryOptionText,
-                      category === 'top' && styles.activeCategoryOptionText,
-                    ]}
-                  >
-                    Top
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[
-                    styles.buttons,
-                    category === 'trending' && styles.activeCategoryOption,
-                  ]}
-                  onPress={() => onCategoryChange('trending')}
-                >
-                  <Flame
-                    size={scale(12)}
-                    color={
-                      category === 'trending' ? '#00CFFF' : colors.textSecondary
-                    }
-                    style={{ marginRight: scale(2) }}
-                  />
-                  <Text
-                    style={[
-                      styles.categoryOptionText,
-                      category === 'trending' &&
-                        styles.activeCategoryOptionText,
-                    ]}
-                  >
-                    Trending
-                  </Text>
-                </TouchableOpacity>
+      <Animated.View
+        style={[
+          styles.fixedFilterContainer,
+          // { bottom: tabBarHeight/1000 },
+          animatedFilterStyle,
+        ]}
+      >
+        <View style={styles.filterBarContent}>
+          {showSearch ? (
+            /* Search Mode */
+            <View style={styles.searchModeContainer}>
+              <View style={styles.searchBarWrapper}>
+                <SearchBar
+                  searchQuery={searchQuery}
+                  onSearchChange={onSearchChange}
+                  placeholder="Search tokens..."
+                  padding={scale(10)}
+                  showSearchIcon={false}
+                  autoFocus={true}
+                />
               </View>
-
-              {/* Sort Controls Container */}
-              <View style={styles.sortControlsContainer}>
-                {/* Sort Dropdown Button */}
-                <TouchableOpacity
-                  style={[styles.buttons, styles.sortDropdownButton]}
-                  onPress={onToggleSortDropdown}
-                >
-                  <Filter size={ICON_SIZE} color={colors.textSecondary} />
-                </TouchableOpacity>
-
-                {/* Sort Order Toggle Button */}
-                <TouchableOpacity
-                  style={[styles.buttons, styles.sortOrderButton]}
-                  onPress={onToggleSortOrder}
-                >
-                  <ArrowUpDown size={ICON_SIZE} color={colors.textSecondary} />
-                </TouchableOpacity>
-
-                {/* Search Toggle Button */}
-                <TouchableOpacity
-                  style={[styles.buttons, styles.sortOrderButton]}
-                  onPress={onToggleSearch}
-                >
-                  <Search size={ICON_SIZE} color={colors.textSecondary} />
-                </TouchableOpacity>
-              </View>
+              <TouchableOpacity
+                style={[styles.buttons, styles.searchButton]}
+                onPress={onToggleSearch}
+              >
+                <Search size={scale(14)} color={colors.textSecondary} />
+              </TouchableOpacity>
             </View>
-
-            {/* Expandable Sort Options */}
-            {showSortDropdown && (
-              <View style={styles.expandedDropdown}>
-                {(Object.keys(sortMetricLabels) as SortMetric[]).map(
-                  (metric) => (
-                    <TouchableOpacity
-                      key={metric}
+          ) : (
+            <>
+              {/* Main Filter Row */}
+              <View style={styles.mainFilterRow}>
+                {/* Category Radio Buttons */}
+                <View style={styles.categoryContainer}>
+                  <TouchableOpacity
+                    style={[
+                      styles.buttons,
+                      category === 'top' && styles.activeCategoryOption,
+                    ]}
+                    onPress={() => onCategoryChange('top')}
+                  >
+                    <Text
                       style={[
-                        styles.expandedDropdownItem,
-                        sortMetric === metric &&
-                          styles.activeExpandedDropdownItem,
+                        styles.categoryOptionText,
+                        category === 'top' && styles.activeCategoryOptionText,
                       ]}
-                      onPress={() => onSortMetricChange(metric)}
                     >
-                      <Text
-                        style={[
-                          styles.expandedDropdownItemText,
-                          sortMetric === metric &&
-                            styles.activeExpandedDropdownItemText,
-                        ]}
-                      >
-                        {sortMetricLabels[metric]}
-                      </Text>
-                    </TouchableOpacity>
-                  ),
-                )}
+                      Top
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.buttons,
+                      category === 'trending' && styles.activeCategoryOption,
+                    ]}
+                    onPress={() => onCategoryChange('trending')}
+                  >
+                    <Flame
+                      size={scale(12)}
+                      color={
+                        category === 'trending'
+                          ? '#00CFFF'
+                          : colors.textSecondary
+                      }
+                      style={{ marginRight: scale(2) }}
+                    />
+                    <Text
+                      style={[
+                        styles.categoryOptionText,
+                        category === 'trending' &&
+                          styles.activeCategoryOptionText,
+                      ]}
+                    >
+                      Trending
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Sort Controls Container */}
+                <View style={styles.sortControlsContainer}>
+                  {/* Sort Dropdown Button */}
+                  <TouchableOpacity
+                    style={[styles.buttons, styles.sortDropdownButton]}
+                    onPress={onToggleSortDropdown}
+                  >
+                    <Filter size={ICON_SIZE} color={colors.textSecondary} />
+                  </TouchableOpacity>
+
+                  {/* Sort Order Toggle Button */}
+                  <TouchableOpacity
+                    style={[styles.buttons, styles.sortOrderButton]}
+                    onPress={onToggleSortOrder}
+                  >
+                    <ArrowUpDown
+                      size={ICON_SIZE}
+                      color={colors.textSecondary}
+                    />
+                  </TouchableOpacity>
+
+                  {/* Search Toggle Button */}
+                  <TouchableOpacity
+                    style={[styles.buttons, styles.sortOrderButton]}
+                    onPress={onToggleSearch}
+                  >
+                    <Search size={ICON_SIZE} color={colors.textSecondary} />
+                  </TouchableOpacity>
+                </View>
               </View>
-            )}
-          </>
-        )}
-      </View>
-    </Animated.View>
+
+              {/* Expandable Sort Options */}
+              {showSortDropdown && (
+                <View style={styles.expandedDropdown}>
+                  {(Object.keys(sortMetricLabels) as SortMetric[]).map(
+                    (metric) => (
+                      <TouchableOpacity
+                        key={metric}
+                        style={[
+                          styles.expandedDropdownItem,
+                          sortMetric === metric &&
+                            styles.activeExpandedDropdownItem,
+                        ]}
+                        onPress={() => onSortMetricChange(metric)}
+                      >
+                        <Text
+                          style={[
+                            styles.expandedDropdownItemText,
+                            sortMetric === metric &&
+                              styles.activeExpandedDropdownItemText,
+                          ]}
+                        >
+                          {sortMetricLabels[metric]}
+                        </Text>
+                      </TouchableOpacity>
+                    ),
+                  )}
+                </View>
+              )}
+            </>
+          )}
+        </View>
+      </Animated.View>
+    </KeyboardAvoidingView>
   );
 }
 

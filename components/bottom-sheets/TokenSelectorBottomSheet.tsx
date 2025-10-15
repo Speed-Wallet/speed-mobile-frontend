@@ -188,8 +188,11 @@ const TokenSelectorBottomSheet = forwardRef<
             scrollEventThrottle={16}
           />
 
-          {/* Search Bar - Using BottomActionContainer */}
-          <BottomActionContainer translateY={searchBarTranslateY}>
+          {/* Search Bar - Using BottomActionContainer with keyboard avoidance */}
+          <BottomActionContainer
+            translateY={searchBarTranslateY}
+            avoidKeyboard={true}
+          >
             <SearchBar
               searchQuery={searchQuery}
               onSearchChange={onSearchChange}
