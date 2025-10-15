@@ -14,7 +14,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import GradientBackground from '@/components/GradientBackground';
 import 'react-native-get-random-values';
-import ScreenContainer from '@/components/ScreenContainer';
+import UnsafeScreenContainer from '@/components/UnsafeScreenContainer';
 
 interface WalletSetupSuccessStepProps {
   onComplete: () => void;
@@ -79,100 +79,96 @@ const WalletSetupSuccessStep: React.FC<WalletSetupSuccessStepProps> = ({
   }, []);
 
   return (
-    <View style={styles.container}>
+    <UnsafeScreenContainer style={styles.container}>
       <GradientBackground />
-      <ScreenContainer edges={['bottom']} backgroundColor="transparent">
-        <View style={styles.content}>
-          {/* Success Icon with Glow Effect */}
-          <Animated.View
-            style={[
-              styles.logoSection,
-              {
-                opacity: fadeAnim,
-                transform: [{ translateY: translateY }, { scale: scaleAnim }],
-              },
-            ]}
-          >
-            <View style={styles.logoWrapper}>
-              <View style={styles.logoCircle}>
-                <View style={styles.outerRing} />
-                <CheckCircle
-                  size={scale(80)}
-                  color="#34d399"
-                  strokeWidth={3}
-                  fill="none"
-                />
-              </View>
-
-              {/* Glow effect */}
-              <Animated.View
-                style={[
-                  styles.glowEffect,
-                  {
-                    transform: [{ scale: pulseAnim }],
-                  },
-                ]}
-              >
-                <LinearGradient
-                  colors={['#10b981', '#059669']}
-                  style={styles.glowGradient}
-                />
-              </Animated.View>
-            </View>
-
-            {/* Success Message */}
-            <Text style={styles.title}>Wallet Created Successfully!</Text>
-            <Text style={styles.subtitle}>
-              Welcome <Text style={styles.username}>{username}</Text>! Your
-              wallet has been created and secured with a PIN.
-            </Text>
-            <Text style={styles.infoText}>
-              Keep your seed phrase and PIN safe!
-            </Text>
-          </Animated.View>
-        </View>
-
-        {/* Continue Button */}
+      <View style={styles.content}>
+        {/* Success Icon with Glow Effect */}
         <Animated.View
           style={[
-            styles.buttonContainer,
+            styles.logoSection,
             {
               opacity: fadeAnim,
-              transform: [{ translateY }],
+              transform: [{ translateY: translateY }, { scale: scaleAnim }],
             },
           ]}
         >
-          <TouchableOpacity
-            style={styles.primaryButton}
-            onPress={handleComplete}
-            disabled={isLoading}
-            activeOpacity={0.8}
-          >
-            <LinearGradient
-              colors={['#22d3ee', '#06b6d4']}
-              style={styles.primaryButtonGradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
+          <View style={styles.logoWrapper}>
+            <View style={styles.logoCircle}>
+              <View style={styles.outerRing} />
+              <CheckCircle
+                size={scale(80)}
+                color="#34d399"
+                strokeWidth={3}
+                fill="none"
+              />
+            </View>
+
+            {/* Glow effect */}
+            <Animated.View
+              style={[
+                styles.glowEffect,
+                {
+                  transform: [{ scale: pulseAnim }],
+                },
+              ]}
             >
-              {isLoading ? (
-                <ActivityIndicator color="#0f172a" size="small" />
-              ) : (
-                <>
-                  <Text style={styles.primaryButtonText}>
-                    Continue to Wallet
-                  </Text>
-                  <ArrowRight
-                    size={scale(20)}
-                    color="#0f172a"
-                    strokeWidth={2.5}
-                  />
-                </>
-              )}
-            </LinearGradient>
-          </TouchableOpacity>
+              <LinearGradient
+                colors={['#10b981', '#059669']}
+                style={styles.glowGradient}
+              />
+            </Animated.View>
+          </View>
+
+          {/* Success Message */}
+          <Text style={styles.title}>Wallet Created Successfully!</Text>
+          <Text style={styles.subtitle}>
+            Welcome <Text style={styles.username}>{username}</Text>! Your wallet
+            has been created and secured with a PIN.
+          </Text>
+          <Text style={styles.infoText}>
+            Keep your seed phrase and PIN safe!
+          </Text>
         </Animated.View>
-      </ScreenContainer>
-    </View>
+      </View>
+
+      {/* Continue Button */}
+      <Animated.View
+        style={[
+          styles.buttonContainer,
+          {
+            opacity: fadeAnim,
+            transform: [{ translateY }],
+          },
+        ]}
+      >
+        <TouchableOpacity
+          style={styles.primaryButton}
+          onPress={handleComplete}
+          disabled={isLoading}
+          activeOpacity={0.8}
+        >
+          <LinearGradient
+            colors={['#22d3ee', '#06b6d4']}
+            style={styles.primaryButtonGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+          >
+            {isLoading ? (
+              <ActivityIndicator color="#0f172a" size="small" />
+            ) : (
+              <>
+                <Text style={styles.primaryButtonText}>Continue to Wallet</Text>
+                <ArrowRight
+                  size={scale(20)}
+                  color="#0f172a"
+                  strokeWidth={2.5}
+                />
+              </>
+            )}
+          </LinearGradient>
+        </TouchableOpacity>
+      </Animated.View>
+    </UnsafeScreenContainer>
   );
 };
 

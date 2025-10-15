@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Stack, SplashScreen } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SystemUI from 'expo-system-ui';
+import * as NavigationBar from 'expo-navigation-bar';
 import { Platform } from 'react-native';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import { useFonts } from 'expo-font';
@@ -60,7 +61,12 @@ export default function RootLayout() {
     async function setupSystemUI() {
       if (Platform.OS === 'android') {
         try {
-          await SystemUI.setBackgroundColorAsync('transparent');
+          // Set status bar (top)
+          await SystemUI.setBackgroundColorAsync('#121212');
+
+          // Set navigation bar (bottom)
+          await NavigationBar.setBackgroundColorAsync('#121212');
+          await NavigationBar.setButtonStyleAsync('light');
         } catch (error) {
           console.error('Failed to setup system UI:', error);
         }

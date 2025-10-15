@@ -1,4 +1,4 @@
-package com.alexthelion123.boltexponativewind
+package co.za.speedwallet.app
 
 import android.app.Application
 import android.content.res.Configuration
