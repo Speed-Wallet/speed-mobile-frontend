@@ -11,6 +11,7 @@ import {
 import { scale, verticalScale } from 'react-native-size-matters';
 import ScreenContainer from '@/components/ScreenContainer';
 import IntroHeader from './IntroHeader';
+import BottomActionContainer from '@/components/BottomActionContainer';
 
 interface IntroScreenProps {
   title: string;
@@ -42,22 +43,18 @@ const IntroScreen: React.FC<IntroScreenProps> = ({
           </TouchableOpacity>
         )}
 
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
-      >
-        <View style={styles.content}>
-          {/* Header - Fixed at top */}
-          <View style={styles.headerContainer}>
-            <IntroHeader
-              title={title}
-              subtitle={subtitle}
-              username={username}
-            />
-          </View>
+      <View style={styles.content}>
+        {/* Header - Fixed at top */}
+        <View style={styles.headerContainer}>
+          <IntroHeader title={title} subtitle={subtitle} username={username} />
+        </View>
 
-          {/* Scrollable Content */}
+        {/* Scrollable Content with Keyboard Avoiding */}
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+        >
           <ScrollView
             style={styles.scrollView}
             contentContainerStyle={styles.scrollContent}
@@ -66,11 +63,15 @@ const IntroScreen: React.FC<IntroScreenProps> = ({
           >
             {children}
           </ScrollView>
+        </KeyboardAvoidingView>
+      </View>
 
-          {/* Footer - Fixed at bottom */}
-          {footer && <View style={styles.footerContainer}>{footer}</View>}
-        </View>
-      </KeyboardAvoidingView>
+      {/* Footer - Fixed at bottom with keyboard avoidance */}
+      {footer && (
+        <BottomActionContainer avoidKeyboard={true}>
+          {footer}
+        </BottomActionContainer>
+      )}
     </View>
   );
 };
@@ -87,13 +88,9 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: scale(20),
-    paddingBottom: verticalScale(20),
+    paddingBottom: verticalScale(120), // Extra padding for bottom action container
     flexGrow: 1,
     justifyContent: 'center',
-  },
-  footerContainer: {
-    paddingHorizontal: scale(20),
-    paddingBottom: verticalScale(20),
   },
   skipButton: {
     position: 'absolute',

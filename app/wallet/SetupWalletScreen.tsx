@@ -204,7 +204,7 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
   // const screenEdges = step === 1 ? [] : ['top', 'bottom'];
 
   return (
-    <ScreenContainer edges={['top', 'bottom']}>
+    <ScreenContainer edges={['top']}>
       {/* Progress Bar */}
       {showProgressBar && (
         <View>
