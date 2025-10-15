@@ -1,13 +1,19 @@
 import React, { useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
 import { scale, moderateScale } from 'react-native-size-matters';
+import colors from '@/constants/colors';
 
 interface IntroHeaderProps {
   title: string;
   subtitle: string;
+  username?: string;
 }
 
-const IntroHeader: React.FC<IntroHeaderProps> = ({ title, subtitle }) => {
+const IntroHeader: React.FC<IntroHeaderProps> = ({
+  title,
+  subtitle,
+  username,
+}) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(20)).current;
 
@@ -37,7 +43,10 @@ const IntroHeader: React.FC<IntroHeaderProps> = ({ title, subtitle }) => {
       ]}
     >
       <View style={styles.headerContent}>
-        <Text style={styles.title}>{title}</Text>
+        <Text style={styles.title}>
+          {title}
+          {username && <Text style={styles.username}> {username}</Text>}
+        </Text>
         <Text style={styles.subtitle}>{subtitle}</Text>
       </View>
     </Animated.View>
@@ -57,6 +66,9 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     color: '#ffffff',
     textAlign: 'left',
+  },
+  username: {
+    color: colors.primary,
   },
   subtitle: {
     fontSize: moderateScale(16),

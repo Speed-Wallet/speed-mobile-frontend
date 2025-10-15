@@ -36,7 +36,7 @@ const CircularNumericKeyboard: React.FC<CircularNumericKeyboardProps> = ({
     key: {
       ...styles.key,
       width: scale(65 * scaleProp),
-      height: scale(55 * scaleProp),
+      height: scale(65 * scaleProp),
       marginHorizontal: scale(20 * scaleProp),
     },
     keyText: {

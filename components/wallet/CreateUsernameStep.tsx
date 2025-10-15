@@ -102,8 +102,9 @@ export default function CreateUsernameStep({
 
   return (
     <IntroScreen
-      title={`Welcome${username.length > 0 ? ` ${username}` : ''}`}
-      subtitle="Please enter your username to get started with your wallet setup"
+      title="Welcome"
+      username={username.length > 0 ? username : undefined}
+      subtitle="Please enter your username to continue"
       footer={
         <PrimaryActionButton
           title={

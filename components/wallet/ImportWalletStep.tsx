@@ -4,20 +4,15 @@ import {
   StyleSheet,
   TextInput,
   TouchableOpacity,
-  KeyboardAvoidingView,
-  Platform,
   Animated,
 } from 'react-native';
 import { useState, useRef, useEffect } from 'react';
-import { Key } from 'lucide-react-native';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import colors from '@/constants/colors';
-import ScreenHeader from '@/components/ScreenHeader';
-import ScreenContainer from '@/components/ScreenContainer';
 import BackButton from '@/components/buttons/BackButton';
 import PrimaryActionButton from '@/components/buttons/PrimaryActionButton';
 import { triggerShake } from '@/utils/animations';
-import IntroHeader from './IntroHeader';
+import IntroScreen from './IntroScreen';
 
 interface ImportWalletStepProps {
   onNext: (seedPhrase: string) => Promise<void>;
@@ -106,113 +101,93 @@ export default function ImportWalletStep({
   };
 
   return (
-    <ScreenContainer edges={['top', 'bottom']}>
+    <IntroScreen
+      title="Import Wallet"
+      subtitle="Enter your existing wallet's seed phrase to recover your wallet"
+      showDevSkip={true}
+      onDevSkip={() =>
+        handleSeedPhraseChange(process.env.EXPO_PUBLIC_DEV_SEED_PHRASE || '')
+      }
+      footer={
+        <PrimaryActionButton
+          title={isLoading ? 'Importing...' : 'Import Wallet'}
+          onPress={handleContinue}
+          disabled={!isValid}
+          loading={isLoading}
+        />
+      }
+    >
       {/* Development Back Button */}
       {process.env.EXPO_PUBLIC_APP_ENV === 'development' && onBack && (
         <BackButton onPress={onBack} style={styles.devBackButton} />
       )}
 
-      {/* Dev Button - Top Right */}
-      {process.env.EXPO_PUBLIC_APP_ENV === 'development' && (
-        <TouchableOpacity
-          style={styles.devButton}
-          onPress={() =>
-            handleSeedPhraseChange(
-              process.env.EXPO_PUBLIC_DEV_SEED_PHRASE || '',
-            )
-          }
-        >
-          <Text style={styles.devButtonText}>DEV</Text>
-        </TouchableOpacity>
-      )}
+      {/* Form Section */}
+      <Animated.View
+        style={[
+          styles.form,
+          {
+            opacity: fadeAnim,
+            transform: [{ scale: scaleAnim }],
+          },
+        ]}
+      >
+        <Text style={styles.label}>Seed Phrase</Text>
 
-      <View style={styles.content}>
-        {/* Header */}
-        <IntroHeader
-          title="Import Wallet"
-          subtitle="Enter your existing wallet's seed phrase to recover your wallet"
-        />
-
-        {/* Form Section */}
         <Animated.View
           style={[
-            styles.form,
+            styles.inputContainer,
+            seedPhrase.length > 0 &&
+              (error
+                ? styles.inputError
+                : isValid
+                  ? styles.inputValid
+                  : styles.inputContainer),
             {
-              opacity: fadeAnim,
-              transform: [{ scale: scaleAnim }],
+              transform: [{ translateX: shakeAnimationValue }],
             },
           ]}
         >
-          <Text style={styles.label}>Seed Phrase</Text>
-
-          <Animated.View
-            style={[
-              styles.inputContainer,
-              seedPhrase.length > 0 &&
-                (error
-                  ? styles.inputError
-                  : isValid
-                    ? styles.inputValid
-                    : styles.inputContainer),
-              {
-                transform: [{ translateX: shakeAnimationValue }],
-              },
-            ]}
-          >
-            <TextInput
-              style={styles.input}
-              value={seedPhrase}
-              onChangeText={handleSeedPhraseChange}
-              placeholder="Enter your 12 or 24 word seed phrase"
-              placeholderTextColor={colors.textSecondary}
-              multiline
-              numberOfLines={4}
-              textAlignVertical="top"
-              autoCapitalize="none"
-              autoCorrect={false}
-              editable={!isLoading}
-            />
-          </Animated.View>
-
-          <View style={styles.helperContainer}>
-            {error ? (
-              <Text style={styles.errorText}>{error}</Text>
-            ) : (
-              <Text style={styles.helperText}>
-                {seedPhrase
-                  .trim()
-                  .split(/\s+/)
-                  .filter((word) => word.length > 0).length > 0
-                  ? `${
-                      seedPhrase
-                        .trim()
-                        .split(/\s+/)
-                        .filter((word) => word.length > 0).length
-                    } words entered`
-                  : 'Enter each word separated by a space'}
-              </Text>
-            )}
-          </View>
+          <TextInput
+            style={styles.input}
+            value={seedPhrase}
+            onChangeText={handleSeedPhraseChange}
+            placeholder="Enter your 12 or 24 word seed phrase"
+            placeholderTextColor={colors.textSecondary}
+            multiline
+            numberOfLines={4}
+            textAlignVertical="top"
+            autoCapitalize="none"
+            autoCorrect={false}
+            editable={!isLoading}
+          />
         </Animated.View>
 
-        {/* Action Button */}
-        <View style={styles.buttonContainer}>
-          <PrimaryActionButton
-            title={isLoading ? 'Importing...' : 'Import Wallet'}
-            onPress={handleContinue}
-            disabled={!isValid}
-            loading={isLoading}
-          />
+        <View style={styles.helperContainer}>
+          {error ? (
+            <Text style={styles.errorText}>{error}</Text>
+          ) : (
+            <Text style={styles.helperText}>
+              {seedPhrase
+                .trim()
+                .split(/\s+/)
+                .filter((word) => word.length > 0).length > 0
+                ? `${
+                    seedPhrase
+                      .trim()
+                      .split(/\s+/)
+                      .filter((word) => word.length > 0).length
+                  } words entered`
+                : 'Enter each word separated by a space'}
+            </Text>
+          )}
         </View>
-      </View>
-    </ScreenContainer>
+      </Animated.View>
+    </IntroScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    // ScreenContainer provides flex: 1 and backgroundColor
-  },
   devBackButton: {
     position: 'absolute',
     top: verticalScale(50),
@@ -221,16 +196,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFB800',
     borderRadius: scale(20),
   },
-  content: {
-    flex: 1,
-    paddingHorizontal: scale(20),
-    justifyContent: 'space-between',
-  },
   form: {
     flex: 1,
     justifyContent: 'center',
     paddingVertical: verticalScale(10),
-    maxHeight: '50%',
   },
   label: {
     fontSize: 16,
@@ -261,21 +230,6 @@ const styles = StyleSheet.create({
     paddingVertical: 18,
     lineHeight: 24,
   },
-  devButton: {
-    position: 'absolute',
-    top: verticalScale(50),
-    right: scale(20),
-    zIndex: 1000,
-    backgroundColor: '#FFB800',
-    paddingHorizontal: scale(16),
-    paddingVertical: verticalScale(8),
-    borderRadius: scale(8),
-  },
-  devButtonText: {
-    fontSize: moderateScale(12),
-    fontFamily: 'Inter-Bold',
-    color: '#000000',
-  },
   helperContainer: {
     minHeight: 24,
     justifyContent: 'center',
@@ -291,11 +245,5 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Regular',
     color: colors.error,
     lineHeight: 20,
-  },
-  buttonContainer: {
-    flex: 0,
-    paddingTop: verticalScale(20),
-    minHeight: '15%',
-    justifyContent: 'flex-end',
   },
 });

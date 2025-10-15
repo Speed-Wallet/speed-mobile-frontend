@@ -23,7 +23,7 @@ function TabsContent() {
         tabBarStyle: {
           backgroundColor: colors.backgroundDark,
           borderTopWidth: 0,
-          marginVertical: 4,
+          // paddingVertical: 4,
         },
         tabBarActiveTintColor: '#00CFFF',
         tabBarInactiveTintColor: colors.textSecondary,

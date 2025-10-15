@@ -3,7 +3,6 @@ import { StyleSheet, Animated } from 'react-native';
 import { verticalScale } from 'react-native-size-matters';
 import SeedPhraseDisplay from '../SeedPhraseDisplay';
 import PrimaryActionButton from '../buttons/PrimaryActionButton';
-import { useAlert } from '@/providers/AlertProvider';
 import IntroScreen from './IntroScreen';
 
 interface ShowMnemonicStepProps {
@@ -20,7 +19,6 @@ const ShowMnemonicStep: React.FC<ShowMnemonicStepProps> = ({
   isLoading,
 }) => {
   const [isVisible, setIsVisible] = useState(false);
-  const { alert } = useAlert();
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.95)).current;
@@ -49,19 +47,13 @@ const ShowMnemonicStep: React.FC<ShowMnemonicStepProps> = ({
   return (
     <IntroScreen
       title="Your Seed Phrase"
-      subtitle="Don't share your seed phrase with anyone."
+      subtitle="This is the recovery phrase for your wallet. Don't share it with anyone."
       showDevSkip={true}
       onDevSkip={onNext}
       footer={
         <PrimaryActionButton
           title="I've Saved My Phrase"
-          onPress={() => {
-            alert(
-              'Security Reminder',
-              'Never share your seed phrase with anyone. Anyone who has your seed phrase can access your funds.',
-            );
-            onNext();
-          }}
+          onPress={onNext}
           disabled={isLoading}
           loading={isLoading}
         />
