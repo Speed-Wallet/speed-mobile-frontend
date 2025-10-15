@@ -72,7 +72,7 @@ export default function CreateWalletIntroStep({
 
   return (
     <SafeAreaView style={styles.container}>
-      <GradientBackground />
+      {/* <GradientBackground /> */}
 
       <View style={styles.content}>
         {/* Logo with Glow Effect */}
@@ -169,7 +169,7 @@ export default function CreateWalletIntroStep({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0A0A0A',
+    backgroundColor: colors.backgroundDark,
   },
   content: {
     flex: 1,

@@ -14,6 +14,7 @@ import IntroHeader from './IntroHeader';
 interface IntroScreenProps {
   title: string;
   subtitle: string;
+  username?: string;
   children: React.ReactNode;
   footer?: React.ReactNode;
   showDevSkip?: boolean;
@@ -23,13 +24,14 @@ interface IntroScreenProps {
 const IntroScreen: React.FC<IntroScreenProps> = ({
   title,
   subtitle,
+  username,
   children,
   footer,
   showDevSkip = false,
   onDevSkip,
 }) => {
   return (
-    <ScreenContainer edges={['top', 'bottom']}>
+    <View style={{ flex: 1 }}>
       {/* Dev Mode Skip Button */}
       {process.env.EXPO_PUBLIC_APP_ENV === 'development' &&
         showDevSkip &&
@@ -42,7 +44,7 @@ const IntroScreen: React.FC<IntroScreenProps> = ({
       <View style={styles.content}>
         {/* Header - Fixed at top */}
         <View style={styles.headerContainer}>
-          <IntroHeader title={title} subtitle={subtitle} />
+          <IntroHeader title={title} subtitle={subtitle} username={username} />
         </View>
 
         {/* Scrollable Content */}
@@ -57,7 +59,7 @@ const IntroScreen: React.FC<IntroScreenProps> = ({
         {/* Footer - Fixed at bottom */}
         {footer && <View style={styles.footerContainer}>{footer}</View>}
       </View>
-    </ScreenContainer>
+    </View>
   );
 };
 

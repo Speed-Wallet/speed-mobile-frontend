@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
+import { verticalScale } from 'react-native-size-matters';
 
 interface ProgressBarProps {
   currentStep: number;
@@ -32,6 +33,7 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingHorizontal: 24,
     marginTop: 8,
+    marginBottom: verticalScale(16),
   },
   progressTrack: {
     flexDirection: 'row',

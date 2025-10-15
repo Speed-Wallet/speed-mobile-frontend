@@ -124,7 +124,7 @@ export default function OnboardingCarousel({
 
   return (
     <UnsafeScreenContainer style={styles.container}>
-      <GradientBackground />
+      {/* <GradientBackground /> */}
 
       <View style={styles.content}>
         {/* Header */}

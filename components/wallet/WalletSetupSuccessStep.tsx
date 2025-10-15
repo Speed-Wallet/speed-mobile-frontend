@@ -15,6 +15,7 @@ import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import GradientBackground from '@/components/GradientBackground';
 import 'react-native-get-random-values';
 import UnsafeScreenContainer from '@/components/UnsafeScreenContainer';
+import colors from '@/constants/colors';
 
 interface WalletSetupSuccessStepProps {
   onComplete: () => void;
@@ -80,7 +81,7 @@ const WalletSetupSuccessStep: React.FC<WalletSetupSuccessStepProps> = ({
 
   return (
     <UnsafeScreenContainer style={styles.container}>
-      <GradientBackground />
+      {/* <GradientBackground /> */}
       <View style={styles.content}>
         {/* Success Icon with Glow Effect */}
         <Animated.View
@@ -175,7 +176,7 @@ const WalletSetupSuccessStep: React.FC<WalletSetupSuccessStepProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0A0A0A',
+    backgroundColor: colors.backgroundDark,
   },
   content: {
     flex: 1,

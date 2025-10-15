@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Stack, SplashScreen } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import * as SystemUI from 'expo-system-ui';
 import * as NavigationBar from 'expo-navigation-bar';
 import { Platform } from 'react-native';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
@@ -56,23 +55,22 @@ export default function RootLayout() {
   const [storedPublicKey, setStoredPublicKey] = useState<string | null>(null);
   const [hasExistingWallet, setHasExistingWallet] = useState<boolean>(false);
 
-  // Setup immersive mode for Android to allow rendering behind system bars
+  // Setup navigation bar for Android
   useEffect(() => {
-    async function setupSystemUI() {
+    async function setupNavigationBar() {
       if (Platform.OS === 'android') {
         try {
-          // Set status bar (top)
-          await SystemUI.setBackgroundColorAsync('#121212');
-
-          // Set navigation bar (bottom)
           await NavigationBar.setBackgroundColorAsync('#121212');
           await NavigationBar.setButtonStyleAsync('light');
+          // Also set status bar color on Android
+          await NavigationBar.setPositionAsync('absolute');
+          await NavigationBar.setVisibilityAsync('visible');
         } catch (error) {
-          console.error('Failed to setup system UI:', error);
+          console.error('Failed to setup navigation bar:', error);
         }
       }
     }
-    setupSystemUI();
+    setupNavigationBar();
   }, []);
 
   useEffect(() => {

@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
     marginTop: verticalScale(8),
   },
   pinDotsContainer: {
-    marginBottom: 24,
+    // marginBottom: 24,
     alignItems: 'center',
   },
   keyboardSection: {

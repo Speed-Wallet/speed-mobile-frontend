@@ -93,7 +93,7 @@ const CreatePinStep: React.FC<CreatePinStepProps> = ({
   };
 
   return (
-    <ScreenContainer edges={['top', 'bottom']}>
+    <View style={{ flex: 1 }}>
       <View style={styles.container}>
         {/* First Section: Centered content (Title + PIN Dots + Keyboard) */}
         <PinInputSection
@@ -104,7 +104,7 @@ const CreatePinStep: React.FC<CreatePinStepProps> = ({
           shakeAnimation={shakeAnimationValue}
         />
       </View>
-    </ScreenContainer>
+    </View>
   );
 };
 
