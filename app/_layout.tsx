@@ -1,7 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Stack, SplashScreen } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import * as NavigationBar from 'expo-navigation-bar';
+import {
+  setBackgroundColorAsync,
+  setButtonStyleAsync,
+  setPositionAsync,
+  setVisibilityAsync,
+} from 'expo-navigation-bar';
 import { Platform } from 'react-native';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import { useFonts } from 'expo-font';
@@ -60,11 +65,11 @@ export default function RootLayout() {
     async function setupNavigationBar() {
       if (Platform.OS === 'android') {
         try {
-          await NavigationBar.setBackgroundColorAsync('#121212');
-          await NavigationBar.setButtonStyleAsync('light');
+          await setBackgroundColorAsync('#121212');
+          await setButtonStyleAsync('light');
           // Also set status bar color on Android
-          await NavigationBar.setPositionAsync('absolute');
-          await NavigationBar.setVisibilityAsync('visible');
+          await setPositionAsync('absolute');
+          await setVisibilityAsync('visible');
         } catch (error) {
           console.error('Failed to setup navigation bar:', error);
         }

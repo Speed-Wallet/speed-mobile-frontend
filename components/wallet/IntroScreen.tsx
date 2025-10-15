@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Text,
   Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { scale, verticalScale } from 'react-native-size-matters';
 import ScreenContainer from '@/components/ScreenContainer';
@@ -41,24 +42,35 @@ const IntroScreen: React.FC<IntroScreenProps> = ({
           </TouchableOpacity>
         )}
 
-      <View style={styles.content}>
-        {/* Header - Fixed at top */}
-        <View style={styles.headerContainer}>
-          <IntroHeader title={title} subtitle={subtitle} username={username} />
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+      >
+        <View style={styles.content}>
+          {/* Header - Fixed at top */}
+          <View style={styles.headerContainer}>
+            <IntroHeader
+              title={title}
+              subtitle={subtitle}
+              username={username}
+            />
+          </View>
+
+          {/* Scrollable Content */}
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            {children}
+          </ScrollView>
+
+          {/* Footer - Fixed at bottom */}
+          {footer && <View style={styles.footerContainer}>{footer}</View>}
         </View>
-
-        {/* Scrollable Content */}
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          {children}
-        </ScrollView>
-
-        {/* Footer - Fixed at bottom */}
-        {footer && <View style={styles.footerContainer}>{footer}</View>}
-      </View>
+      </KeyboardAvoidingView>
     </View>
   );
 };
