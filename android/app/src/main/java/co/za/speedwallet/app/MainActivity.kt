@@ -1,4 +1,4 @@
-package com.alexthelion123.boltexponativewind
+package co.za.speedwallet.app
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build
