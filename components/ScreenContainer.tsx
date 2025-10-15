@@ -15,10 +15,12 @@ export default function ScreenContainer({
   children,
   style,
   edges = ['bottom'],
-  backgroundColor = colors.backgroundDark,
+  // backgroundColor = colors.backgroundDark,
 }: ScreenContainerProps) {
   return (
-    <UnsafeScreenContainer style={{ backgroundColor }}>
+    <UnsafeScreenContainer
+    // style={{ backgroundColor }}
+    >
       <SafeAreaView edges={edges} style={[styles.safeArea, style]}>
         {children}
       </SafeAreaView>

@@ -175,13 +175,11 @@ export default function OnboardingCarousel({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0A0A0A',
-    paddingVertical: 20,
+    // backgroundColor: '#0A0A0A',
   },
   content: {
     flex: 1,
-    paddingTop: verticalScale(40),
-    paddingBottom: verticalScale(40),
+    paddingVertical: verticalScale(60),
   },
   header: {
     alignItems: 'center',

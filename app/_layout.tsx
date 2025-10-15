@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Stack, SplashScreen } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import * as SystemUI from 'expo-system-ui';
+import { Platform } from 'react-native';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import { useFonts } from 'expo-font';
 import {
@@ -52,6 +54,20 @@ export default function RootLayout() {
   >('loading');
   const [storedPublicKey, setStoredPublicKey] = useState<string | null>(null);
   const [hasExistingWallet, setHasExistingWallet] = useState<boolean>(false);
+
+  // Setup immersive mode for Android to allow rendering behind system bars
+  useEffect(() => {
+    async function setupSystemUI() {
+      if (Platform.OS === 'android') {
+        try {
+          await SystemUI.setBackgroundColorAsync('transparent');
+        } catch (error) {
+          console.error('Failed to setup system UI:', error);
+        }
+      }
+    }
+    setupSystemUI();
+  }, []);
 
   useEffect(() => {
     async function checkWalletStatus() {
@@ -244,7 +260,11 @@ export default function RootLayout() {
                   options={{ animation: 'slide_from_right' }}
                 />
               </Stack>
-              <StatusBar style="light" />
+              <StatusBar
+                style="light"
+                translucent
+                backgroundColor="transparent"
+              />
             </BottomSheetModalProvider>
           </QueryClientProvider>
         </AlertProvider>
