@@ -72,7 +72,7 @@ const BottomActionContainer: React.FC<BottomActionContainerProps> = ({
         (translateY || avoidKeyboard) && animatedStyle,
       ]}
     >
-      <ScreenContainer edges={['bottom']} style={{ padding: 16 }}>
+      <ScreenContainer edges={[]} style={{ padding: 16 }}>
         {children}
       </ScreenContainer>
     </Container>
