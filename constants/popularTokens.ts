@@ -17,13 +17,6 @@ export const WSOL_TOKEN = {
   logoURI: `https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/${WSOL_ADDRESS}/logo.png`,
   decimals: 9,
 };
-export const USDT_TOKEN = {
-  address: USDT_ADDRESS,
-  name: 'USDT',
-  symbol: 'USDT',
-  logoURI: `https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/${USDT_ADDRESS}/logo.svg`,
-  decimals: 6,
-};
 export const USDC_TOKEN = {
   address: USDC_ADDRESS,
   name: 'USD Coin',
@@ -31,17 +24,45 @@ export const USDC_TOKEN = {
   logoURI: `https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/${USDC_ADDRESS}/logo.png`,
   decimals: 6,
 };
+export const cbBTC_TOKEN = {
+  address: 'cbbtcf3aa214zXHbiAZQwf4122FBYbraNdFqgw4iMij',
+  name: 'Coinbase Wrapped BTC',
+  symbol: 'cbBTC',
+  logoURI:
+    'https://ipfs.io/ipfs/QmZ7L8yd5j36oXXydUiYFiFsRHbi3EdgC4RuFwvM7dcqge',
+  decimals: 8,
+};
+export const WETH_TOKEN = {
+  address: '2FPyTwcZLUg1MDrwsyoP4D6s1tM7hAkHYRjkNb5w6Pxk',
+  name: 'Wrapped Ethereum (Sollet)',
+  symbol: 'ETH',
+  logoURI:
+    'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/2FPyTwcZLUg1MDrwsyoP4D6s1tM7hAkHYRjkNb5w6Pxk/logo.png',
+  decimals: 6,
+};
+export const WBNB_TOKEN = {
+  address: '9gP2kCy3wA1ctvYWQk75guqXuHfrEomqydHLtcTCqiLa',
+  name: 'Wrapped BNB (Wormhole)',
+  symbol: 'WBNB',
+  logoURI:
+    'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/9gP2kCy3wA1ctvYWQk75guqXuHfrEomqydHLtcTCqiLa/logo.png',
+  decimals: 8,
+};
+export const USDT_TOKEN = {
+  address: USDT_ADDRESS,
+  name: 'USDT',
+  symbol: 'USDT',
+  logoURI: `https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/${USDT_ADDRESS}/logo.svg`,
+  decimals: 6,
+};
 
 export const POPULAR_TOKENS: TokenMetadata[] = [
   WSOL_TOKEN,
-  {
-    address: 'cbbtcf3aa214zXHbiAZQwf4122FBYbraNdFqgw4iMij',
-    name: 'Coinbase Wrapped BTC',
-    symbol: 'cbBTC',
-    logoURI:
-      'https://ipfs.io/ipfs/QmZ7L8yd5j36oXXydUiYFiFsRHbi3EdgC4RuFwvM7dcqge',
-    decimals: 8,
-  },
+  cbBTC_TOKEN,
+  USDC_TOKEN,
+  USDT_TOKEN,
+  WBNB_TOKEN,
+  WETH_TOKEN,
   {
     address: 'WLFinEv6ypjkczcS83FZqFpgFZYwQXutRbxGe7oC16g',
     name: 'World Liberty Financial',
@@ -126,14 +147,6 @@ export const POPULAR_TOKENS: TokenMetadata[] = [
     decimals: 9,
   },
   {
-    address: '9gP2kCy3wA1ctvYWQk75guqXuHfrEomqydHLtcTCqiLa',
-    name: 'Wrapped BNB (Wormhole)',
-    symbol: 'WBNB',
-    logoURI:
-      'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/9gP2kCy3wA1ctvYWQk75guqXuHfrEomqydHLtcTCqiLa/logo.png',
-    decimals: 8,
-  },
-  {
     address: '3iQL8BFS2vE7mww4ehAqQHAsbmRNCrPxizWAT2Zfyr9y',
     name: 'Virtual Protocol',
     symbol: 'VIRTUAL',
@@ -141,8 +154,6 @@ export const POPULAR_TOKENS: TokenMetadata[] = [
       'https://ipfs.io/ipfs/bafkreifbjxsikdmuhk5qi6krg3sqk2fcqvqlcffrc44kg7ecfkmwhz6s5i',
     decimals: 9,
   },
-  USDC_TOKEN,
-  USDT_TOKEN,
   {
     address: '4NGbC4RRrUjS78ooSN53Up7gSg4dGrj6F6dxpMWHbonk',
     name: 'Pandu Pandas',
@@ -157,14 +168,6 @@ export const POPULAR_TOKENS: TokenMetadata[] = [
     symbol: 'DORK',
     logoURI:
       'https://ipfs.io/ipfs/bafkreib3vkxxc7nboclug65uzdgmauxt5z53ravsafnhek5fuynhw2rwj4',
-    decimals: 6,
-  },
-  {
-    address: '2FPyTwcZLUg1MDrwsyoP4D6s1tM7hAkHYRjkNb5w6Pxk',
-    name: 'Wrapped Ethereum (Sollet)',
-    symbol: 'ETH',
-    logoURI:
-      'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/2FPyTwcZLUg1MDrwsyoP4D6s1tM7hAkHYRjkNb5w6Pxk/logo.png',
     decimals: 6,
   },
   {

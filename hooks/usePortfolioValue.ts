@@ -6,7 +6,7 @@ export const usePortfolioValue = () => {
   const { data, isLoading } = useTokenAssets(walletAddress);
 
   const portfolioValue =
-    data?.tokenBalances?.reduce(
+    data?.tokenAssets?.reduce(
       (sum, token) => sum + (token.totalPrice || 0),
       0,
     ) || 0;

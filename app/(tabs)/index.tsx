@@ -26,6 +26,7 @@ import ScreenContainer from '@/components/ScreenContainer';
 import TabSelector from '@/components/TabSelector';
 import { AuthService } from '@/services/authService';
 import { useTokenAssets } from '@/hooks/useTokenAsset';
+import { useSuggestedTokens } from '@/hooks/useSuggestedTokens';
 import { generateSignature } from '@/utils/signature';
 import Animated, { FadeInRight } from 'react-native-reanimated';
 import CustomAlert from '@/components/CustomAlert';
@@ -37,7 +38,7 @@ import { removeWalletFromList } from '@/services/walletService';
 // import CryptoTest from '@/components/CryptoTest';
 
 const ICON_SIZE = 26;
-const ICON_STROKE_WIDTH = 1.5;
+const ICON_STROKE_WIDTH = 1;
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -179,11 +180,38 @@ export default function HomeScreen() {
     await refetchTokenAssets();
   };
 
+  // Get suggested tokens (tokens user doesn't own yet) - only if assets are loaded
+  const { suggestedTokens } = useSuggestedTokens(
+    isLoadingAssets ? undefined : tokenAssets?.tokenAssets,
+  );
+
+  // Sort user's tokens: SOL first, then by USD balance descending
+  const sortedUserTokens = [...(tokenAssets?.tokenAssets || [])].sort(
+    (a, b) => {
+      // SOL should always be first
+      const isSolA = a.symbol === 'SOL';
+      const isSolB = b.symbol === 'SOL';
+
+      if (isSolA) return -1;
+      if (isSolB) return 1;
+
+      // Sort by total USD value (descending)
+      const totalA = a.totalPrice ?? 0;
+      const totalB = b.totalPrice ?? 0;
+      return totalB - totalA;
+    },
+  );
+
+  // Combine user tokens with suggested tokens at the bottom (only show suggested if assets are loaded)
+  const allTokens = isLoadingAssets
+    ? sortedUserTokens
+    : [...sortedUserTokens, ...suggestedTokens];
+
   return (
     <ScreenContainer edges={['top', 'bottom']}>
       {activeTab === 'tokens' ? (
         <FlashList
-          data={tokenAssets?.tokenAssets || []}
+          data={allTokens}
           keyExtractor={(item) => item.address}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.flatListContent}

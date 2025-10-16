@@ -26,6 +26,8 @@ export interface TokenAsset extends TokenMetadata {
   supply?: string;
   tokenProgram?: string;
   associatedTokenAddress?: string;
+  // Flag to indicate if this is a suggested token (not owned by user)
+  isSuggested?: boolean;
 }
 
 export interface GetTokenAssetsRequest {

@@ -336,64 +336,46 @@ export default function TokenDetailScreen() {
                 : formatPrice(currentPrice)}
             </Text>
 
-            {/* Right: Percentage Change */}
-            <Text
-              style={[
-                styles.percentageChange,
-                {
-                  color: chartSelectedData?.isInteracting
-                    ? chartSelectedData.percentageChange < 0
-                      ? '#ef4444'
-                      : '#10b981'
-                    : isNegative
-                      ? '#ef4444'
-                      : '#10b981',
-                },
-              ]}
-            >
-              {chartSelectedData?.isInteracting
-                ? `${chartSelectedData.percentageChange >= 0 ? '↑' : '↓'} ${Math.abs(chartSelectedData.percentageChange).toFixed(2)}%`
-                : `${displayPriceChange.changePercentage >= 0 ? '↑' : '↓'} ${Math.abs(displayPriceChange.changePercentage).toFixed(2)}%`}
-            </Text>
-          </View>
-
-          <View style={styles.priceBottomRow}>
-            {/* Left: Dollar Change */}
-            <Text
-              style={[
-                styles.dollarChange,
-                {
-                  color: chartSelectedData?.isInteracting
-                    ? chartSelectedData.percentageChange < 0
-                      ? '#ef4444'
-                      : '#10b981'
-                    : isNegative
-                      ? '#ef4444'
-                      : '#10b981',
-                },
-              ]}
-            >
-              {chartSelectedData?.isInteracting
-                ? formatPriceChange(chartSelectedData.priceChange)
-                : formatPriceChange(displayPriceChange.change)}
-            </Text>
-
-            {/* Right: Date/Timeframe */}
-            <Text style={styles.dateLabel}>
-              {chartSelectedData?.isInteracting
-                ? formatDisplayDate(chartSelectedData.timestamp)
-                : 'Today'}
-            </Text>
+            {/* Right: Percentage Change and Date stacked */}
+            <View style={styles.priceRightColumn}>
+              <Text
+                style={[
+                  styles.percentageChange,
+                  {
+                    color: chartSelectedData?.isInteracting
+                      ? chartSelectedData.percentageChange < 0
+                        ? '#ef4444'
+                        : '#10b981'
+                      : isNegative
+                        ? '#ef4444'
+                        : '#10b981',
+                  },
+                ]}
+              >
+                {chartSelectedData?.isInteracting
+                  ? `${chartSelectedData.percentageChange >= 0 ? '↑' : '↓'} ${Math.abs(chartSelectedData.percentageChange).toFixed(2)}%`
+                  : `${displayPriceChange.changePercentage >= 0 ? '↑' : '↓'} ${Math.abs(displayPriceChange.changePercentage).toFixed(2)}%`}
+              </Text>
+              <Text style={styles.dateLabel}>
+                {chartSelectedData?.isInteracting
+                  ? formatDisplayDate(chartSelectedData.timestamp)
+                  : chartData && chartData.length > 0
+                    ? formatDisplayDate(
+                        chartData[chartData.length - 1].timestamp,
+                      )
+                    : formatDisplayDate(Date.now())}
+              </Text>
+            </View>
           </View>
         </View>
 
         {/* Chart */}
         <View style={styles.chartContainer}>
           {loading ? (
-            <View style={styles.chartLoadingContainer}>
+            <>
               <ActivityIndicator size="large" color="#6366f1" />
               <Text style={styles.chartLoadingText}>Loading chart...</Text>
-            </View>
+            </>
           ) : chartData && chartData.length > 0 ? (
             <TokenPriceChart
               data={chartData}
@@ -402,9 +384,7 @@ export default function TokenDetailScreen() {
               onInteraction={handleChartInteraction}
             />
           ) : (
-            <View style={styles.chartErrorContainer}>
-              <Text style={styles.chartErrorText}>Chart data unavailable</Text>
-            </View>
+            <Text style={styles.chartErrorText}>Chart data unavailable</Text>
           )}
         </View>
 
@@ -581,16 +561,18 @@ const styles = StyleSheet.create({
   priceRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: verticalScale(4),
+    alignItems: 'center',
+  },
+  priceRightColumn: {
+    alignItems: 'flex-end',
   },
   price: {
-    fontSize: scale(24),
+    fontSize: 28,
     fontWeight: '700',
     color: '#fff',
   },
   percentageChange: {
-    fontSize: scale(20),
+    fontSize: 20,
     fontWeight: '700',
   },
   priceBottomRow: {
@@ -619,29 +601,17 @@ const styles = StyleSheet.create({
   chartContainer: {
     // backgroundColor: '#2a2a2a', // Using colors.backgroundMedium equivalent
     borderRadius: 16,
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'center',
     marginHorizontal: scale(CHART_HORIZONTAL_MARGIN),
     marginBottom: 10,
-  },
-  chartLoadingContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: scale(200),
+    height: scale(300),
     width: screenWidth - scale(CHART_HORIZONTAL_MARGIN * 2),
   },
   chartLoadingText: {
     fontSize: scale(12),
     color: '#9ca3af',
     marginTop: verticalScale(6),
-  },
-  chartErrorContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: scale(200),
-    width: screenWidth - scale(CHART_HORIZONTAL_MARGIN * 2),
-    backgroundColor: '#2a2a2a',
-    borderRadius: scale(16),
   },
   chartErrorText: {
     fontSize: scale(12),
