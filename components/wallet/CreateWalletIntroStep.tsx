@@ -222,8 +222,8 @@ const styles = StyleSheet.create({
   buttonContainer: {
     width: '100%',
     paddingHorizontal: scale(24),
-    paddingBottom:
-      Platform.OS === 'ios' ? verticalScale(34) : verticalScale(24),
+    // paddingBottom:
+    // Platform.OS === 'ios' ? verticalScale(34) : verticalScale(24),
     paddingTop: verticalScale(20),
   },
   primaryButton: {
