@@ -192,6 +192,7 @@ const TokenSelectorBottomSheet = forwardRef<
           <BottomActionContainer
             translateY={searchBarTranslateY}
             avoidKeyboard={true}
+            edges={['bottom']}
           >
             <SearchBar
               searchQuery={searchQuery}

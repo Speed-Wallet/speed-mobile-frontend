@@ -495,7 +495,10 @@ export default function TokenDetailScreen() {
       </ScrollView>
 
       {/* Bottom Action Buttons */}
-      <BottomActionContainer translateY={bottomActionTranslateY}>
+      <BottomActionContainer
+        translateY={bottomActionTranslateY}
+        edges={['bottom']}
+      >
         <View style={styles.actionsRow}>
           <TouchableOpacity
             style={styles.actionButton}

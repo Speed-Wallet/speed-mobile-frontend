@@ -8,12 +8,14 @@ import Animated, {
 } from 'react-native-reanimated';
 import colors from '@/constants/colors';
 import ScreenContainer from '@/components/ScreenContainer';
+import { Edge } from 'react-native-safe-area-context';
 
 interface BottomActionContainerProps {
   children: React.ReactNode;
   style?: ViewStyle;
   translateY?: SharedValue<number>;
   avoidKeyboard?: boolean;
+  edges?: Edge[];
 }
 
 const BottomActionContainer: React.FC<BottomActionContainerProps> = ({
@@ -21,6 +23,7 @@ const BottomActionContainer: React.FC<BottomActionContainerProps> = ({
   style,
   translateY,
   avoidKeyboard = false,
+  edges = [],
 }) => {
   const keyboardOffset = useSharedValue(0);
 
@@ -72,7 +75,7 @@ const BottomActionContainer: React.FC<BottomActionContainerProps> = ({
         (translateY || avoidKeyboard) && animatedStyle,
       ]}
     >
-      <ScreenContainer edges={[]} style={{ padding: 16 }}>
+      <ScreenContainer edges={edges} style={{ padding: 16 }}>
         {children}
       </ScreenContainer>
     </Container>
