@@ -4,6 +4,7 @@ import { ChevronDown } from 'lucide-react-native';
 import { scale, moderateScale } from 'react-native-size-matters';
 import colors from '@/constants/colors';
 import { TokenMetadata } from '@/services/tokenAssetService';
+import { formatBalance } from '@/utils/formatters';
 import TokenItemBase from './TokenItemBase';
 
 interface TokenItemSelectorProps {
@@ -39,12 +40,7 @@ const TokenItemSelector = ({
     balance !== undefined || totalPrice !== undefined ? (
       <>
         {balance !== undefined && (
-          <Text style={styles.balance}>
-            {balance.toLocaleString(undefined, {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 6,
-            })}
-          </Text>
+          <Text style={styles.balance}>{formatBalance(balance)}</Text>
         )}
         {totalPrice !== undefined && (
           <Text style={styles.totalPrice}>

@@ -1,6 +1,5 @@
 // Utility functions for formatting chart data
 import { HistoricalPricesResponse } from '@/types/birdeye';
-import { formatLargeNumber, formatCurrency } from './formatters';
 
 export interface FormattedChartData {
   labels: string[];
@@ -199,34 +198,6 @@ export function formatPriceChangeString(changePercentage: number): string {
   const sign = changePercentage >= 0 ? '+' : '';
   return `${sign}${changePercentage.toFixed(2)}%`;
 }
-
-/**
- * Format price for display with commas
- */
-export function formatPrice(price: number): string {
-  if (price < 0.01) {
-    return `$${price.toFixed(6)}`;
-  } else if (price < 1) {
-    return `$${price.toFixed(4)}`;
-  } else {
-    return formatCurrency(price);
-  }
-}
-export function formatPriceChange(priceChange: number): string {
-  const sign = priceChange >= 0 ? '+' : '-';
-  const absChange = Math.abs(priceChange);
-
-  if (absChange < 0.01 && absChange > 0) {
-    return `${sign}$${absChange.toFixed(8)}`;
-  } else {
-    // Use formatCurrency and keep the $ symbol
-    const formatted = formatCurrency(absChange);
-    return `${sign}${formatted}`;
-  }
-}
-
-// Export formatLargeNumber from formatters.ts for convenience
-export { formatLargeNumber, formatCurrency };
 
 /**
  * Calculate adaptive padding multiplier based on volatility

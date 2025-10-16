@@ -32,17 +32,26 @@ import {
 import {
   formatHistoricalDataForCustomChart,
   formatPriceChangeString,
-  formatPrice,
-  formatLargeNumber,
   calculatePriceChange,
-  timeframeConfigs,
   ChartDataPoint,
-  formatPriceChange,
 } from '@/utils/chartUtils';
 import { useJupiterToken } from '@/services/jupiterService';
 import { useTokenAssets } from '@/hooks/useTokenAsset';
 import { useWalletPublicKey } from '@/services/walletService';
 import { CHART_HORIZONTAL_MARGIN } from '@/constants/layout';
+import {
+  formatCurrency,
+  formatLargeNumber,
+  formatPrice,
+} from '@/utils/formatters';
+import {
+  USDC_TOKEN,
+  USDT_TOKEN,
+  WSOL_TOKEN,
+  cbBTC_TOKEN,
+  WETH_TOKEN,
+} from '@/constants/popularTokens';
+import { TokenMetadata } from '@/services/tokenAssetService';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -204,8 +213,9 @@ export default function TokenDetailScreen() {
 
   const displayPriceChange = priceChange;
 
-  const currentChange = `${formatPriceChange(
-    displayPriceChange.change,
+  const sign = displayPriceChange.change >= 0 ? '+' : '';
+  const currentChange = `${sign}${formatPrice(
+    Math.abs(displayPriceChange.change),
   )} ${formatPriceChangeString(displayPriceChange.changePercentage)}`;
   const isNegative = displayPriceChange.changePercentage < 0;
 
@@ -235,6 +245,70 @@ export default function TokenDetailScreen() {
       await Clipboard.setStringAsync(address);
       // Could add a toast notification here
     }
+  };
+
+  // Find the best token to use as fromToken based on user's holdings
+  const findBestFromToken = (): TokenMetadata | null => {
+    if (!tokenAssets?.tokenAssets) return null;
+
+    const holdings = tokenAssets.tokenAssets;
+
+    // 1. Check stablecoins and pick the one with highest balance
+    const usdcHolding = holdings.find(
+      (asset) => asset.address === USDC_TOKEN.address && asset.balance > 0,
+    );
+    const usdtHolding = holdings.find(
+      (asset) => asset.address === USDT_TOKEN.address && asset.balance > 0,
+    );
+
+    if (usdcHolding && usdtHolding) {
+      // Both exist, pick highest USD value
+      const usdcValue = usdcHolding.totalPrice || 0;
+      const usdtValue = usdtHolding.totalPrice || 0;
+      return usdcValue >= usdtValue ? USDC_TOKEN : USDT_TOKEN;
+    } else if (usdcHolding) {
+      return USDC_TOKEN;
+    } else if (usdtHolding) {
+      return USDT_TOKEN;
+    }
+
+    // 2. Check SOL if no stablecoin found
+    const solHolding = holdings.find(
+      (asset) => asset.address === WSOL_TOKEN.address && asset.balance > 0,
+    );
+    if (solHolding) {
+      return WSOL_TOKEN;
+    }
+
+    // 3. Check ETH if no SOL found
+    const ethHolding = holdings.find(
+      (asset) => asset.address === WETH_TOKEN.address && asset.balance > 0,
+    );
+    if (ethHolding) {
+      return WETH_TOKEN;
+    }
+
+    // 4. Find token with highest USD balance
+    const holdingsWithBalance = holdings.filter(
+      (asset) => asset.balance > 0 && (asset.totalPrice || 0) > 0,
+    );
+
+    if (holdingsWithBalance.length > 0) {
+      // Pick the highest value holding
+      const highestValueHolding = holdingsWithBalance.reduce((prev, current) =>
+        (current.totalPrice || 0) > (prev.totalPrice || 0) ? current : prev,
+      );
+
+      return {
+        address: highestValueHolding.address,
+        symbol: highestValueHolding.symbol,
+        name: highestValueHolding.name,
+        logoURI: highestValueHolding.logoURI || '',
+        decimals: highestValueHolding.decimals,
+      };
+    }
+
+    return null;
   };
 
   // Calculate 24h volume (buy + sell volume)
@@ -295,7 +369,7 @@ export default function TokenDetailScreen() {
         },
         {
           label: 'Value',
-          value: formatPrice(userHolding.totalPrice || 0),
+          value: formatCurrency(userHolding.totalPrice || 0),
         },
       ]
     : null;
@@ -482,14 +556,64 @@ export default function TokenDetailScreen() {
         <View style={styles.actionsRow}>
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => router.push(`/(tabs)/trade?fromToken=${address}`)}
+            onPress={() => {
+              // Check if user has balance of this token
+              const hasBalance = userHolding && userHolding.balance > 0;
+
+              // Current token metadata
+              const currentTokenMetadata: TokenMetadata = {
+                address: address,
+                symbol: tokenData.symbol,
+                name: tokenData.name,
+                logoURI: tokenData.icon,
+                decimals: tokenData.decimals,
+              };
+
+              if (hasBalance) {
+                // User has balance, put this token in fromToken
+                router.push(
+                  `/(tabs)/trade?fromTokenJson=${encodeURIComponent(JSON.stringify(currentTokenMetadata))}` as any,
+                );
+              } else {
+                // User doesn't have balance, put this token in toToken
+                // Find a token they have balance of for fromToken with priority:
+                // 1. Highest balance stablecoin (USDC or USDT)
+                // 2. SOL
+                // 3. ETH
+                // 4. Highest USD balance of any other token
+                const fromTokenMetadata = findBestFromToken();
+
+                // Navigate with both tokens
+                if (fromTokenMetadata) {
+                  router.push(
+                    `/(tabs)/trade?fromTokenJson=${encodeURIComponent(JSON.stringify(fromTokenMetadata))}&toTokenJson=${encodeURIComponent(JSON.stringify(currentTokenMetadata))}` as any,
+                  );
+                } else {
+                  // Fallback: just set toToken if user has no tokens at all
+                  router.push(
+                    `/(tabs)/trade?toTokenJson=${encodeURIComponent(JSON.stringify(currentTokenMetadata))}` as any,
+                  );
+                }
+              }
+            }}
           >
             <ArrowRightLeft size={scale(18)} color="#000" />
             <Text style={styles.actionButtonText}>Trade</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => router.push(`/transaction/send?token=${address}`)}
+            onPress={() => {
+              const tokenMetadata = {
+                address: address,
+                symbol: tokenData.symbol,
+                name: tokenData.name,
+                logoURI: tokenData.icon,
+                decimals: tokenData.decimals,
+              };
+              router.push(
+                `/transaction/send?tokenJson=${encodeURIComponent(JSON.stringify(tokenMetadata))}`,
+              );
+            }}
           >
             <ArrowUpRight size={scale(18)} color="#000" />
             <Text style={styles.actionButtonText}>Send</Text>
@@ -642,7 +766,7 @@ const styles = StyleSheet.create({
   },
   section: {
     paddingHorizontal: scale(16),
-    marginBottom: verticalScale(20),
+    marginBottom: 10,
   },
   aboutSection: {
     paddingHorizontal: scale(16),
@@ -652,7 +776,7 @@ const styles = StyleSheet.create({
     fontSize: scale(16),
     fontWeight: '600',
     color: '#fff',
-    marginBottom: verticalScale(10),
+    marginBottom: 10,
   },
   description: {
     fontSize: scale(13),

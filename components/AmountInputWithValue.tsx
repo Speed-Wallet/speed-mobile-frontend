@@ -48,7 +48,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12, // Adjust padding as needed
-    marginBottom: 12,
   },
   inputRow: {
     flexDirection: 'row',
