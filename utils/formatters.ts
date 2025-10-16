@@ -19,6 +19,17 @@ export const formatPrice = (price: number): string => {
   }
 };
 
+// Format price in short form (fewer decimals for display in constrained spaces)
+export const formatPriceShort = (price: number): string => {
+  if (price < 0.0001) {
+    return `$${price.toFixed(6)}`;
+  } else if (price < 0.01) {
+    return `$${price.toFixed(4)}`;
+  } else {
+    return formatCurrency(price);
+  }
+};
+
 // Format a number as percentage
 export const formatPercentage = (value: number): string => {
   return new Intl.NumberFormat('en-US', {
@@ -90,7 +101,7 @@ export const getDecimalsToShow = (
 // Format token balance with appropriate decimals (similar to formatPrice but for quantities)
 export const formatBalance = (balance: number): string => {
   if (balance === 0) {
-    return '0';
+    return '0.00';
   } else if (balance < 0.01) {
     return balance.toFixed(6);
   } else if (balance < 1) {

@@ -1,6 +1,6 @@
 import React, { ReactNode } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { scale } from 'react-native-size-matters';
+import { moderateScale, scale } from 'react-native-size-matters';
 import colors from '@/constants/colors';
 import TokenLogo from '../TokenLogo';
 import { formatBalance } from '@/utils/formatters';
@@ -48,7 +48,7 @@ const TokenItemBase = ({
       >
         {/* Left Section - Logo */}
         <View style={styles.leftSection}>
-          <TokenLogo logoURI={logoURI} size={32} />
+          <TokenLogo logoURI={logoURI} size={moderateScale(32, 0.5)} />
         </View>
 
         {/* Middle Section - Name & Secondary Content */}
@@ -76,8 +76,8 @@ const styles = StyleSheet.create({
   cardContainer: {
     backgroundColor: colors.backgroundMedium,
     borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: scale(16),
+    paddingVertical: scale(12),
     marginBottom: 2,
   },
   touchableContent: {

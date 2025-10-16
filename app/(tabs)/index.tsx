@@ -26,7 +26,13 @@ import ScreenContainer from '@/components/ScreenContainer';
 import TabSelector from '@/components/TabSelector';
 import { AuthService } from '@/services/authService';
 import { useTokenAssets } from '@/hooks/useTokenAsset';
-import { useSuggestedTokens } from '@/hooks/useSuggestedTokens';
+import {
+  USDC_TOKEN,
+  USDT_TOKEN,
+  cbBTC_TOKEN,
+  WETH_TOKEN,
+  WBNB_TOKEN,
+} from '@/constants/popularTokens';
 import { generateSignature } from '@/utils/signature';
 import Animated, { FadeInRight } from 'react-native-reanimated';
 import CustomAlert from '@/components/CustomAlert';
@@ -38,7 +44,7 @@ import { removeWalletFromList } from '@/services/walletService';
 // import CryptoTest from '@/components/CryptoTest';
 
 const ICON_SIZE = 26;
-const ICON_STROKE_WIDTH = 1;
+const ICON_STROKE_WIDTH = 1.5;
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -180,10 +186,37 @@ export default function HomeScreen() {
     await refetchTokenAssets();
   };
 
-  // Get suggested tokens (tokens user doesn't own yet) - only if assets are loaded
-  const { suggestedTokens } = useSuggestedTokens(
-    isLoadingAssets ? undefined : tokenAssets?.tokenAssets,
-  );
+  // Suggested tokens to show at the bottom (tokens user doesn't own yet)
+  const SUGGESTED_TOKENS = [
+    USDC_TOKEN,
+    cbBTC_TOKEN,
+    WETH_TOKEN,
+    WBNB_TOKEN,
+    USDT_TOKEN,
+  ];
+
+  // Filter out tokens the user already owns - only if assets are loaded
+  const suggestedTokens = isLoadingAssets
+    ? []
+    : SUGGESTED_TOKENS.filter(
+        (suggestedToken) =>
+          !tokenAssets?.tokenAssets?.some(
+            (userToken) => userToken.address === suggestedToken.address,
+          ),
+      ).map((token) => ({
+        address: token.address,
+        mint: token.address,
+        name: token.name,
+        symbol: token.symbol,
+        logoURI: token.logoURI,
+        decimals: token.decimals,
+        balance: 0,
+        rawBalance: '0',
+        tokenStandard: 'Token' as const,
+        pricePerToken: 0,
+        totalPrice: 0,
+        currency: 'USD',
+      }));
 
   // Sort user's tokens: SOL first, then by USD balance descending
   const sortedUserTokens = [...(tokenAssets?.tokenAssets || [])].sort(
@@ -208,7 +241,10 @@ export default function HomeScreen() {
     : [...sortedUserTokens, ...suggestedTokens];
 
   return (
-    <ScreenContainer edges={['top', 'bottom']}>
+    <ScreenContainer
+      edges={['top']}
+      style={{ paddingBottom: verticalScale(6) }}
+    >
       {activeTab === 'tokens' ? (
         <FlashList
           data={allTokens}
