@@ -1,12 +1,15 @@
 import { useQuery } from '@tanstack/react-query';
-import { getTokenMarketData } from '@/services/apis';
-import { CACHE_TIME } from '@/constants/cache';
+import {
+  getJupiterPrices,
+  JupiterPriceResponse,
+} from '@/services/jupiterPriceService';
+import { CACHE_TIME, RETRY_CONFIG } from '@/constants/cache';
 import { useTokenAsset } from '@/hooks/useTokenAsset';
 
 /**
- * Hook to fetch token price from Birdeye API for a single token
- * First checks useTokenAsset for cached price, then falls back to Birdeye API
- * @param tokenAddress - Solana token address (not CoinGecko ID)
+ * Hook to fetch token price from Jupiter API for a single token
+ * First checks useTokenAsset for cached price, then falls back to Jupiter API
+ * @param tokenAddress - Solana token address
  * @returns Token price data with loading and error states
  */
 export const useTokenPrice = (
@@ -22,40 +25,38 @@ export const useTokenPrice = (
   // If we have a price from token assets, use it immediately
   const hasCachedPrice = pricePerToken !== undefined && pricePerToken > 0;
 
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['tokenPrice', tokenAddress],
+  const { data, isLoading, error } = useQuery<JupiterPriceResponse>({
+    queryKey: ['jupiterPrice', tokenAddress],
     queryFn: async () => {
       if (!tokenAddress) {
         throw new Error('Token address is required');
       }
 
-      const result = await getTokenMarketData(tokenAddress);
-
-      if (!result.success || !result.data) {
-        throw new Error(result.error || 'Failed to fetch token price');
-      }
-
-      return result.data;
+      return await getJupiterPrices([tokenAddress]);
     },
     enabled: !!tokenAddress && !hasCachedPrice, // Only fetch if no cached price
-    staleTime: CACHE_TIME.TOKEN_PRICES.STALE_TIME,
-    gcTime: CACHE_TIME.TOKEN_PRICES.GC_TIME,
-    refetchInterval: CACHE_TIME.TOKEN_PRICES.REFETCH_INTERVAL,
+    staleTime: CACHE_TIME.TOKEN_ASSETS.STALE_TIME,
+    gcTime: CACHE_TIME.TOKEN_ASSETS.GC_TIME,
+    refetchInterval: CACHE_TIME.TOKEN_ASSETS.REFETCH_INTERVAL,
+    retry: RETRY_CONFIG.DEFAULT_RETRIES,
+    retryDelay: RETRY_CONFIG.exponentialDelay,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
   });
 
-  // Prefer cached price from token assets, fallback to Birdeye API
+  // Prefer cached price from token assets, fallback to Jupiter API
+  const jupiterPrice = tokenAddress && data?.[tokenAddress]?.usdPrice;
+
   return {
-    price: hasCachedPrice ? pricePerToken : data?.price,
+    price: hasCachedPrice ? pricePerToken : jupiterPrice || undefined,
     isLoading: hasCachedPrice ? false : isLoading || assetLoading,
     error: error as Error | null,
   };
 };
 
 /**
- * Hook to fetch prices for multiple tokens from Birdeye API
- * First checks useTokenAsset for cached prices, then falls back to Birdeye API
+ * Hook to fetch prices for multiple tokens from Jupiter API
+ * First checks useTokenAsset for cached prices, then falls back to Jupiter API
  * @param tokenAddresses - Array of Solana token addresses
  * @returns Object mapping token addresses to their prices
  */
@@ -83,42 +84,30 @@ export const useTokenPrices = (
     }
   });
 
-  // Only fetch from Birdeye for addresses without cached prices
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['tokenPrices', ...addressesNeedingFetch.sort()],
-    queryFn: async () => {
-      const results = await Promise.allSettled(
-        addressesNeedingFetch.map(async (address) => {
-          const result = await getTokenMarketData(address);
-          if (result.success && result.data) {
-            return { address, price: result.data.price };
-          }
-          return null;
-        }),
-      );
-
-      const prices: Record<string, number> = {};
-      results.forEach((result) => {
-        if (result.status === 'fulfilled' && result.value) {
-          prices[result.value.address] = result.value.price;
-        }
-      });
-
-      return prices;
-    },
+  // Only fetch from Jupiter for addresses without cached prices
+  const { data, isLoading, error } = useQuery<JupiterPriceResponse>({
+    queryKey: ['jupiterPrices', ...addressesNeedingFetch.sort()],
+    queryFn: () => getJupiterPrices(addressesNeedingFetch),
     enabled: addressesNeedingFetch.length > 0,
-    staleTime: CACHE_TIME.TOKEN_PRICES.STALE_TIME,
-    gcTime: CACHE_TIME.TOKEN_PRICES.GC_TIME,
-    refetchInterval: CACHE_TIME.TOKEN_PRICES.REFETCH_INTERVAL,
+    staleTime: CACHE_TIME.TOKEN_ASSETS.STALE_TIME,
+    gcTime: CACHE_TIME.TOKEN_ASSETS.GC_TIME,
+    refetchInterval: CACHE_TIME.TOKEN_ASSETS.REFETCH_INTERVAL,
+    retry: RETRY_CONFIG.DEFAULT_RETRIES,
+    retryDelay: RETRY_CONFIG.exponentialDelay,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
   });
 
-  // Combine cached prices with fetched prices
-  const allPrices = {
-    ...cachedPrices,
-    ...(data || {}),
-  };
+  // Combine cached prices with fetched prices from Jupiter
+  const allPrices: Record<string, number> = { ...cachedPrices };
+
+  if (data) {
+    addressesNeedingFetch.forEach((address) => {
+      if (data[address]?.usdPrice) {
+        allPrices[address] = data[address].usdPrice;
+      }
+    });
+  }
 
   return {
     prices: allPrices,

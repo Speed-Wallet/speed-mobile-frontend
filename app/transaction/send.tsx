@@ -6,6 +6,7 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
+  KeyboardAvoidingView,
   Image,
   ActivityIndicator,
   Platform,
@@ -40,6 +41,8 @@ import {
 } from '@/utils/sendTransaction';
 import { useTokenAsset } from '@/hooks/useTokenAsset';
 import { useSendTokens } from '@/hooks/useSendTokens';
+import { formatBalance, formatPriceShort } from '@/utils/formatters';
+import { useTokenPrice } from '@/hooks/useTokenPrices';
 
 /**
  * Send Screen - Send Token Interface
@@ -65,9 +68,13 @@ export default function SendScreen() {
   // Get token asset data for the selected token
   const tokenAsset = useTokenAsset(selectedToken?.address);
 
+  // Get token price (from cache or Jupiter)
+  const { price: tokenPrice } = useTokenPrice(selectedToken?.address);
+
   const [amount, setAmount] = useState<string | null>(null);
   const [recipient, setRecipient] = useState<string | null>(null);
   const [note, setNote] = useState('');
+  const [hasInsufficientBalance, setHasInsufficientBalance] = useState(false);
 
   // Token search state
   const [tokenSearchQuery, setTokenSearchQuery] = useState('');
@@ -146,6 +153,10 @@ export default function SendScreen() {
     setTokenSearchQuery('');
   };
 
+  const handleInsufficientBalance = (insufficient: boolean) => {
+    setHasInsufficientBalance(insufficient);
+  };
+
   const handleSend = async () => {
     if (!selectedToken) {
       setToast({ message: 'Please select a token to send.', type: 'error' });
@@ -170,8 +181,8 @@ export default function SendScreen() {
 
     try {
       const prepared = await prepareSendTransaction({
-        amount: amount || '',
-        recipient: recipient || '',
+        amount: amount,
+        recipient: recipient,
         tokenAddress: selectedToken.address,
         tokenSymbol: selectedToken.symbol,
         tokenDecimals: selectedToken.decimals,
@@ -234,7 +245,11 @@ export default function SendScreen() {
           onBack={() => router.push('/' as any)}
         />
 
-        <View style={{ flex: 1 }}>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 90}
+        >
           <ScrollView
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.scrollContent}
@@ -261,11 +276,20 @@ export default function SendScreen() {
 
                 {/* Amount Section */}
                 <View style={styles.section}>
-                  <Text style={styles.inputLabel}>Amount</Text>
+                  <View style={styles.labelRow}>
+                    <Text style={styles.inputLabel}>Amount</Text>
+                    <Text style={styles.balanceLabel}>
+                      Max:{' '}
+                      {tokenAsset.loading
+                        ? '...'
+                        : formatBalance(tokenAsset.balance)}
+                    </Text>
+                  </View>
                   <AmountInputWithValue
                     address={selectedToken.address}
                     amount={amount || ''}
                     setAmount={setAmount}
+                    onInsufficientBalance={handleInsufficientBalance}
                   />
                 </View>
 
@@ -291,10 +315,10 @@ export default function SendScreen() {
                   entering={FadeIn.delay(300)}
                   style={styles.section}
                 >
-                  <Text style={styles.inputLabel}>Note (Optional)</Text>
+                  <Text style={styles.inputLabel}>Note</Text>
                   <TextInput
                     style={styles.noteInput}
-                    placeholder="Add a note"
+                    placeholder="Add an optional note"
                     placeholderTextColor={colors.textSecondary}
                     value={note}
                     onChangeText={setNote}
@@ -304,156 +328,160 @@ export default function SendScreen() {
               </View>
             )}
           </ScrollView>
+        </KeyboardAvoidingView>
 
-          {/* Send Button */}
-          <BottomActionContainer avoidKeyboard={true}>
-            <PrimaryActionButton
-              title="Preview Send"
-              onPress={handleSend}
-              disabled={!amount || !recipient}
-            />
-          </BottomActionContainer>
+        {/* Send Button */}
+        <BottomActionContainer avoidKeyboard={true}>
+          <PrimaryActionButton
+            title={
+              hasInsufficientBalance
+                ? `Insufficient ${selectedToken?.symbol || 'Balance'}`
+                : 'Preview Send'
+            }
+            onPress={handleSend}
+            disabled={!amount || !recipient || hasInsufficientBalance}
+          />
+        </BottomActionContainer>
 
-          {/* Preview Bottom Sheet */}
-          <BottomSheet
-            ref={previewBottomSheetRef}
-            index={-1}
-            backdropComponent={renderBackdrop}
-            enablePanDownToClose={true}
-            onClose={() => setIsPreviewSheetOpen(false)}
-            backgroundStyle={styles.bottomSheetBackground}
-            handleIndicatorStyle={styles.bottomSheetHandle}
-          >
-            <BottomSheetView style={styles.bottomSheetContent}>
-              <Text style={styles.bottomSheetTitle}>Send Details</Text>
+        {/* Preview Bottom Sheet */}
+        <BottomSheet
+          ref={previewBottomSheetRef}
+          index={-1}
+          backdropComponent={renderBackdrop}
+          enablePanDownToClose={true}
+          onClose={() => setIsPreviewSheetOpen(false)}
+          backgroundStyle={styles.bottomSheetBackground}
+          handleIndicatorStyle={styles.bottomSheetHandle}
+        >
+          <BottomSheetView style={styles.bottomSheetContent}>
+            <Text style={styles.bottomSheetTitle}>Send Details</Text>
 
-              {selectedToken && (
-                <View style={styles.previewContainer}>
-                  <View style={styles.previewRow}>
-                    <Text style={styles.previewLabel}>Amount</Text>
-                    <Text style={styles.previewValue}>
-                      {amount} {selectedToken.symbol}
-                    </Text>
-                  </View>
-
-                  <View style={styles.previewRow}>
-                    <Text style={styles.previewLabel}>To</Text>
-                    <Text style={styles.previewValue} numberOfLines={1}>
-                      {recipient?.slice(0, 6) + '...' + recipient?.slice(-4)}
-                    </Text>
-                  </View>
-
-                  <View style={styles.previewRow}>
-                    <Text style={styles.previewLabel}>Network Fee</Text>
-                    <Text style={styles.previewValue}>~0.000005 SOL</Text>
-                  </View>
-
-                  {note && (
-                    <View style={styles.previewRow}>
-                      <Text style={styles.previewLabel}>Note</Text>
-                      <Text style={styles.previewValue}>{note}</Text>
-                    </View>
-                  )}
+            {selectedToken && (
+              <View style={styles.previewContainer}>
+                <View style={styles.previewRow}>
+                  <Text style={styles.previewLabel}>Amount</Text>
+                  <Text style={styles.previewValue}>
+                    {amount} {selectedToken.symbol}
+                  </Text>
                 </View>
-              )}
 
-              <PrimaryActionButton
-                title={isPreparingSend ? 'Preparing...' : 'Confirm Send'}
-                onPress={handleConfirmSend}
-                disabled={!preparedTransaction || isPreparingSend}
-                loading={isPreparingSend}
-              />
-            </BottomSheetView>
-          </BottomSheet>
-
-          {/* Status Bottom Sheet */}
-          <BottomSheet
-            ref={statusBottomSheetRef}
-            index={-1}
-            backdropComponent={renderBackdrop}
-            enablePanDownToClose={!isSending}
-            onClose={() => setIsStatusSheetOpen(false)}
-            backgroundStyle={styles.bottomSheetBackground}
-            handleIndicatorStyle={styles.bottomSheetHandle}
-          >
-            <BottomSheetView
-              style={[styles.bottomSheetContent, { alignItems: 'center' }]}
-            >
-              {isSending ? (
-                <>
-                  <ActivityIndicator
-                    size="large"
-                    color={colors.primary}
-                    style={styles.loadingIndicator}
-                  />
-                  <Text style={styles.loadingText}>
-                    {isConfirmingSend
-                      ? 'Sending Transaction...'
-                      : 'Processing Transaction...'}
+                <View style={styles.previewRow}>
+                  <Text style={styles.previewLabel}>To</Text>
+                  <Text style={styles.previewValue} numberOfLines={1}>
+                    {recipient?.slice(0, 6) + '...' + recipient?.slice(-4)}
                   </Text>
-                  <Text style={styles.loadingSubtext}>
-                    {isConfirmingSend
-                      ? 'Please wait while we submit your transaction to the blockchain'
-                      : 'Please wait while we process your transaction'}
-                  </Text>
-                </>
-              ) : sendResult ? (
-                <>
-                  {sendResult.success ? (
-                    <>
-                      <LinearGradient
-                        colors={['#4CAF50', '#45a049']}
-                        style={styles.successIcon}
-                      >
-                        <Check size={32} color={colors.white} />
-                      </LinearGradient>
-                      <Text style={styles.successTitle}>Send Successful!</Text>
-                      <Text style={styles.successSubtitle}>
-                        Your transaction has been sent successfully
-                      </Text>
-                      {sendResult.signature && (
-                        <Text style={styles.transactionId} numberOfLines={1}>
-                          Transaction ID: {sendResult.signature.slice(0, 8)}...
-                          {sendResult.signature.slice(-8)}
-                        </Text>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      <View style={styles.errorIcon}>
-                        <Text style={styles.errorIconText}>✕</Text>
-                      </View>
-                      <Text style={styles.errorTitle}>Send Failed</Text>
-                      <Text style={styles.errorSubtitle}>
-                        {'Something went wrong. Please try again.'}
-                      </Text>
-                    </>
-                  )}
+                </View>
 
-                  <PrimaryActionButton
-                    title={sendResult.success ? 'Done' : 'Try Again'}
-                    onPress={() => {
-                      statusBottomSheetRef.current?.close();
-                      if (sendResult.success) {
-                        router.push('/' as any);
-                      }
-                    }}
-                  />
-                </>
-              ) : null}
-            </BottomSheetView>
-          </BottomSheet>
+                <View style={styles.previewRow}>
+                  <Text style={styles.previewLabel}>Network Fee</Text>
+                  <Text style={styles.previewValue}>~0.000005 SOL</Text>
+                </View>
 
-          {/* Toast */}
-          {toast && (
-            <Toast
-              message={toast.message}
-              type={toast.type}
-              visible={!!toast}
-              onHide={() => setToast(null)}
+                {note && (
+                  <View style={styles.previewRow}>
+                    <Text style={styles.previewLabel}>Note</Text>
+                    <Text style={styles.previewValue}>{note}</Text>
+                  </View>
+                )}
+              </View>
+            )}
+
+            <PrimaryActionButton
+              title={isPreparingSend ? 'Preparing...' : 'Confirm Send'}
+              onPress={handleConfirmSend}
+              disabled={!preparedTransaction || isPreparingSend}
+              loading={isPreparingSend}
             />
-          )}
-        </View>
+          </BottomSheetView>
+        </BottomSheet>
+
+        {/* Status Bottom Sheet */}
+        <BottomSheet
+          ref={statusBottomSheetRef}
+          index={-1}
+          backdropComponent={renderBackdrop}
+          enablePanDownToClose={!isSending}
+          onClose={() => setIsStatusSheetOpen(false)}
+          backgroundStyle={styles.bottomSheetBackground}
+          handleIndicatorStyle={styles.bottomSheetHandle}
+        >
+          <BottomSheetView
+            style={[styles.bottomSheetContent, { alignItems: 'center' }]}
+          >
+            {isSending ? (
+              <>
+                <ActivityIndicator
+                  size="large"
+                  color={colors.primary}
+                  style={styles.loadingIndicator}
+                />
+                <Text style={styles.loadingText}>
+                  {isConfirmingSend
+                    ? 'Sending Transaction...'
+                    : 'Processing Transaction...'}
+                </Text>
+                <Text style={styles.loadingSubtext}>
+                  {isConfirmingSend
+                    ? 'Please wait while we submit your transaction to the blockchain'
+                    : 'Please wait while we process your transaction'}
+                </Text>
+              </>
+            ) : sendResult ? (
+              <>
+                {sendResult.success ? (
+                  <>
+                    <LinearGradient
+                      colors={['#4CAF50', '#45a049']}
+                      style={styles.successIcon}
+                    >
+                      <Check size={32} color={colors.white} />
+                    </LinearGradient>
+                    <Text style={styles.successTitle}>Send Successful!</Text>
+                    <Text style={styles.successSubtitle}>
+                      Your transaction has been sent successfully
+                    </Text>
+                    {sendResult.signature && (
+                      <Text style={styles.transactionId} numberOfLines={1}>
+                        Transaction ID: {sendResult.signature.slice(0, 8)}...
+                        {sendResult.signature.slice(-8)}
+                      </Text>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <View style={styles.errorIcon}>
+                      <Text style={styles.errorIconText}>✕</Text>
+                    </View>
+                    <Text style={styles.errorTitle}>Send Failed</Text>
+                    <Text style={styles.errorSubtitle}>
+                      {'Something went wrong. Please try again.'}
+                    </Text>
+                  </>
+                )}
+
+                <PrimaryActionButton
+                  title={sendResult.success ? 'Done' : 'Try Again'}
+                  onPress={() => {
+                    statusBottomSheetRef.current?.close();
+                    if (sendResult.success) {
+                      router.push('/' as any);
+                    }
+                  }}
+                />
+              </>
+            ) : null}
+          </BottomSheetView>
+        </BottomSheet>
+
+        {/* Toast */}
+        {toast && (
+          <Toast
+            message={toast.message}
+            type={toast.type}
+            visible={!!toast}
+            onHide={() => setToast(null)}
+          />
+        )}
       </ScreenContainer>
 
       {/* Token Selector Bottom Sheet */}
@@ -476,11 +504,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: scale(16),
-    paddingBottom: verticalScale(20),
-  },
-  content: {
-    padding: scale(16),
+    paddingHorizontal: scale(16),
   },
   formContainer: {
     gap: verticalScale(6),
@@ -513,9 +537,19 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-SemiBold',
     color: colors.textPrimary,
   },
+  labelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   inputLabel: {
     fontSize: moderateScale(14),
     fontFamily: 'Inter-Medium',
+    color: colors.textSecondary,
+  },
+  balanceLabel: {
+    fontSize: moderateScale(12),
+    fontFamily: 'Inter-Regular',
     color: colors.textSecondary,
   },
   amountInputContainer: {
@@ -541,8 +575,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.backgroundMedium,
     borderRadius: 12,
-    paddingHorizontal: scale(16),
-    height: verticalScale(40),
+    padding: scale(12),
+    // height: verticalScale(40),
   },
   searchInput: {
     flex: 1,

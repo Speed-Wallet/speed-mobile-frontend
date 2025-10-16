@@ -1,33 +1,49 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, TextInput, StyleSheet } from 'react-native';
 import colors from '@/constants/colors';
 import { useTokenAsset } from '@/hooks/useTokenAsset';
-import { formatCurrency } from '@/utils/formatters'; // To format the USD value
+import { useTokenBalance } from '@/hooks/useTokenBalance';
+import { useTokenPrice } from '@/hooks/useTokenPrices';
+import { formatPrice, formatBalance } from '@/utils/formatters';
 import TokenLogo from './TokenLogo';
 
 interface AmountInputWithValueProps {
   address: string | null | undefined;
   amount: string;
   setAmount: (amount: string) => void;
+  onInsufficientBalance?: (insufficient: boolean, symbol?: string) => void;
 }
 
 const AmountInputWithValue: React.FC<AmountInputWithValueProps> = ({
   address,
   amount,
   setAmount,
+  onInsufficientBalance,
 }) => {
-  const { logoURI } = useTokenAsset(address);
-  const price = 2; // TODO get price
+  const { logoURI, symbol, balance } = useTokenAsset(address);
+  const { price } = useTokenPrice(address || undefined);
 
   const numericAmount = parseFloat(amount);
   const usdValue = !isNaN(numericAmount) && price ? numericAmount * price : 0;
 
+  // Check if amount exceeds balance
+  const hasInsufficientBalance = numericAmount > 0 && numericAmount > balance;
+
+  // Notify parent of insufficient balance state
+  useEffect(() => {
+    if (onInsufficientBalance) {
+      onInsufficientBalance(hasInsufficientBalance, symbol);
+    }
+  }, [hasInsufficientBalance, symbol, onInsufficientBalance]);
+
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        hasInsufficientBalance && styles.containerError,
+      ]}
+    >
       <View style={styles.inputRow}>
-        {address && logoURI && (
-          <TokenLogo logoURI={logoURI} size={24} style={styles.tokenIcon} />
-        )}
         <TextInput
           style={styles.amountTextInput}
           placeholder="0.00"
@@ -36,8 +52,17 @@ const AmountInputWithValue: React.FC<AmountInputWithValueProps> = ({
           value={amount}
           onChangeText={setAmount}
         />
-        <Text style={styles.usdValueText}>{formatCurrency(usdValue)}</Text>
+        <Text style={styles.usdValueText}>
+          {usdValue > 0 ? formatPrice(usdValue) : '$0.00'}
+        </Text>
       </View>
+      {balance > 0 && (
+        <View style={styles.balanceRow}>
+          <Text style={styles.balanceText}>
+            Balance: {formatBalance(balance)}
+          </Text>
+        </View>
+      )}
     </View>
   );
 };
@@ -47,11 +72,27 @@ const styles = StyleSheet.create({
     backgroundColor: colors.backgroundMedium,
     borderRadius: 12,
     paddingHorizontal: 16,
-    paddingVertical: 12, // Adjust padding as needed
+    paddingVertical: 12,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  containerError: {
+    borderColor: colors.error,
   },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  balanceRow: {
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: colors.backgroundLight,
+  },
+  balanceText: {
+    fontSize: 12,
+    fontFamily: 'Inter-Regular',
+    color: colors.textSecondary,
   },
   tokenIcon: {
     marginRight: 8,
