@@ -21,6 +21,16 @@ import ImportWalletStep from '@/components/wallet/ImportWalletStep';
 import ProgressBar from '@/components/ProgressBar';
 import 'react-native-get-random-values';
 
+export enum WalletSetupStep {
+  INTRO = 1,
+  SHOW_MNEMONIC,
+  VERIFY_MNEMONIC,
+  USERNAME,
+  CREATE_PIN,
+  SUCCESS,
+  IMPORT = 9,
+}
+
 interface SetupWalletScreenProps {
   onWalletSetupComplete: () => void;
 }
@@ -29,7 +39,7 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
   onWalletSetupComplete,
 }) => {
   const { alert, error: showError, success } = useAlert();
-  const [step, setStep] = useState(1); // 1: Initial, 2: Show Mnemonic, 3: Verify Mnemonic, 4: Username, 5: Create PIN, 6: Success, 9: Import
+  const [step, setStep] = useState<WalletSetupStep>(WalletSetupStep.INTRO);
   const [mnemonic, setMnemonic] = useState<string | null>(null);
   const [publicKey, setPublicKey] = useState<string | null>(null);
   const [accountIndex, setAccountIndex] = useState<number | undefined>(
@@ -51,7 +61,7 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
       setPublicKey(wallet.publicKey);
       setAccountIndex(wallet.accountIndex);
       setDerivationPath(wallet.derivationPath);
-      setStep(2);
+      setStep(WalletSetupStep.SHOW_MNEMONIC);
     } catch (error) {
       showError('Error', 'Could not generate wallet. Please try again.');
       console.error(error);
@@ -61,12 +71,12 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
 
   const handleMnemonicSaved = () => {
     // Move to verification step
-    setStep(3); // Move to mnemonic verification
+    setStep(WalletSetupStep.VERIFY_MNEMONIC);
   };
 
   const handleVerificationSuccess = () => {
     // Move to username creation after successful verification
-    setStep(4); // Move to username creation
+    setStep(WalletSetupStep.USERNAME);
   };
 
   const handleUsernameNext = async (selectedUsername: string) => {
@@ -100,7 +110,7 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
       // If successful, store username locally and proceed
       await AuthService.storeUsername(selectedUsername);
       setUsername(selectedUsername);
-      setStep(5); // Move to PIN creation
+      setStep(WalletSetupStep.CREATE_PIN);
     } catch (error) {
       console.error('Error in handleUsernameNext:', error);
 
@@ -149,7 +159,7 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
         derivationPath,
       );
 
-      setStep(6); // Go to success screen
+      setStep(WalletSetupStep.SUCCESS);
     } catch (error) {
       showError('Error', 'Could not save wallet. Please try again.');
     } finally {
@@ -158,7 +168,7 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
   };
 
   const handleImportWallet = () => {
-    setStep(9); // Move to import step
+    setStep(WalletSetupStep.IMPORT);
   };
 
   const processImportWallet = async (seedPhrase: string) => {
@@ -169,7 +179,7 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
       // Set the imported wallet data and proceed to verification
       setMnemonic(wallet.mnemonic);
       setPublicKey(wallet.publicKey);
-      setStep(3); // Move to verification
+      setStep(WalletSetupStep.VERIFY_MNEMONIC);
     } catch (error) {
       setIsImporting(false);
       throw error; // Let the ImportWalletStep handle the error display
@@ -179,16 +189,14 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
 
   // Helper function to get progress bar info
   const getProgressInfo = () => {
-    if (step === 1) return { current: 0, total: 5 }; // Initial screen - no progress bar
-    if (step === 9) return { current: 1, total: 5 }; // Import wallet - step 1 of 5
-    if (step === 6) return { current: 5, total: 5 }; // Success screen - full progress (step 5 of 5)
-
-    // Normal flow: steps 2-5 map to progress 1-4
-    const progressMap: { [key: number]: number } = {
-      2: 1, // Show Mnemonic
-      3: 2, // Verify Mnemonic
-      4: 3, // Username
-      5: 4, // Create PIN (includes confirm)
+    const progressMap = {
+      [WalletSetupStep.INTRO]: 0,
+      [WalletSetupStep.IMPORT]: 1,
+      [WalletSetupStep.SHOW_MNEMONIC]: 1,
+      [WalletSetupStep.VERIFY_MNEMONIC]: 2,
+      [WalletSetupStep.USERNAME]: 3,
+      [WalletSetupStep.CREATE_PIN]: 4,
+      [WalletSetupStep.SUCCESS]: 5,
     };
 
     return {
@@ -198,13 +206,13 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
   };
 
   const progressInfo = getProgressInfo();
-  const showProgressBar = step > 1; // Show on all steps except initial (step 1)
+  const showProgressBar = step !== WalletSetupStep.INTRO;
 
   // Adjust edges based on step - no edges for step 1 and step 6 to allow gradient to extend fully
-  // const screenEdges = step === 1 ? [] : ['top', 'bottom'];
+  // const screenEdges = [WalletSetupStep.IMPORT, WalletSetupStep.USERNAME].includes(step) ? [] : ['top', 'bottom'] as ("top" | "bottom" | "left" | "right")[];
 
   return (
-    <ScreenContainer edges={['top']}>
+    <ScreenContainer edges={['top', 'bottom']}>
       {/* Progress Bar */}
       {showProgressBar && (
         <View>
@@ -215,7 +223,7 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
         </View>
       )}
 
-      {step === 1 && (
+      {step === WalletSetupStep.INTRO && (
         <CreateWalletIntroStep
           onCreateWallet={handleCreateWallet}
           onImportWallet={handleImportWallet}
@@ -223,7 +231,7 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
         />
       )}
 
-      {step === 2 && mnemonic && publicKey && (
+      {step === WalletSetupStep.SHOW_MNEMONIC && mnemonic && publicKey && (
         <ShowMnemonicStep
           mnemonic={mnemonic}
           publicKey={publicKey}
@@ -232,44 +240,44 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
         />
       )}
 
-      {step === 3 && mnemonic && (
+      {step === WalletSetupStep.VERIFY_MNEMONIC && mnemonic && (
         <SeedPhraseVerificationStep
           words={mnemonic.split(' ')}
-          onBack={() => setStep(2)}
+          onBack={() => setStep(WalletSetupStep.SHOW_MNEMONIC)}
           onSuccess={handleVerificationSuccess}
           isLoading={isLoading}
         />
       )}
 
-      {step === 4 && (
+      {step === WalletSetupStep.USERNAME && (
         <CreateUsernameStep
           onNext={handleUsernameNext}
-          onBack={() => setStep(3)}
+          onBack={() => setStep(WalletSetupStep.VERIFY_MNEMONIC)}
           isLoading={isLoading}
         />
       )}
 
-      {step === 5 && (
+      {step === WalletSetupStep.CREATE_PIN && (
         <CreatePinStep
           pin={pin}
           onPinChange={setPin}
           onNext={handleSetPin}
-          onBack={() => setStep(4)}
+          onBack={() => setStep(WalletSetupStep.USERNAME)}
           isLoading={isLoading}
         />
       )}
 
-      {step === 6 && (
+      {step === WalletSetupStep.SUCCESS && (
         <WalletSetupSuccessStep
           username={username}
           onComplete={onWalletSetupComplete}
         />
       )}
 
-      {step === 9 && (
+      {step === WalletSetupStep.IMPORT && (
         <ImportWalletStep
           onNext={processImportWallet}
-          onBack={() => setStep(1)}
+          onBack={() => setStep(WalletSetupStep.INTRO)}
           isLoading={isImporting}
         />
       )}
