@@ -180,7 +180,7 @@ export default function HomeScreen() {
   };
 
   return (
-    <ScreenContainer edges={['top']}>
+    <ScreenContainer edges={['top', 'bottom']}>
       {activeTab === 'tokens' ? (
         <FlashList
           data={tokenAssets?.tokenAssets || []}
