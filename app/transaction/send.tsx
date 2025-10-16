@@ -27,6 +27,7 @@ import { USDC_TOKEN } from '@/constants/popularTokens';
 import ScreenHeader from '@/components/ScreenHeader';
 import ScreenContainer from '@/components/ScreenContainer';
 import PrimaryActionButton from '@/components/buttons/PrimaryActionButton';
+import BottomActionContainer from '@/components/BottomActionContainer';
 import AmountInputWithValue from '@/components/AmountInputWithValue';
 import { TokenItemSelector } from '@/components/token-items';
 import TokenSelectorBottomSheet, {
@@ -240,31 +241,38 @@ export default function SendScreen() {
             style={styles.scrollView}
           >
             {selectedToken && (
-              <>
-                <Text style={styles.inputLabel}>Token</Text>
-                <TokenItemSelector
-                  token={{
-                    address: tokenAsset.address,
-                    name: tokenAsset.name || selectedToken.name,
-                    symbol: tokenAsset.symbol || selectedToken.symbol,
-                    logoURI: tokenAsset.logoURI,
-                    decimals: tokenAsset.decimals || selectedToken.decimals,
-                  }}
-                  isLoading={tokenAsset.loading}
-                  onPress={() => tokenSelectorRef.current?.present()}
-                  showSelectorIcon={true}
-                />
-                <Text style={styles.inputLabel}>Amount</Text>
-                <AmountInputWithValue
-                  address={selectedToken.address}
-                  amount={amount || ''}
-                  setAmount={setAmount}
-                />
+              <View style={styles.formContainer}>
+                {/* Token Section */}
+                <View style={styles.section}>
+                  <Text style={styles.inputLabel}>Token</Text>
+                  <TokenItemSelector
+                    token={{
+                      address: tokenAsset.address,
+                      name: tokenAsset.name || selectedToken.name,
+                      symbol: tokenAsset.symbol || selectedToken.symbol,
+                      logoURI: tokenAsset.logoURI || selectedToken.logoURI,
+                      decimals: tokenAsset.decimals || selectedToken.decimals,
+                    }}
+                    isLoading={tokenAsset.loading}
+                    onPress={() => tokenSelectorRef.current?.present()}
+                    showSelectorIcon={true}
+                  />
+                </View>
+
+                {/* Amount Section */}
+                <View style={styles.section}>
+                  <Text style={styles.inputLabel}>Amount</Text>
+                  <AmountInputWithValue
+                    address={selectedToken.address}
+                    amount={amount || ''}
+                    setAmount={setAmount}
+                  />
+                </View>
 
                 {/* Recipient Section */}
                 <Animated.View
                   entering={FadeIn.delay(200)}
-                  style={styles.recipientSection}
+                  style={styles.section}
                 >
                   <Text style={styles.inputLabel}>Send To</Text>
                   <View style={styles.searchContainer}>
@@ -281,7 +289,7 @@ export default function SendScreen() {
                 {/* Note Input */}
                 <Animated.View
                   entering={FadeIn.delay(300)}
-                  style={styles.inputGroup}
+                  style={styles.section}
                 >
                   <Text style={styles.inputLabel}>Note (Optional)</Text>
                   <TextInput
@@ -293,26 +301,18 @@ export default function SendScreen() {
                     multiline
                   />
                 </Animated.View>
-
-                {/* Network Fee info */}
-                {/* <Animated.View entering={FadeIn.delay(400)} style={styles.feeContainer}>
-                <Text style={styles.feeLabel}>Network Fee</Text>
-                <Text style={styles.feeValue}>
-                  0.00005 {selectedToken.symbol} (~{formatCurrency(0.00005 * selectedToken.price)})
-                </Text>
-              </Animated.View> */}
-              </>
+              </View>
             )}
           </ScrollView>
 
           {/* Send Button */}
-          <View style={styles.buttonContainer}>
+          <BottomActionContainer avoidKeyboard={true}>
             <PrimaryActionButton
               title="Preview Send"
               onPress={handleSend}
               disabled={!amount || !recipient}
             />
-          </View>
+          </BottomActionContainer>
 
           {/* Preview Bottom Sheet */}
           <BottomSheet
@@ -482,10 +482,16 @@ const styles = StyleSheet.create({
   content: {
     padding: scale(16),
   },
+  formContainer: {
+    gap: verticalScale(6),
+  },
+  section: {
+    gap: verticalScale(8),
+  },
   tokenIcon: {
     width: scale(36),
     height: scale(36),
-    borderRadius: scale(18),
+    borderRadius: 18,
     marginRight: scale(10),
   },
   tokenInfo: {
@@ -507,20 +513,15 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-SemiBold',
     color: colors.textPrimary,
   },
-  inputGroup: {
-    marginBottom: verticalScale(24),
-  },
   inputLabel: {
     fontSize: moderateScale(14),
     fontFamily: 'Inter-Medium',
     color: colors.textSecondary,
-    marginBottom: verticalScale(8),
   },
   amountInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.backgroundMedium,
-    borderRadius: scale(16),
+    borderRadius: 16,
     paddingHorizontal: scale(16),
     height: verticalScale(60),
   },
@@ -535,40 +536,13 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-SemiBold',
     color: colors.textSecondary,
   },
-  amountInFiat: {
-    fontSize: moderateScale(14),
-    fontFamily: 'Inter-Regular',
-    color: colors.textSecondary,
-    marginTop: verticalScale(8),
-    marginLeft: scale(16),
-  },
-  amountOptions: {
-    flexDirection: 'row',
-    marginTop: verticalScale(10),
-    justifyContent: 'space-between',
-  },
-  amountOption: {
-    paddingVertical: verticalScale(6),
-    paddingHorizontal: scale(10),
-    backgroundColor: colors.backgroundLight,
-    borderRadius: scale(10),
-  },
-  amountOptionText: {
-    fontSize: moderateScale(13),
-    fontFamily: 'Inter-Medium',
-    color: colors.primary,
-  },
-  recipientSection: {
-    marginBottom: verticalScale(8),
-  },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.backgroundMedium,
-    borderRadius: scale(16),
+    borderRadius: 12,
     paddingHorizontal: scale(16),
-    height: verticalScale(50),
-    marginBottom: verticalScale(16),
+    height: verticalScale(40),
   },
   searchInput: {
     flex: 1,
@@ -583,97 +557,9 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Regular',
     color: colors.textPrimary,
   },
-  optionsRow: {
-    flexDirection: 'row',
-    marginBottom: verticalScale(16),
-  },
-  optionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: scale(16),
-  },
-  optionIconContainer: {
-    width: scale(36),
-    height: scale(36),
-    borderRadius: scale(18),
-    backgroundColor: colors.backgroundMedium,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: scale(8),
-  },
-  optionText: {
-    fontSize: moderateScale(14),
-    fontFamily: 'Inter-Medium',
-    color: colors.textPrimary,
-  },
-  contactsContainer: {
-    paddingVertical: verticalScale(8),
-  },
-  contactItem: {
-    alignItems: 'center',
-    marginRight: scale(16),
-    width: scale(70),
-  },
-  contactImage: {
-    width: scale(50),
-    height: scale(50),
-    borderRadius: scale(25),
-    marginBottom: verticalScale(8),
-  },
-  contactItemName: {
-    fontSize: moderateScale(12),
-    fontFamily: 'Inter-Medium',
-    color: colors.textPrimary,
-    textAlign: 'center',
-  },
-  noResults: {
-    fontSize: moderateScale(13),
-    fontFamily: 'Inter-Regular',
-    color: colors.textSecondary,
-    alignSelf: 'center',
-    marginVertical: verticalScale(14),
-  },
-  selectedContactContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.backgroundMedium,
-    borderRadius: scale(14),
-    padding: scale(14),
-    marginBottom: verticalScale(14),
-  },
-  contactAvatar: {
-    width: scale(36),
-    height: scale(36),
-    borderRadius: scale(18),
-    marginRight: scale(10),
-  },
-  contactInfo: {
-    flex: 1,
-  },
-  contactName: {
-    fontSize: moderateScale(15),
-    fontFamily: 'Inter-SemiBold',
-    color: colors.textPrimary,
-  },
-  contactUsername: {
-    fontSize: moderateScale(13),
-    fontFamily: 'Inter-Regular',
-    color: colors.textSecondary,
-  },
-  changeButton: {
-    paddingVertical: verticalScale(5),
-    paddingHorizontal: scale(10),
-    backgroundColor: colors.backgroundLight,
-    borderRadius: scale(10),
-  },
-  changeButtonText: {
-    fontSize: moderateScale(13),
-    fontFamily: 'Inter-Medium',
-    color: colors.primary,
-  },
   noteInput: {
     backgroundColor: colors.backgroundMedium,
-    borderRadius: scale(16),
+    borderRadius: 12,
     paddingHorizontal: scale(16),
     paddingVertical: verticalScale(12),
     minHeight: verticalScale(80),
@@ -681,25 +567,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Regular',
     color: colors.textPrimary,
     textAlignVertical: 'top',
-  },
-  feeContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: colors.backgroundMedium,
-    borderRadius: scale(16),
-    padding: scale(16),
-    marginBottom: verticalScale(100),
-  },
-  feeLabel: {
-    fontSize: moderateScale(14),
-    fontFamily: 'Inter-Regular',
-    color: colors.textSecondary,
-  },
-  feeValue: {
-    fontSize: moderateScale(14),
-    fontFamily: 'Inter-Medium',
-    color: colors.textPrimary,
   },
   bottomContainer: {
     paddingHorizontal: 20,
@@ -757,7 +624,7 @@ const styles = StyleSheet.create({
   },
   confirmButton: {
     height: verticalScale(54),
-    borderRadius: scale(27),
+    borderRadius: 27,
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',

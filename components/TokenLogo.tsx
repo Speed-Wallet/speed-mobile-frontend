@@ -1,5 +1,5 @@
 import React from 'react';
-import { ImageStyle } from 'react-native';
+import { View, ImageStyle, ViewStyle, StyleProp } from 'react-native';
 import { Image } from 'expo-image';
 
 // Local asset mapping
@@ -11,12 +11,22 @@ const localAssets = {
 interface TokenLogoProps {
   logoURI?: string;
   size?: number;
-  style?: ImageStyle;
+  style?: StyleProp<ImageStyle | ViewStyle>;
 }
 
 const TokenLogo: React.FC<TokenLogoProps> = ({ logoURI, size = 40, style }) => {
+  const baseStyle = {
+    width: size,
+    height: size,
+    borderRadius: size / 2,
+  };
+
   if (!logoURI) {
-    return null;
+    return (
+      <View
+        style={[baseStyle, { backgroundColor: '#2a2a2a' }, style as ViewStyle]}
+      />
+    );
   }
 
   const imageSource = logoURI.startsWith('local://')
@@ -26,7 +36,7 @@ const TokenLogo: React.FC<TokenLogoProps> = ({ logoURI, size = 40, style }) => {
   return (
     <Image
       source={imageSource}
-      style={[{ width: size, height: size, borderRadius: size / 2 }, style]}
+      style={[baseStyle, style as ImageStyle]}
       contentFit="contain"
     />
   );

@@ -203,12 +203,13 @@ const TokenPriceChart: React.FC<TokenPriceChartProps> = ({
   // Format price change for display
   const formatPriceChange = (priceChange: number) => {
     const sign = priceChange >= 0 ? '+' : '';
-    if (Math.abs(priceChange) < 0.01) {
-      return `${sign}$${priceChange.toFixed(8)}`;
-    } else if (Math.abs(priceChange) < 1) {
-      return `${sign}$${priceChange.toFixed(6)}`;
+    const absChange = Math.abs(priceChange);
+    if (absChange < 0.01) {
+      return `${sign}$${absChange.toFixed(6)}`;
+    } else if (absChange < 1) {
+      return `${sign}$${absChange.toFixed(4)}`;
     } else {
-      return `${sign}$${priceChange.toFixed(2)}`;
+      return `${sign}$${absChange.toFixed(2)}`;
     }
   };
 

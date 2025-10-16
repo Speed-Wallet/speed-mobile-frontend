@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { scale } from 'react-native-size-matters';
 import colors from '@/constants/colors';
 import TokenLogo from '../TokenLogo';
+import { formatBalance } from '@/utils/formatters';
 
 interface TokenItemBaseProps {
   // Required base props
@@ -13,6 +14,9 @@ interface TokenItemBaseProps {
   // Optional UI customization
   backgroundColor?: string;
   isLoading?: boolean;
+
+  // Balance display (will be formatted automatically)
+  balance?: number;
 
   // Content slots
   secondaryContent?: ReactNode; // Content below name (left side)
@@ -26,10 +30,15 @@ const TokenItemBase = ({
   onPress,
   backgroundColor = colors.backgroundMedium,
   isLoading = false,
+  balance,
   secondaryContent,
   rightContent,
   rightIcon,
 }: TokenItemBaseProps) => {
+  // Format balance if provided and not loading
+  const formattedBalance =
+    balance !== undefined && !isLoading ? formatBalance(balance) : undefined;
+
   return (
     <View style={[styles.cardContainer, { backgroundColor }]}>
       <TouchableOpacity
@@ -45,6 +54,9 @@ const TokenItemBase = ({
         {/* Middle Section - Name & Secondary Content */}
         <View style={styles.infoContainer}>
           <Text style={styles.name}>{name}</Text>
+          {formattedBalance !== undefined && (
+            <Text style={styles.balance}>{formattedBalance}</Text>
+          )}
           {secondaryContent}
         </View>
 
@@ -83,6 +95,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Inter-SemiBold',
     color: colors.textPrimary,
+  },
+  balance: {
+    fontSize: 12,
+    fontFamily: 'Inter-Regular',
+    color: colors.textSecondary,
+    marginTop: 2,
   },
   rightContainer: {
     alignItems: 'flex-end',

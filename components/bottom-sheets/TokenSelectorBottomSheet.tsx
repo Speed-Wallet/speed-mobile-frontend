@@ -144,6 +144,13 @@ const TokenSelectorBottomSheet = forwardRef<
       lastScrollY.current = currentOffset;
     };
 
+    // Sort tokens by USD balance (descending)
+    const sortedTokens = [...tokens].sort((a, b) => {
+      const aValue = 'totalPrice' in a ? a.totalPrice || 0 : 0;
+      const bValue = 'totalPrice' in b ? b.totalPrice || 0 : 0;
+      return bValue - aValue;
+    });
+
     // Create scrollable component for FlashList
     const BottomSheetFlashListScrollable = useBottomSheetScrollableCreator();
 
@@ -176,7 +183,7 @@ const TokenSelectorBottomSheet = forwardRef<
 
           {/* Scrollable List */}
           <FlashList
-            data={tokens}
+            data={sortedTokens}
             keyExtractor={(token) => token.address}
             renderItem={renderTokenItem}
             contentContainerStyle={styles.listContent}

@@ -1,4 +1,4 @@
-// Format a number as currency (USD)
+// Internal formatter for 2 decimal currency
 export const formatCurrency = (value: number): string => {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -6,6 +6,17 @@ export const formatCurrency = (value: number): string => {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(value);
+};
+
+// Format price for display with appropriate decimals for token prices
+export const formatPrice = (price: number): string => {
+  if (price < 0.01) {
+    return `$${price.toFixed(6)}`;
+  } else if (price < 1) {
+    return `$${price.toFixed(4)}`;
+  } else {
+    return formatCurrency(price);
+  }
 };
 
 // Format a number as percentage
@@ -74,6 +85,22 @@ export const getDecimalsToShow = (
   maxDecimals: number,
 ): number => {
   return Math.min(balance < 1 ? 6 : 4, maxDecimals);
+};
+
+// Format token balance with appropriate decimals (similar to formatPrice but for quantities)
+export const formatBalance = (balance: number): string => {
+  if (balance === 0) {
+    return '0';
+  } else if (balance < 0.01) {
+    return balance.toFixed(6);
+  } else if (balance < 1) {
+    return balance.toFixed(4);
+  } else {
+    return new Intl.NumberFormat('en-US', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(balance);
+  }
 };
 
 /**
