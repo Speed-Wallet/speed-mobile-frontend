@@ -43,6 +43,13 @@ export const CACHE_TIME = {
     STALE_TIME: 60 * 1000, // 1 minute
     GC_TIME: 5 * 60 * 1000, // 5 minutes
   },
+
+  // YellowCard payment channels
+  YELLOWCARD_CHANNELS: {
+    STALE_TIME: 60 * 1000, // 1 minute
+    GC_TIME: 5 * 60 * 1000, // 5 minutes
+    REFETCH_INTERVAL: 60 * 1000, // 1 minute - automatic refetch interval
+  },
 } as const;
 
 // ============================================================
