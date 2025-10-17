@@ -161,14 +161,19 @@ export default function BuyScreen() {
         channel.currency === countryInfo?.currency,
     ) || [];
 
+  // Helper function to map channelType to display name
+  const getPaymentMethodName = (channelType: string): string => {
+    if (channelType === 'momo') return 'Mobile Money (momo)';
+    if (channelType === 'eft') return 'EFT';
+    return channelType.charAt(0).toUpperCase() + channelType.slice(1);
+  };
+
   // Get unique payment method types from available channels
   const paymentMethodsFromAPI = Array.from(
     new Set(
-      availableChannels.map((channel) => {
-        return channel.channelType === 'momo'
-          ? 'Mobile Money (momo)'
-          : 'Bank Transfer';
-      }),
+      availableChannels.map((channel) =>
+        getPaymentMethodName(channel.channelType),
+      ),
     ),
   );
 
@@ -275,10 +280,7 @@ export default function BuyScreen() {
 
     // Auto-select the first payment method
     if (bestChannel) {
-      const methodName =
-        bestChannel.channelType === 'momo'
-          ? 'Mobile Money (momo)'
-          : 'Bank Transfer';
+      const methodName = getPaymentMethodName(bestChannel.channelType);
       setSelectedPaymentMethod(methodName);
     } else if (info && info.paymentMethods.length > 0) {
       setSelectedPaymentMethod(info.paymentMethods[0]);
@@ -292,9 +294,8 @@ export default function BuyScreen() {
     setSelectedPaymentMethod(method);
 
     // Find the channel matching this payment method
-    const channelType = method.includes('momo') ? 'momo' : 'bank';
     const matchingChannel = availableChannels.find(
-      (channel) => channel.channelType === channelType,
+      (channel) => getPaymentMethodName(channel.channelType) === method,
     );
 
     if (matchingChannel) {
@@ -348,6 +349,11 @@ export default function BuyScreen() {
                   </>
                 )}
               </Text>
+              {selectedChannel.estimatedSettlementTime && (
+                <Text style={styles.estimatedTimeText}>
+                  ≈ {selectedChannel.estimatedSettlementTime} mins
+                </Text>
+              )}
             </View>
           )}
         </View>
@@ -464,7 +470,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#1A1A1A',
     borderRadius: 12,
-    padding: scale(16),
+    // padding: scale(16),
   },
   amountText: {
     fontSize: moderateScale(40),
@@ -492,6 +498,13 @@ const styles = StyleSheet.create({
   },
   limitViolated: {
     color: '#FF6B6B',
+  },
+  estimatedTimeText: {
+    fontSize: moderateScale(12),
+    fontFamily: 'Inter-Regular',
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginTop: verticalScale(4),
   },
   selectorsRow: {
     flexDirection: 'row',
@@ -571,6 +584,6 @@ const styles = StyleSheet.create({
     color: colors.white,
   },
   buttonContainer: {
-    marginTop: verticalScale(24),
+    // marginTop: verticalScale(24),
   },
 });
