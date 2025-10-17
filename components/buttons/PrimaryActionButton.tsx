@@ -33,7 +33,7 @@ const PrimaryActionButton: React.FC<PrimaryActionButtonProps> = ({
   style,
 }) => {
   const getBackgroundColor = () => {
-    if (disabled && !loading) return colors.backgroundMedium;
+    if (disabled && !loading) return '#1A1A1A';
 
     switch (variant) {
       case 'success':
