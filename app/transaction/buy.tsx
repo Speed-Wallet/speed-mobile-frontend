@@ -1,5 +1,11 @@
 import { useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Linking,
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import { ChevronDown } from 'lucide-react-native';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
@@ -12,6 +18,11 @@ import CountryPickerBottomSheet, {
 } from '@/components/bottom-sheets/CountryPickerBottomSheet';
 import { Country } from '@/constants/countries';
 import colors from '@/constants/colors';
+import { formatNumber } from '@/utils/formatters';
+import { useWalletPublicKey } from '@/services/walletService';
+import { generateSignature } from '@/utils/signature';
+import { useYellowCardChannels } from '@/hooks/useYellowCardChannels';
+import type { YellowCardChannel } from '@/services/yellowcardApi';
 
 interface CountryPaymentInfo {
   currency: string;
@@ -120,51 +131,156 @@ const COUNTRY_PAYMENT_MAP: Record<string, CountryPaymentInfo> = {
 
 export default function BuyScreen() {
   const router = useRouter();
+  const walletAddress = useWalletPublicKey();
   const countryPickerRef = useRef<CountryPickerBottomSheetRef>(null);
   const [amount, setAmount] = useState('');
   const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<
     string | null
   >(null);
+  const [selectedChannel, setSelectedChannel] =
+    useState<YellowCardChannel | null>(null);
   const [showPaymentMethodPicker, setShowPaymentMethodPicker] = useState(false);
+
+  // Fetch YellowCard channels
+  const { data: channelsData, isLoading: isLoadingChannels } =
+    useYellowCardChannels();
 
   const countryInfo = selectedCountry
     ? COUNTRY_PAYMENT_MAP[selectedCountry.code]
     : null;
 
-  const paymentMethods = countryInfo?.paymentMethods || [];
+  // Get available channels for selected country
+  const availableChannels =
+    channelsData?.channels.filter(
+      (channel) =>
+        channel.rampType === 'deposit' &&
+        (!channel.widgetStatus || channel.widgetStatus === 'active') &&
+        selectedCountry &&
+        channel.country === selectedCountry.code &&
+        channel.currency === countryInfo?.currency,
+    ) || [];
+
+  // Get unique payment method types from available channels
+  const paymentMethodsFromAPI = Array.from(
+    new Set(
+      availableChannels.map((channel) => {
+        return channel.channelType === 'momo'
+          ? 'Mobile Money (momo)'
+          : 'Bank Transfer';
+      }),
+    ),
+  );
+
+  // Use API payment methods if available, otherwise fall back to static data
+  const paymentMethods =
+    paymentMethodsFromAPI.length > 0
+      ? paymentMethodsFromAPI
+      : countryInfo?.paymentMethods || [];
   const hasMultiplePaymentMethods = paymentMethods.length > 1;
+
+  // Get min/max limits from selected channel
+  const minAmount = selectedChannel?.widgetMin ?? selectedChannel?.min ?? 0;
+  const maxAmount = selectedChannel?.widgetMax ?? selectedChannel?.max ?? 0;
+  const currentAmount = amount ? parseFloat(amount) : 0;
+  const isAmountTooLow = currentAmount > 0 && currentAmount < minAmount;
+  const isAmountTooHigh = maxAmount > 0 && currentAmount > maxAmount;
 
   const handleKeyPress = (key: string) => {
     if (key === 'backspace') {
       setAmount((prev) => prev.slice(0, -1));
-    } else if (key === '.') {
-      // Allow decimal point only if not already present
-      if (!amount.includes('.')) {
-        setAmount((prev) => (prev === '' ? '0.' : prev + '.'));
-      }
     } else {
-      // Limit to reasonable amount length
+      // Limit to reasonable amount length (no decimals)
       if (amount.length < 10) {
         setAmount((prev) => {
           // Prevent leading zeros
-          if (prev === '0' && key !== '.') return key;
+          if (prev === '0') return key;
           return prev + key;
         });
       }
     }
   };
 
-  const handleBuy = () => {
-    // TODO: Implement buy functionality
-    console.log('Buy', amount, countryInfo?.currency, selectedPaymentMethod);
+  const handleBuy = async () => {
+    try {
+      const apiKey = process.env.EXPO_PUBLIC_YELLOWCARD_API_KEY;
+
+      if (!apiKey) {
+        console.error('YellowCard API key not found');
+        alert('Configuration error. Please try again later.');
+        return;
+      }
+
+      if (!walletAddress) {
+        console.error('Wallet address not found');
+        alert('Wallet not initialized. Please try again.');
+        return;
+      }
+
+      if (!countryInfo?.currency) {
+        console.error('Currency not selected');
+        alert('Please select a country first.');
+        return;
+      }
+
+      if (!selectedChannel) {
+        console.error('No payment channel selected');
+        alert('No payment method available for this country.');
+        return;
+      }
+
+      // Generate signature for wallet address and token
+      const signature = await generateSignature(walletAddress, 'SOL');
+
+      // Build query parameters
+      const params = new URLSearchParams({
+        walletAddress: walletAddress,
+        currencyAmount: amount,
+        token: 'SOL',
+        network: 'SOL',
+        localCurrency: countryInfo.currency,
+        signature: signature,
+        txType: 'buy',
+        channelId: selectedChannel.id,
+      });
+
+      const url = `https://sandbox--payments-widget.netlify.app/landing/${apiKey}?${params.toString()}`;
+
+      console.log('Opening YellowCard widget URL:', url);
+      await Linking.openURL(url);
+    } catch (error) {
+      console.error('Error opening YellowCard widget:', error);
+      alert('Failed to open payment widget. Please try again.');
+    }
   };
 
   const handleCountrySelect = (country: Country) => {
     setSelectedCountry(country);
     const info = COUNTRY_PAYMENT_MAP[country.code];
-    // Always auto-select the first payment method
-    if (info && info.paymentMethods.length > 0) {
+
+    // Find available channels for this country
+    const countryChannels =
+      channelsData?.channels.filter(
+        (channel) =>
+          channel.rampType === 'deposit' &&
+          (!channel.widgetStatus || channel.widgetStatus === 'active') &&
+          channel.country === country.code &&
+          channel.currency === info?.currency,
+      ) || [];
+
+    // Auto-select the best channel (lowest fees)
+    const bestChannel =
+      countryChannels.sort((a, b) => a.feeLocal - b.feeLocal)[0] || null;
+    setSelectedChannel(bestChannel);
+
+    // Auto-select the first payment method
+    if (bestChannel) {
+      const methodName =
+        bestChannel.channelType === 'momo'
+          ? 'Mobile Money (momo)'
+          : 'Bank Transfer';
+      setSelectedPaymentMethod(methodName);
+    } else if (info && info.paymentMethods.length > 0) {
       setSelectedPaymentMethod(info.paymentMethods[0]);
     } else {
       setSelectedPaymentMethod(null);
@@ -174,6 +290,17 @@ export default function BuyScreen() {
 
   const handlePaymentMethodSelect = (method: string) => {
     setSelectedPaymentMethod(method);
+
+    // Find the channel matching this payment method
+    const channelType = method.includes('momo') ? 'momo' : 'bank';
+    const matchingChannel = availableChannels.find(
+      (channel) => channel.channelType === channelType,
+    );
+
+    if (matchingChannel) {
+      setSelectedChannel(matchingChannel);
+    }
+
     setShowPaymentMethodPicker(false);
   };
 
@@ -185,11 +312,44 @@ export default function BuyScreen() {
         {/* Amount Input Section */}
         <View style={styles.amountSection}>
           <Text style={styles.amountText}>
-            {amount || '0'}{' '}
-            <Text style={styles.amountCurrency}>
-              {countryInfo?.currency || selectedCountry?.currency || 'Currency'}
-            </Text>
+            {amount ? formatNumber(parseFloat(amount), 0) : '0'}
+            {(countryInfo?.currency || selectedCountry?.currency) && (
+              <>
+                {' '}
+                <Text style={styles.amountCurrency}>
+                  {countryInfo?.currency || selectedCountry?.currency}
+                </Text>
+              </>
+            )}
           </Text>
+          {selectedChannel && minAmount > 0 && (
+            <View style={styles.limitsContainer}>
+              <Text style={styles.limitsText}>
+                Min:{' '}
+                <Text
+                  style={[
+                    styles.limitValue,
+                    isAmountTooLow && styles.limitViolated,
+                  ]}
+                >
+                  {formatNumber(minAmount, 0)}
+                </Text>
+                {maxAmount > 0 && (
+                  <>
+                    {' • Max: '}
+                    <Text
+                      style={[
+                        styles.limitValue,
+                        isAmountTooHigh && styles.limitViolated,
+                      ]}
+                    >
+                      {formatNumber(maxAmount, 0)}
+                    </Text>
+                  </>
+                )}
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* Keyboard and Button Section */}
@@ -197,45 +357,58 @@ export default function BuyScreen() {
           {/* Selectors Row */}
           <View style={styles.selectorsRow}>
             {/* Payment Method Selector */}
-            {selectedCountry && countryInfo && paymentMethods.length > 0 && (
-              <View style={styles.paymentMethodContainer}>
-                <TouchableOpacity
-                  style={styles.paymentMethodSelector}
-                  onPress={() =>
-                    setShowPaymentMethodPicker(!showPaymentMethodPicker)
-                  }
-                  activeOpacity={0.7}
+            <View style={styles.paymentMethodContainer}>
+              <TouchableOpacity
+                style={[
+                  styles.paymentMethodSelector,
+                  !selectedCountry && styles.paymentMethodSelectorDisabled,
+                ]}
+                onPress={() =>
+                  selectedCountry &&
+                  setShowPaymentMethodPicker(!showPaymentMethodPicker)
+                }
+                activeOpacity={0.7}
+                disabled={!selectedCountry}
+              >
+                <Text
+                  style={[
+                    styles.paymentMethodText,
+                    !selectedCountry && styles.paymentMethodTextDisabled,
+                  ]}
                 >
-                  <Text style={styles.paymentMethodText}>
-                    {selectedPaymentMethod || paymentMethods[0]}
-                  </Text>
-                  <ChevronDown size={20} color={colors.white} />
-                </TouchableOpacity>
+                  {selectedPaymentMethod ||
+                    paymentMethods[0] ||
+                    'Select Payment Method'}
+                </Text>
+                <ChevronDown
+                  size={20}
+                  color={selectedCountry ? colors.white : colors.textSecondary}
+                />
+              </TouchableOpacity>
 
-                {showPaymentMethodPicker && (
-                  <View style={styles.paymentMethodDropdownWrapper}>
-                    <View style={styles.paymentMethodDropdown}>
-                      {paymentMethods.map((method) => (
-                        <TouchableOpacity
-                          key={method}
-                          style={[
-                            styles.paymentMethodOption,
-                            selectedPaymentMethod === method &&
-                              styles.selectedPaymentMethodOption,
-                          ]}
-                          onPress={() => handlePaymentMethodSelect(method)}
-                          activeOpacity={0.7}
-                        >
-                          <Text style={styles.paymentMethodOptionText}>
-                            {method}
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
+              {showPaymentMethodPicker && paymentMethods.length > 0 && (
+                <View style={styles.paymentMethodDropdownWrapper}>
+                  <View style={styles.paymentMethodDropdown}>
+                    {paymentMethods.map((method) => (
+                      <TouchableOpacity
+                        key={method}
+                        style={[
+                          styles.paymentMethodOption,
+                          selectedPaymentMethod === method &&
+                            styles.selectedPaymentMethodOption,
+                        ]}
+                        onPress={() => handlePaymentMethodSelect(method)}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.paymentMethodOptionText}>
+                          {method}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
                   </View>
-                )}
-              </View>
-            )}
+                </View>
+              )}
+            </View>
 
             {/* Country Selector */}
             <TouchableOpacity
@@ -260,7 +433,9 @@ export default function BuyScreen() {
                 !amount ||
                 amount === '0' ||
                 !selectedCountry ||
-                !countryInfo?.buyAvailable
+                !countryInfo?.buyAvailable ||
+                isAmountTooLow ||
+                isAmountTooHigh
               }
             />
           </View>
@@ -302,6 +477,22 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Regular',
     color: colors.textSecondary,
   },
+  limitsContainer: {
+    marginTop: verticalScale(8),
+  },
+  limitsText: {
+    fontSize: moderateScale(14),
+    fontFamily: 'Inter-Regular',
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  limitValue: {
+    fontFamily: 'Inter-SemiBold',
+    color: colors.textSecondary,
+  },
+  limitViolated: {
+    color: '#FF6B6B',
+  },
   selectorsRow: {
     flexDirection: 'row',
     gap: scale(12),
@@ -340,6 +531,12 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(16),
     fontFamily: 'Inter-Medium',
     color: colors.white,
+  },
+  paymentMethodSelectorDisabled: {
+    opacity: 0.5,
+  },
+  paymentMethodTextDisabled: {
+    color: colors.textSecondary,
   },
   paymentMethodDropdownWrapper: {
     position: 'absolute',
