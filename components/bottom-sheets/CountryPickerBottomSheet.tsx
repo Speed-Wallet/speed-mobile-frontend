@@ -144,7 +144,9 @@ const CountryPickerBottomSheet = forwardRef<
       )}
     >
       <BottomSheetView style={styles.bottomSheetContent}>
-        <SettingsHeader title="Select Country" onClose={handleClose} />
+        <View style={styles.headerContainer}>
+          <SettingsHeader title="Select Country" onClose={handleClose} />
+        </View>
 
         <View style={styles.searchContainer}>
           <Search
@@ -186,6 +188,9 @@ const styles = StyleSheet.create({
   bottomSheetContent: {
     flex: 1,
     backgroundColor: colors.backgroundDark,
+  },
+  headerContainer: {
+    paddingHorizontal: scale(15),
   },
   searchContainer: {
     flexDirection: 'row',

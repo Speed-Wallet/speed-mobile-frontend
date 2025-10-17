@@ -110,32 +110,7 @@ export default function HomeScreen() {
 
   const handleBalanceCardAction = async (actionType: string) => {
     // actionType will be "send", "receive", "buy", "earn"
-    if (actionType === 'buy') {
-      // Handle buy action with YellowCard - open in external browser
-      try {
-        const address = await getWalletPublicKey();
-        if (!address) {
-          throw new Error('No wallet address available');
-        }
-
-        const apiKey = process.env.EXPO_PUBLIC_YELLOWCARD_API_KEY;
-
-        // Build widget URL with required parameters
-        const params = new URLSearchParams({
-          // walletAddress: address,
-          network: 'SOL',
-          // signature: await generateSignature(address, 'USDT'),
-        });
-
-        const url = `https://sandbox--payments-widget.netlify.app/landing/${apiKey}?${params.toString()}`;
-
-        // Open URL in external browser
-        await Linking.openURL(url);
-      } catch (error) {
-        console.error('Error opening YellowCard widget:', error);
-        alert('Failed to open YellowCard widget. Please try again.');
-      }
-    } else if (actionType === 'earn') {
+    if (actionType === 'earn') {
       // Show earn coming soon alert
       setShowEarnAlert(true);
     } else {
