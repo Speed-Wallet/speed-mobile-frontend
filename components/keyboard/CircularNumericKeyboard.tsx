@@ -76,8 +76,8 @@ const CircularNumericKeyboard: React.FC<CircularNumericKeyboardProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    maxHeight: 300,
-    maxWidth: 400,
+    // maxHeight: 300,
+    // maxWidth: 400,
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'space-between',
