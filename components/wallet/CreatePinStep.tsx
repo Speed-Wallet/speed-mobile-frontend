@@ -1,6 +1,8 @@
 import React, { useCallback, useState, useRef, useEffect } from 'react';
-import { StyleSheet, View, Animated } from 'react-native';
-import { scale } from 'react-native-size-matters';
+import { StyleSheet, View, Animated, TouchableOpacity } from 'react-native';
+import { scale, moderateScale } from 'react-native-size-matters';
+import { RotateCcw } from 'lucide-react-native';
+import colors from '@/constants/colors';
 import ScreenContainer from '@/components/ScreenContainer';
 import PinInputSection from '@/components/PinInputSection';
 import { triggerShake } from '@/utils/animations';
@@ -92,8 +94,26 @@ const CreatePinStep: React.FC<CreatePinStepProps> = ({
     return pinStep === 'create' ? 'Create Your PIN' : 'Confirm Your PIN';
   };
 
+  const handleReset = () => {
+    // Reset to create step with empty PIN
+    setPinStep('create');
+    setCreatedPin('');
+    setConfirmPin('');
+    onPinChange('');
+    setIsValidating(false);
+  };
+
   return (
     <View style={{ flex: 1 }}>
+      {/* Retry Button - Absolutely Positioned */}
+      <TouchableOpacity
+        style={styles.retryButton}
+        onPress={handleReset}
+        activeOpacity={0.7}
+      >
+        <RotateCcw size={scale(20)} color={colors.textSecondary} />
+      </TouchableOpacity>
+
       <View style={styles.container}>
         {/* First Section: Centered content (Title + PIN Dots + Keyboard) */}
         <PinInputSection
@@ -112,6 +132,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: scale(20),
+  },
+  retryButton: {
+    position: 'absolute',
+    top: scale(16),
+    right: scale(20),
+    zIndex: 1000,
+    padding: scale(8),
   },
 });
 

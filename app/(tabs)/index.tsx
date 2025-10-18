@@ -52,7 +52,7 @@ export default function HomeScreen() {
   const [username, setUsername] = useState<string>('');
   const [walletName, setWalletName] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'tokens' | 'activity'>('tokens');
-  const [showRewardsAlert, setShowRewardsAlert] = useState(false);
+
   const [showEarnAlert, setShowEarnAlert] = useState(false);
   const [showActivityAlert, setShowActivityAlert] = useState(false);
   const walletAddress = useWalletPublicKey();
@@ -242,7 +242,7 @@ export default function HomeScreen() {
                 </TouchableOpacity>
                 <View style={styles.headerIcons}>
                   <TouchableOpacity
-                    onPress={() => setShowRewardsAlert(true)}
+                    onPress={() => router.push('/settings/referral')}
                     style={styles.iconButton}
                   >
                     <Gift
@@ -323,7 +323,7 @@ export default function HomeScreen() {
             </TouchableOpacity>
             <View style={styles.headerIcons}>
               <TouchableOpacity
-                onPress={() => setShowRewardsAlert(true)}
+                onPress={() => router.push('/settings/referral')}
                 style={styles.iconButton}
               >
                 <Gift
@@ -363,22 +363,6 @@ export default function HomeScreen() {
           </View>
         </ScrollView>
       )}
-
-      {/* Rewards Alert */}
-      <CustomAlert
-        visible={showRewardsAlert}
-        onDismiss={() => setShowRewardsAlert(false)}
-        title="Rewards Coming Soon"
-        message="Stay tuned! Rewards feature will be available soon."
-        type="info"
-        buttons={[
-          {
-            text: 'OK',
-            onPress: () => setShowRewardsAlert(false),
-            style: 'default',
-          },
-        ]}
-      />
 
       {/* Earn Alert */}
       <CustomAlert
