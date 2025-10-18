@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(155, 155, 155, 0.15)',
+    borderColor: 'rgba(155, 155, 155, 0.1)',
     maxHeight: 60,
   },
   percentageButtonText: {
