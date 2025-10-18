@@ -18,6 +18,7 @@ import CreateUsernameStep from '@/components/wallet/CreateUsernameStep';
 import CreatePinStep from '@/components/wallet/CreatePinStep';
 import WalletSetupSuccessStep from '@/components/wallet/WalletSetupSuccessStep';
 import ImportWalletStep from '@/components/wallet/ImportWalletStep';
+import InviteCodeStep from '@/components/wallet/InviteCodeStep';
 import ProgressBar from '@/components/ProgressBar';
 import 'react-native-get-random-values';
 
@@ -26,6 +27,7 @@ export enum WalletSetupStep {
   SHOW_MNEMONIC,
   VERIFY_MNEMONIC,
   USERNAME,
+  INVITE_CODE,
   CREATE_PIN,
   SUCCESS,
   IMPORT = 9,
@@ -110,7 +112,7 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
       // If successful, store username locally and proceed
       await AuthService.storeUsername(selectedUsername);
       setUsername(selectedUsername);
-      setStep(WalletSetupStep.CREATE_PIN);
+      setStep(WalletSetupStep.INVITE_CODE);
     } catch (error) {
       console.error('Error in handleUsernameNext:', error);
 
@@ -187,6 +189,16 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
     setIsImporting(false);
   };
 
+  const handleInviteCodeNext = async (inviteCode: string) => {
+    // Store or process invite code here if needed
+    console.log('Invite code entered:', inviteCode);
+    setStep(WalletSetupStep.CREATE_PIN);
+  };
+
+  const handleInviteCodeSkip = () => {
+    setStep(WalletSetupStep.CREATE_PIN);
+  };
+
   // Helper function to get progress bar info
   const getProgressInfo = () => {
     const progressMap = {
@@ -195,13 +207,14 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
       [WalletSetupStep.SHOW_MNEMONIC]: 1,
       [WalletSetupStep.VERIFY_MNEMONIC]: 2,
       [WalletSetupStep.USERNAME]: 3,
-      [WalletSetupStep.CREATE_PIN]: 4,
-      [WalletSetupStep.SUCCESS]: 5,
+      [WalletSetupStep.INVITE_CODE]: 4,
+      [WalletSetupStep.CREATE_PIN]: 5,
+      [WalletSetupStep.SUCCESS]: 6,
     };
 
     return {
       current: progressMap[step] || 0,
-      total: 5,
+      total: 6,
     };
   };
 
@@ -257,12 +270,20 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
         />
       )}
 
+      {step === WalletSetupStep.INVITE_CODE && (
+        <InviteCodeStep
+          onNext={handleInviteCodeNext}
+          onSkip={handleInviteCodeSkip}
+          isLoading={isLoading}
+        />
+      )}
+
       {step === WalletSetupStep.CREATE_PIN && (
         <CreatePinStep
           pin={pin}
           onPinChange={setPin}
           onNext={handleSetPin}
-          onBack={() => setStep(WalletSetupStep.USERNAME)}
+          onBack={() => setStep(WalletSetupStep.INVITE_CODE)}
           isLoading={isLoading}
         />
       )}
