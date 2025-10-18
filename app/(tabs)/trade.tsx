@@ -46,7 +46,7 @@ import CopyButton from '@/components/CopyButton';
 import TokenSelectorBottomSheet, {
   TokenSelectorBottomSheetRef,
 } from '@/components/bottom-sheets/TokenSelectorBottomSheet';
-import NumericKeyboard from '@/components/keyboard/NumericKeyboard';
+import SwapNumPad from '@/components/keyboard/NumericKeyboard';
 import { getJupiterQuote } from '@/services/jupiterApi';
 import { useTradeTokens } from '@/hooks/useTradeTokens';
 
@@ -684,7 +684,7 @@ export default function TradeScreen() {
                 />
 
                 {/* Custom Keyboard - Always shown since only 'from' input is active */}
-                <NumericKeyboard
+                <SwapNumPad
                   onKeyPress={handleKeyPress}
                   activeInput={activeInput}
                 />

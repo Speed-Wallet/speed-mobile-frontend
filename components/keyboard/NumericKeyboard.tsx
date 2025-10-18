@@ -8,7 +8,7 @@ interface NumericKeyboardProps {
   activeInput: 'from' | 'to' | null;
 }
 
-const NumericKeyboard: React.FC<NumericKeyboardProps> = ({
+const SwapNumPad: React.FC<NumericKeyboardProps> = ({
   onKeyPress,
   activeInput,
 }) => {
@@ -269,4 +269,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default NumericKeyboard;
+export default SwapNumPad;
