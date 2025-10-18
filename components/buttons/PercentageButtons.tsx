@@ -62,12 +62,12 @@ const styles = StyleSheet.create({
   percentageButton: {
     // paddingVertical: 15,
     flex: 1, // Each button takes equal height
-    backgroundColor: colors.backgroundMedium,
+    backgroundColor: '#1A1A1A',
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: colors.backgroundLight,
+    borderColor: 'rgba(155, 155, 155, 0.15)',
     maxHeight: 60,
   },
   percentageButtonText: {
