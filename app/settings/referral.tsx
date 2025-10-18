@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Share,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
@@ -19,24 +20,55 @@ import {
 import colors from '@/constants/colors';
 import ScreenContainer from '@/components/ScreenContainer';
 import ScreenHeader from '@/components/ScreenHeader';
-
-// Generate a random 6-character alphanumeric code
-const generateReferralCode = () => {
-  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  let code = '';
-  for (let i = 0; i < 6; i++) {
-    code += characters.charAt(Math.floor(Math.random() * characters.length));
-  }
-  return code;
-};
+import { AuthService } from '@/services/authService';
+import { getReferralStats } from '@/services/apis';
+import { useAlert } from '@/providers/AlertProvider';
 
 export default function ReferralScreen() {
   const router = useRouter();
-  const [referralCode] = useState(generateReferralCode()); // This should come from your backend
-  const [rewardsEarned] = useState(0); // This should come from your backend
-  const [referralCount] = useState(0); // Number of successful referrals
+  const { error: showError } = useAlert();
+  const [referralCode, setReferralCode] = useState<string | null>(null);
+  const [rewardsEarned, setRewardsEarned] = useState(0);
+  const [referralCount, setReferralCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    loadReferralData();
+  }, []);
+
+  const loadReferralData = async () => {
+    try {
+      setIsLoading(true);
+      const username = AuthService.getCurrentUsername();
+
+      if (!username) {
+        showError('Error', 'Username not found. Please sign in again.');
+        return;
+      }
+
+      const result = await getReferralStats(username);
+
+      if (result.success && result.data) {
+        setReferralCode(result.data.referralCode);
+        setRewardsEarned(result.data.totalEarnings);
+        setReferralCount(result.data.totalReferrals);
+      } else {
+        showError('Error', result.error || 'Failed to load referral data');
+      }
+    } catch (error) {
+      console.error('Error loading referral data:', error);
+      showError('Error', 'Failed to load referral data');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleShare = async () => {
+    if (!referralCode) {
+      showError('Error', 'Referral code not available');
+      return;
+    }
+
     try {
       await Share.share({
         message: `Join Speed Wallet using my invite code: ${referralCode}\n\nEarn 30% commission on trading fees!`,
@@ -60,100 +92,114 @@ export default function ReferralScreen() {
         showBackButton={false}
       />
 
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={styles.contentContainer}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Header Section */}
-        <View style={styles.headerSection}>
-          <Text style={styles.headerTitle}>
-            Invite friends, earn{'\n'}30% commission,{'\n'} forever
-          </Text>
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
-
-        {/* Stats Section */}
-        <View style={styles.statsCard}>
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>${rewardsEarned}</Text>
-            <Text style={styles.statLabel}>Earned</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>{referralCount}</Text>
-            <Text style={styles.statLabel}>Referrals</Text>
-          </View>
-        </View>
-
-        {/* Action Buttons */}
-        <View style={styles.actionsContainer}>
-          <TouchableOpacity
-            style={styles.primaryButton}
-            onPress={handleShare}
-            activeOpacity={0.8}
-          >
-            <Share2 size={scale(20)} color={colors.backgroundDark} />
-            <Text style={styles.primaryButtonText}>Send invite</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.secondaryButton}
-            onPress={handleShowQR}
-            activeOpacity={0.8}
-          >
-            <QrCode size={scale(20)} color={colors.textPrimary} />
-            <Text style={styles.secondaryButtonText}>Show QR code</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Info Section */}
-        <View style={styles.infoSection}>
-          <Text style={styles.infoTitle}>How it works</Text>
-
-          <View style={styles.infoItem}>
-            <View style={styles.iconContainer}>
-              <UserPlus
-                size={scale(24)}
-                color={colors.primary}
-                strokeWidth={2}
-              />
-            </View>
-            <Text style={styles.infoText}>
-              Share your invite code with friends
+      ) : (
+        <ScrollView
+          style={styles.container}
+          contentContainerStyle={styles.contentContainer}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Header Section */}
+          <View style={styles.headerSection}>
+            <Text style={styles.headerTitle}>
+              Invite friends, earn{'\n'}30% commission,{'\n'} forever
             </Text>
           </View>
 
-          <View style={styles.infoItem}>
-            <View style={styles.iconContainer}>
-              <ShoppingCart
-                size={scale(24)}
-                color={colors.primary}
-                strokeWidth={2}
-              />
+          {/* Stats Section */}
+          <View style={styles.statsCard}>
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>${rewardsEarned}</Text>
+              <Text style={styles.statLabel}>Earned</Text>
             </View>
-            <Text style={styles.infoText}>
-              They sign up and input your invite code
-            </Text>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>{referralCount}</Text>
+              <Text style={styles.statLabel}>Referrals</Text>
+            </View>
           </View>
 
-          <View style={styles.infoItem}>
-            <View style={styles.iconContainer}>
-              <Coins size={scale(24)} color={colors.primary} strokeWidth={2} />
-            </View>
-            <Text style={styles.infoText}>
-              You receive 30% of their trading fees forever
-            </Text>
-          </View>
-        </View>
+          {/* Action Buttons */}
+          <View style={styles.actionsContainer}>
+            <TouchableOpacity
+              style={styles.primaryButton}
+              onPress={handleShare}
+              activeOpacity={0.8}
+              disabled={!referralCode}
+            >
+              <Share2 size={scale(20)} color={colors.backgroundDark} />
+              <Text style={styles.primaryButtonText}>Send invite</Text>
+            </TouchableOpacity>
 
-        {/* Referral Code Display */}
-        <View style={styles.codeSection}>
-          <Text style={styles.codeLabel}>Your invite code</Text>
-          <View style={styles.codeContainer}>
-            <Text style={styles.codeText}>{referralCode}</Text>
+            <TouchableOpacity
+              style={styles.secondaryButton}
+              onPress={handleShowQR}
+              activeOpacity={0.8}
+              disabled={!referralCode}
+            >
+              <QrCode size={scale(20)} color={colors.textPrimary} />
+              <Text style={styles.secondaryButtonText}>Show QR code</Text>
+            </TouchableOpacity>
           </View>
-        </View>
-      </ScrollView>
+
+          {/* Info Section */}
+          <View style={styles.infoSection}>
+            <Text style={styles.infoTitle}>How it works</Text>
+
+            <View style={styles.infoItem}>
+              <View style={styles.iconContainer}>
+                <UserPlus
+                  size={scale(24)}
+                  color={colors.primary}
+                  strokeWidth={2}
+                />
+              </View>
+              <Text style={styles.infoText}>
+                Share your invite code with friends
+              </Text>
+            </View>
+
+            <View style={styles.infoItem}>
+              <View style={styles.iconContainer}>
+                <ShoppingCart
+                  size={scale(24)}
+                  color={colors.primary}
+                  strokeWidth={2}
+                />
+              </View>
+              <Text style={styles.infoText}>
+                They sign up and input your invite code
+              </Text>
+            </View>
+
+            <View style={styles.infoItem}>
+              <View style={styles.iconContainer}>
+                <Coins
+                  size={scale(24)}
+                  color={colors.primary}
+                  strokeWidth={2}
+                />
+              </View>
+              <Text style={styles.infoText}>
+                You receive 30% of their trading fees forever
+              </Text>
+            </View>
+          </View>
+
+          {/* Referral Code Display */}
+          <View style={styles.codeSection}>
+            <Text style={styles.codeLabel}>Your invite code</Text>
+            <View style={styles.codeContainer}>
+              <Text style={styles.codeText}>
+                {referralCode || 'Loading...'}
+              </Text>
+            </View>
+          </View>
+        </ScrollView>
+      )}
     </ScreenContainer>
   );
 }
@@ -161,6 +207,11 @@ export default function ReferralScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   contentContainer: {
     paddingHorizontal: scale(20),
