@@ -1,10 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  TextInput,
+} from 'react-native';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import colors from '@/constants/colors';
-import CircularNumericKeyboard from '@/components/keyboard/CircularNumericKeyboard';
-import IntroHeader from './IntroHeader';
-import ScreenContainer from '@/components/ScreenContainer';
+import IntroScreen from './IntroScreen';
+import PrimaryActionButton from '@/components/buttons/PrimaryActionButton';
 
 interface InviteCodeStepProps {
   onNext: (inviteCode: string) => void;
@@ -18,138 +23,91 @@ const InviteCodeStep: React.FC<InviteCodeStepProps> = ({
   isLoading = false,
 }) => {
   const [code, setCode] = useState('');
-  const CODE_LENGTH = 6;
 
-  useEffect(() => {
-    if (code.length === CODE_LENGTH) {
-      // Auto-submit when all digits are entered
-      onNext(code);
+  const handleSubmit = () => {
+    if (code.trim()) {
+      onNext(code.trim().toUpperCase());
     }
-  }, [code, onNext]);
-
-  const handleKeyPress = (key: string) => {
-    if (isLoading) return;
-
-    if (key === 'backspace') {
-      setCode((prev) => prev.slice(0, -1));
-    } else if (code.length < CODE_LENGTH) {
-      setCode((prev) => prev + key);
-    }
-  };
-
-  const renderCodeSlots = () => {
-    return (
-      <View style={styles.codeContainer}>
-        {Array.from({ length: CODE_LENGTH }).map((_, index) => {
-          const digit = code[index];
-          const isFilled = digit !== undefined;
-
-          return (
-            <View
-              key={index}
-              style={[
-                styles.codeSlot,
-                isFilled && styles.codeSlotFilled,
-                index === code.length && styles.codeSlotActive,
-              ]}
-            >
-              {isFilled && <Text style={styles.codeDigit}>{digit}</Text>}
-            </View>
-          );
-        })}
-      </View>
-    );
   };
 
   return (
-    <ScreenContainer style={styles.container}>
-      {/* Header */}
-      <View style={styles.headerContainer}>
-        <IntroHeader
-          title="Invite Code"
-          subtitle="Enter invite code if you have one. Otherwise skip."
+    <IntroScreen
+      title="Invite Code"
+      subtitle="Enter invite code if you have one. Otherwise skip."
+      footer={
+        <View style={styles.footerContainer}>
+          <TouchableOpacity
+            style={styles.skipButton}
+            onPress={onSkip}
+            disabled={isLoading}
+          >
+            <Text style={styles.skipButtonText}>Skip</Text>
+          </TouchableOpacity>
+          <View style={styles.submitButtonContainer}>
+            <PrimaryActionButton
+              title="Continue"
+              onPress={handleSubmit}
+              disabled={isLoading || !code.trim()}
+              loading={isLoading}
+            />
+          </View>
+        </View>
+      }
+    >
+      <View style={styles.contentContainer}>
+        <TextInput
+          style={styles.input}
+          value={code}
+          onChangeText={setCode}
+          placeholder="Enter invite code"
+          placeholderTextColor="#4B5563"
+          autoCapitalize="characters"
+          autoCorrect={false}
+          maxLength={20}
+          editable={!isLoading}
         />
       </View>
-
-      {/* Skip Button */}
-      <View style={styles.skipButtonContainer}>
-        <TouchableOpacity
-          style={styles.skipButton}
-          onPress={onSkip}
-          disabled={isLoading}
-        >
-          <Text style={styles.skipButtonText}>Skip</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Code Slots */}
-      <View style={styles.codeSlotsContainer}>{renderCodeSlots()}</View>
-
-      {/* Keyboard */}
-      <View style={styles.keyboardContainer}>
-        <CircularNumericKeyboard onKeyPress={handleKeyPress} scale={1} />
-      </View>
-    </ScreenContainer>
+    </IntroScreen>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    justifyContent: 'space-between',
-  },
-  headerContainer: {
-    paddingHorizontal: scale(20),
-  },
-  codeSlotsContainer: {
+  contentContainer: {
     alignItems: 'center',
-    flex: 1,
     justifyContent: 'center',
   },
-  codeContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 6,
-  },
-  codeSlot: {
-    width: scale(48),
-    height: verticalScale(56),
-    borderRadius: moderateScale(12),
+  input: {
+    width: '100%',
     backgroundColor: '#1a1a1a',
+    borderRadius: moderateScale(12),
     borderWidth: 2,
     borderColor: '#2a2a2a',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  codeSlotFilled: {
-    borderColor: colors.primary,
-    backgroundColor: '#1f1f1f',
-  },
-  codeSlotActive: {
-    borderColor: colors.primary,
-  },
-  codeDigit: {
-    fontSize: moderateScale(24),
+    paddingHorizontal: scale(20),
+    paddingVertical: verticalScale(16),
+    fontSize: moderateScale(18),
     fontFamily: 'Inter-SemiBold',
     color: colors.textPrimary,
+    textAlign: 'center',
+    letterSpacing: 2,
   },
-  keyboardContainer: {
-    alignItems: 'center',
-    // paddingBottom: 16,
-    // flex: 1,
-  },
-  skipButtonContainer: {
-    paddingHorizontal: 30,
-    paddingVertical: 16,
-    alignItems: 'flex-end',
+  footerContainer: {
+    flexDirection: 'row',
+    gap: scale(12),
   },
   skipButton: {
-    paddingVertical: verticalScale(12),
+    flex: 3,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: verticalScale(16),
   },
   skipButtonText: {
     fontSize: moderateScale(16),
     fontWeight: '600',
-    color: '#878b90ff',
+    color: '#9CA3AF',
     textAlign: 'center',
+  },
+  submitButtonContainer: {
+    flex: 7,
   },
 });
 
