@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import Animated, {
-  FadeInUp,
+  FadeInRight,
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
@@ -264,7 +264,9 @@ export default function MarketScreen() {
       (item.stats24h?.buyVolume || 0) + (item.stats24h?.sellVolume || 0);
 
     return (
-      <Animated.View entering={FadeInUp.delay(index * 100).duration(400)}>
+      <Animated.View
+        entering={FadeInRight.delay(100 + index * 100).duration(400)}
+      >
         <TokenItemMarket
           token={{
             address: item.id,

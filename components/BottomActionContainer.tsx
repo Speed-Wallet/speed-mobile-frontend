@@ -75,9 +75,7 @@ const BottomActionContainer: React.FC<BottomActionContainerProps> = ({
         (translateY || avoidKeyboard) && animatedStyle,
       ]}
     >
-      <ScreenContainer edges={edges} style={{ padding: 16 }}>
-        {children}
-      </ScreenContainer>
+      <ScreenContainer edges={edges}>{children}</ScreenContainer>
     </Container>
   );
 };
@@ -89,6 +87,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: colors.backgroundDark,
+    padding: 16,
     // borderTopWidth: 0.5,
     // borderTopColor: colors.backgroundLight,
     // shadowColor: '#000',
