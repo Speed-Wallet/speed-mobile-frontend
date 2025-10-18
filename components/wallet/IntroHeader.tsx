@@ -7,12 +7,14 @@ interface IntroHeaderProps {
   title: string;
   subtitle: string;
   username?: string;
+  rightComponent?: React.ReactNode;
 }
 
 const IntroHeader: React.FC<IntroHeaderProps> = ({
   title,
   subtitle,
   username,
+  rightComponent,
 }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(20)).current;
@@ -42,12 +44,17 @@ const IntroHeader: React.FC<IntroHeaderProps> = ({
         },
       ]}
     >
-      <View style={styles.headerContent}>
-        <Text style={styles.title}>
-          {title}
-          {username && <Text style={styles.username}> {username}</Text>}
-        </Text>
-        <Text style={styles.subtitle}>{subtitle}</Text>
+      <View style={styles.headerRow}>
+        <View style={styles.headerContent}>
+          <Text style={styles.title}>
+            {title}
+            {username && <Text style={styles.username}> {username}</Text>}
+          </Text>
+          <Text style={styles.subtitle}>{subtitle}</Text>
+        </View>
+        {rightComponent && (
+          <View style={styles.rightComponentContainer}>{rightComponent}</View>
+        )}
       </View>
     </Animated.View>
   );
@@ -58,8 +65,18 @@ const styles = StyleSheet.create({
     flex: 0,
     justifyContent: 'center',
   },
-  headerContent: {
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'flex-start',
+  },
+  headerContent: {
+    flex: 1,
+    alignItems: 'flex-start',
+  },
+  rightComponentContainer: {
+    marginLeft: scale(16),
+    justifyContent: 'flex-start',
   },
   title: {
     fontSize: moderateScale(24),
