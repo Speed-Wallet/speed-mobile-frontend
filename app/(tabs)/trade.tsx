@@ -8,7 +8,13 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { DollarSign, Check, ExternalLink } from 'lucide-react-native';
+import {
+  DollarSign,
+  Check,
+  ExternalLink,
+  ChevronDown,
+  ArrowLeftRight,
+} from 'lucide-react-native';
 import BottomSheet, {
   BottomSheetView,
   BottomSheetBackdrop,
@@ -40,7 +46,6 @@ import {
   USDC_TOKEN,
   WSOL_ADDRESS,
 } from '@/constants/popularTokens';
-import SwapTokensSection from '@/components/SwapTokensSection';
 import TokenLogo from '@/components/TokenLogo';
 import CopyButton from '@/components/CopyButton';
 import TokenSelectorBottomSheet, {
@@ -656,25 +661,80 @@ export default function TradeScreen() {
           <View style={{ flex: 1 }}>
             {/* Main Content */}
             <View style={styles.mainContent}>
-              <SwapTokensSection
-                fromToken={fromToken}
-                toToken={toToken}
-                fromAmount={fromAmount}
-                toAmount={toAmount}
-                activeInput={activeInput}
-                onFromAmountChange={setFromAmountTruncated}
-                onToAmountChange={setToAmount}
-                onFromInputFocus={handleInputFocus}
-                onToInputFocus={() => {}} // No-op since to input is disabled
-                onSwapTokens={handleSwapTokens}
-                onFromTokenSelect={() =>
-                  fromTokenSelectorRef.current?.present()
-                }
-                onToTokenSelect={() => toTokenSelectorRef.current?.present()}
-                hasInsufficientFunds={isInsufficientBalance}
-              />
+              {/* Row 1: Amount Display Section */}
+              <View style={styles.amountSection}>
+                <TouchableOpacity
+                  onPress={handleInputFocus}
+                  style={styles.amountTouchable}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.amountText}>
+                    {fromAmount || '0'}
+                    {fromToken && (
+                      <Text style={styles.amountCurrency}>
+                        {' '}
+                        {fromToken.symbol}
+                      </Text>
+                    )}
+                  </Text>
+                  {toAmount && toToken && (
+                    <Text style={styles.estimatedOutputText}>
+                      ≈ {toAmount} {toToken.symbol}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              </View>
 
-              {/* Horizontal Container for Percentage Buttons and Keyboard */}
+              {/* Row 2: Token Selectors */}
+              <View style={styles.tokenSelectorsRow}>
+                <TouchableOpacity
+                  style={styles.tokenSelector}
+                  onPress={() => fromTokenSelectorRef.current?.present()}
+                  activeOpacity={0.7}
+                >
+                  {fromToken ? (
+                    <View style={styles.tokenDisplay}>
+                      <TokenLogo
+                        logoURI={fromToken.logoURI}
+                        size={moderateScale(24, 0.3)}
+                      />
+                      <Text style={styles.tokenSymbol}>{fromToken.symbol}</Text>
+                    </View>
+                  ) : (
+                    <Text style={styles.tokenPlaceholder}>Select Token</Text>
+                  )}
+                  <ChevronDown size={20} color={colors.white} />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.swapButton}
+                  onPress={handleSwapTokens}
+                  activeOpacity={0.7}
+                >
+                  <ArrowLeftRight size={20} color={colors.white} />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.tokenSelector}
+                  onPress={() => toTokenSelectorRef.current?.present()}
+                  activeOpacity={0.7}
+                >
+                  {toToken ? (
+                    <View style={styles.tokenDisplay}>
+                      <TokenLogo
+                        logoURI={toToken.logoURI}
+                        size={moderateScale(24, 0.3)}
+                      />
+                      <Text style={styles.tokenSymbol}>{toToken.symbol}</Text>
+                    </View>
+                  ) : (
+                    <Text style={styles.tokenPlaceholder}>Select Token</Text>
+                  )}
+                  <ChevronDown size={20} color={colors.white} />
+                </TouchableOpacity>
+              </View>
+
+              {/* Row 3: Horizontal Container for Percentage Buttons and Keyboard */}
               <View style={styles.horizontalContainer}>
                 {/* Percentage Buttons */}
                 <PercentageButtons
@@ -690,7 +750,7 @@ export default function TradeScreen() {
                 />
               </View>
 
-              {/* Preview Swap Button */}
+              {/* Row 4: Preview Swap Button */}
               <View style={styles.buttonContainer}>
                 <PrimaryActionButton
                   title={getButtonText()}
@@ -1011,26 +1071,91 @@ const styles = StyleSheet.create({
   },
   mainContent: {
     flex: 1,
+    gap: scale(10),
+    paddingHorizontal: scale(16),
   },
-  // Horizontal container for percentage buttons and keyboard
+  // Row 1: Amount Display Section
+  amountSection: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#1A1A1A',
+    borderRadius: 12,
+  },
+  amountTouchable: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: scale(16),
+  },
+  amountText: {
+    fontSize: moderateScale(30),
+    fontFamily: 'Inter-Bold',
+    color: colors.white,
+    textAlign: 'center',
+  },
+  amountCurrency: {
+    fontSize: moderateScale(30),
+    fontFamily: 'Inter-Regular',
+    color: colors.textSecondary,
+  },
+  estimatedOutputText: {
+    fontSize: moderateScale(16),
+    fontFamily: 'Inter-Regular',
+    color: colors.textSecondary,
+    marginTop: verticalScale(8),
+    textAlign: 'center',
+  },
+  // Row 2: Token Selectors
+  tokenSelectorsRow: {
+    flexDirection: 'row',
+    gap: scale(12),
+    alignItems: 'center',
+  },
+  tokenSelector: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#1A1A1A',
+    borderRadius: 12,
+    paddingHorizontal: scale(16),
+    paddingVertical: verticalScale(16),
+    height: verticalScale(56),
+  },
+  tokenDisplay: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scale(8),
+  },
+  tokenSymbol: {
+    fontSize: moderateScale(16),
+    fontFamily: 'Inter-SemiBold',
+    color: colors.white,
+  },
+  tokenPlaceholder: {
+    fontSize: moderateScale(16),
+    fontFamily: 'Inter-Medium',
+    color: colors.textSecondary,
+  },
+  swapButton: {
+    backgroundColor: '#1A1A1A',
+    borderRadius: 12,
+    padding: scale(16),
+    height: verticalScale(56),
+    width: verticalScale(56),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // Row 3: Horizontal container for percentage buttons and keyboard
   horizontalContainer: {
     flexDirection: 'row',
     alignItems: 'stretch',
-    height: 250,
-    backgroundColor: colors.backgroundDark,
-    paddingBottom: verticalScale(18), // Safe area padding
-    paddingHorizontal: moderateScale(20, 2.0),
+    height: 200,
     justifyContent: 'space-between',
     gap: moderateScale(12, 2.0),
-    maxWidth: 600,
   },
-  // Bottom section for keyboard and button
-  bottomSection: {
-    backgroundColor: colors.backgroundDark,
-    paddingBottom: verticalScale(18), // Safe area padding
-  },
+  // Row 4: Button Container
   buttonContainer: {
-    paddingHorizontal: moderateScale(20, 2.0),
     paddingTop: moderateScale(4, 2.0),
     paddingBottom: verticalScale(16),
     marginTop: -8,
