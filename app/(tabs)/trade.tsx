@@ -688,49 +688,60 @@ export default function TradeScreen() {
               {/* Row 2: Token Selectors */}
               <View style={styles.tokenSelectorsRow}>
                 <TouchableOpacity
-                  style={styles.tokenSelector}
+                  style={styles.tokenSelectorFrom}
                   onPress={() => fromTokenSelectorRef.current?.present()}
                   activeOpacity={0.7}
                 >
-                  {fromToken ? (
-                    <View style={styles.tokenDisplay}>
-                      <TokenLogo
-                        logoURI={fromToken.logoURI}
-                        size={moderateScale(24, 0.3)}
-                      />
-                      <Text style={styles.tokenSymbol}>{fromToken.symbol}</Text>
-                    </View>
-                  ) : (
-                    <Text style={styles.tokenPlaceholder}>Select Token</Text>
-                  )}
-                  <ChevronDown size={20} color={colors.white} />
+                  <View style={styles.tokenColumnLeft}>
+                    <Text style={styles.tokenLabel}>From</Text>
+                    {fromToken ? (
+                      <View style={styles.tokenDisplayVertical}>
+                        <TokenLogo
+                          logoURI={fromToken.logoURI}
+                          size={moderateScale(20, 0.3)}
+                        />
+                        <Text style={styles.tokenSymbolSmall}>
+                          {fromToken.symbol}
+                        </Text>
+                      </View>
+                    ) : (
+                      <Text style={styles.tokenPlaceholderSmall}>Select</Text>
+                    )}
+                  </View>
                 </TouchableOpacity>
 
-                <TouchableOpacity
-                  style={styles.swapButton}
-                  onPress={handleSwapTokens}
-                  activeOpacity={0.7}
-                >
-                  <ArrowLeftRight size={20} color={colors.white} />
-                </TouchableOpacity>
+                <View style={styles.divider} />
 
                 <TouchableOpacity
-                  style={styles.tokenSelector}
+                  style={styles.tokenSelectorTo}
                   onPress={() => toTokenSelectorRef.current?.present()}
                   activeOpacity={0.7}
                 >
-                  {toToken ? (
-                    <View style={styles.tokenDisplay}>
-                      <TokenLogo
-                        logoURI={toToken.logoURI}
-                        size={moderateScale(24, 0.3)}
-                      />
-                      <Text style={styles.tokenSymbol}>{toToken.symbol}</Text>
-                    </View>
-                  ) : (
-                    <Text style={styles.tokenPlaceholder}>Select Token</Text>
-                  )}
-                  <ChevronDown size={20} color={colors.white} />
+                  <View style={styles.tokenColumnRight}>
+                    <Text style={styles.tokenLabelRight}>To</Text>
+                    {toToken ? (
+                      <View style={styles.tokenDisplayVertical}>
+                        <TokenLogo
+                          logoURI={toToken.logoURI}
+                          size={moderateScale(20, 0.3)}
+                        />
+                        <Text style={styles.tokenSymbolSmall}>
+                          {toToken.symbol}
+                        </Text>
+                      </View>
+                    ) : (
+                      <Text style={styles.tokenPlaceholderSmall}>Select</Text>
+                    )}
+                  </View>
+                </TouchableOpacity>
+
+                {/* Swap button positioned absolutely on top of divider */}
+                <TouchableOpacity
+                  style={styles.swapButtonSmall}
+                  onPress={handleSwapTokens}
+                  activeOpacity={0.7}
+                >
+                  <ArrowLeftRight size={16} color={colors.white} />
                 </TouchableOpacity>
               </View>
 
@@ -1108,8 +1119,79 @@ const styles = StyleSheet.create({
   // Row 2: Token Selectors
   tokenSelectorsRow: {
     flexDirection: 'row',
-    gap: scale(12),
+    gap: 0,
+    alignItems: 'stretch',
+    backgroundColor: '#1A1A1A',
+    borderRadius: 12,
+    // padding: scale(12),
+    minHeight: verticalScale(56),
+    position: 'relative',
+  },
+  tokenSelectorFrom: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingRight: scale(4),
+  },
+  tokenSelectorTo: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingLeft: scale(4),
+  },
+  tokenColumnLeft: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: scale(4),
+    padding: 12,
+  },
+  tokenColumnRight: {
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    gap: scale(4),
+    padding: 12,
+  },
+  tokenLabel: {
+    fontSize: moderateScale(11),
+    fontFamily: 'Inter-Medium',
+    color: colors.textSecondary,
+  },
+  tokenLabelRight: {
+    fontSize: moderateScale(11),
+    fontFamily: 'Inter-Medium',
+    color: colors.textSecondary,
+  },
+  tokenDisplayVertical: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: scale(6),
+  },
+  tokenSymbolSmall: {
+    fontSize: moderateScale(14),
+    fontFamily: 'Inter-SemiBold',
+    color: colors.white,
+  },
+  tokenPlaceholderSmall: {
+    fontSize: moderateScale(14),
+    fontFamily: 'Inter-Medium',
+    color: colors.textSecondary,
+  },
+  swapButtonSmall: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: [{ translateX: '-50%' }, { translateY: '-50%' }],
+    backgroundColor: '#2A2A2A',
+    borderRadius: 8,
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+  },
+  divider: {
+    width: 1,
+    alignSelf: 'stretch',
+    backgroundColor: colors.textSecondary,
+    opacity: 0.15,
   },
   tokenSelector: {
     flex: 1,
@@ -1136,15 +1218,6 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(16),
     fontFamily: 'Inter-Medium',
     color: colors.textSecondary,
-  },
-  swapButton: {
-    backgroundColor: '#1A1A1A',
-    borderRadius: 12,
-    padding: scale(16),
-    height: verticalScale(56),
-    width: verticalScale(56),
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   // Row 3: Horizontal container for percentage buttons and keyboard
   horizontalContainer: {

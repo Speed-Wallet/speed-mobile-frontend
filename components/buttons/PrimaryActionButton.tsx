@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
-    height: verticalScale(48),
+    height: moderateScale(52, 0.6),
     paddingHorizontal: scale(32),
     gap: scale(4),
   },
