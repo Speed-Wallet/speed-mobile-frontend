@@ -1126,6 +1126,8 @@ const styles = StyleSheet.create({
     // padding: scale(12),
     minHeight: verticalScale(56),
     position: 'relative',
+    borderWidth: 1,
+    borderColor: 'rgba(155, 155, 155, 0.15)',
   },
   tokenSelectorFrom: {
     flex: 1,
