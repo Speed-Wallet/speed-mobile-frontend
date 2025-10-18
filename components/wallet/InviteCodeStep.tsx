@@ -5,14 +5,16 @@ import {
   StyleSheet,
   TouchableOpacity,
   TextInput,
+  Animated,
 } from 'react-native';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import colors from '@/constants/colors';
 import IntroScreen from './IntroScreen';
 import PrimaryActionButton from '@/components/buttons/PrimaryActionButton';
+import { triggerShake } from '@/utils/animations';
 
 interface InviteCodeStepProps {
-  onNext: (inviteCode: string) => void;
+  onNext: (inviteCode: string) => Promise<void>;
   onSkip: () => void;
   isLoading?: boolean;
 }
@@ -23,12 +25,40 @@ const InviteCodeStep: React.FC<InviteCodeStepProps> = ({
   isLoading = false,
 }) => {
   const [code, setCode] = useState('');
+  const [error, setError] = useState('');
+  const [isCodeInvalid, setIsCodeInvalid] = useState(false);
   const inputRef = useRef<TextInput>(null);
+  const shakeAnimationValue = useRef(new Animated.Value(0)).current;
   const CODE_LENGTH = 6;
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (code.trim().length === CODE_LENGTH) {
-      onNext(code.trim().toUpperCase());
+      try {
+        setError('');
+        setIsCodeInvalid(false);
+        await onNext(code.trim().toUpperCase());
+        // If successful, error state remains cleared
+      } catch (error) {
+        // Handle error by showing it below the input
+        setIsCodeInvalid(true);
+        if (error instanceof Error) {
+          if (
+            error.message.includes('not exist') ||
+            error.message.includes('not found')
+          ) {
+            setError('* Invite code not found');
+          } else if (error.message.includes('already used')) {
+            setError('* You have already used a referral code');
+          } else if (error.message.includes('own')) {
+            setError('* Cannot use your own referral code');
+          } else {
+            setError('* Invalid invite code');
+          }
+        } else {
+          setError('* Invalid invite code');
+        }
+        triggerShake(shakeAnimationValue);
+      }
     }
   };
 
@@ -36,6 +66,11 @@ const InviteCodeStep: React.FC<InviteCodeStepProps> = ({
     // Only allow alphanumeric characters
     const filtered = text.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
     setCode(filtered.slice(0, CODE_LENGTH));
+    // Clear error when user starts typing again
+    if (error) {
+      setError('');
+      setIsCodeInvalid(false);
+    }
   };
 
   const renderCodeSlots = () => {
@@ -45,23 +80,33 @@ const InviteCodeStep: React.FC<InviteCodeStepProps> = ({
         onPress={() => inputRef.current?.focus()}
         style={styles.codeContainer}
       >
-        {Array.from({ length: CODE_LENGTH }).map((_, index) => {
-          const char = code[index];
-          const isFilled = char !== undefined;
+        <Animated.View
+          style={[
+            styles.codeRow,
+            {
+              transform: [{ translateX: shakeAnimationValue }],
+            },
+          ]}
+        >
+          {Array.from({ length: CODE_LENGTH }).map((_, index) => {
+            const char = code[index];
+            const isFilled = char !== undefined;
 
-          return (
-            <View
-              key={index}
-              style={[
-                styles.codeSlot,
-                isFilled && styles.codeSlotFilled,
-                index === code.length && styles.codeSlotActive,
-              ]}
-            >
-              {isFilled && <Text style={styles.codeChar}>{char}</Text>}
-            </View>
-          );
-        })}
+            return (
+              <View
+                key={index}
+                style={[
+                  styles.codeSlot,
+                  isFilled && styles.codeSlotFilled,
+                  index === code.length && styles.codeSlotActive,
+                  isCodeInvalid && styles.codeSlotError,
+                ]}
+              >
+                {isFilled && <Text style={styles.codeChar}>{char}</Text>}
+              </View>
+            );
+          })}
+        </Animated.View>
       </TouchableOpacity>
     );
   };
@@ -81,10 +126,17 @@ const InviteCodeStep: React.FC<InviteCodeStepProps> = ({
           </TouchableOpacity>
           <View style={styles.submitButtonContainer}>
             <PrimaryActionButton
-              title="Continue"
+              title={
+                isLoading
+                  ? 'Validating...'
+                  : isCodeInvalid
+                    ? 'Invalid Code'
+                    : 'Continue'
+              }
               onPress={handleSubmit}
               disabled={isLoading || code.length !== CODE_LENGTH}
               loading={isLoading}
+              variant={isCodeInvalid ? 'error' : 'primary'}
             />
           </View>
         </View>
@@ -92,6 +144,16 @@ const InviteCodeStep: React.FC<InviteCodeStepProps> = ({
     >
       <View style={styles.contentContainer}>
         {renderCodeSlots()}
+
+        {/* Error message */}
+        <View style={styles.helperContainer}>
+          {error ? (
+            <Text style={styles.errorText}>{error}</Text>
+          ) : (
+            <Text style={styles.helperText}>Enter the 6-character code</Text>
+          )}
+        </View>
+
         <TextInput
           ref={inputRef}
           style={styles.hiddenInput}
@@ -122,6 +184,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(20),
     width: '100%',
   },
+  codeRow: {
+    flexDirection: 'row',
+    gap: scale(8),
+    width: '100%',
+  },
   codeSlot: {
     flex: 1,
     aspectRatio: 0.85,
@@ -140,10 +207,34 @@ const styles = StyleSheet.create({
   codeSlotActive: {
     borderColor: colors.primary,
   },
+  codeSlotError: {
+    borderColor: colors.error,
+    backgroundColor: '#2a1a1a',
+  },
   codeChar: {
     fontSize: moderateScale(24),
     fontFamily: 'Inter-SemiBold',
     color: colors.textPrimary,
+  },
+  helperContainer: {
+    minHeight: 24,
+    justifyContent: 'center',
+    marginTop: verticalScale(12),
+    paddingHorizontal: scale(20),
+  },
+  helperText: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    color: colors.textSecondary,
+    lineHeight: 20,
+    textAlign: 'center',
+  },
+  errorText: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    color: colors.error,
+    lineHeight: 20,
+    textAlign: 'center',
   },
   hiddenInput: {
     position: 'absolute',

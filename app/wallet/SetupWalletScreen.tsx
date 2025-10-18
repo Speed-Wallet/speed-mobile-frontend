@@ -7,7 +7,7 @@ import {
   createAppPin,
   importWalletFromMnemonic,
 } from '@/services/walletService';
-import { createUser } from '@/services/apis';
+import { createUser, useReferralCode } from '@/services/apis';
 import { AuthService } from '@/services/authService';
 import { useAlert } from '@/providers/AlertProvider';
 import colors from '@/constants/colors';
@@ -51,6 +51,7 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
     undefined,
   );
   const [username, setUsername] = useState<string>('');
+  const [userReferralCode, setUserReferralCode] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [pin, setPin] = useState('');
   const [isImporting, setIsImporting] = useState(false);
@@ -109,9 +110,16 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
         return;
       }
 
-      // If successful, store username locally and proceed
+      // If successful, store username locally and referral code, then proceed
       await AuthService.storeUsername(selectedUsername);
       setUsername(selectedUsername);
+
+      // Store the user's own referral code if provided
+      if (result.data?.referralCode) {
+        setUserReferralCode(result.data.referralCode);
+        console.log('User referral code:', result.data.referralCode);
+      }
+
       setStep(WalletSetupStep.INVITE_CODE);
     } catch (error) {
       console.error('Error in handleUsernameNext:', error);
@@ -190,9 +198,41 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
   };
 
   const handleInviteCodeNext = async (inviteCode: string) => {
-    // Store or process invite code here if needed
-    console.log('Invite code entered:', inviteCode);
-    setStep(WalletSetupStep.CREATE_PIN);
+    if (!username) {
+      // This shouldn't happen, but throw error to be handled by component
+      throw new Error('Username not found. Please try again.');
+    }
+
+    setIsLoading(true);
+    try {
+      // Use the referral code
+      const result = await useReferralCode(username, inviteCode);
+
+      if (!result.success) {
+        // Throw error with appropriate message for the component to handle
+        if (result.statusCode === 404) {
+          throw new Error('Invite code not found');
+        } else if (
+          result.statusCode === 400 &&
+          result.error?.includes('already used')
+        ) {
+          throw new Error('You have already used a referral code');
+        } else if (result.statusCode === 400 && result.error?.includes('own')) {
+          throw new Error('Cannot use your own referral code');
+        } else {
+          throw new Error(result.error || 'Invalid invite code');
+        }
+      }
+
+      console.log('Invite code accepted:', inviteCode);
+      setStep(WalletSetupStep.CREATE_PIN);
+    } catch (error) {
+      console.error('Error validating invite code:', error);
+      // Re-throw the error so the InviteCodeStep component can display it
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleInviteCodeSkip = () => {

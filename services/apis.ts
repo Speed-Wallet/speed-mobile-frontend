@@ -538,6 +538,102 @@ export async function createUser(
   }
 }
 
+/**
+ * Use a referral code (submit invite code after user creation)
+ */
+export async function useReferralCode(
+  username: string,
+  inviteCode: string,
+): Promise<{
+  success: boolean;
+  data?: any;
+  error?: string;
+  statusCode?: number;
+}> {
+  try {
+    const response = await fetch(`${BASE_BACKEND_URL}/useReferralCode`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        username,
+        inviteCode,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      return {
+        success: false,
+        error:
+          errorData.message ||
+          `HTTP ${response.status}: ${response.statusText}`,
+        statusCode: response.status,
+      };
+    }
+
+    const data = await response.json();
+    return {
+      success: true,
+      data,
+    };
+  } catch (error) {
+    console.error('Error using referral code:', error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : 'Failed to use referral code',
+    };
+  }
+}
+
+/**
+ * Get referral statistics for a user
+ */
+export async function getReferralStats(username: string): Promise<{
+  success: boolean;
+  data?: {
+    referralCode: string | null;
+    totalReferrals: number;
+    totalEarnings: number;
+    referrals?: any[];
+  };
+  error?: string;
+}> {
+  try {
+    const response = await fetch(`${BASE_BACKEND_URL}/referrals/${username}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      return {
+        success: false,
+        error:
+          errorData.message ||
+          `HTTP ${response.status}: ${response.statusText}`,
+      };
+    }
+
+    const data = await response.json();
+    return {
+      success: true,
+      data,
+    };
+  } catch (error) {
+    console.error('Error getting referral stats:', error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : 'Failed to get referral stats',
+    };
+  }
+}
+
 // Backend API Calls
 export async function registerUser(name: string, username: string) {
   const response = await fetch(`${BASE_BACKEND_URL}/registerUser`, {

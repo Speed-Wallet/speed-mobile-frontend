@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "260228921931",
+    "project_id": "speed-wallet-3c094",
+    "storage_bucket": "speed-wallet-3c094.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:260228921931:android:7db6b6a509de96a5226bce",
+        "android_client_info": {
+          "package_name": "com.alexthelion123.boltexponativewind"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA5y5Xgs0n20sjabvhNp9aXeObrE5gJU90"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
