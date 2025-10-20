@@ -19,7 +19,7 @@ import { StorageService } from '@/utils/storage';
 import { PaymentCard } from '@/types/cards';
 import { sendUsdtToCashwyre } from '@/utils/sendTransaction';
 import { mockSendUsdtToCashwyre } from '@/utils/mockTransaction';
-import { setupNotificationListeners } from '@/services/notificationService';
+import { setupNotificationListeners } from '@/services/notifications';
 import { getCurrentVerificationLevel } from '@/utils/verification';
 import {
   simulateUSDTReceived,

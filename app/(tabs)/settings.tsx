@@ -35,7 +35,7 @@ import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import colors from '@/constants/colors';
 import { getCurrentVerificationLevel } from '@/utils/verification';
 import ScreenContainer from '@/components/ScreenContainer';
-import TabScreenHeader from '@/components/TabScreenHeader';
+import ScreenHeader from '@/components/ScreenHeader';
 import { useAlert } from '@/providers/AlertProvider';
 
 const preferencesOptions = [
@@ -237,10 +237,7 @@ export default function SettingsScreen() {
 
   return (
     <ScreenContainer edges={['top']}>
-      <TabScreenHeader
-        title="Settings"
-        subtitle="Manage your account and preferences"
-      />
+      <ScreenHeader title="Settings" showBackButton={false} />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Account Section */}

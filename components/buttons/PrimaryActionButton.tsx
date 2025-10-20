@@ -93,6 +93,8 @@ const styles = StyleSheet.create({
     width: '100%',
     borderRadius: 12,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(155, 155, 155, 0.1)',
   },
   buttonBackground: {
     flexDirection: 'row',
@@ -106,6 +108,7 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: moderateScale(16),
     fontWeight: '600',
+    lineHeight: moderateScale(16),
   },
 });
 

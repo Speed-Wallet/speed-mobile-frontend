@@ -2,6 +2,7 @@ import { SecureMMKVStorage } from '../utils/mmkvStorage';
 import { Keypair } from '@solana/web3.js';
 import { signAsync } from '@noble/ed25519';
 import { getMasterWalletKeypair } from './walletUtils';
+import { showToast } from './notifications';
 
 const BASE_BACKEND_URL = process.env.EXPO_PUBLIC_BASE_BACKEND_URL;
 
@@ -319,6 +320,7 @@ export class AuthService {
       console.log('✅ Authentication successful');
     } catch (error) {
       console.error('❌ Authentication failed:', error);
+      showToast('Authentication failed, please try again later');
       await this.clearStoredAuth();
       throw error;
     }

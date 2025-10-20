@@ -1,11 +1,10 @@
 import * as Notifications from 'expo-notifications';
-import { Platform, Alert, ToastAndroid } from 'react-native';
+import { Alert } from 'react-native';
 import { router } from 'expo-router';
 import type {
   NotificationData,
   VirtualCardEventData,
   USDTReceivedEventData,
-  KYCEventData,
 } from '@/types/notifications';
 import {
   handleUSDTReceived,
@@ -13,7 +12,8 @@ import {
   handleCardCreationFailed,
   handleKYCVerificationComplete,
   simulateKYCVerification,
-} from '../utils/cardCreationSteps';
+} from '../../utils/cardCreationSteps';
+import { showToast } from './toast';
 
 // Configure notification handler
 Notifications.setNotificationHandler({
@@ -25,74 +25,6 @@ Notifications.setNotificationHandler({
     shouldShowBanner: true,
   }),
 });
-
-/**
- * Show a simple toast notification (works better than complex toast libraries)
- */
-export function showToast(message: string) {
-  if (Platform.OS === 'android') {
-    ToastAndroid.show(message, ToastAndroid.SHORT);
-  } else {
-    // For iOS, use local notification as a fallback
-    showLocalNotification('💰 USDT Received!', message);
-  }
-}
-
-/**
- * Register for push notifications and get the Expo push token
- */
-export async function registerForPushNotificationsAsync(): Promise<
-  string | null
-> {
-  if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync('default', {
-      name: 'default',
-      importance: Notifications.AndroidImportance.MAX,
-      vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#FF231F7C',
-    });
-  }
-
-  const { status: existingStatus } = await Notifications.getPermissionsAsync();
-
-  let finalStatus = existingStatus;
-
-  if (existingStatus !== 'granted') {
-    console.log('📝 Requesting notification permissions...');
-    const { status } = await Notifications.requestPermissionsAsync();
-    finalStatus = status;
-    console.log('✅ Permission request result:', status);
-  }
-
-  if (finalStatus !== 'granted') {
-    console.error('❌ Push notification permissions denied!');
-    return null;
-  }
-
-  try {
-    const tokenData = await Notifications.getExpoPushTokenAsync();
-    const token = tokenData.data;
-    return token;
-  } catch (error) {
-    console.error('❌ Error getting push token:', error);
-
-    // More specific error handling
-    if (error instanceof Error) {
-      console.error('Error details:', error.message);
-      console.error('Error stack:', error.stack);
-    }
-
-    return null;
-  }
-}
-
-/**
- * Convert API card details to PaymentCard format
- */
-// Function no longer needed since we use API-based card loading
-// function convertToPaymentCard(cardDetails: any): PaymentCard {
-//   // This function has been deprecated in favor of convertApiCardToPaymentCard in apis.ts
-// }
 
 /**
  * Handle card created notification by routing to dev or prod handlers
@@ -117,22 +49,6 @@ async function handleCardCreatedNotification(
     console.error('Error handling card created notification:', error);
   }
 }
-
-/**
- * Convert notification cardData to PaymentCard format
- */
-// Function no longer needed since we use API-based card loading
-// function convertCardDataToPaymentCard(cardData: VirtualCardEventData): PaymentCard {
-//   // This function has been deprecated in favor of convertApiCardToPaymentCard in apis.ts
-// }
-
-/**
- * Replace loading card with new card in storage
- */
-// Function no longer needed since we use API-based card loading
-// async function replaceLoadingCardWithNewCard(newCard: PaymentCard) {
-//   // This function has been deprecated in favor of API-based card refresh
-// }
 
 /**
  * Handle card creation failed notification by updating loading cards to failed state
@@ -327,22 +243,4 @@ export function setupNotificationListeners(onCardsUpdated?: () => void) {
     Notifications.removeNotificationSubscription(notificationListener);
     Notifications.removeNotificationSubscription(responseListener);
   };
-}
-
-/**
- * Show a local notification (for testing or immediate feedback)
- */
-export async function showLocalNotification(
-  title: string,
-  body: string,
-  data?: any,
-) {
-  await Notifications.scheduleNotificationAsync({
-    content: {
-      title,
-      body,
-      data,
-    },
-    trigger: null, // Show immediately
-  });
 }

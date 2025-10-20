@@ -74,8 +74,9 @@ export default function ReceiveScreen() {
   return (
     <ScreenContainer edges={['top', 'bottom']}>
       <ScreenHeader
-        title="Receive Crypto"
+        title="Receive"
         onBack={() => router.push('/' as any)}
+        showBackButton={false}
       />
 
       <View style={styles.content}>
@@ -108,11 +109,11 @@ export default function ReceiveScreen() {
             )}
           </View>
 
-          <SecondaryActionButton
+          <PrimaryActionButton
             title="Share"
             onPress={handleShare}
-            icon={<ShareIcon size={scale(18)} color={colors.textPrimary} />}
-            style={styles.addressSecondaryButton}
+            variant="secondary"
+            icon={<ShareIcon size={scale(18)} color={colors.textSecondary} />}
           />
         </View>
 
@@ -130,7 +131,6 @@ export default function ReceiveScreen() {
               onCopyComplete={handleCopyComplete}
             />
           }
-          style={styles.shareButtonStyle}
         />
       </View>
     </ScreenContainer>
@@ -231,21 +231,8 @@ const styles = StyleSheet.create({
   copyButtonInSecondary: {
     padding: 0, // Remove padding since it's inside the secondary button
   },
-  addressSecondaryButton: {
-    // Use the same style as the original address input container
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.backgroundMedium,
-    borderRadius: scale(12),
-    paddingHorizontal: scale(12),
-    paddingVertical: verticalScale(12),
-  },
   bottomSection: {
     paddingHorizontal: scale(16),
     paddingBottom: verticalScale(24),
-  },
-  shareButtonStyle: {
-    // Match original share button height
-    height: verticalScale(48),
   },
 });

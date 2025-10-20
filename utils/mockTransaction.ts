@@ -1,6 +1,6 @@
 import { SendTransactionResult } from './sendTransaction';
 import { getWalletAddress } from '@/services/apis';
-import { registerForPushNotificationsAsync } from '@/services/notificationService';
+import { registerForPushNotificationsAsync } from '@/services/notifications';
 import { WALLET } from '@/services/walletService';
 
 export interface MockSendUsdtParams {

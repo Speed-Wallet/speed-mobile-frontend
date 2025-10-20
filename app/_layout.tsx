@@ -32,6 +32,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { AuthService } from '@/services/authService';
 import { AlertProvider } from '@/providers/AlertProvider';
+import { ToastProvider } from '@/providers/ToastProvider';
 import { prefetchAppConfig } from '@/utils/configPrefetch';
 import 'react-native-get-random-values';
 
@@ -242,40 +243,48 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <AlertProvider>
-          <QueryClientProvider client={queryClient}>
-            <BottomSheetModalProvider>
-              <Stack
-                screenOptions={{
-                  headerShown: false,
-                  contentStyle: { backgroundColor: colors.backgroundDark },
-                }}
-              >
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                <Stack.Screen name="+not-found" options={{ title: 'Oops!' }} />
-                <Stack.Screen
-                  name="transaction/send"
-                  options={{ presentation: 'modal' }}
+          <ToastProvider>
+            <QueryClientProvider client={queryClient}>
+              <BottomSheetModalProvider>
+                <Stack
+                  screenOptions={{
+                    headerShown: false,
+                    contentStyle: { backgroundColor: colors.backgroundDark },
+                  }}
+                >
+                  <Stack.Screen
+                    name="(tabs)"
+                    options={{ headerShown: false }}
+                  />
+                  <Stack.Screen
+                    name="+not-found"
+                    options={{ title: 'Oops!' }}
+                  />
+                  <Stack.Screen
+                    name="transaction/send"
+                    options={{ presentation: 'modal' }}
+                  />
+                  <Stack.Screen
+                    name="transaction/receive"
+                    options={{ presentation: 'modal' }}
+                  />
+                  <Stack.Screen
+                    name="wallet/SetupWalletScreen"
+                    options={{ presentation: 'modal' }}
+                  />
+                  <Stack.Screen
+                    name="token/[address]"
+                    options={{ animation: 'slide_from_right' }}
+                  />
+                </Stack>
+                <StatusBar
+                  style="light"
+                  translucent
+                  backgroundColor="transparent"
                 />
-                <Stack.Screen
-                  name="transaction/receive"
-                  options={{ presentation: 'modal' }}
-                />
-                <Stack.Screen
-                  name="wallet/SetupWalletScreen"
-                  options={{ presentation: 'modal' }}
-                />
-                <Stack.Screen
-                  name="token/[address]"
-                  options={{ animation: 'slide_from_right' }}
-                />
-              </Stack>
-              <StatusBar
-                style="light"
-                translucent
-                backgroundColor="transparent"
-              />
-            </BottomSheetModalProvider>
-          </QueryClientProvider>
+              </BottomSheetModalProvider>
+            </QueryClientProvider>
+          </ToastProvider>
         </AlertProvider>
       </GestureHandlerRootView>
     </SafeAreaProvider>

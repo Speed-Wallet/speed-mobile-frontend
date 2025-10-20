@@ -1,6 +1,6 @@
 import { Transaction, VersionedTransaction } from '@solana/web3.js';
 import { WALLET, WSOL_MINT } from '@/services/walletService';
-import { registerForPushNotificationsAsync } from '@/services/notificationService';
+import { registerForPushNotificationsAsync } from '@/services/notifications';
 import {
   prepareTokenTransaction,
   submitSignedTransaction,

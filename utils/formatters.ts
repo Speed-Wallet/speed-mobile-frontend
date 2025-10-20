@@ -1,11 +1,32 @@
-// Internal formatter for 2 decimal currency
+// Internal formatter with dynamic decimals for currency
 export const formatCurrency = (value: number): string => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value);
+  // For very small amounts, show up to 6 decimals
+  if (value < 0.01) {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 6,
+    }).format(value);
+  }
+  // For small amounts (< $1), show up to 4 decimals
+  else if (value < 1) {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 4,
+    }).format(value);
+  }
+  // For regular amounts, show 2 decimals
+  else {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value);
+  }
 };
 
 // Format price for display with appropriate decimals for token prices

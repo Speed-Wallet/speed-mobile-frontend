@@ -26,11 +26,11 @@ import {
   removeWalletFromList,
   importWalletFromMnemonic,
 } from '@/services/walletService';
-import WalletListContent from '@/components/wallet-switcher/WalletListContent';
-import CreateWalletContent from '@/components/wallet-switcher/CreateWalletContent';
-import ImportWalletContent from '@/components/wallet-switcher/ImportWalletContent';
-import AddWalletOptions from '@/components/wallet-switcher/AddWalletOptions';
-import WalletNameInput from '@/components/wallet-switcher/WalletNameInput';
+import WalletListContent from './wallet-switcher/WalletListContent';
+import CreateWalletContent from './wallet-switcher/CreateWalletContent';
+import ImportWalletContent from './wallet-switcher/ImportWalletContent';
+import AddWalletOptions from './wallet-switcher/AddWalletOptions';
+import WalletNameInput from './wallet-switcher/WalletNameInput';
 
 interface WalletInfo {
   id: string;
