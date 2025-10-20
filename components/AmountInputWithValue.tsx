@@ -73,8 +73,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderWidth: 2,
-    borderColor: 'transparent',
+    borderWidth: 1,
+    borderColor: 'rgba(155, 155, 155, 0.1)',
   },
   containerError: {
     borderColor: colors.error,

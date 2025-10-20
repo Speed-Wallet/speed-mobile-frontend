@@ -1,33 +1,15 @@
-import { useState, useEffect, useRef } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Share,
-  TextInput,
-  Dimensions,
-  Platform,
-} from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useState, useRef } from 'react';
+import { View, Text, StyleSheet, Share, Dimensions } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Share as ShareIcon } from 'lucide-react-native';
 import { scale, verticalScale } from 'react-native-size-matters';
-import Animated, {
-  useSharedValue,
-  withTiming,
-  useAnimatedStyle,
-  withSequence,
-  withDelay,
-  FadeIn,
-  FadeOut,
-} from 'react-native-reanimated';
+import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import QRCode from 'react-native-qrcode-svg';
 import colors from '@/constants/colors';
 import ScreenHeader from '@/components/ScreenHeader';
 import ScreenContainer from '@/components/ScreenContainer';
 import PrimaryActionButton from '@/components/buttons/PrimaryActionButton';
 import CopyButton, { CopyButtonRef } from '@/components/CopyButton';
-import SecondaryActionButton from '@/components/buttons/SecondaryActionButton';
 import { setStringAsync } from 'expo-clipboard';
 import { useWalletPublicKey } from '@/services/walletService';
 
@@ -37,7 +19,6 @@ const QR_SIZE = Math.min(width * 0.6, scale(200));
 export default function ReceiveScreen() {
   const router = useRouter();
   const walletAddress = useWalletPublicKey();
-  const addressInputRef = useRef(null);
   const copyButtonRef = useRef<CopyButtonRef>(null);
 
   const [isCopied, setIsCopied] = useState(false);
@@ -189,7 +170,7 @@ const styles = StyleSheet.create({
   },
   addressContainer: {
     width: '100%',
-    marginBottom: verticalScale(16),
+    marginBottom: 10,
   },
   addressLabelContainer: {
     flexDirection: 'row',
@@ -206,24 +187,6 @@ const styles = StyleSheet.create({
     fontSize: scale(12),
     fontFamily: 'Inter-SemiBold',
     color: colors.textPrimary,
-  },
-  addressInputContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.backgroundMedium,
-    borderRadius: scale(12),
-    paddingHorizontal: scale(12),
-    paddingVertical: verticalScale(12),
-  },
-  addressGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  addressInput: {
-    fontSize: scale(14),
-    fontFamily: 'Inter-SemiBold',
-    color: colors.textPrimary,
-    marginRight: scale(6),
   },
   copyButton: {
     padding: scale(6),

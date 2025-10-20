@@ -238,7 +238,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: verticalScale(24),
     borderWidth: 1,
-    borderColor: colors.primary + '20',
+    borderColor: 'rgba(155, 155, 155, 0.1)',
   },
   statItem: {
     alignItems: 'center',

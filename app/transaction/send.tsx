@@ -241,8 +241,9 @@ export default function SendScreen() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ScreenContainer edges={['top', 'bottom']}>
         <ScreenHeader
-          title="Send Crypto"
+          title="Send"
           onBack={() => router.push('/' as any)}
+          showBackButton={false}
         />
 
         <KeyboardAvoidingView
@@ -576,6 +577,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.backgroundMedium,
     borderRadius: 12,
     padding: scale(12),
+    borderWidth: 1,
+    borderColor: 'rgba(155, 155, 155, 0.1)',
     // height: verticalScale(40),
   },
   searchInput: {
@@ -601,6 +604,8 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Regular',
     color: colors.textPrimary,
     textAlignVertical: 'top',
+    borderWidth: 1,
+    borderColor: 'rgba(155, 155, 155, 0.1)',
   },
   bottomContainer: {
     paddingHorizontal: 20,

@@ -9,6 +9,7 @@ import Animated, {
 import colors from '@/constants/colors';
 import ScreenContainer from '@/components/ScreenContainer';
 import { Edge } from 'react-native-safe-area-context';
+import { verticalScale } from 'react-native-size-matters';
 
 interface BottomActionContainerProps {
   children: React.ReactNode;
@@ -87,7 +88,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: colors.backgroundDark,
-    padding: 16,
+    padding: verticalScale(16),
     // borderTopWidth: 0.5,
     // borderTopColor: colors.backgroundLight,
     // shadowColor: '#000',

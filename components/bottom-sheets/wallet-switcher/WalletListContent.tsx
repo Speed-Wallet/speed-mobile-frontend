@@ -5,8 +5,8 @@ import {
   StyleSheet,
   TouchableOpacity,
   Dimensions,
+  FlatList,
 } from 'react-native';
-import { FlashList } from '@shopify/flash-list';
 import { Plus } from 'lucide-react-native';
 import colors from '@/constants/colors';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
@@ -64,7 +64,7 @@ const WalletListContent: React.FC<WalletListContentProps> = ({
 
   return (
     <>
-      <FlashList
+      <FlatList
         data={wallets}
         keyExtractor={(item) => item.id}
         renderItem={renderWalletItem}
@@ -72,8 +72,7 @@ const WalletListContent: React.FC<WalletListContentProps> = ({
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={renderEmptyComponent}
         ItemSeparatorComponent={renderItemSeparator}
-        renderScrollComponent={renderScrollComponent}
-        style={styles.flashList}
+        style={styles.flatList}
       />
       <View style={styles.addButtonContainer}>
         <TouchableOpacity
@@ -89,7 +88,7 @@ const WalletListContent: React.FC<WalletListContentProps> = ({
 };
 
 const styles = StyleSheet.create({
-  flashList: {
+  flatList: {
     maxHeight: SCREEN_HEIGHT * 0.65,
   },
   listContent: {

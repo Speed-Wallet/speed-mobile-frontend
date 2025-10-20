@@ -79,6 +79,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(16),
     paddingVertical: scale(12),
     marginBottom: 2,
+    borderWidth: 1,
+    borderColor: 'rgba(155, 155, 155, 0.1)',
   },
   touchableContent: {
     flexDirection: 'row',

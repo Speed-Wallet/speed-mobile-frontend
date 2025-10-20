@@ -536,8 +536,8 @@ export default function TradeScreen() {
     if (isInsufficientSol) {
       return 'Insufficient SOL';
     }
-    if (isInsufficientBalance && fromToken) {
-      return `Insufficient ${fromToken.symbol}`;
+    if (isInsufficientBalance) {
+      return `Insufficient ${fromToken?.symbol || 'Balance'}`;
     }
     return 'Preview Swap';
   };
