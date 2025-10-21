@@ -29,7 +29,7 @@ import { useTokenAssets } from '@/hooks/useTokenAsset';
 import {
   USDC_TOKEN,
   USDT_TOKEN,
-  cbBTC_TOKEN,
+  WBTC_TOKEN,
   WETH_TOKEN,
   WBNB_TOKEN,
 } from '@/constants/popularTokens';
@@ -164,7 +164,7 @@ export default function HomeScreen() {
   // Suggested tokens to show at the bottom (tokens user doesn't own yet)
   const SUGGESTED_TOKENS = [
     USDC_TOKEN,
-    cbBTC_TOKEN,
+    WBTC_TOKEN,
     WETH_TOKEN,
     WBNB_TOKEN,
     USDT_TOKEN,

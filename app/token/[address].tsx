@@ -48,7 +48,7 @@ import {
   USDC_TOKEN,
   USDT_TOKEN,
   WSOL_TOKEN,
-  cbBTC_TOKEN,
+  WBTC_TOKEN,
   WETH_TOKEN,
 } from '@/constants/popularTokens';
 import { TokenMetadata } from '@/services/tokenAssetService';

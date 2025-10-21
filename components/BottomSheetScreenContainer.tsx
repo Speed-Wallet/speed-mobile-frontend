@@ -1,6 +1,9 @@
 import React from 'react';
 import { ViewStyle } from 'react-native';
+import { BottomSheetView } from '@gorhom/bottom-sheet';
+import { scale, verticalScale } from 'react-native-size-matters';
 import ScreenContainer from './ScreenContainer';
+import colors from '@/constants/colors';
 
 interface BottomSheetScreenContainerProps {
   children: React.ReactNode;
@@ -14,8 +17,22 @@ export default function BottomSheetScreenContainer({
   edges = ['bottom'],
 }: BottomSheetScreenContainerProps) {
   return (
-    <ScreenContainer edges={edges} style={{ marginBottom: 6, ...style }}>
-      {children}
-    </ScreenContainer>
+    <BottomSheetView
+      style={{
+        flex: 1,
+        marginHorizontal: scale(20),
+        marginVertical: 12,
+      }}
+    >
+      <ScreenContainer
+        edges={edges}
+        style={{
+          backgroundColor: colors.bottomSheetBackground,
+          ...style,
+        }}
+      >
+        {children}
+      </ScreenContainer>
+    </BottomSheetView>
   );
 }

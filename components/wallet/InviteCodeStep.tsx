@@ -29,6 +29,9 @@ const InviteCodeStep: React.FC<InviteCodeStepProps> = ({
   const [isCodeInvalid, setIsCodeInvalid] = useState(false);
   const inputRef = useRef<TextInput>(null);
   const shakeAnimationValue = useRef(new Animated.Value(0)).current;
+  const charAnimations = useRef<Animated.Value[]>(
+    Array.from({ length: 6 }).map(() => new Animated.Value(0)),
+  ).current;
   const CODE_LENGTH = 6;
 
   const handleSubmit = async () => {
@@ -65,7 +68,26 @@ const InviteCodeStep: React.FC<InviteCodeStepProps> = ({
   const handleCodeChange = (text: string) => {
     // Only allow alphanumeric characters
     const filtered = text.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
-    setCode(filtered.slice(0, CODE_LENGTH));
+    const newCode = filtered.slice(0, CODE_LENGTH);
+
+    // Trigger animation for newly added character
+    if (newCode.length > code.length) {
+      const index = newCode.length - 1;
+      charAnimations[index].setValue(20); // Start from below
+      Animated.spring(charAnimations[index], {
+        toValue: 0,
+        tension: 100,
+        friction: 8,
+        useNativeDriver: true,
+      }).start();
+    }
+
+    // Reset animation for removed character
+    if (newCode.length < code.length) {
+      charAnimations[newCode.length].setValue(0);
+    }
+
+    setCode(newCode);
     // Clear error when user starts typing again
     if (error) {
       setError('');
@@ -91,18 +113,29 @@ const InviteCodeStep: React.FC<InviteCodeStepProps> = ({
           {Array.from({ length: CODE_LENGTH }).map((_, index) => {
             const char = code[index];
             const isFilled = char !== undefined;
+            const isActive = index === code.length && !isCodeInvalid;
 
             return (
               <View
                 key={index}
                 style={[
                   styles.codeSlot,
-                  isFilled && styles.codeSlotFilled,
-                  index === code.length && styles.codeSlotActive,
+                  isActive && styles.codeSlotActive,
                   isCodeInvalid && styles.codeSlotError,
                 ]}
               >
-                {isFilled && <Text style={styles.codeChar}>{char}</Text>}
+                {isFilled && (
+                  <Animated.Text
+                    style={[
+                      styles.codeChar,
+                      {
+                        transform: [{ translateY: charAnimations[index] }],
+                      },
+                    ]}
+                  >
+                    {char}
+                  </Animated.Text>
+                )}
               </View>
             );
           })}
@@ -199,10 +232,6 @@ const styles = StyleSheet.create({
     borderColor: '#2a2a2a',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  codeSlotFilled: {
-    borderColor: colors.primary,
-    backgroundColor: '#1f1f1f',
   },
   codeSlotActive: {
     borderColor: colors.primary,

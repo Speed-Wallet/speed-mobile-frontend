@@ -24,13 +24,21 @@ export const USDC_TOKEN = {
   logoURI: `https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/${USDC_ADDRESS}/logo.png`,
   decimals: 6,
 };
-export const cbBTC_TOKEN = {
+const cbBTC_TOKEN = {
   address: 'cbbtcf3aa214zXHbiAZQwf4122FBYbraNdFqgw4iMij',
   name: 'Coinbase Wrapped BTC',
   symbol: 'cbBTC',
   logoURI:
     'https://ipfs.io/ipfs/QmZ7L8yd5j36oXXydUiYFiFsRHbi3EdgC4RuFwvM7dcqge',
   decimals: 8,
+};
+export const WBTC_TOKEN = {
+  address: '9n4nbM75f5Ui33ZbPYXn59EwSgE8CGsHtAeTH5YFeJ9E',
+  name: 'Wrapped Bitcoin (Sollet)',
+  symbol: 'WBTC',
+  logoURI:
+    'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/9n4nbM75f5Ui33ZbPYXn59EwSgE8CGsHtAeTH5YFeJ9E/logo.png',
+  decimals: 6,
 };
 export const WETH_TOKEN = {
   address: '2FPyTwcZLUg1MDrwsyoP4D6s1tM7hAkHYRjkNb5w6Pxk',
@@ -58,7 +66,7 @@ export const USDT_TOKEN = {
 
 export const POPULAR_TOKENS: TokenMetadata[] = [
   WSOL_TOKEN,
-  cbBTC_TOKEN,
+  WBTC_TOKEN,
   USDC_TOKEN,
   USDT_TOKEN,
   WBNB_TOKEN,

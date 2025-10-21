@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   Dimensions,
-  TouchableOpacity,
   Animated,
   FlatList,
 } from 'react-native';
@@ -22,6 +21,7 @@ import colors from '@/constants/colors';
 import GradientBackground from '@/components/GradientBackground';
 import UnsafeScreenContainer from '@/components/UnsafeScreenContainer';
 import ScreenContainer from '@/components/ScreenContainer';
+import SlideToUnlock from '@/components/buttons/SlideToUnlock';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -163,10 +163,10 @@ export default function OnboardingCarousel({
           total={carouselItems.length}
         />
 
-        {/* Get Started Button */}
-        <TouchableOpacity style={styles.getStartedButton} onPress={onComplete}>
-          <Text style={styles.getStartedText}>Get Started</Text>
-        </TouchableOpacity>
+        {/* Slide to Unlock */}
+        <View style={styles.sliderWrapper}>
+          <SlideToUnlock onUnlock={onComplete} />
+        </View>
       </View>
     </UnsafeScreenContainer>
   );
@@ -248,19 +248,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#00CFFF',
     width: scale(24),
   },
-  getStartedButton: {
-    backgroundColor: '#00CFFF',
-    paddingVertical: verticalScale(16),
-    paddingHorizontal: scale(32),
-    borderRadius: 12,
+  sliderWrapper: {
+    width: '100%',
     alignItems: 'center',
-    justifyContent: 'center',
     marginTop: verticalScale(32),
-    marginHorizontal: scale(24),
-  },
-  getStartedText: {
-    fontSize: moderateScale(16),
-    fontWeight: '600',
-    color: '#000000',
   },
 });

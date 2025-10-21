@@ -166,6 +166,10 @@ export class AuthService {
     message: string,
     signature: string,
   ): Promise<void> {
+    console.log(
+      'submitting login with message and signature to url: ',
+      `${BASE_BACKEND_URL}/auth/login`,
+    );
     const response = await fetch(`${BASE_BACKEND_URL}/auth/login`, {
       method: 'POST',
       headers: {

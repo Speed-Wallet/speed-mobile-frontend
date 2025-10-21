@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -16,12 +16,15 @@ import CircularNumericKeyboard from '@/components/keyboard/CircularNumericKeyboa
 import CountryPickerBottomSheet, {
   CountryPickerBottomSheetRef,
 } from '@/components/bottom-sheets/CountryPickerBottomSheet';
-import { Country } from '@/constants/countries';
+import { Country, countries } from '@/constants/countries';
 import colors from '@/constants/colors';
 import { formatNumber } from '@/utils/formatters';
 import { useWalletPublicKey } from '@/services/walletService';
 import { generateSignature } from '@/utils/signature';
-import { useYellowCardChannels } from '@/hooks/useYellowCardChannels';
+import {
+  useCountryPaymentMethods,
+  useActiveYellowCardChannels,
+} from '@/hooks/useYellowCardChannels';
 import type { YellowCardChannel } from '@/services/yellowcardApi';
 
 interface CountryPaymentInfo {
@@ -142,24 +145,32 @@ export default function BuyScreen() {
     useState<YellowCardChannel | null>(null);
   const [showPaymentMethodPicker, setShowPaymentMethodPicker] = useState(false);
 
-  // Fetch YellowCard channels
-  const { data: channelsData, isLoading: isLoadingChannels } =
-    useYellowCardChannels();
-
   const countryInfo = selectedCountry
     ? COUNTRY_PAYMENT_MAP[selectedCountry.code]
     : null;
 
-  // Get available channels for selected country
-  const availableChannels =
-    channelsData?.channels.filter(
-      (channel) =>
-        channel.rampType === 'deposit' &&
-        (!channel.widgetStatus || channel.widgetStatus === 'active') &&
-        selectedCountry &&
-        channel.country === selectedCountry.code &&
-        channel.currency === countryInfo?.currency,
-    ) || [];
+  // Get all active channels to determine which countries are available
+  const { data: allChannelsData } = useActiveYellowCardChannels();
+
+  // Filter countries to only show those with active channels
+  const availableCountries = React.useMemo(() => {
+    if (!allChannelsData?.channels) return [];
+
+    const countriesWithChannels = new Set(
+      allChannelsData.channels.map((channel) => channel.country),
+    );
+
+    return countries.filter((country) =>
+      countriesWithChannels.has(country.code),
+    );
+  }, [allChannelsData]);
+
+  // Fetch filtered channels and payment methods for selected country
+  const {
+    channels: availableChannels,
+    paymentMethods: paymentMethodTypes,
+    isLoading: isLoadingChannels,
+  } = useCountryPaymentMethods(selectedCountry?.code, countryInfo?.currency);
 
   // Helper function to map channelType to display name
   const getPaymentMethodName = (channelType: string): string => {
@@ -168,21 +179,25 @@ export default function BuyScreen() {
     return channelType.charAt(0).toUpperCase() + channelType.slice(1);
   };
 
-  // Get unique payment method types from available channels
-  const paymentMethodsFromAPI = Array.from(
-    new Set(
-      availableChannels.map((channel) =>
-        getPaymentMethodName(channel.channelType),
-      ),
-    ),
-  );
+  // Map channel types to display names
+  const paymentMethods = paymentMethodTypes.map(getPaymentMethodName);
 
-  // Use API payment methods if available, otherwise fall back to static data
-  const paymentMethods =
-    paymentMethodsFromAPI.length > 0
-      ? paymentMethodsFromAPI
-      : countryInfo?.paymentMethods || [];
-  const hasMultiplePaymentMethods = paymentMethods.length > 1;
+  // Auto-select first channel when available channels change
+  useEffect(() => {
+    if (availableChannels.length > 0) {
+      // Auto-select the first available channel
+      const firstChannel = availableChannels[0];
+      setSelectedChannel(firstChannel);
+
+      // Auto-select the first payment method
+      const methodName = getPaymentMethodName(firstChannel.channelType);
+      setSelectedPaymentMethod(methodName);
+    } else {
+      setSelectedChannel(null);
+      setSelectedPaymentMethod(null);
+    }
+    setShowPaymentMethodPicker(false);
+  }, [availableChannels]);
 
   // Get min/max limits from selected channel
   const minAmount = selectedChannel?.widgetMin ?? selectedChannel?.min ?? 0;
@@ -261,33 +276,7 @@ export default function BuyScreen() {
 
   const handleCountrySelect = (country: Country) => {
     setSelectedCountry(country);
-    const info = COUNTRY_PAYMENT_MAP[country.code];
-
-    // Find available channels for this country
-    const countryChannels =
-      channelsData?.channels.filter(
-        (channel) =>
-          channel.rampType === 'deposit' &&
-          (!channel.widgetStatus || channel.widgetStatus === 'active') &&
-          channel.country === country.code &&
-          channel.currency === info?.currency,
-      ) || [];
-
-    // Auto-select the best channel (lowest fees)
-    const bestChannel =
-      countryChannels.sort((a, b) => a.feeLocal - b.feeLocal)[0] || null;
-    setSelectedChannel(bestChannel);
-
-    // Auto-select the first payment method
-    if (bestChannel) {
-      const methodName = getPaymentMethodName(bestChannel.channelType);
-      setSelectedPaymentMethod(methodName);
-    } else if (info && info.paymentMethods.length > 0) {
-      setSelectedPaymentMethod(info.paymentMethods[0]);
-    } else {
-      setSelectedPaymentMethod(null);
-    }
-    setShowPaymentMethodPicker(false);
+    // Channel selection is handled automatically by useEffect
   };
 
   const handlePaymentMethodSelect = (method: string) => {
@@ -307,7 +296,11 @@ export default function BuyScreen() {
 
   return (
     <ScreenContainer edges={['top', 'bottom']}>
-      <ScreenHeader title="Buy" onBack={() => router.push('/' as any)} />
+      <ScreenHeader
+        title="Buy"
+        onBack={() => router.push('/' as any)}
+        showBackButton={false}
+      />
 
       <View style={styles.content}>
         {/* Amount Input Section */}
@@ -450,8 +443,10 @@ export default function BuyScreen() {
 
       <CountryPickerBottomSheet
         ref={countryPickerRef}
+        countries={availableCountries}
         onCountrySelect={handleCountrySelect}
         onClose={() => countryPickerRef.current?.dismiss()}
+        showDialCode={false}
       />
     </ScreenContainer>
   );

@@ -20,8 +20,6 @@ export interface YellowCardChannel {
   max: number;
   widgetMin?: number;
   widgetMax?: number;
-  feeLocal: number;
-  feeUSD: number;
   rampType: 'deposit' | 'withdraw';
   status: 'active' | 'inactive';
   apiStatus?: 'active' | 'inactive';
@@ -73,9 +71,10 @@ const generateAuthHeaders = (
 };
 
 /**
- * Get all available payment channels
+ * Get active payment channels
+ * Filters out inactive channels and non-widget-active channels
  */
-export async function getChannels(): Promise<GetChannelsResponse> {
+export async function getActiveChannels(): Promise<GetChannelsResponse> {
   const path = '/business/channels';
   const method = 'GET';
 
@@ -96,7 +95,16 @@ export async function getChannels(): Promise<GetChannelsResponse> {
     }
 
     const data: GetChannelsResponse = await response.json();
-    return data;
+
+    // Filter to only return active channels suitable for widget use
+    const activeChannels = data.channels.filter(
+      (channel) =>
+        channel.rampType === 'deposit' &&
+        (!channel.widgetStatus || channel.widgetStatus === 'active') &&
+        channel.status !== 'inactive',
+    );
+
+    return { channels: activeChannels };
   } catch (error) {
     console.error('Failed to fetch YellowCard channels:', error);
     throw error;
@@ -127,27 +135,4 @@ export function getActiveDepositChannels(
 
     return true;
   });
-}
-
-/**
- * Get the best channel for a country and currency combination
- * Prioritizes channels with lowest fees
- */
-export function getBestChannelForCountry(
-  channels: YellowCardChannel[],
-  countryCode: string,
-  currency: string,
-): YellowCardChannel | null {
-  const activeChannels = getActiveDepositChannels(
-    channels,
-    countryCode,
-    currency,
-  );
-
-  if (activeChannels.length === 0) return null;
-
-  // Sort by fee (lowest first)
-  const sorted = activeChannels.sort((a, b) => a.feeLocal - b.feeLocal);
-
-  return sorted[0];
 }

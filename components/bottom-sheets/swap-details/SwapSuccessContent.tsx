@@ -43,7 +43,7 @@ export default function SwapSuccessContent({
 
       {/* Row 3: From/to box + txn id box + explorer box */}
       <View style={styles.successDetailsContainer}>
-        <View style={styles.swapSummaryContainer}>
+        {/* <View style={styles.swapSummaryContainer}>
           <View style={styles.swapSummaryRow}>
             <Text style={styles.swapSummaryLabel}>From</Text>
             <View style={styles.swapSummaryAmountContainer}>
@@ -77,7 +77,7 @@ export default function SwapSuccessContent({
               </Text>
             </View>
           </View>
-        </View>
+        </View> */}
 
         {swapTxSignature && (
           <>

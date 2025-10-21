@@ -18,7 +18,6 @@ import { Search } from 'lucide-react-native';
 import { FlashList } from '@shopify/flash-list';
 import {
   BottomSheetModal,
-  BottomSheetView,
   BottomSheetBackdrop,
   useBottomSheetScrollableCreator,
 } from '@gorhom/bottom-sheet';
@@ -29,8 +28,10 @@ import { StorageService } from '@/utils/storage';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 
 interface CountryPickerBottomSheetProps {
+  countries?: Country[];
   onCountrySelect: (country: Country) => void;
   onClose: () => void;
+  showDialCode?: boolean;
 }
 
 export interface CountryPickerBottomSheetRef {
@@ -41,140 +42,150 @@ export interface CountryPickerBottomSheetRef {
 const CountryPickerBottomSheet = forwardRef<
   CountryPickerBottomSheetRef,
   CountryPickerBottomSheetProps
->(({ onCountrySelect, onClose }, ref) => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const bottomSheetRef = useRef<BottomSheetModal>(null);
+>(
+  (
+    { countries: countriesProp, onCountrySelect, onClose, showDialCode = true },
+    ref,
+  ) => {
+    const availableCountries = countriesProp || countries;
+    const [searchQuery, setSearchQuery] = useState('');
+    const bottomSheetRef = useRef<BottomSheetModal>(null);
 
-  // Calculate 90% of screen height
-  const screenHeight = Dimensions.get('window').height;
-  const snapPoints = useMemo(() => [screenHeight * 0.6], [screenHeight]);
+    // Calculate 90% of screen height
+    const screenHeight = Dimensions.get('window').height;
+    const snapPoints = useMemo(() => [screenHeight * 0.6], [screenHeight]);
 
-  // Load current country from storage
-  const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
+    // Load current country from storage
+    const [selectedCountry, setSelectedCountry] = useState<Country | null>(
+      null,
+    );
 
-  useImperativeHandle(ref, () => ({
-    present: () => bottomSheetRef.current?.present(),
-    dismiss: () => bottomSheetRef.current?.dismiss(),
-  }));
+    useImperativeHandle(ref, () => ({
+      present: () => bottomSheetRef.current?.present(),
+      dismiss: () => bottomSheetRef.current?.dismiss(),
+    }));
 
-  useEffect(() => {
-    const loadCurrentCountry = async () => {
+    useEffect(() => {
+      const loadCurrentCountry = async () => {
+        try {
+          const currentInfo = await StorageService.loadPersonalInfo();
+          if (currentInfo?.selectedCountry) {
+            const country = availableCountries.find(
+              (c) => c.code === currentInfo.selectedCountry.code,
+            );
+            if (country) {
+              setSelectedCountry(country);
+            }
+          }
+        } catch (error) {
+          console.error('Error loading current country:', error);
+        }
+      };
+
+      loadCurrentCountry();
+    }, [availableCountries]);
+
+    const filteredCountries = availableCountries.filter(
+      (country) =>
+        country.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        country.dialCode.includes(searchQuery),
+    );
+
+    const handleSelectCountry = async (country: Country) => {
+      // Save to storage
       try {
         const currentInfo = await StorageService.loadPersonalInfo();
-        if (currentInfo?.selectedCountry) {
-          const country = countries.find(
-            (c) => c.code === currentInfo.selectedCountry.code,
-          );
-          if (country) {
-            setSelectedCountry(country);
-          }
+        if (currentInfo) {
+          const updatedInfo = { ...currentInfo, selectedCountry: country };
+          await StorageService.savePersonalInfo(updatedInfo);
         }
       } catch (error) {
-        console.error('Error loading current country:', error);
+        console.error('Error saving country to storage:', error);
       }
+
+      // Close bottom sheet and call callback
+      bottomSheetRef.current?.dismiss();
+      setTimeout(() => {
+        onCountrySelect(country);
+      }, 200);
     };
 
-    loadCurrentCountry();
-  }, []);
+    const handleClose = () => {
+      bottomSheetRef.current?.dismiss();
+      setTimeout(() => {
+        onClose();
+      }, 200);
+    };
 
-  const filteredCountries = countries.filter(
-    (country) =>
-      country.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      country.dialCode.includes(searchQuery),
-  );
+    const renderCountryItem = ({ item }: { item: Country }) => (
+      <TouchableOpacity
+        style={[
+          styles.countryItem,
+          selectedCountry?.code === item.code && styles.selectedCountryItem,
+        ]}
+        onPress={() => handleSelectCountry(item)}
+      >
+        <Text style={styles.countryFlag}>{item.flag}</Text>
+        <Text style={styles.countryName}>{item.name}</Text>
+        {showDialCode && (
+          <Text style={styles.countryCode}>{item.dialCode}</Text>
+        )}
+      </TouchableOpacity>
+    );
 
-  const handleSelectCountry = async (country: Country) => {
-    // Save to storage
-    try {
-      const currentInfo = await StorageService.loadPersonalInfo();
-      if (currentInfo) {
-        const updatedInfo = { ...currentInfo, selectedCountry: country };
-        await StorageService.savePersonalInfo(updatedInfo);
-      }
-    } catch (error) {
-      console.error('Error saving country to storage:', error);
-    }
+    // Create scrollable component for FlashList
+    const BottomSheetFlashListScrollable = useBottomSheetScrollableCreator();
 
-    // Close bottom sheet and call callback
-    bottomSheetRef.current?.dismiss();
-    setTimeout(() => {
-      onCountrySelect(country);
-    }, 200);
-  };
-
-  const handleClose = () => {
-    bottomSheetRef.current?.dismiss();
-    setTimeout(() => {
-      onClose();
-    }, 200);
-  };
-
-  const renderCountryItem = ({ item }: { item: Country }) => (
-    <TouchableOpacity
-      style={[
-        styles.countryItem,
-        selectedCountry?.code === item.code && styles.selectedCountryItem,
-      ]}
-      onPress={() => handleSelectCountry(item)}
-    >
-      <Text style={styles.countryFlag}>{item.flag}</Text>
-      <Text style={styles.countryName}>{item.name}</Text>
-      <Text style={styles.countryCode}>{item.dialCode}</Text>
-    </TouchableOpacity>
-  );
-
-  // Create scrollable component for FlashList
-  const BottomSheetFlashListScrollable = useBottomSheetScrollableCreator();
-
-  return (
-    <BottomSheetModal
-      ref={bottomSheetRef}
-      snapPoints={['93%']}
-      enableDynamicSizing={false}
-      enablePanDownToClose={true}
-      backgroundStyle={styles.bottomSheetBackground}
-      handleIndicatorStyle={styles.bottomSheetHandle}
-      backdropComponent={(props) => (
-        <BottomSheetBackdrop
-          {...props}
-          appearsOnIndex={0}
-          disappearsOnIndex={-1}
-          opacity={0.4}
-        />
-      )}
-    >
-      <BottomSheetView style={styles.bottomSheetContent}>
-        <View style={styles.headerContainer}>
-          <SettingsHeader title="Select Country" onClose={handleClose} />
-        </View>
-
-        <View style={styles.searchContainer}>
-          <Search
-            size={scale(20)}
-            color={colors.textSecondary}
-            style={styles.searchIcon}
+    return (
+      <BottomSheetModal
+        ref={bottomSheetRef}
+        snapPoints={['93%']}
+        enableDynamicSizing={false}
+        enablePanDownToClose={true}
+        backgroundStyle={styles.bottomSheetBackground}
+        handleIndicatorStyle={styles.bottomSheetHandle}
+        backdropComponent={(props) => (
+          <BottomSheetBackdrop
+            {...props}
+            appearsOnIndex={0}
+            disappearsOnIndex={-1}
+            opacity={0.4}
           />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search by country name or dial code"
-            placeholderTextColor={colors.textSecondary}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
+        )}
+      >
+        <View style={styles.bottomSheetContent}>
+          <View style={styles.headerContainer}>
+            <SettingsHeader title="Select Country" onClose={handleClose} />
+          </View>
+
+          <View style={styles.searchContainer}>
+            <Search
+              size={scale(20)}
+              color={colors.textSecondary}
+              style={styles.searchIcon}
+            />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search by country name or dial code"
+              placeholderTextColor={colors.textSecondary}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+          </View>
+
+          <FlashList
+            data={filteredCountries}
+            keyExtractor={(country) => country.code}
+            renderItem={renderCountryItem}
+            contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={false}
+            renderScrollComponent={BottomSheetFlashListScrollable}
           />
         </View>
-
-        <FlashList
-          data={filteredCountries}
-          keyExtractor={(country) => country.code}
-          renderItem={renderCountryItem}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-          renderScrollComponent={BottomSheetFlashListScrollable}
-        />
-      </BottomSheetView>
-    </BottomSheetModal>
-  );
-});
+      </BottomSheetModal>
+    );
+  },
+);
 
 CountryPickerBottomSheet.displayName = 'CountryPickerBottomSheet';
 
@@ -212,9 +223,12 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Regular',
     color: colors.textPrimary,
   },
+  listContainer: {
+    flex: 1,
+  },
   listContent: {
     paddingHorizontal: scale(15),
-    paddingBottom: verticalScale(22),
+    paddingBottom: verticalScale(40),
   },
   countryItem: {
     flexDirection: 'row',

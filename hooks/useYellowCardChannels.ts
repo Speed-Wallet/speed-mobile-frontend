@@ -4,17 +4,16 @@
 
 import { useQuery } from '@tanstack/react-query';
 import {
-  getChannels,
+  getActiveChannels,
   getActiveDepositChannels,
-  getBestChannelForCountry,
   type YellowCardChannel,
 } from '@/services/yellowcardApi';
 import { CACHE_TIME, RETRY_CONFIG } from '@/constants/cache';
 
-export function useYellowCardChannels() {
+export function useActiveYellowCardChannels() {
   return useQuery({
-    queryKey: ['yellowcard', 'channels'],
-    queryFn: getChannels,
+    queryKey: ['yellowcard', 'channels', 'active'],
+    queryFn: getActiveChannels,
     staleTime: CACHE_TIME.YELLOWCARD_CHANNELS.STALE_TIME,
     gcTime: CACHE_TIME.YELLOWCARD_CHANNELS.GC_TIME,
     refetchInterval: CACHE_TIME.YELLOWCARD_CHANNELS.REFETCH_INTERVAL,
@@ -30,7 +29,7 @@ export function useCountryPaymentMethods(
   countryCode?: string,
   currency?: string,
 ) {
-  const { data, isLoading, error } = useYellowCardChannels();
+  const { data, isLoading, error } = useActiveYellowCardChannels();
 
   if (!data || !countryCode || !currency) {
     return {
@@ -61,10 +60,10 @@ export function useCountryPaymentMethods(
 }
 
 /**
- * Hook to get the best channel for a country
+ * Hook to get the first available channel for a country
  */
 export function useBestChannel(countryCode?: string, currency?: string) {
-  const { data, isLoading, error } = useYellowCardChannels();
+  const { data, isLoading, error } = useActiveYellowCardChannels();
 
   if (!data || !countryCode || !currency) {
     return {
@@ -74,14 +73,14 @@ export function useBestChannel(countryCode?: string, currency?: string) {
     };
   }
 
-  const channel = getBestChannelForCountry(
+  const activeChannels = getActiveDepositChannels(
     data.channels,
     countryCode,
     currency,
   );
 
   return {
-    channel,
+    channel: activeChannels.length > 0 ? activeChannels[0] : null,
     isLoading,
     error,
   };

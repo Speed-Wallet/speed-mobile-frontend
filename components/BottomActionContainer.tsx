@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: colors.backgroundDark,
-    padding: verticalScale(16),
+    padding: 16,
     // borderTopWidth: 0.5,
     // borderTopColor: colors.backgroundLight,
     // shadowColor: '#000',

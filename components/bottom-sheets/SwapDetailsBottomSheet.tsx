@@ -12,6 +12,7 @@ import { PreparedJupiterSwap } from '@/services/walletService';
 import SwapDetailsContent from './swap-details/SwapDetailsContent';
 import SwapSuccessContent from './swap-details/SwapSuccessContent';
 import SwapErrorContent from './swap-details/SwapErrorContent';
+import BottomSheetScreenContainer from '@/components/BottomSheetScreenContainer';
 
 export interface SwapDetailsBottomSheetRef {
   present: () => void;
@@ -95,7 +96,7 @@ const SwapDetailsBottomSheet = forwardRef<
         )}
         onDismiss={onDismiss}
       >
-        <BottomSheetView style={styles.bottomSheetContent}>
+        <BottomSheetScreenContainer>
           {/* Swap Details (Preparing/Confirming) */}
           {!swapComplete && fromToken && toToken && (
             <SwapDetailsContent
@@ -128,7 +129,7 @@ const SwapDetailsBottomSheet = forwardRef<
           {swapComplete && !swapSuccess && (
             <SwapErrorContent onClose={onClose} />
           )}
-        </BottomSheetView>
+        </BottomSheetScreenContainer>
       </BottomSheetModal>
     );
   },
@@ -149,6 +150,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: scale(20),
     paddingTop: verticalScale(20),
-    paddingBottom: 20,
+    // paddingBottom: 20,
   },
 });
