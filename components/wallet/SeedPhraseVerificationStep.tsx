@@ -356,6 +356,7 @@ const styles = StyleSheet.create({
   },
   backButton: {
     paddingVertical: verticalScale(12),
+    alignSelf: 'center',
   },
   backButtonText: {
     fontSize: moderateScale(16),

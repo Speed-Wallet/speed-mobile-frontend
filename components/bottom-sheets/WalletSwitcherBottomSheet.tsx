@@ -13,7 +13,6 @@ import {
   useBottomSheetScrollableCreator,
 } from '@gorhom/bottom-sheet';
 import SettingsHeader from '@/components/SettingsHeader';
-import BottomSheetScreenContainer from '@/components/BottomSheetScreenContainer';
 import colors from '@/constants/colors';
 import { scale } from 'react-native-size-matters';
 import { setStringAsync } from 'expo-clipboard';
@@ -31,6 +30,7 @@ import CreateWalletContent from './wallet-switcher/CreateWalletContent';
 import ImportWalletContent from './wallet-switcher/ImportWalletContent';
 import AddWalletOptions from './wallet-switcher/AddWalletOptions';
 import WalletNameInput from './wallet-switcher/WalletNameInput';
+import BottomSheetScreenContainer from '@/components/bottom-sheets/BottomSheetScreenContainer';
 
 interface WalletInfo {
   id: string;
@@ -318,7 +318,7 @@ WalletSwitcherBottomSheet.displayName = 'WalletSwitcherBottomSheet';
 
 const styles = StyleSheet.create({
   bottomSheetBackground: {
-    backgroundColor: colors.backgroundDark,
+    backgroundColor: colors.bottomSheetBackground,
   },
   handleIndicator: {
     backgroundColor: colors.textSecondary,
@@ -327,6 +327,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: scale(16),
     // paddingBottom: 24,
+    backgroundColor: colors.bottomSheetBackground,
   },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,

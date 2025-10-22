@@ -6,15 +6,7 @@ import React, {
   forwardRef,
   useImperativeHandle,
 } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  TextInput,
-  Dimensions,
-} from 'react-native';
-import { Search } from 'lucide-react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import {
   BottomSheetModal,
@@ -22,10 +14,13 @@ import {
   useBottomSheetScrollableCreator,
 } from '@gorhom/bottom-sheet';
 import SettingsHeader from '@/components/SettingsHeader';
+import SearchBar from '@/components/SearchBar';
 import colors from '@/constants/colors';
 import { countries, Country } from '@/constants/countries';
 import { StorageService } from '@/utils/storage';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
+import { useSharedValue, withTiming } from 'react-native-reanimated';
+import BottomActionContainer from '@/components/BottomActionContainer';
 
 interface CountryPickerBottomSheetProps {
   countries?: Country[];
@@ -50,10 +45,8 @@ const CountryPickerBottomSheet = forwardRef<
     const availableCountries = countriesProp || countries;
     const [searchQuery, setSearchQuery] = useState('');
     const bottomSheetRef = useRef<BottomSheetModal>(null);
-
-    // Calculate 90% of screen height
-    const screenHeight = Dimensions.get('window').height;
-    const snapPoints = useMemo(() => [screenHeight * 0.6], [screenHeight]);
+    const searchBarTranslateY = useSharedValue(0);
+    const lastScrollY = useRef(0);
 
     // Load current country from storage
     const [selectedCountry, setSelectedCountry] = useState<Country | null>(
@@ -133,6 +126,22 @@ const CountryPickerBottomSheet = forwardRef<
       </TouchableOpacity>
     );
 
+    const handleScroll = (event: any) => {
+      const currentOffset = event.nativeEvent.contentOffset.y;
+      const diff = currentOffset - lastScrollY.current;
+
+      // Hide search bar when scrolling down, show when scrolling up
+      if (diff > 5 && currentOffset > 20) {
+        // Scrolling down
+        searchBarTranslateY.value = withTiming(100, { duration: 200 });
+      } else if (diff < -5 || currentOffset <= 0) {
+        // Scrolling up or at top
+        searchBarTranslateY.value = withTiming(0, { duration: 200 });
+      }
+
+      lastScrollY.current = currentOffset;
+    };
+
     // Create scrollable component for FlashList
     const BottomSheetFlashListScrollable = useBottomSheetScrollableCreator();
 
@@ -153,25 +162,17 @@ const CountryPickerBottomSheet = forwardRef<
           />
         )}
       >
-        <View style={styles.bottomSheetContent}>
+        <View style={styles.container}>
+          {/* Fixed Header */}
           <View style={styles.headerContainer}>
-            <SettingsHeader title="Select Country" onClose={handleClose} />
+            <SettingsHeader
+              title="Select Country"
+              onClose={handleClose}
+              noPadding={true}
+            />
           </View>
 
-          <View style={styles.searchContainer}>
-            <Search
-              size={scale(20)}
-              color={colors.textSecondary}
-              style={styles.searchIcon}
-            />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search by country name or dial code"
-              placeholderTextColor={colors.textSecondary}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-            />
-          </View>
+          {/* Scrollable List */}
 
           <FlashList
             data={filteredCountries}
@@ -180,7 +181,22 @@ const CountryPickerBottomSheet = forwardRef<
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
             renderScrollComponent={BottomSheetFlashListScrollable}
+            onScroll={handleScroll}
+            scrollEventThrottle={16}
           />
+
+          {/* Search Bar - Using BottomActionContainer with keyboard avoidance */}
+          <BottomActionContainer
+            translateY={searchBarTranslateY}
+            avoidKeyboard={true}
+            edges={['bottom']}
+          >
+            <SearchBar
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              placeholder="Search by country name or dial code"
+            />
+          </BottomActionContainer>
         </View>
       </BottomSheetModal>
     );
@@ -191,44 +207,23 @@ CountryPickerBottomSheet.displayName = 'CountryPickerBottomSheet';
 
 const styles = StyleSheet.create({
   bottomSheetBackground: {
-    backgroundColor: colors.backgroundDark,
+    backgroundColor: colors.bottomSheetBackground,
   },
   bottomSheetHandle: {
     backgroundColor: colors.textSecondary,
   },
-  bottomSheetContent: {
+  container: {
     flex: 1,
-    backgroundColor: colors.backgroundDark,
+    backgroundColor: colors.bottomSheetBackground,
   },
   headerContainer: {
-    paddingHorizontal: scale(15),
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: scale(15),
-    paddingVertical: verticalScale(11),
-    borderColor: colors.backgroundMedium,
-    borderWidth: 1,
-    borderRadius: scale(11),
-    marginHorizontal: scale(15),
-    marginBottom: verticalScale(15),
-  },
-  searchIcon: {
-    marginRight: scale(7),
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: moderateScale(15),
-    fontFamily: 'Inter-Regular',
-    color: colors.textPrimary,
-  },
-  listContainer: {
-    flex: 1,
+    // backgroundColor: colors.backgroundDark,
+    paddingHorizontal: scale(16),
+    marginBottom: 6,
   },
   listContent: {
     paddingHorizontal: scale(15),
-    paddingBottom: verticalScale(40),
+    paddingBottom: verticalScale(100), // Extra padding for search bar at bottom
   },
   countryItem: {
     flexDirection: 'row',

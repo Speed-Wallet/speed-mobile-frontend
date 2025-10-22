@@ -12,6 +12,7 @@ import {
   ArrowUpDown,
   Filter,
   Search,
+  X,
 } from 'lucide-react-native';
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
@@ -95,7 +96,7 @@ export default function MarketFilterRow({
                   onSearchChange={onSearchChange}
                   placeholder="Search tokens..."
                   padding={scale(10)}
-                  showSearchIcon={false}
+                  // showSearchIcon={false}
                   autoFocus={true}
                 />
               </View>
@@ -103,7 +104,7 @@ export default function MarketFilterRow({
                 style={[styles.buttons, styles.searchButton]}
                 onPress={onToggleSearch}
               >
-                <Search size={scale(14)} color={colors.textSecondary} />
+                <X size={scale(16)} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
           ) : (
@@ -256,6 +257,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: scale(8),
+    paddingBottom: 12,
   },
   searchBarWrapper: {
     flex: 1,

@@ -217,17 +217,17 @@ TokenSelectorBottomSheet.displayName = 'TokenSelectorBottomSheet';
 
 const styles = StyleSheet.create({
   bottomSheetBackground: {
-    backgroundColor: colors.backgroundDark,
+    backgroundColor: colors.bottomSheetBackground,
   },
   bottomSheetHandle: {
     backgroundColor: colors.textSecondary,
   },
   container: {
     flex: 1,
-    backgroundColor: colors.backgroundDark,
+    backgroundColor: colors.bottomSheetBackground,
   },
   headerContainer: {
-    backgroundColor: colors.backgroundDark,
+    backgroundColor: colors.bottomSheetBackground,
     paddingHorizontal: scale(16),
     marginBottom: 6,
   },

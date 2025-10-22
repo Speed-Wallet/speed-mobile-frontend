@@ -1,12 +1,12 @@
 import React from 'react';
-import { View, StyleSheet, ViewStyle } from 'react-native';
+import { View, StyleSheet, StyleProp, ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import colors from '@/constants/colors';
 import UnsafeScreenContainer from './UnsafeScreenContainer';
 
 interface ScreenContainerProps {
   children: React.ReactNode;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   edges?: ('top' | 'bottom' | 'left' | 'right')[];
   backgroundColor?: string;
 }

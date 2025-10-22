@@ -27,7 +27,7 @@
         <category android:name="android.intent.category.DEFAULT"/>
         <category android:name="android.intent.category.BROWSABLE"/>
         <data android:scheme="speedwallet"/>
-        <data android:scheme="co.za.speedwallet.app"/>
+        <data android:scheme="com.alexthelion123.boltexponativewind"/>
       </intent-filter>
     </activity>
   </application>

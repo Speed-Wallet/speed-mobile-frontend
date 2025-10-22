@@ -36,7 +36,7 @@
       }
     },
     "android": {
-      "package": "co.za.speedwallet.app",
+      "package": "com.alexthelion123.boltexponativewind",
       "icon": "./assets/images/icons/speed-wallet-icon-1024.png",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icons/speed-wallet-adaptive-foreground.png",

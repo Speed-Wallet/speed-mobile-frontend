@@ -12,7 +12,7 @@ import { PreparedJupiterSwap } from '@/services/walletService';
 import SwapDetailsContent from './swap-details/SwapDetailsContent';
 import SwapSuccessContent from './swap-details/SwapSuccessContent';
 import SwapErrorContent from './swap-details/SwapErrorContent';
-import BottomSheetScreenContainer from '@/components/BottomSheetScreenContainer';
+import BottomSheetScreenContainer from '@/components/bottom-sheets/BottomSheetScreenContainer';
 
 export interface SwapDetailsBottomSheetRef {
   present: () => void;

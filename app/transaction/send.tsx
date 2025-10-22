@@ -332,7 +332,7 @@ export default function SendScreen() {
         </KeyboardAvoidingView>
 
         {/* Send Button */}
-        <BottomActionContainer avoidKeyboard={true}>
+        <BottomActionContainer avoidKeyboard={true} edges={['bottom']}>
           <PrimaryActionButton
             title={
               hasInsufficientBalance
