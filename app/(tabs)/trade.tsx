@@ -17,6 +17,7 @@ import {
   formatCurrency,
   unformatAmountInput,
   formatAmountInput,
+  formatBalance,
 } from '@/utils/formatters';
 import { TokenMetadata } from '@/services/tokenAssetService';
 import {
@@ -113,6 +114,7 @@ export default function TradeScreen() {
 
   const { price: fromTokenPrice } = useTokenPrice(fromToken?.address);
   const { balance: fromTokenBalance } = useTokenAsset(fromToken?.address);
+  const { balance: toTokenBalance } = useTokenAsset(toToken?.address);
 
   // Check if output token ATA exists (needed for swap)
   const { ataExists: outputTokenAtaExists } = useTokenAsset(toToken?.address);
@@ -132,6 +134,7 @@ export default function TradeScreen() {
   const [swapComplete, setSwapComplete] = useState(false);
   const [swapSuccess, setSwapSuccess] = useState(false);
   const [swapTxSignature, setSwapTxSignature] = useState<string>('');
+  const [swapErrorMessage, setSwapErrorMessage] = useState<string>('');
   const [wasSheetDismissedDuringSwap, setWasSheetDismissedDuringSwap] =
     useState(false);
 
@@ -166,7 +169,7 @@ export default function TradeScreen() {
     const amountEntered = parseFloat(unformatAmountInput(fromAmount));
     if (isNaN(amountEntered) || amountEntered === 0) return;
 
-    const amount = amountEntered * 10 ** fromToken!.decimals;
+    const amount = Math.round(amountEntered * 10 ** fromToken!.decimals);
     const calculatedPlatformFee = Math.round(amount * swapFeeRate);
     setPlatformFee(calculatedPlatformFee);
     const inAmount = amount - calculatedPlatformFee;
@@ -360,6 +363,7 @@ export default function TradeScreen() {
     setSwapComplete(false);
     setSwapSuccess(false);
     setSwapTxSignature('');
+    setSwapErrorMessage('');
     setIsSwapping(false);
     setIsConfirmingSwap(false);
 
@@ -431,9 +435,31 @@ export default function TradeScreen() {
       setSwapComplete(true);
       setSwapSuccess(false);
 
+      // Determine error message based on error type
+      const isBlockhashExpired =
+        err.isBlockhashExpired ||
+        err.message?.includes('expired') ||
+        err.message?.includes('Blockhash not found') ||
+        err.message?.includes('block height exceeded') ||
+        err.details?.includes('block height exceeded');
+
+      const isInsufficientBalance =
+        err.isInsufficientBalance ||
+        err.message?.includes('insufficient lamports') ||
+        err.message?.includes('insufficient funds') ||
+        err.details?.includes('insufficient lamports');
+
+      const errorMessage = isInsufficientBalance
+        ? 'Insufficient balance. Please reduce the amount.'
+        : isBlockhashExpired
+          ? 'Transaction took too long to confirm. Please try again.'
+          : 'Swap failed. Please try again.';
+
+      setSwapErrorMessage(errorMessage);
+
       // Only show error toast if sheet was dismissed during swap
       if (wasSheetDismissedDuringSwap) {
-        showToast('Swap failed. Please try again.', 'error');
+        showToast(errorMessage, 'error');
         setWasSheetDismissedDuringSwap(false);
       }
     }
@@ -482,7 +508,7 @@ export default function TradeScreen() {
       return amount > maxAllowable;
     }
 
-    // For other tokens, just check if amount exceeds balance
+    // For other tokens, check if amount exceeds balance
     return amount > fromTokenBalance;
   }, [fromAmount, fromToken, fromTokenBalance, getMaxSolAmount]);
 
@@ -558,6 +584,7 @@ export default function TradeScreen() {
       setSwapComplete(false);
       setSwapSuccess(false);
       setSwapTxSignature('');
+      setSwapErrorMessage('');
       setIsConfirmingSwap(false);
       setPreparedSwap(null);
     }, 300);
@@ -726,21 +753,30 @@ export default function TradeScreen() {
                   onPress={() => fromTokenSelectorRef.current?.present()}
                   activeOpacity={0.7}
                 >
-                  <View style={styles.tokenColumnLeft}>
-                    <Text style={styles.tokenLabel}>From</Text>
-                    {fromToken ? (
-                      <View style={styles.tokenDisplayVertical}>
-                        <TokenLogo
-                          logoURI={fromToken.logoURI}
-                          size={moderateScale(20, 0.3)}
-                        />
-                        <Text style={styles.tokenSymbolSmall}>
-                          {fromToken.symbol}
-                        </Text>
+                  <View style={styles.tokenSelectorRow}>
+                    <View style={styles.tokenColumnLeft}>
+                      <View style={[styles.labelRow, styles.labelRowLeft]}>
+                        <Text style={styles.tokenLabel}>From</Text>
+                        {fromToken && fromTokenBalance !== undefined && (
+                          <Text style={styles.tokenBalanceText}>
+                            {formatBalance(fromTokenBalance)}
+                          </Text>
+                        )}
                       </View>
-                    ) : (
-                      <Text style={styles.tokenPlaceholderSmall}>Select</Text>
-                    )}
+                      {fromToken ? (
+                        <View style={styles.tokenDisplayVertical}>
+                          <TokenLogo
+                            logoURI={fromToken.logoURI}
+                            size={moderateScale(20, 0.3)}
+                          />
+                          <Text style={styles.tokenSymbolSmall}>
+                            {fromToken.symbol}
+                          </Text>
+                        </View>
+                      ) : (
+                        <Text style={styles.tokenPlaceholderSmall}>Select</Text>
+                      )}
+                    </View>
                   </View>
                 </TouchableOpacity>
 
@@ -751,21 +787,30 @@ export default function TradeScreen() {
                   onPress={() => toTokenSelectorRef.current?.present()}
                   activeOpacity={0.7}
                 >
-                  <View style={styles.tokenColumnRight}>
-                    <Text style={styles.tokenLabelRight}>To</Text>
-                    {toToken ? (
-                      <View style={styles.tokenDisplayVertical}>
-                        <TokenLogo
-                          logoURI={toToken.logoURI}
-                          size={moderateScale(20, 0.3)}
-                        />
-                        <Text style={styles.tokenSymbolSmall}>
-                          {toToken.symbol}
-                        </Text>
+                  <View style={styles.tokenSelectorRow}>
+                    <View style={styles.tokenColumnRight}>
+                      <View style={[styles.labelRow, styles.labelRowRight]}>
+                        {toToken && toTokenBalance !== undefined && (
+                          <Text style={styles.tokenBalanceText}>
+                            {formatBalance(toTokenBalance)}
+                          </Text>
+                        )}
+                        <Text style={styles.tokenLabelRight}>To</Text>
                       </View>
-                    ) : (
-                      <Text style={styles.tokenPlaceholderSmall}>Select</Text>
-                    )}
+                      {toToken ? (
+                        <View style={styles.tokenDisplayVertical}>
+                          <TokenLogo
+                            logoURI={toToken.logoURI}
+                            size={moderateScale(20, 0.3)}
+                          />
+                          <Text style={styles.tokenSymbolSmall}>
+                            {toToken.symbol}
+                          </Text>
+                        </View>
+                      ) : (
+                        <Text style={styles.tokenPlaceholderSmall}>Select</Text>
+                      )}
+                    </View>
                   </View>
                 </TouchableOpacity>
 
@@ -813,6 +858,7 @@ export default function TradeScreen() {
               swapComplete={swapComplete}
               swapSuccess={swapSuccess}
               swapTxSignature={swapTxSignature}
+              swapErrorMessage={swapErrorMessage}
               onConfirmSwap={handleConfirmSwap}
               onClose={handleCloseSheet}
               onDismiss={() => {
@@ -920,11 +966,36 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingLeft: scale(4),
   },
+  tokenSelectorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    // gap: scale(8),
+  },
+  labelRowLeft: {
+    paddingRight: 10,
+  },
+  labelRowRight: {
+    paddingLeft: 10,
+  },
+  tokenBalanceText: {
+    fontSize: moderateScale(11),
+    fontFamily: 'Inter-Medium',
+    color: colors.textSecondary,
+  },
   tokenColumnLeft: {
     flexDirection: 'column',
     alignItems: 'flex-start',
     gap: scale(4),
     padding: 12,
+    flex: 1,
   },
   tokenColumnRight: {
     flexDirection: 'column',

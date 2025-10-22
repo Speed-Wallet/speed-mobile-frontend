@@ -21,7 +21,7 @@ export default function BottomSheetScreenContainer({
       edges={edges}
       style={{
         backgroundColor: colors.bottomSheetBackground,
-        paddingBottom: verticalScale(20),
+        paddingBottom: verticalScale(16),
         ...style,
       }}
     >

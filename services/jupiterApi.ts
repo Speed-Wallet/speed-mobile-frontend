@@ -57,10 +57,13 @@ export const getJupiterQuote = async (
   toMint: string,
   amount: number,
 ): Promise<JupiterQuoteResponse> => {
+  // Ensure amount is an integer to avoid floating point issues
+  const amountInt = Math.round(amount);
+
   const quoteQueries = [
     `inputMint=${fromMint}`,
     `outputMint=${toMint}`,
-    `amount=${amount}`,
+    `amount=${amountInt}`,
     'restrictIntermediateTokens=true',
     'dynamicSlippage=true',
   ];
@@ -146,9 +149,19 @@ export const submitSignedTransaction = async (
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(
+
+    // Create a more descriptive error with the backend error details
+    const error: any = new Error(
       errorData.error || `Failed to submit transaction: ${response.statusText}`,
     );
+
+    // Attach error metadata for better error handling
+    error.details = errorData.details;
+    error.errorType = errorData.errorType;
+    error.isBlockhashExpired = errorData.isBlockhashExpired;
+    error.isInsufficientBalance = errorData.isInsufficientBalance;
+
+    throw error;
   }
 
   return response.json();

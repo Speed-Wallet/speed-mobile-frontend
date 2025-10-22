@@ -53,6 +53,22 @@ export const CACHE_TIME = {
 } as const;
 
 // ============================================================
+// TRANSACTION CONFIGURATION
+// ============================================================
+
+/**
+ * Transaction-related timeouts and limits
+ */
+export const TRANSACTION = {
+  /**
+   * Maximum age of a prepared transaction before it's considered stale
+   * Solana blockhashes are valid for ~60-90 seconds
+   * Set to 60 seconds to be safe and avoid expired blockhash errors
+   */
+  MAX_AGE_SECONDS: 60,
+} as const;
+
+// ============================================================
 // RETRY CONFIGURATION
 // ============================================================
 

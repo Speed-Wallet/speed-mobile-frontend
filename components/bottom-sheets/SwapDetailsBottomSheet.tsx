@@ -39,6 +39,7 @@ interface SwapDetailsBottomSheetProps {
   swapComplete: boolean;
   swapSuccess: boolean;
   swapTxSignature: string;
+  swapErrorMessage: string;
 
   // Callbacks
   onConfirmSwap: () => void;
@@ -66,6 +67,7 @@ const SwapDetailsBottomSheet = forwardRef<
       swapComplete,
       swapSuccess,
       swapTxSignature,
+      swapErrorMessage,
       onConfirmSwap,
       onClose,
       onDismiss,
@@ -96,40 +98,45 @@ const SwapDetailsBottomSheet = forwardRef<
         )}
         onDismiss={onDismiss}
       >
-        <BottomSheetScreenContainer>
-          {/* Swap Details (Preparing/Confirming) */}
-          {!swapComplete && fromToken && toToken && (
-            <SwapDetailsContent
-              fromToken={fromToken}
-              toToken={toToken}
-              quote={quote}
-              exchangeRate={exchangeRate}
-              totalValueDisplay={totalValueDisplay}
-              preparedSwap={preparedSwap}
-              isPreparingSwap={isPreparingSwap}
-              isSwapping={isSwapping}
-              onConfirmSwap={onConfirmSwap}
-            />
-          )}
+        <BottomSheetView style={{ paddingHorizontal: scale(20) }}>
+          <BottomSheetScreenContainer>
+            {/* Swap Details (Preparing/Confirming) */}
+            {!swapComplete && fromToken && toToken && (
+              <SwapDetailsContent
+                fromToken={fromToken}
+                toToken={toToken}
+                quote={quote}
+                exchangeRate={exchangeRate}
+                totalValueDisplay={totalValueDisplay}
+                preparedSwap={preparedSwap}
+                isPreparingSwap={isPreparingSwap}
+                isSwapping={isSwapping}
+                onConfirmSwap={onConfirmSwap}
+              />
+            )}
 
-          {/* Success State */}
-          {swapComplete && swapSuccess && fromToken && toToken && (
-            <SwapSuccessContent
-              fromToken={fromToken}
-              toToken={toToken}
-              fromAmount={fromAmount}
-              toAmount={toAmount}
-              fromTokenPrice={fromTokenPrice}
-              swapTxSignature={swapTxSignature}
-              onClose={onClose}
-            />
-          )}
+            {/* Success State */}
+            {swapComplete && swapSuccess && fromToken && toToken && (
+              <SwapSuccessContent
+                fromToken={fromToken}
+                toToken={toToken}
+                fromAmount={fromAmount}
+                toAmount={toAmount}
+                fromTokenPrice={fromTokenPrice}
+                swapTxSignature={swapTxSignature}
+                onClose={onClose}
+              />
+            )}
 
-          {/* Error State */}
-          {swapComplete && !swapSuccess && (
-            <SwapErrorContent onClose={onClose} />
-          )}
-        </BottomSheetScreenContainer>
+            {/* Error State */}
+            {swapComplete && !swapSuccess && (
+              <SwapErrorContent
+                onClose={onClose}
+                errorMessage={swapErrorMessage}
+              />
+            )}
+          </BottomSheetScreenContainer>
+        </BottomSheetView>
       </BottomSheetModal>
     );
   },

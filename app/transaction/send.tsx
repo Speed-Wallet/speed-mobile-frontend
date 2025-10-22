@@ -279,12 +279,12 @@ export default function SendScreen() {
                 <View style={styles.section}>
                   <View style={styles.labelRow}>
                     <Text style={styles.inputLabel}>Amount</Text>
-                    <Text style={styles.balanceLabel}>
+                    {/* <Text style={styles.balanceLabel}>
                       Max:{' '}
                       {tokenAsset.loading
                         ? '...'
                         : formatBalance(tokenAsset.balance)}
-                    </Text>
+                    </Text> */}
                   </View>
                   <AmountInputWithValue
                     address={selectedToken.address}

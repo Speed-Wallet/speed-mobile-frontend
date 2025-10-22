@@ -41,6 +41,7 @@ import {
   getTempAppPin,
   setTempAppPin,
 } from './walletUtils';
+import { TRANSACTION } from '@/constants/cache';
 
 export const CONNECTION = new Connection(
   `https://mainnet.helius-rpc.com/?api-key=${process.env.EXPO_PUBLIC_HELIUS_API_KEY}`,
@@ -656,6 +657,7 @@ export interface PreparedJupiterSwap {
   blockhash: string;
   lastValidBlockHeight: number;
   userPublicKey: string;
+  preparedAt: number; // Timestamp when transaction was prepared (ms)
 }
 
 /**
@@ -698,6 +700,7 @@ export const prepareJupiterSwapTransaction = async (
       blockhash,
       lastValidBlockHeight,
       userPublicKey: WALLET.publicKey.toBase58(),
+      preparedAt: Date.now(), // Track when transaction was prepared
     };
   } catch (error) {
     console.error('Jupiter swap preparation error:', error);
@@ -713,6 +716,19 @@ export const confirmJupiterSwap = async (
   preparedSwap: PreparedJupiterSwap,
 ): Promise<string> => {
   try {
+    // Check if transaction is getting stale
+    const ageSeconds = (Date.now() - preparedSwap.preparedAt) / 1000;
+    console.log(`Transaction age: ${ageSeconds.toFixed(1)}s`);
+
+    if (ageSeconds > TRANSACTION.MAX_AGE_SECONDS) {
+      console.warn(
+        'Transaction is getting stale, may fail due to expired blockhash',
+      );
+      throw new Error(
+        'Transaction has expired. Please try again with a fresh quote.',
+      );
+    }
+
     // Submit the signed transaction to the backend
     const { signature } = await submitSignedTransaction(
       preparedSwap.signedTransaction,
