@@ -176,7 +176,11 @@ export default function TokenDetailScreen() {
   if (isLoadingToken && !tokenData) {
     return (
       <ScreenContainer edges={['top', 'bottom']}>
-        <ScreenHeader title="Loading..." onBack={() => router.back()} />
+        <ScreenHeader
+          title="Loading..."
+          onBack={() => router.back()}
+          showBackButton={false}
+        />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#6366f1" />
           <Text style={styles.loadingText}>Loading token data...</Text>
@@ -318,8 +322,8 @@ export default function TokenDetailScreen() {
 
   const statsData = [
     {
-      label: 'Token Name',
-      value: tokenData.name || name || 'N/A',
+      label: 'Token Symbol',
+      value: tokenData.symbol || symbol || 'N/A',
     },
     {
       label: 'Market Cap',
@@ -381,7 +385,7 @@ export default function TokenDetailScreen() {
           <View style={styles.headerTitleContainer}>
             <TokenLogo logoURI={tokenData.icon} size={scale(24)} />
             <Text style={styles.headerTitle}>
-              {tokenData.symbol || symbol || ''}
+              {tokenData.name || name || ''}
             </Text>
           </View>
         }
@@ -391,7 +395,7 @@ export default function TokenDetailScreen() {
         //     <Star size={scale(20)} color="#fff" />
         //   </TouchableOpacity>
         // }
-        // showBackButton={true}
+        showBackButton={false}
       />
 
       <ScrollView
@@ -691,7 +695,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   price: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: '700',
     color: '#fff',
   },

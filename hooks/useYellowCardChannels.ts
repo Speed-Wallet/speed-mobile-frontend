@@ -58,30 +58,3 @@ export function useCountryPaymentMethods(
     error,
   };
 }
-
-/**
- * Hook to get the first available channel for a country
- */
-export function useBestChannel(countryCode?: string, currency?: string) {
-  const { data, isLoading, error } = useActiveYellowCardChannels();
-
-  if (!data || !countryCode || !currency) {
-    return {
-      channel: null,
-      isLoading,
-      error,
-    };
-  }
-
-  const activeChannels = getActiveDepositChannels(
-    data.channels,
-    countryCode,
-    currency,
-  );
-
-  return {
-    channel: activeChannels.length > 0 ? activeChannels[0] : null,
-    isLoading,
-    error,
-  };
-}

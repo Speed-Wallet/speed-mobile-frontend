@@ -33,8 +33,7 @@ import PrimaryActionButton from '@/components/buttons/PrimaryActionButton';
 import PercentageButtons from '@/components/buttons/PercentageButtons';
 import { useTokenPrice } from '@/hooks/useTokenPrices';
 import { triggerShake } from '@/utils/animations';
-import { useTokenAsset } from '@/hooks/useTokenAsset';
-import { useRefetchTokenAssets } from '@/hooks/useTokenAsset';
+import { useTokenAsset, useRefetchTokenAssets } from '@/hooks/useTokenAsset';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   WSOL_TOKEN,
@@ -119,6 +118,7 @@ export default function TradeScreen() {
   // Check if output token ATA exists (needed for swap)
   const { ataExists: outputTokenAtaExists } = useTokenAsset(toToken?.address);
 
+  // Force immediate refetch of all token balances
   const refetchTokenBalances = useRefetchTokenAssets();
 
   // Get config values - this is critical data that must be loaded
@@ -205,8 +205,10 @@ export default function TradeScreen() {
       }
 
       setQuote(newQuote);
+      console.log('quote: ', newQuote);
 
       const outAmount = parseFloat(newQuote.outAmount);
+
       console.log(
         `Quote received: ${newQuote.inAmount} -> ${newQuote.outAmount} (${newQuote.slippageBps})`,
       );
@@ -404,9 +406,6 @@ export default function TradeScreen() {
       const sig = await confirmJupiterSwap(preparedSwap);
       console.log(`Trade Successful: ${sig}`);
 
-      // Refetch token balances after successful trade
-      refetchTokenBalances();
-
       // Update loading states - success handled by bottom sheet or toast
       setSwapSuccess(true);
       setSwapTxSignature(sig);
@@ -462,6 +461,9 @@ export default function TradeScreen() {
         showToast(errorMessage, 'error');
         setWasSheetDismissedDuringSwap(false);
       }
+    } finally {
+      // Always refetch token balances after trade attempt (success or failure)
+      refetchTokenBalances();
     }
   };
 

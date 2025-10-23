@@ -94,6 +94,7 @@ export const prepareJupiterSwap = async (
     throw new Error('No authentication token available');
   }
 
+  console.log('input mint being sent to backend: ', quoteResponse.inputMint);
   const response = await fetch(`${BASE_BACKEND_URL}/api/swap/jupiter`, {
     method: 'POST',
     headers: {
@@ -106,7 +107,8 @@ export const prepareJupiterSwap = async (
       userPublicKey,
     }),
   });
-
+  const json = await response.json();
+  console.log('json response: ', json);
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     throw new Error(
@@ -115,7 +117,7 @@ export const prepareJupiterSwap = async (
     );
   }
 
-  return response.json();
+  return json;
 };
 
 /**

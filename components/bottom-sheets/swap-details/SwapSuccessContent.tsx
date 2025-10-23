@@ -1,5 +1,11 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Linking,
+} from 'react-native';
 import { Check, ExternalLink } from 'lucide-react-native';
 import colors from '@/constants/colors';
 import CopyButton from '@/components/CopyButton';
@@ -26,6 +32,11 @@ export default function SwapSuccessContent({
   swapTxSignature,
   onClose,
 }: SwapSuccessContentProps) {
+  const openExplorer = () => {
+    const url = `https://solscan.io/tx/${swapTxSignature}`;
+    Linking.openURL(url);
+  };
+
   return (
     <View style={styles.stateContainer}>
       {/* Row 1: Check mark */}
@@ -92,7 +103,10 @@ export default function SwapSuccessContent({
               <CopyButton textToCopy={swapTxSignature} size={20} />
             </View>
 
-            <TouchableOpacity style={styles.explorerContainer}>
+            <TouchableOpacity
+              style={styles.explorerContainer}
+              onPress={openExplorer}
+            >
               <View>
                 <Text style={styles.explorerLabel}>Explorer</Text>
                 <Text style={styles.explorerSubtext}>

@@ -27,12 +27,13 @@ const useAppIsActive = () => {
 /**
  * Main hook for fetching all token assets (balances + prices + metadata)
  * Automatically polls every 30 seconds when app is active
+ * Exposes refetch for manual refresh after transactions
  */
 export const useTokenAssets = (walletAddress: string | null | undefined) => {
   const appIsActive = useAppIsActive();
 
   return useQuery({
-    queryKey: ['tokenBalances', walletAddress],
+    queryKey: ['tokenAssets', walletAddress],
     queryFn: async () => {
       if (!walletAddress) {
         throw new Error('Wallet address is required');
@@ -60,10 +61,11 @@ export const useTokenAssets = (walletAddress: string | null | undefined) => {
 /**
  * Hook to get a specific token asset (balance + price + metadata)
  * Automatically gets the current wallet address and polls every 30 seconds when app is active
+ * Note: Does not expose refetch - use useRefetchTokenAssets() instead for global refetch
  */
 export const useTokenAsset = (tokenAddress: string | null | undefined) => {
   const walletAddress = useWalletPublicKey();
-  const { data, isLoading, error, refetch } = useTokenAssets(walletAddress);
+  const { data, isLoading, error } = useTokenAssets(walletAddress);
 
   const tokenBalance = data?.tokenAssets?.find(
     (token: TokenAsset) => token.address === tokenAddress,
@@ -85,23 +87,15 @@ export const useTokenAsset = (tokenAddress: string | null | undefined) => {
     ataExists,
     loading: isLoading,
     error: error?.message || null,
-    refetch,
   };
 };
 
 /**
- * Hook to manually trigger refetch after transactions
- * Automatically uses the current wallet address
+ * Hook to get refetch function for all token assets
+ * Use this after transactions to immediately refresh balances
  */
 export const useRefetchTokenAssets = () => {
-  const queryClient = useQueryClient();
   const walletAddress = useWalletPublicKey();
-
-  return () => {
-    if (walletAddress) {
-      queryClient.invalidateQueries({
-        queryKey: ['tokenBalances', walletAddress],
-      });
-    }
-  };
+  const { refetch } = useTokenAssets(walletAddress);
+  return refetch;
 };
