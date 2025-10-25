@@ -1231,3 +1231,250 @@ export const getMasterWalletPublicKey = async (): Promise<string> => {
     throw error;
   }
 };
+
+/**
+ * Change the app-level PIN
+ * This re-encrypts all wallets and the master mnemonic with the new PIN
+ */
+export const changeAppPin = async (
+  oldPin: string,
+  newPin: string,
+): Promise<void> => {
+  try {
+    // First verify the old PIN
+    if (!(await verifyAppPin(oldPin))) {
+      throw new Error('Current PIN is incorrect');
+    }
+
+    // Get existing app crypto settings - DO NOT generate new ones
+    const appCrypto = await getAppCrypto();
+    if (!appCrypto) {
+      throw new Error('App crypto settings not found');
+    }
+
+    // Get all wallets
+    const wallets = await getAllStoredWallets();
+
+    // Re-encrypt all wallets with the new PIN using the SAME salt and IV
+    const updatedWallets = wallets.map((wallet) => {
+      // Decrypt with old PIN
+      const mnemonic = decryptMnemonic(
+        wallet.encryptedMnemonic,
+        oldPin,
+        appCrypto.salt,
+        appCrypto.iv,
+      );
+
+      if (!mnemonic) {
+        throw new Error(`Failed to decrypt wallet ${wallet.id}`);
+      }
+
+      // Re-encrypt with new PIN using SAME salt and IV
+      const newEncryption = encryptMnemonic(
+        mnemonic,
+        newPin,
+        appCrypto.salt, // Use existing salt
+        appCrypto.iv, // Use existing IV
+      );
+
+      return {
+        ...wallet,
+        encryptedMnemonic: newEncryption.encryptedMnemonic,
+      };
+    });
+
+    // Update PIN hash only (keep same salt)
+    const pinHash = CryptoJS.SHA256(newPin + appCrypto.salt).toString();
+    SecureMMKVStorage.setItem(APP_PIN_KEY, pinHash);
+
+    // Save updated wallets
+    SecureMMKVStorage.setItem(WALLETS_LIST_KEY, JSON.stringify(updatedWallets));
+
+    // Update master mnemonic if it exists
+    const encryptedMasterMnemonic =
+      SecureMMKVStorage.getItem(MASTER_MNEMONIC_KEY);
+    if (encryptedMasterMnemonic) {
+      const masterMnemonic = decryptMnemonic(
+        encryptedMasterMnemonic,
+        oldPin,
+        appCrypto.salt,
+        appCrypto.iv,
+      );
+
+      if (masterMnemonic) {
+        const newMasterEncryption = encryptMnemonic(
+          masterMnemonic,
+          newPin,
+          appCrypto.salt,
+          appCrypto.iv,
+        );
+        SecureMMKVStorage.setItem(
+          MASTER_MNEMONIC_KEY,
+          newMasterEncryption.encryptedMnemonic,
+        );
+      }
+    }
+
+    // Update temp PIN in memory
+    setTempAppPin(newPin);
+
+    console.log('App PIN changed successfully');
+  } catch (error) {
+    console.error('Failed to change app PIN:', error);
+    throw error;
+  }
+};
+
+/**
+ * Validate if a seed phrase matches an existing wallet
+ * This should be called before prompting the user to set a new PIN
+ */
+export const validateSeedPhraseForRecovery = async (
+  seedPhrase: string,
+): Promise<{ isValid: boolean; error?: string }> => {
+  try {
+    // Validate the seed phrase format
+    if (!(await validateMnemonic(seedPhrase))) {
+      return { isValid: false, error: 'Invalid seed phrase format' };
+    }
+
+    // Get existing wallets
+    const existingWallets = await getAllStoredWallets();
+
+    if (existingWallets.length === 0) {
+      return { isValid: false, error: 'No existing wallet data found' };
+    }
+
+    // Derive the keypair from the seed phrase
+    const keypair = await createKeypairFromMnemonic(seedPhrase, 0);
+    const publicKey = keypair.publicKey.toString();
+
+    // Check if this seed phrase matches any existing wallet
+    const matchingWallet = existingWallets.find(
+      (wallet) => wallet.publicKey === publicKey,
+    );
+
+    if (!matchingWallet) {
+      return {
+        isValid: false,
+        error:
+          'This seed phrase does not match any wallet in this app. Please use the correct seed phrase.',
+      };
+    }
+
+    return { isValid: true };
+  } catch (error) {
+    console.error('Failed to validate seed phrase for recovery:', error);
+    return {
+      isValid: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : 'Failed to validate seed phrase',
+    };
+  }
+};
+
+/**
+ * Recover wallet access using seed phrase and set a new PIN
+ * This is used when the user has forgotten their PIN but has their seed phrase
+ */
+export const recoverWalletWithSeedPhrase = async (
+  seedPhrase: string,
+  newPin: string,
+): Promise<boolean> => {
+  try {
+    // Validate the seed phrase
+    if (!(await validateMnemonic(seedPhrase))) {
+      throw new Error('Invalid seed phrase');
+    }
+
+    // Get existing app crypto and wallets
+    const appCrypto = await getAppCrypto();
+    const existingWallets = await getAllStoredWallets();
+
+    if (!appCrypto || existingWallets.length === 0) {
+      throw new Error('No existing wallet data found');
+    }
+
+    // Derive the keypair from the seed phrase
+    const keypair = await createKeypairFromMnemonic(seedPhrase, 0);
+    const publicKey = keypair.publicKey.toString();
+
+    // Check if this seed phrase matches any existing wallet
+    const matchingWallet = existingWallets.find(
+      (wallet) => wallet.publicKey === publicKey,
+    );
+
+    if (!matchingWallet) {
+      throw new Error(
+        'This seed phrase does not match any wallet in this app. Please use the correct seed phrase.',
+      );
+    }
+
+    // Re-encrypt all wallets with the new PIN using SAME salt and IV
+    const updatedWallets = existingWallets.map((wallet) => {
+      let mnemonic: string;
+
+      if (wallet.publicKey === publicKey) {
+        // Use the provided seed phrase for the matching wallet
+        mnemonic = seedPhrase;
+      } else {
+        // For other wallets, we can't decrypt them without the old PIN
+        // So we'll keep them as-is - user will need to recover each wallet separately
+        // or we can throw an error
+        throw new Error(
+          'Cannot recover all wallets. Please contact support or restore each wallet individually.',
+        );
+      }
+
+      // Re-encrypt with new PIN
+      const newEncryption = encryptMnemonic(
+        mnemonic,
+        newPin,
+        appCrypto.salt,
+        appCrypto.iv,
+      );
+
+      return {
+        ...wallet,
+        encryptedMnemonic: newEncryption.encryptedMnemonic,
+      };
+    });
+
+    // Update PIN hash with new PIN (keep same salt)
+    const pinHash = CryptoJS.SHA256(newPin + appCrypto.salt).toString();
+    SecureMMKVStorage.setItem(APP_PIN_KEY, pinHash);
+
+    // Save updated wallets
+    SecureMMKVStorage.setItem(WALLETS_LIST_KEY, JSON.stringify(updatedWallets));
+
+    // Update master mnemonic if the recovered wallet is the master
+    if (matchingWallet.isMasterWallet) {
+      const newMasterEncryption = encryptMnemonic(
+        seedPhrase,
+        newPin,
+        appCrypto.salt,
+        appCrypto.iv,
+      );
+      SecureMMKVStorage.setItem(
+        MASTER_MNEMONIC_KEY,
+        newMasterEncryption.encryptedMnemonic,
+      );
+    }
+
+    // Set the recovered wallet as active
+    await setActiveWallet(matchingWallet.id);
+
+    // Load wallet into memory
+    WALLET = keypair;
+    setTempAppPin(newPin);
+    notifyWalletStateChange();
+
+    console.log('Wallet recovered successfully with seed phrase');
+    return true;
+  } catch (error) {
+    console.error('Failed to recover wallet with seed phrase:', error);
+    throw error;
+  }
+};

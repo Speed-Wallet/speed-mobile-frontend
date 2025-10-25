@@ -5,17 +5,21 @@ import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 interface CircularNumericKeyboardProps {
   onKeyPress: (key: string) => void;
   scale?: number;
+  showForgot?: boolean;
+  onForgotPress?: () => void;
 }
 
 const CircularNumericKeyboard: React.FC<CircularNumericKeyboardProps> = ({
   onKeyPress,
   scale: scaleProp = 1,
+  showForgot = false,
+  onForgotPress,
 }) => {
   const keys = [
     ['1', '2', '3'],
     ['4', '5', '6'],
     ['7', '8', '9'],
-    ['', '0', 'backspace'],
+    [showForgot ? 'forgot' : '', '0', 'backspace'],
   ];
 
   const handleKeyPress = (key: string) => {
@@ -57,12 +61,16 @@ const CircularNumericKeyboard: React.FC<CircularNumericKeyboardProps> = ({
             <TouchableOpacity
               key={keyIndex}
               style={[dynamicStyles.key, key === '' && styles.invisibleKey]}
-              onPress={() => handleKeyPress(key)}
+              onPress={() =>
+                key === 'forgot' ? onForgotPress?.() : handleKeyPress(key)
+              }
               activeOpacity={0.6}
               disabled={key === ''}
             >
               {key === 'backspace' ? (
                 <Text style={dynamicStyles.backspaceText}>⌫</Text>
+              ) : key === 'forgot' ? (
+                <Text style={styles.forgotText}>Forgot</Text>
               ) : (
                 <Text style={dynamicStyles.keyText}>{key}</Text>
               )}
@@ -102,6 +110,11 @@ const styles = StyleSheet.create({
   },
   backspaceText: {
     fontSize: moderateScale(20),
+    color: '#FFFFFF',
+  },
+  forgotText: {
+    fontSize: moderateScale(14),
+    fontWeight: '400',
     color: '#FFFFFF',
   },
 });

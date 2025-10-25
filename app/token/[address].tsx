@@ -48,8 +48,7 @@ import {
   USDC_TOKEN,
   USDT_TOKEN,
   WSOL_TOKEN,
-  WBTC_TOKEN,
-  WETH_TOKEN,
+  cbBTC_TOKEN,
 } from '@/constants/popularTokens';
 import { TokenMetadata } from '@/services/tokenAssetService';
 
@@ -282,14 +281,6 @@ export default function TokenDetailScreen() {
     );
     if (solHolding) {
       return WSOL_TOKEN;
-    }
-
-    // 3. Check ETH if no SOL found
-    const ethHolding = holdings.find(
-      (asset) => asset.address === WETH_TOKEN.address && asset.balance > 0,
-    );
-    if (ethHolding) {
-      return WETH_TOKEN;
     }
 
     // 4. Find token with highest USD balance

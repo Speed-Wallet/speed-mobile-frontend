@@ -67,7 +67,7 @@ export default function RootLayout() {
       if (Platform.OS === 'android') {
         try {
           await setBackgroundColorAsync('#121212');
-          await setButtonStyleAsync('light');
+          await setButtonStyleAsync('dark');
           // Also set status bar color on Android
           await setPositionAsync('absolute');
           await setVisibilityAsync('visible');

@@ -1,10 +1,16 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, StyleSheet, Animated } from 'react-native';
+import { View, StyleSheet, Animated, Modal } from 'react-native';
 import { scale } from 'react-native-size-matters';
-import { unlockApp } from '@/services/walletService';
+import {
+  unlockApp,
+  recoverWalletWithSeedPhrase,
+  validateSeedPhraseForRecovery,
+} from '@/services/walletService';
 import { triggerShake } from '@/utils/animations';
 import ScreenContainer from '@/components/ScreenContainer';
 import PinInputSection from '@/components/PinInputSection';
+import RecoverWalletStep from '@/components/wallet/RecoverWalletStep';
+import RecoveryPinSetup from '@/components/wallet/RecoveryPinSetup';
 
 interface EnterPinScreenProps {
   onWalletUnlocked: () => void;
@@ -18,6 +24,10 @@ const EnterPinScreen: React.FC<EnterPinScreenProps> = ({
   const [pin, setPin] = useState('');
   const [isValidating, setIsValidating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showRecovery, setShowRecovery] = useState(false);
+  const [recoveryStep, setRecoveryStep] = useState<'seed' | 'pin'>('seed');
+  const [recoveredSeedPhrase, setRecoveredSeedPhrase] = useState<string>('');
+  const [isRecovering, setIsRecovering] = useState(false);
   const shakeAnimationValue = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -111,6 +121,58 @@ const EnterPinScreen: React.FC<EnterPinScreenProps> = ({
     return 'Enter Your PIN';
   };
 
+  const handleForgotPress = () => {
+    setShowRecovery(true);
+    setRecoveryStep('seed');
+  };
+
+  const handleSeedPhraseEntered = async (seedPhrase: string) => {
+    // Validate that the seed phrase matches an existing wallet
+    setIsRecovering(true);
+    try {
+      // Validate the seed phrase and check if it matches an existing wallet
+      const validation = await validateSeedPhraseForRecovery(seedPhrase);
+
+      if (!validation.isValid) {
+        throw new Error(validation.error || 'Invalid seed phrase');
+      }
+
+      // Store the seed phrase and move to PIN setup step
+      setRecoveredSeedPhrase(seedPhrase);
+      setRecoveryStep('pin');
+    } catch (err: any) {
+      console.error('Seed phrase validation error:', err);
+      throw new Error(err.message || 'Invalid seed phrase');
+    } finally {
+      setIsRecovering(false);
+    }
+  };
+
+  const handlePinSet = async (newPin: string) => {
+    setIsRecovering(true);
+    try {
+      const success = await recoverWalletWithSeedPhrase(
+        recoveredSeedPhrase,
+        newPin,
+      );
+
+      if (success) {
+        setShowRecovery(false);
+        setRecoveryStep('seed');
+        setRecoveredSeedPhrase('');
+        onWalletUnlocked();
+      }
+    } catch (err: any) {
+      console.error('Recovery error:', err);
+      // Reset to seed phrase step on error
+      setRecoveryStep('seed');
+      setRecoveredSeedPhrase('');
+      throw new Error(err.message || 'Failed to recover wallet');
+    } finally {
+      setIsRecovering(false);
+    }
+  };
+
   return (
     <ScreenContainer edges={['top', 'bottom']}>
       <View style={styles.container}>
@@ -121,8 +183,30 @@ const EnterPinScreen: React.FC<EnterPinScreenProps> = ({
           onKeyPress={handleKeyPress}
           maxLength={6}
           shakeAnimation={shakeAnimationValue}
+          showForgot={true}
+          onForgotPress={handleForgotPress}
         />
       </View>
+
+      {/* Recovery Modal */}
+      <Modal
+        visible={showRecovery}
+        animationType="slide"
+        presentationStyle="fullScreen"
+        onRequestClose={() => !isRecovering && setShowRecovery(false)}
+      >
+        <ScreenContainer edges={['top', 'bottom']}>
+          {recoveryStep === 'seed' ? (
+            <RecoverWalletStep
+              onRecover={handleSeedPhraseEntered}
+              onBack={() => setShowRecovery(false)}
+              isLoading={isRecovering}
+            />
+          ) : (
+            <RecoveryPinSetup onPinSet={handlePinSet} />
+          )}
+        </ScreenContainer>
+      </Modal>
     </ScreenContainer>
   );
 };

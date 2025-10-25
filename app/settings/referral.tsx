@@ -102,6 +102,14 @@ export default function ReferralScreen() {
           contentContainerStyle={styles.contentContainer}
           showsVerticalScrollIndicator={false}
         >
+          {/* Launch Notice */}
+          <View style={styles.noticeCard}>
+            <Text style={styles.noticeText}>
+              🎉 Rewards start on 1 Dec 2025, but start getting your referrals
+              in the meantime!
+            </Text>
+          </View>
+
           {/* Header Section */}
           <View style={styles.headerSection}>
             <Text style={styles.headerTitle}>
@@ -216,6 +224,22 @@ const styles = StyleSheet.create({
   contentContainer: {
     paddingHorizontal: scale(20),
     paddingBottom: verticalScale(40),
+  },
+  noticeCard: {
+    backgroundColor: colors.primary + '15',
+    borderRadius: moderateScale(12),
+    padding: scale(16),
+    marginTop: verticalScale(16),
+    // marginBottom: verticalScale(16),
+    borderWidth: 1,
+    borderColor: colors.primary + '30',
+  },
+  noticeText: {
+    fontSize: moderateScale(14),
+    fontFamily: 'Inter-Medium',
+    color: colors.textPrimary,
+    textAlign: 'center',
+    lineHeight: moderateScale(20),
   },
   headerSection: {
     alignItems: 'center',

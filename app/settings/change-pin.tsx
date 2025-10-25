@@ -5,7 +5,7 @@ import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import ScreenContainer from '@/components/ScreenContainer';
 import ScreenHeader from '@/components/ScreenHeader';
 import PinInputSection from '@/components/PinInputSection';
-import { verifyAppPin, createAppPin } from '@/services/walletService';
+import { verifyAppPin, changeAppPin } from '@/services/walletService';
 import { triggerShake } from '@/utils/animations';
 import colors from '@/constants/colors';
 import { useAlert } from '@/providers/AlertProvider';
@@ -185,8 +185,8 @@ export default function ChangePinScreen() {
     setError(null);
 
     try {
-      // Create the new PIN (this will overwrite the old one)
-      await createAppPin(newPin);
+      // Use changeAppPin instead of createAppPin
+      await changeAppPin(currentPin, newPin);
 
       success('PIN Changed', 'Your PIN has been successfully updated');
 
@@ -205,10 +205,14 @@ export default function ChangePinScreen() {
   };
 
   return (
-    <ScreenContainer edges={['top']}>
+    <ScreenContainer edges={['top', 'bottom']}>
       <View style={styles.container}>
         {/* Header */}
-        <ScreenHeader title="Change PIN" onBack={handleClose} />
+        <ScreenHeader
+          title="Change PIN"
+          onBack={handleClose}
+          showBackButton={false}
+        />
 
         {/* Main Content */}
         <View style={styles.content}>
