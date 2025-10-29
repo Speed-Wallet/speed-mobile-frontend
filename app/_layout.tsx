@@ -23,6 +23,7 @@ import {
 } from '@/services/walletService';
 import SetupWalletScreen from '@/app/wallet/SetupWalletScreen';
 import EnterPinScreen from '@/app/wallet/EnterPinScreen';
+import KYCScreen from '@/app/settings/kyc';
 import OnboardingCarousel from '@/components/OnboardingCarousel';
 import DevStartupScreen from '@/components/DevStartupScreen';
 import colors from '@/constants/colors';
@@ -34,6 +35,7 @@ import { AuthService } from '@/services/authService';
 import { AlertProvider } from '@/providers/AlertProvider';
 import { ToastProvider } from '@/providers/ToastProvider';
 import { prefetchAppConfig } from '@/utils/configPrefetch';
+import { StorageService } from '@/utils/storage';
 import 'react-native-get-random-values';
 
 // Prevent splash screen from auto-hiding
@@ -56,6 +58,7 @@ export default function RootLayout() {
     | 'dev_startup'
     | 'no_wallet'
     | 'locked'
+    | 'kyc_pending'
     | 'unlocked'
   >('loading');
   const [storedPublicKey, setStoredPublicKey] = useState<string | null>(null);
@@ -127,6 +130,30 @@ export default function RootLayout() {
 
   const [queryClient] = useState(() => new QueryClient());
 
+  // Helper function to check if KYC is complete
+  const checkKYCComplete = (): boolean => {
+    try {
+      const personalInfo = StorageService.loadPersonalInfo();
+      if (!personalInfo) return false;
+
+      // Check if all required KYC fields are filled
+      const isComplete = !!(
+        personalInfo.name &&
+        personalInfo.email &&
+        personalInfo.phoneNumber &&
+        personalInfo.dateOfBirth &&
+        personalInfo.address &&
+        personalInfo.streetNumber &&
+        personalInfo.selectedCountry
+      );
+
+      return isComplete;
+    } catch (error) {
+      console.error('Error checking KYC status:', error);
+      return false;
+    }
+  };
+
   // Prefetch app config as soon as QueryClient is available
   useEffect(() => {
     if (walletState === 'unlocked') {
@@ -194,7 +221,15 @@ export default function RootLayout() {
               onWalletSetupComplete={async () => {
                 // Small delay to allow success screen to be visible and prevent layout shift
                 setTimeout(async () => {
-                  setWalletState('unlocked');
+                  // Check if KYC is complete
+                  const kycComplete = checkKYCComplete();
+
+                  if (kycComplete) {
+                    setWalletState('unlocked');
+                  } else {
+                    setWalletState('kyc_pending');
+                  }
+
                   // Trigger authentication after wallet setup
                   try {
                     await AuthService.authenticate();
@@ -220,7 +255,15 @@ export default function RootLayout() {
           <AlertProvider>
             <EnterPinScreen
               onWalletUnlocked={async () => {
-                setWalletState('unlocked');
+                // Check if KYC is complete
+                const kycComplete = checkKYCComplete();
+
+                if (kycComplete) {
+                  setWalletState('unlocked');
+                } else {
+                  setWalletState('kyc_pending');
+                }
+
                 // Trigger authentication after wallet unlock
                 try {
                   await AuthService.authenticate();
@@ -233,6 +276,25 @@ export default function RootLayout() {
               }}
               publicKey={storedPublicKey}
             />
+          </AlertProvider>
+        </GestureHandlerRootView>
+      </SafeAreaProvider>
+    );
+  }
+
+  if (walletState === 'kyc_pending') {
+    return (
+      <SafeAreaProvider>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <AlertProvider>
+            <BottomSheetModalProvider>
+              <KYCScreen
+                onComplete={() => {
+                  // After KYC is complete, move to unlocked state
+                  setWalletState('unlocked');
+                }}
+              />
+            </BottomSheetModalProvider>
           </AlertProvider>
         </GestureHandlerRootView>
       </SafeAreaProvider>

@@ -44,9 +44,12 @@ import PrimaryActionButton from '@/components/buttons/PrimaryActionButton';
 import CreateCardBottomSheet, {
   CreateCardBottomSheetRef,
 } from '@/components/bottom-sheets/CreateCardBottomSheet';
+import PinVerificationScreen from '@/components/PinVerificationScreen';
+import { MMKVStorage } from '@/utils/mmkvStorage';
 // Note: cardCreationSteps service simplified since we now use status-based polling
 
 const MIN_KYC_LEVEL = 1; // Minimum KYC level required for virtual cards
+const SPEND_PIN_KEY = 'spend_pin_verified'; // Key to track PIN verification state
 
 // Configure notification handler
 Notifications.setNotificationHandler({
@@ -58,6 +61,7 @@ Notifications.setNotificationHandler({
 });
 
 export default function CardsScreen() {
+  const [isPinVerified, setIsPinVerified] = useState(false);
   const [selectedBrand, setSelectedBrand] = useState<'mastercard' | 'visa'>(
     'visa',
   );
@@ -109,6 +113,16 @@ export default function CardsScreen() {
   // Bottom sheet ref
   const addCardBottomSheetRef = useRef<CreateCardBottomSheetRef>(null);
 
+  // Check PIN verification status when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      // Reset PIN verification when screen loses focus
+      return () => {
+        setIsPinVerified(false);
+      };
+    }, []),
+  );
+
   useFocusEffect(
     React.useCallback(() => {
       let mounted = true;
@@ -143,6 +157,23 @@ export default function CardsScreen() {
       };
     }, [refetchCards]),
   );
+
+  const handlePinVerification = async (pin: string): Promise<boolean> => {
+    // Fixed PIN for virtual cards beta access
+    const BETA_ACCESS_PIN = '615894';
+
+    if (pin === BETA_ACCESS_PIN) {
+      setIsPinVerified(true);
+      return true;
+    }
+
+    return false;
+  };
+
+  const handleBackFromPin = () => {
+    // Navigate back to home tab
+    router.push('/(tabs)' as any);
+  };
 
   const checkKYCLevel = async (minLevel: 1 | 2 | 3) => {
     const verificationLevel = await getCurrentVerificationLevel();
@@ -647,6 +678,18 @@ export default function CardsScreen() {
       />
     );
   };
+
+  // Show PIN verification screen first
+  if (!isPinVerified) {
+    return (
+      <PinVerificationScreen
+        onVerify={handlePinVerification}
+        onBack={handleBackFromPin}
+        title="Enter PIN"
+        subtitle="Virtual cards are currently in closed beta and require a PIN to access. Contact support for access."
+      />
+    );
+  }
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

@@ -196,7 +196,6 @@ export default function BuyScreen() {
       setSelectedChannel(null);
       setSelectedPaymentMethod(null);
     }
-    setShowPaymentMethodPicker(false);
   }, [availableChannels]);
 
   // Get min/max limits from selected channel
@@ -264,9 +263,8 @@ export default function BuyScreen() {
         channelId: selectedChannel.id,
       });
 
-      const url = `https://sandbox--payments-widget.netlify.app/landing/${apiKey}?${params.toString()}`;
+      const url = `https://payments-widget.netlify.app/landing/${apiKey}?${params.toString()}`;
 
-      console.log('Opening YellowCard widget URL:', url);
       await Linking.openURL(url);
     } catch (error) {
       console.error('Error opening YellowCard widget:', error);
@@ -280,6 +278,10 @@ export default function BuyScreen() {
   };
 
   const handlePaymentMethodSelect = (method: string) => {
+    // Close the dropdown first
+    setShowPaymentMethodPicker(false);
+
+    // Then update the selection
     setSelectedPaymentMethod(method);
 
     // Find the channel matching this payment method
@@ -290,8 +292,6 @@ export default function BuyScreen() {
     if (matchingChannel) {
       setSelectedChannel(matchingChannel);
     }
-
-    setShowPaymentMethodPicker(false);
   };
 
   return (

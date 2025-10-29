@@ -4,13 +4,13 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  TextInput,
   Animated,
 } from 'react-native';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import colors from '@/constants/colors';
 import IntroScreen from './IntroScreen';
 import PrimaryActionButton from '@/components/buttons/PrimaryActionButton';
+import CodeInput from '@/components/CodeInput';
 import { triggerShake } from '@/utils/animations';
 
 interface InviteCodeStepProps {
@@ -27,7 +27,6 @@ const InviteCodeStep: React.FC<InviteCodeStepProps> = ({
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const [isCodeInvalid, setIsCodeInvalid] = useState(false);
-  const inputRef = useRef<TextInput>(null);
   const shakeAnimationValue = useRef(new Animated.Value(0)).current;
   const charAnimations = useRef<Animated.Value[]>(
     Array.from({ length: 6 }).map(() => new Animated.Value(0)),
@@ -66,82 +65,12 @@ const InviteCodeStep: React.FC<InviteCodeStepProps> = ({
   };
 
   const handleCodeChange = (text: string) => {
-    // Only allow alphanumeric characters
-    const filtered = text.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
-    const newCode = filtered.slice(0, CODE_LENGTH);
-
-    // Trigger animation for newly added character
-    if (newCode.length > code.length) {
-      const index = newCode.length - 1;
-      charAnimations[index].setValue(20); // Start from below
-      Animated.spring(charAnimations[index], {
-        toValue: 0,
-        tension: 100,
-        friction: 8,
-        useNativeDriver: true,
-      }).start();
-    }
-
-    // Reset animation for removed character
-    if (newCode.length < code.length) {
-      charAnimations[newCode.length].setValue(0);
-    }
-
-    setCode(newCode);
+    setCode(text);
     // Clear error when user starts typing again
     if (error) {
       setError('');
       setIsCodeInvalid(false);
     }
-  };
-
-  const renderCodeSlots = () => {
-    return (
-      <TouchableOpacity
-        activeOpacity={1}
-        onPress={() => inputRef.current?.focus()}
-        style={styles.codeContainer}
-      >
-        <Animated.View
-          style={[
-            styles.codeRow,
-            {
-              transform: [{ translateX: shakeAnimationValue }],
-            },
-          ]}
-        >
-          {Array.from({ length: CODE_LENGTH }).map((_, index) => {
-            const char = code[index];
-            const isFilled = char !== undefined;
-            const isActive = index === code.length && !isCodeInvalid;
-
-            return (
-              <View
-                key={index}
-                style={[
-                  styles.codeSlot,
-                  isActive && styles.codeSlotActive,
-                  isCodeInvalid && styles.codeSlotError,
-                ]}
-              >
-                {isFilled && (
-                  <Animated.Text
-                    style={[
-                      styles.codeChar,
-                      {
-                        transform: [{ translateY: charAnimations[index] }],
-                      },
-                    ]}
-                  >
-                    {char}
-                  </Animated.Text>
-                )}
-              </View>
-            );
-          })}
-        </Animated.View>
-      </TouchableOpacity>
-    );
   };
 
   return (
@@ -176,7 +105,18 @@ const InviteCodeStep: React.FC<InviteCodeStepProps> = ({
       }
     >
       <View style={styles.contentContainer}>
-        {renderCodeSlots()}
+        <CodeInput
+          length={CODE_LENGTH}
+          value={code}
+          onChangeText={handleCodeChange}
+          isError={isCodeInvalid}
+          editable={!isLoading}
+          autoFocus={true}
+          keyboardType="default"
+          displayMode="text"
+          charAnimations={charAnimations}
+          shakeAnimation={shakeAnimationValue}
+        />
 
         {/* Error message */}
         <View style={styles.helperContainer}>
@@ -186,20 +126,6 @@ const InviteCodeStep: React.FC<InviteCodeStepProps> = ({
             <Text style={styles.helperText}>Enter the 6-character code</Text>
           )}
         </View>
-
-        <TextInput
-          ref={inputRef}
-          style={styles.hiddenInput}
-          value={code}
-          onChangeText={handleCodeChange}
-          autoCapitalize="characters"
-          autoCorrect={false}
-          maxLength={CODE_LENGTH}
-          editable={!isLoading}
-          keyboardType="default"
-          autoFocus={true}
-          selectTextOnFocus={false}
-        />
       </View>
     </IntroScreen>
   );
@@ -209,41 +135,6 @@ const styles = StyleSheet.create({
   contentContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  codeContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: scale(8),
-    paddingHorizontal: scale(20),
-    width: '100%',
-  },
-  codeRow: {
-    flexDirection: 'row',
-    gap: scale(8),
-    width: '100%',
-  },
-  codeSlot: {
-    flex: 1,
-    aspectRatio: 0.85,
-    maxWidth: scale(60),
-    borderRadius: moderateScale(12),
-    backgroundColor: '#1a1a1a',
-    borderWidth: 2,
-    borderColor: '#2a2a2a',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  codeSlotActive: {
-    borderColor: colors.primary,
-  },
-  codeSlotError: {
-    borderColor: colors.error,
-    backgroundColor: '#2a1a1a',
-  },
-  codeChar: {
-    fontSize: moderateScale(24),
-    fontFamily: 'Inter-SemiBold',
-    color: colors.textPrimary,
   },
   helperContainer: {
     minHeight: 24,
@@ -264,12 +155,6 @@ const styles = StyleSheet.create({
     color: colors.error,
     lineHeight: 20,
     textAlign: 'center',
-  },
-  hiddenInput: {
-    position: 'absolute',
-    opacity: 0,
-    width: 1,
-    height: 1,
   },
   footerContainer: {
     flexDirection: 'row',

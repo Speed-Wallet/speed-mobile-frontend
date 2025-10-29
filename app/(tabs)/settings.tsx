@@ -97,19 +97,19 @@ const socialLinks = [
   {
     id: 'twitter',
     icon: Twitter,
-    url: 'https://x.com/speed__wallet?t=xybdvDybtg2mZz16g2SHcg&s=09',
+    url: 'https://x.com/speed__wallet',
     color: '#1DA1F2',
   },
   {
     id: 'telegram',
     icon: Send,
-    url: 'https://t.me/speedwalletexchange',
+    url: 'https://t.me/speedwalletsupport',
     color: '#0088cc',
   },
   {
     id: 'discord',
     icon: MessageSquare,
-    url: 'https://discord.gg/CpF9vSw3z',
+    url: 'https://discord.gg/2qmmRbKcKw',
     color: '#5865F2',
   },
 ];

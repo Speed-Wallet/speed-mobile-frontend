@@ -81,11 +81,6 @@ function TabsContent() {
           tabBarIcon: ({ color, size }) => (
             <CreditCard size={size} color={color} />
           ),
-          tabBarButton: (props: any) => (
-            <View style={{ flex: 1, opacity: 0.5 }}>
-              <TouchableOpacity {...props} disabled={true} />
-            </View>
-          ),
         }}
       />
       {/* Hide rewards and settings from tabs */}
