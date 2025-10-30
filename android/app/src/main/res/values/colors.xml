@@ -3,4 +3,8 @@
   <color name="iconBackground">#1A1B23</color>
   <color name="colorPrimary">#023c69</color>
   <color name="colorPrimaryDark">#121212</color>
+  <color name="datePicker_colorAccent">#00D1FF</color>
+  <color name="datePicker_textColorPrimary">#000000</color>
+  <color name="datePicker_textColorSecondary">#6B7280</color>
+  <color name="datePicker_windowBackground">#F3F4F6</color>
 </resources>

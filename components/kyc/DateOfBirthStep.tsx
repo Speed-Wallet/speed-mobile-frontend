@@ -54,7 +54,10 @@ const DateOfBirthStep: React.FC<DateOfBirthStepProps> = ({
   };
 
   const handleDateChange = (event: any, date?: Date) => {
-    // Don't auto-close anymore since we're using spinner mode
+    if (Platform.OS === 'android') {
+      // On Android, hide picker after selection
+      setShowPicker(false);
+    }
     if (date) {
       setSelectedDate(date);
     }
@@ -89,81 +92,73 @@ const DateOfBirthStep: React.FC<DateOfBirthStepProps> = ({
   };
 
   return (
-    <>
-      <IntroScreen
-        title="Date of Birth"
-        subtitle="Select your date of birth"
-        footer={
-          <PrimaryActionButton
-            title={isLoading ? 'Loading...' : 'Continue'}
-            onPress={handleContinue}
-            disabled={isLoading}
-            loading={isLoading}
-            variant="primary"
-          />
-        }
-      >
-        {/* Development Back Button */}
-        {/* Removed - back button not needed in KYC flow */}
-
-        <View style={styles.contentContainer}>
-          {/* Date Selector */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Date of Birth</Text>
-            <Animated.View
-              style={[{ transform: [{ translateX: shakeAnimationValue }] }]}
+    <IntroScreen
+      title="Date of Birth"
+      subtitle="Select your date of birth"
+      footer={
+        <PrimaryActionButton
+          title={isLoading ? 'Loading...' : 'Continue'}
+          onPress={handleContinue}
+          disabled={isLoading}
+          loading={isLoading}
+          variant="primary"
+        />
+      }
+    >
+      <View style={styles.contentContainer}>
+        {/* Date Selector */}
+        <View style={styles.inputContainer}>
+          <Text style={styles.inputLabel}>Date of Birth</Text>
+          <Animated.View
+            style={[{ transform: [{ translateX: shakeAnimationValue }] }]}
+          >
+            <TouchableOpacity
+              style={styles.dateSelector}
+              onPress={handleDateSelect}
+              disabled={isLoading}
             >
-              <TouchableOpacity
-                style={styles.dateSelector}
-                onPress={handleDateSelect}
-                disabled={isLoading}
-              >
-                <View style={styles.dateSelectorContent}>
-                  <Calendar
-                    size={20}
-                    color="#9ca3af"
-                    style={styles.inputIcon}
-                  />
-                  <Text style={styles.dateText}>
-                    {formatDate(selectedDate)}
-                  </Text>
-                </View>
-                <ChevronDown size={20} color="#9ca3af" />
-              </TouchableOpacity>
-            </Animated.View>
-            <Text style={styles.inputHint}>
-              You must be at least 18 years old
-            </Text>
-          </View>
-
-          {/* Date Picker - Show directly */}
-          {showPicker && (
-            <View style={styles.datePickerContainer}>
-              <DateTimePicker
-                value={selectedDate}
-                mode="date"
-                display="spinner"
-                onChange={handleDateChange}
-                maximumDate={getMaximumDate()}
-                minimumDate={getMinimumDate()}
-                textColor={colors.textPrimary}
-                themeVariant="dark"
-              />
-            </View>
-          )}
+              <View style={styles.dateSelectorContent}>
+                <Calendar size={20} color="#9ca3af" style={styles.inputIcon} />
+                <Text style={styles.dateText}>{formatDate(selectedDate)}</Text>
+              </View>
+              <ChevronDown size={20} color="#9ca3af" />
+            </TouchableOpacity>
+          </Animated.View>
+          <Text style={styles.inputHint}>
+            You must be at least 18 years old
+          </Text>
         </View>
-      </IntroScreen>
-    </>
+
+        {/* Date Picker - iOS shows inline when showPicker is true, Android shows native dialog */}
+        {showPicker && (
+          <View style={styles.pickerContainer}>
+            <DateTimePicker
+              value={selectedDate}
+              mode="date"
+              display="spinner"
+              onChange={handleDateChange}
+              maximumDate={getMaximumDate()}
+              minimumDate={getMinimumDate()}
+              textColor={Platform.OS === 'ios' ? colors.textPrimary : undefined}
+              themeVariant={Platform.OS === 'ios' ? 'dark' : undefined}
+              style={Platform.OS === 'ios' ? styles.iosPicker : undefined}
+            />
+            {Platform.OS === 'ios' && (
+              <TouchableOpacity
+                style={styles.doneButton}
+                onPress={() => setShowPicker(false)}
+              >
+                <Text style={styles.doneButtonText}>Done</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+      </View>
+    </IntroScreen>
   );
 };
 
 const styles = StyleSheet.create({
-  devBackButton: {
-    position: 'absolute',
-    top: verticalScale(20),
-    left: scale(20),
-    zIndex: 100,
-  },
   contentContainer: {
     gap: verticalScale(20),
   },
@@ -200,21 +195,33 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     fontFamily: 'Inter-Medium',
   },
-  dateTextPlaceholder: {
-    color: '#6b7280',
-    fontFamily: 'Inter-Regular',
-  },
   inputHint: {
     fontSize: moderateScale(13),
     color: '#9ca3af',
     marginTop: verticalScale(6),
   },
-  datePickerContainer: {
-    marginTop: verticalScale(20),
-    backgroundColor: colors.backgroundMedium,
-    borderRadius: scale(12),
-    padding: scale(16),
+  pickerContainer: {
+    width: '100%',
     alignItems: 'center',
+    marginTop: verticalScale(20),
+  },
+  iosPicker: {
+    width: scale(320),
+    height: verticalScale(200),
+  },
+  doneButton: {
+    backgroundColor: colors.primary,
+    marginTop: verticalScale(20),
+    paddingVertical: verticalScale(14),
+    paddingHorizontal: scale(40),
+    borderRadius: scale(12),
+    alignItems: 'center',
+  },
+  doneButtonText: {
+    fontSize: moderateScale(16),
+    fontWeight: '600',
+    color: colors.textPrimary,
+    fontFamily: 'Inter-SemiBold',
   },
 });
 

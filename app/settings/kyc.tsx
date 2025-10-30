@@ -11,6 +11,7 @@ import AddressStep from '@/components/kyc/AddressStep';
 import EmailVerificationStep from '@/components/kyc/EmailVerificationStep';
 import EmailOtpVerificationStep from '@/components/kyc/EmailOtpVerificationStep';
 import DateOfBirthStep from '@/components/kyc/DateOfBirthStep';
+import VerificationCompleteStep from '@/components/kyc/VerificationCompleteStep';
 import { sendOtp } from '@/services/otpService';
 import 'react-native-get-random-values';
 
@@ -21,6 +22,7 @@ export enum KYCStep {
   EMAIL_VERIFICATION,
   EMAIL_OTP_VERIFICATION,
   DATE_OF_BIRTH,
+  VERIFICATION_COMPLETE,
 }
 
 interface KYCScreenProps {
@@ -31,6 +33,7 @@ export default function KYCScreen({ onComplete }: KYCScreenProps = {}) {
   const router = useRouter();
   const [step, setStep] = useState<KYCStep>(KYCStep.COUNTRY_PHONE);
   const [isLoading, setIsLoading] = useState(false);
+  const [username, setUsername] = useState('');
 
   // Form data states
   const [selectedCountry, setSelectedCountry] = useState<Country>(countries[0]);
@@ -58,8 +61,12 @@ export default function KYCScreen({ onComplete }: KYCScreenProps = {}) {
       if (savedInfo) {
         // Split the name into first and last name
         const nameParts = savedInfo.name.split(' ');
-        setFirstName(nameParts[0] || '');
-        setLastName(nameParts.slice(1).join(' ') || '');
+        const firstNameValue = nameParts[0] || '';
+        const lastNameValue = nameParts.slice(1).join(' ') || '';
+
+        setFirstName(firstNameValue);
+        setLastName(lastNameValue);
+        setUsername(firstNameValue); // Use first name as username
 
         setEmail(savedInfo.email || '');
         setPhoneNumber(savedInfo.phoneNumber || '');
@@ -201,16 +208,24 @@ export default function KYCScreen({ onComplete }: KYCScreenProps = {}) {
   const handleDateOfBirthNext = async (date: Date) => {
     setDateOfBirth(date);
 
-    // Save to storage and complete KYC
+    // Save to storage
     await savePersonalInfo({
       dateOfBirth: date.toISOString(),
     });
 
+    // Move to verification complete step
+    setStep(KYCStep.VERIFICATION_COMPLETE);
+  };
+
+  const handleVerificationComplete = () => {
     // If onComplete callback is provided, call it (for root-level KYC)
-    // Otherwise navigate back to settings (for settings screen KYC)
+    // This will unlock the wallet and allow navigation
     if (onComplete) {
       onComplete();
+      // Navigate to spend screen after KYC is complete
+      router.push('/(tabs)/spend' as any);
     } else {
+      // If called from settings, just go back to settings
       router.push('/settings');
     }
   };
@@ -231,7 +246,7 @@ export default function KYCScreen({ onComplete }: KYCScreenProps = {}) {
   const getProgressInfo = () => {
     return {
       current: step,
-      total: 6,
+      total: 7,
     };
   };
 
@@ -306,6 +321,13 @@ export default function KYCScreen({ onComplete }: KYCScreenProps = {}) {
           onBack={() => handleBack(KYCStep.DATE_OF_BIRTH)}
           initialDate={dateOfBirth || undefined}
           isLoading={isLoading}
+        />
+      )}
+
+      {step === KYCStep.VERIFICATION_COMPLETE && (
+        <VerificationCompleteStep
+          onComplete={handleVerificationComplete}
+          username={username || firstName || 'User'}
         />
       )}
     </ScreenContainer>
