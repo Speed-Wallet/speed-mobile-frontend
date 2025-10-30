@@ -5,15 +5,14 @@ import {
   StyleSheet,
   TouchableOpacity,
   Animated,
+  Platform,
 } from 'react-native';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import { Calendar, ChevronDown } from 'lucide-react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import colors from '@/constants/colors';
 import IntroScreen from '@/components/wallet/IntroScreen';
 import PrimaryActionButton from '@/components/buttons/PrimaryActionButton';
-import DatePickerBottomSheet, {
-  DatePickerBottomSheetRef,
-} from '@/components/bottom-sheets/DatePickerBottomSheet';
 import { triggerShake } from '@/utils/animations';
 
 interface DateOfBirthStepProps {
@@ -29,14 +28,20 @@ const DateOfBirthStep: React.FC<DateOfBirthStepProps> = ({
   initialDate,
   isLoading = false,
 }) => {
-  const [selectedDate, setSelectedDate] = useState<Date | null>(
-    initialDate || null,
-  );
-  const shakeAnimationValue = useRef(new Animated.Value(0)).current;
-  const datePickerRef = useRef<DatePickerBottomSheetRef>(null);
+  // Calculate default date (18 years ago)
+  const getDefaultDate = () => {
+    const date = new Date();
+    date.setFullYear(date.getFullYear() - 18);
+    return date;
+  };
 
-  const formatDate = (date: Date | null) => {
-    if (!date) return 'Select your date of birth';
+  const [selectedDate, setSelectedDate] = useState<Date>(
+    initialDate || getDefaultDate(),
+  );
+  const [showPicker, setShowPicker] = useState(false);
+  const shakeAnimationValue = useRef(new Animated.Value(0)).current;
+
+  const formatDate = (date: Date) => {
     return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
@@ -45,11 +50,14 @@ const DateOfBirthStep: React.FC<DateOfBirthStepProps> = ({
   };
 
   const handleDateSelect = () => {
-    datePickerRef.current?.present();
+    setShowPicker(true);
   };
 
-  const handleDatePicked = (date: Date) => {
-    setSelectedDate(date);
+  const handleDateChange = (event: any, date?: Date) => {
+    // Don't auto-close anymore since we're using spinner mode
+    if (date) {
+      setSelectedDate(date);
+    }
   };
 
   const handleContinue = async () => {
@@ -66,7 +74,19 @@ const DateOfBirthStep: React.FC<DateOfBirthStepProps> = ({
     }
   };
 
-  const isValid = selectedDate !== null;
+  // Calculate maximum date (18 years ago)
+  const getMaximumDate = () => {
+    const date = new Date();
+    date.setFullYear(date.getFullYear() - 18);
+    return date;
+  };
+
+  // Calculate minimum date (120 years ago)
+  const getMinimumDate = () => {
+    const date = new Date();
+    date.setFullYear(date.getFullYear() - 120);
+    return date;
+  };
 
   return (
     <>
@@ -77,7 +97,7 @@ const DateOfBirthStep: React.FC<DateOfBirthStepProps> = ({
           <PrimaryActionButton
             title={isLoading ? 'Loading...' : 'Continue'}
             onPress={handleContinue}
-            disabled={!isValid || isLoading}
+            disabled={isLoading}
             loading={isLoading}
             variant="primary"
           />
@@ -104,33 +124,35 @@ const DateOfBirthStep: React.FC<DateOfBirthStepProps> = ({
                     color="#9ca3af"
                     style={styles.inputIcon}
                   />
-                  <Text
-                    style={[
-                      styles.dateText,
-                      !selectedDate && styles.dateTextPlaceholder,
-                    ]}
-                  >
+                  <Text style={styles.dateText}>
                     {formatDate(selectedDate)}
                   </Text>
                 </View>
                 <ChevronDown size={20} color="#9ca3af" />
               </TouchableOpacity>
             </Animated.View>
-            {!selectedDate && (
-              <Text style={styles.inputHint}>
-                You must be at least 18 years old
-              </Text>
-            )}
+            <Text style={styles.inputHint}>
+              You must be at least 18 years old
+            </Text>
           </View>
+
+          {/* Date Picker - Show directly */}
+          {showPicker && (
+            <View style={styles.datePickerContainer}>
+              <DateTimePicker
+                value={selectedDate}
+                mode="date"
+                display="spinner"
+                onChange={handleDateChange}
+                maximumDate={getMaximumDate()}
+                minimumDate={getMinimumDate()}
+                textColor={colors.textPrimary}
+                themeVariant="dark"
+              />
+            </View>
+          )}
         </View>
       </IntroScreen>
-
-      {/* Date Picker Bottom Sheet */}
-      <DatePickerBottomSheet
-        ref={datePickerRef}
-        onDateSelect={handleDatePicked}
-        onClose={() => {}}
-      />
     </>
   );
 };
@@ -186,6 +208,13 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(13),
     color: '#9ca3af',
     marginTop: verticalScale(6),
+  },
+  datePickerContainer: {
+    marginTop: verticalScale(20),
+    backgroundColor: colors.backgroundMedium,
+    borderRadius: scale(12),
+    padding: scale(16),
+    alignItems: 'center',
   },
 });
 

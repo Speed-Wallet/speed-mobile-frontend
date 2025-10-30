@@ -9,7 +9,9 @@ import CountryPhoneStep from '@/components/kyc/CountryPhoneStep';
 import NameStep from '@/components/kyc/NameStep';
 import AddressStep from '@/components/kyc/AddressStep';
 import EmailVerificationStep from '@/components/kyc/EmailVerificationStep';
+import EmailOtpVerificationStep from '@/components/kyc/EmailOtpVerificationStep';
 import DateOfBirthStep from '@/components/kyc/DateOfBirthStep';
+import { sendOtp } from '@/services/otpService';
 import 'react-native-get-random-values';
 
 export enum KYCStep {
@@ -17,6 +19,7 @@ export enum KYCStep {
   NAME,
   ADDRESS,
   EMAIL_VERIFICATION,
+  EMAIL_OTP_VERIFICATION,
   DATE_OF_BIRTH,
 }
 
@@ -38,6 +41,11 @@ export default function KYCScreen({ onComplete }: KYCScreenProps = {}) {
   const [streetNumber, setStreetNumber] = useState('');
   const [email, setEmail] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState<Date | null>(null);
+
+  // Email OTP verification state
+  const [showOtpStep, setShowOtpStep] = useState(false);
+  const [otpId, setOtpId] = useState('');
+  const [otpExpiresAt, setOtpExpiresAt] = useState(0);
 
   // Load saved data on mount
   useEffect(() => {
@@ -147,6 +155,49 @@ export default function KYCScreen({ onComplete }: KYCScreenProps = {}) {
     setStep(KYCStep.DATE_OF_BIRTH);
   };
 
+  const handleShowOtpStep = (
+    emailAddress: string,
+    otpIdValue: string,
+    expiresAt: number,
+  ) => {
+    setEmail(emailAddress);
+    setOtpId(otpIdValue);
+    setOtpExpiresAt(expiresAt);
+    setShowOtpStep(true);
+    setStep(KYCStep.EMAIL_OTP_VERIFICATION);
+  };
+
+  const handleResendOtp = async (emailAddress: string) => {
+    // Use the OTP service to resend
+    const response = await sendOtp(emailAddress);
+
+    // Update state with new OTP details
+    const newOtpId = response.otpId || '';
+    const newExpiresAt = response.expiresAt || Date.now() + 300000;
+
+    setOtpId(newOtpId);
+    setOtpExpiresAt(newExpiresAt);
+
+    return {
+      otpId: newOtpId,
+      expiresAt: newExpiresAt,
+    };
+  };
+
+  const handleOtpVerified = async () => {
+    // OTP verified successfully, move to next step
+    setShowOtpStep(false);
+    await handleEmailNext(email);
+  };
+
+  const handleBackFromOtp = () => {
+    // Go back to email input
+    setShowOtpStep(false);
+    setStep(KYCStep.EMAIL_VERIFICATION);
+    setOtpId('');
+    setOtpExpiresAt(0);
+  };
+
   const handleDateOfBirthNext = async (date: Date) => {
     setDateOfBirth(date);
 
@@ -180,7 +231,7 @@ export default function KYCScreen({ onComplete }: KYCScreenProps = {}) {
   const getProgressInfo = () => {
     return {
       current: step,
-      total: 5,
+      total: 6,
     };
   };
 
@@ -233,6 +284,19 @@ export default function KYCScreen({ onComplete }: KYCScreenProps = {}) {
           onBack={() => handleBack(KYCStep.EMAIL_VERIFICATION)}
           initialEmail={email}
           isLoading={isLoading}
+          onShowOtpStep={handleShowOtpStep}
+        />
+      )}
+
+      {step === KYCStep.EMAIL_OTP_VERIFICATION && (
+        <EmailOtpVerificationStep
+          email={email}
+          otpId={otpId}
+          expiresAt={otpExpiresAt}
+          onVerified={handleOtpVerified}
+          onBack={handleBackFromOtp}
+          isLoading={isLoading}
+          onResendOtp={handleResendOtp}
         />
       )}
 

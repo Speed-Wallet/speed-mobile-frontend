@@ -6,7 +6,7 @@ import {
   TextInput,
   Animated,
   TouchableOpacity,
-  FlatList,
+  ScrollView,
   ActivityIndicator,
   Keyboard,
 } from 'react-native';
@@ -60,18 +60,23 @@ const AddressStep: React.FC<AddressStepProps> = ({
     return address.trim().length >= 5;
   };
 
+  const hasMinimumAlphaCharacters = (text: string): boolean => {
+    const alphaCount = (text.match(/[a-zA-Z]/g) || []).length;
+    return alphaCount >= 4;
+  };
+
   useEffect(() => {
     // Only fetch suggestions if:
-    // 1. Address has meaningful length (at least 3 characters)
+    // 1. Address has at least 4 alphabetic characters
     // 2. User hasn't selected an address yet or has modified it after selection
     // 3. Not already loading
     if (
-      debouncedAddress.trim().length >= 3 &&
+      hasMinimumAlphaCharacters(debouncedAddress) &&
       !selectedAddress &&
       !isLoadingSuggestions
     ) {
       fetchAddressSuggestions(debouncedAddress);
-    } else if (debouncedAddress.trim().length < 3) {
+    } else if (!hasMinimumAlphaCharacters(debouncedAddress)) {
       setSuggestions([]);
       setShowSuggestions(false);
       setAutocompleteError(null);
@@ -143,7 +148,7 @@ const AddressStep: React.FC<AddressStepProps> = ({
   };
 
   const handleAddressFocus = () => {
-    if (address.trim().length >= 3 && suggestions.length > 0) {
+    if (hasMinimumAlphaCharacters(address) && suggestions.length > 0) {
       setShowSuggestions(true);
     }
   };
@@ -169,30 +174,6 @@ const AddressStep: React.FC<AddressStepProps> = ({
   };
 
   const isValid = address.trim().length > 0 && validateAddress(address);
-
-  const renderSuggestion = ({ item }: { item: AddressAutocompleteResult }) => (
-    <TouchableOpacity
-      style={styles.suggestionItem}
-      onPress={() => handleSelectSuggestion(item)}
-      activeOpacity={0.7}
-    >
-      <MapPin
-        size={16}
-        color={colors.textSecondary}
-        style={styles.suggestionIcon}
-      />
-      <View style={styles.suggestionContent}>
-        <Text style={styles.suggestionTitle} numberOfLines={1}>
-          {item.title}
-        </Text>
-        {item.label !== item.title && (
-          <Text style={styles.suggestionLabel} numberOfLines={1}>
-            {item.label}
-          </Text>
-        )}
-      </View>
-    </TouchableOpacity>
-  );
 
   return (
     <IntroScreen
@@ -232,6 +213,7 @@ const AddressStep: React.FC<AddressStepProps> = ({
               editable={!isLoading}
               autoComplete="street-address"
               autoCorrect={false}
+              multiline={true}
             />
             {isLoadingSuggestions && (
               <ActivityIndicator
@@ -254,15 +236,37 @@ const AddressStep: React.FC<AddressStepProps> = ({
 
           {/* Suggestions Dropdown */}
           {showSuggestions && suggestions.length > 0 && (
-            <View style={styles.suggestionsContainer}>
-              <FlatList
-                data={suggestions}
-                renderItem={renderSuggestion}
-                keyExtractor={(item) => item.placeId}
-                keyboardShouldPersistTaps="handled"
-                scrollEnabled={false}
-              />
-            </View>
+            <ScrollView
+              style={styles.suggestionsContainer}
+              keyboardShouldPersistTaps="handled"
+              nestedScrollEnabled={true}
+              showsVerticalScrollIndicator={true}
+            >
+              {suggestions.map((item) => (
+                <TouchableOpacity
+                  key={item.placeId}
+                  style={styles.suggestionItem}
+                  onPress={() => handleSelectSuggestion(item)}
+                  activeOpacity={0.7}
+                >
+                  <MapPin
+                    size={16}
+                    color={colors.textSecondary}
+                    style={styles.suggestionIcon}
+                  />
+                  <View style={styles.suggestionContent}>
+                    <Text style={styles.suggestionTitle} numberOfLines={1}>
+                      {item.title}
+                    </Text>
+                    {item.label !== item.title && (
+                      <Text style={styles.suggestionLabel} numberOfLines={1}>
+                        {item.label}
+                      </Text>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
           )}
 
           {/* Error Messages */}
@@ -281,7 +285,7 @@ const AddressStep: React.FC<AddressStepProps> = ({
             !autocompleteError &&
             (address.trim().length === 0 || !validateAddress(address)) && (
               <Text style={styles.inputHint}>
-                Minimum 5 characters. Start typing for suggestions.
+                Start typing (at least 4 letters) for address suggestions.
               </Text>
             )}
         </View>
@@ -311,25 +315,30 @@ const styles = StyleSheet.create({
   },
   inputWrapper: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     backgroundColor: colors.backgroundMedium,
     borderRadius: scale(12),
     borderWidth: 1,
     borderColor: '#404040',
     paddingHorizontal: scale(16),
     paddingVertical: verticalScale(14),
+    minHeight: verticalScale(52),
   },
   inputWrapperError: {
     borderColor: '#ef4444',
   },
   inputIcon: {
     marginRight: scale(12),
+    marginTop: verticalScale(2),
   },
   textInput: {
     flex: 1,
     fontSize: moderateScale(16),
     color: colors.textPrimary,
     fontFamily: 'Inter-Regular',
+    textAlignVertical: 'top',
+    minHeight: verticalScale(20),
+    maxHeight: verticalScale(80),
   },
   validIcon: {
     marginLeft: scale(8),

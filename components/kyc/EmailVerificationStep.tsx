@@ -12,16 +12,21 @@ import { Mail } from 'lucide-react-native';
 import colors from '@/constants/colors';
 import IntroScreen from '@/components/wallet/IntroScreen';
 import PrimaryActionButton from '@/components/buttons/PrimaryActionButton';
-import EmailBadge, { EmailStatus } from '@/components/EmailBadge';
 import { triggerShake } from '@/utils/animations';
-import { sendOtp, checkEmailStatus, verifyOtp } from '@/services/otpService';
-import { useRouter } from 'expo-router';
+import { sendOtp, checkEmailStatus } from '@/services/otpService';
+
+type EmailStatus =
+  | 'unverified'
+  | 'needs_verification'
+  | 'otp_pending'
+  | 'verified';
 
 interface EmailVerificationStepProps {
   onNext: (email: string) => Promise<void>;
   onBack?: () => void;
   initialEmail?: string;
   isLoading?: boolean;
+  onShowOtpStep?: (email: string, otpId: string, expiresAt: number) => void;
 }
 
 const EmailVerificationStep: React.FC<EmailVerificationStepProps> = ({
@@ -29,8 +34,8 @@ const EmailVerificationStep: React.FC<EmailVerificationStepProps> = ({
   onBack,
   initialEmail = '',
   isLoading = false,
+  onShowOtpStep,
 }) => {
-  const router = useRouter();
   const [email, setEmail] = useState(initialEmail);
   const [emailError, setEmailError] = useState(false);
   const [emailStatus, setEmailStatus] = useState<EmailStatus>('unverified');
@@ -94,35 +99,38 @@ const EmailVerificationStep: React.FC<EmailVerificationStepProps> = ({
   };
 
   const handleSendVerification = async () => {
-    if (emailStatus === 'needs_verification') {
-      setIsSendingOtp(true);
-      try {
-        // First check if email is already verified in the backend
-        const statusResponse = await checkEmailStatus(email);
-        if (statusResponse.isVerified) {
-          // Email is already verified, update status
-          setEmailStatus('verified');
-          setIsSendingOtp(false);
-          return;
-        }
+    if (!validateEmail(email)) {
+      setEmailError(true);
+      triggerShake(shakeAnimationValue);
+      return;
+    }
 
-        // Email not verified, proceed with OTP flow and navigate to verification screen
-        const response = await sendOtp(email);
-        setOtpId(response.otpId || null);
-        setOtpExpiresAt(response.expiresAt || null);
-        setEmailStatus('otp_pending');
-
-        // Navigate to email verification screen
-        router.push('/settings/email-verification' as any);
-      } catch (error) {
-        console.error('Error sending OTP:', error);
-        triggerShake(shakeAnimationValue);
-      } finally {
+    setIsSendingOtp(true);
+    try {
+      // First check if email is already verified in the backend
+      const statusResponse = await checkEmailStatus(email);
+      if (statusResponse.isVerified) {
+        // Email is already verified, update status
+        setEmailStatus('verified');
         setIsSendingOtp(false);
+        return;
       }
-    } else if (emailStatus === 'otp_pending') {
-      // Navigate to email verification screen
-      router.push('/settings/email-verification' as any);
+
+      // Email not verified, proceed with OTP flow
+      const response = await sendOtp(email);
+      setOtpId(response.otpId || null);
+      setOtpExpiresAt(response.expiresAt || null);
+      setEmailStatus('otp_pending');
+
+      // Show OTP verification step if handler provided
+      if (onShowOtpStep && response.otpId && response.expiresAt) {
+        onShowOtpStep(email, response.otpId, response.expiresAt);
+      }
+    } catch (error) {
+      console.error('Error sending OTP:', error);
+      triggerShake(shakeAnimationValue);
+    } finally {
+      setIsSendingOtp(false);
     }
   };
 
@@ -156,6 +164,34 @@ const EmailVerificationStep: React.FC<EmailVerificationStepProps> = ({
 
   const isValid = email.trim().length > 0 && validateEmail(email);
   const canContinue = isValid && emailStatus === 'verified';
+  const canSendVerification =
+    isValid &&
+    (emailStatus === 'needs_verification' || emailStatus === 'unverified');
+
+  // Determine button action and text
+  const getButtonConfig = () => {
+    if (emailStatus === 'verified') {
+      return {
+        title: isLoading ? 'Loading...' : 'Continue',
+        onPress: handleContinue,
+        disabled: isLoading,
+      };
+    } else if (canSendVerification) {
+      return {
+        title: isSendingOtp ? 'Sending...' : 'Verify',
+        onPress: handleSendVerification,
+        disabled: isSendingOtp,
+      };
+    } else {
+      return {
+        title: 'Verify',
+        onPress: handleSendVerification,
+        disabled: true,
+      };
+    }
+  };
+
+  const buttonConfig = getButtonConfig();
 
   return (
     <IntroScreen
@@ -163,10 +199,10 @@ const EmailVerificationStep: React.FC<EmailVerificationStepProps> = ({
       subtitle="Enter your email address and verify it"
       footer={
         <PrimaryActionButton
-          title={isLoading ? 'Loading...' : 'Continue'}
-          onPress={handleContinue}
-          disabled={!canContinue || isLoading}
-          loading={isLoading}
+          title={buttonConfig.title}
+          onPress={buttonConfig.onPress}
+          disabled={buttonConfig.disabled}
+          loading={isSendingOtp || isLoading}
           variant="primary"
         />
       }
@@ -198,38 +234,17 @@ const EmailVerificationStep: React.FC<EmailVerificationStepProps> = ({
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoComplete="email"
-                editable={
-                  emailStatus === 'unverified' ||
-                  emailStatus === 'needs_verification'
-                }
+                editable={emailStatus !== 'verified'}
                 multiline={true}
                 numberOfLines={1}
               />
             </View>
-            {/* Email Badge Section */}
-            <TouchableOpacity
-              onPress={
-                emailStatus === 'needs_verification' ||
-                emailStatus === 'otp_pending'
-                  ? handleSendVerification
-                  : undefined
-              }
-              disabled={
-                isSendingOtp ||
-                (emailStatus !== 'needs_verification' &&
-                  emailStatus !== 'otp_pending')
-              }
-            >
-              <EmailBadge
-                status={emailStatus}
-                expiresAt={otpExpiresAt}
-                onExpire={() => {
-                  setEmailStatus('needs_verification');
-                  setOtpExpiresAt(null);
-                  setOtpId(null);
-                }}
-              />
-            </TouchableOpacity>
+            {/* Status indicator */}
+            {emailStatus === 'verified' && (
+              <View style={styles.verifiedBadge}>
+                <Text style={styles.verifiedText}>✓</Text>
+              </View>
+            )}
           </Animated.View>
 
           {/* Change Email Button */}
@@ -257,7 +272,7 @@ const EmailVerificationStep: React.FC<EmailVerificationStepProps> = ({
             !emailError &&
             email.trim().length > 0 && (
               <Text style={styles.helperText}>
-                Tap "Verify" to receive a verification code
+                Tap "Verify" below to receive a verification code
               </Text>
             )}
         </View>
@@ -334,6 +349,19 @@ const styles = StyleSheet.create({
     color: '#3b82f6',
     fontSize: moderateScale(14),
     fontFamily: 'Inter-SemiBold',
+  },
+  verifiedBadge: {
+    backgroundColor: '#10b981',
+    borderRadius: scale(12),
+    width: scale(28),
+    height: scale(28),
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  verifiedText: {
+    color: '#ffffff',
+    fontSize: moderateScale(16),
+    fontWeight: '700',
   },
 });
 
