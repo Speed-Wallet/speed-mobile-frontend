@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import ScreenContainer from '@/components/ScreenContainer';
 import ProgressBar from '@/components/ProgressBar';
 import { StorageService, PersonalInfo } from '@/utils/storage';
@@ -31,6 +31,10 @@ interface KYCScreenProps {
 
 export default function KYCScreen({ onComplete }: KYCScreenProps = {}) {
   const router = useRouter();
+  const params = useLocalSearchParams();
+  const fromScreen = params.from as string | undefined;
+  const pinVerified = params.pinVerified as string | undefined;
+
   const [step, setStep] = useState<KYCStep>(KYCStep.COUNTRY_PHONE);
   const [isLoading, setIsLoading] = useState(false);
   const [username, setUsername] = useState('');
@@ -223,11 +227,14 @@ export default function KYCScreen({ onComplete }: KYCScreenProps = {}) {
     if (onComplete) {
       // IMPORTANT: Navigate FIRST, then call onComplete
       // If we call onComplete first, the layout re-renders and navigation breaks
-      router.push('/(tabs)/spend' as any);
+      router.push('/(tabs)/spend?pinVerified=true');
       // Use setTimeout to ensure navigation completes before state change
       setTimeout(() => {
         onComplete();
       }, 100);
+    } else if (fromScreen === 'spend') {
+      // If navigated from spend screen, go back to spend with pinVerified flag
+      router.push(`/(tabs)/spend?pinVerified=${pinVerified || 'true'}`);
     } else {
       // If called from settings, just go back to settings
       router.push('/settings');
@@ -239,7 +246,12 @@ export default function KYCScreen({ onComplete }: KYCScreenProps = {}) {
       // If onComplete is provided, it means we're at root level
       // Don't allow back navigation in that case
       if (!onComplete) {
-        router.push('/settings');
+        // Navigate back to where we came from
+        if (fromScreen === 'spend') {
+          router.push('/(tabs)/spend' as any);
+        } else {
+          router.push('/settings');
+        }
       }
     } else {
       setStep(currentStep - 1);

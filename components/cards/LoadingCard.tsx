@@ -111,14 +111,6 @@ export const LoadingCard: React.FC<LoadingCardProps> = ({
     };
   }, []);
 
-  // Log current step only when it changes
-  React.useEffect(() => {
-    console.log('⭐ Current step:', currentStep);
-    if (hasExistingCards && currentStep === 3) {
-      console.log('🚀 Auto-advanced past KYC step for existing card holder');
-    }
-  }, [currentStep, hasExistingCards]);
-
   // Step configuration
   const steps = [
     {

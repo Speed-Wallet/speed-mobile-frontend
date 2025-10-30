@@ -319,7 +319,9 @@ const CreateCardBottomSheet = forwardRef<
       )}
     >
       <BottomSheetView style={styles.bottomSheetContent}>
-        <SettingsHeader title="Create New Card" onClose={handleClose} />
+        <View style={styles.headerContainer}>
+          <SettingsHeader title="Create New Card" onClose={handleClose} />
+        </View>
 
         <ScrollView
           showsVerticalScrollIndicator={false}
@@ -578,6 +580,9 @@ const styles = StyleSheet.create({
   bottomSheetContent: {
     flex: 1,
     backgroundColor: colors.backgroundDark,
+  },
+  headerContainer: {
+    paddingHorizontal: 15,
   },
   scrollContent: {
     paddingHorizontal: 15,

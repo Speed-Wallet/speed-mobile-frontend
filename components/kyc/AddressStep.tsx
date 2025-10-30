@@ -121,13 +121,46 @@ const AddressStep: React.FC<AddressStepProps> = ({
   };
 
   const handleSelectSuggestion = (result: AddressAutocompleteResult) => {
-    const fullAddress = AddressService.getFullAddress(result);
-    setAddress(fullAddress);
+    // Build address WITHOUT the street number
+    const addressWithoutNumber = getAddressWithoutNumber(result);
+    setAddress(addressWithoutNumber);
     setSelectedAddress(result);
     setShowSuggestions(false);
     setSuggestions([]);
     setAddressError(false);
     Keyboard.dismiss();
+  };
+
+  /**
+   * Build full address string WITHOUT the street number
+   */
+  const getAddressWithoutNumber = (
+    result: AddressAutocompleteResult,
+  ): string => {
+    const parts: string[] = [];
+
+    // Skip addressNumber - we want it separate
+    if (result.address.street) {
+      parts.push(result.address.street);
+    }
+
+    if (result.address.locality) {
+      parts.push(result.address.locality);
+    }
+
+    if (result.address.region) {
+      parts.push(result.address.region);
+    }
+
+    if (result.address.postalCode) {
+      parts.push(result.address.postalCode);
+    }
+
+    if (result.address.country) {
+      parts.push(result.address.country);
+    }
+
+    return parts.join(', ') || result.label || result.title;
   };
 
   const handleClearAddress = () => {
@@ -166,6 +199,8 @@ const AddressStep: React.FC<AddressStepProps> = ({
     try {
       // Extract street number from selected address or use empty string
       const streetNumber = selectedAddress?.address.addressNumber || '';
+
+      // Pass address WITHOUT number and street number separately
       await onNext(address, streetNumber);
     } catch (error) {
       console.error('Error in address step:', error);

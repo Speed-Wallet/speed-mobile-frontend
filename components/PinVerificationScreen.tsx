@@ -6,6 +6,7 @@ import ScreenContainer from '@/components/ScreenContainer';
 import IntroHeader from '@/components/wallet/IntroHeader';
 import CodeInput from '@/components/CodeInput';
 import { triggerShake } from '@/utils/animations';
+import { StorageService } from '@/utils/storage';
 
 interface PinVerificationScreenProps {
   onVerify: (pin: string) => Promise<boolean>;
@@ -29,6 +30,43 @@ const PinVerificationScreen: React.FC<PinVerificationScreenProps> = ({
     Array.from({ length: 6 }).map(() => new Animated.Value(0)),
   ).current;
   const PIN_LENGTH = 6;
+
+  // Clear KYC data in development mode when spend PIN screen loads
+  useEffect(() => {
+    if (process.env.EXPO_PUBLIC_APP_ENV === 'development') {
+      console.log('🧪 [DEV] ========================================');
+      console.log('🧪 [DEV] SPEND PIN SCREEN LOADED - Clearing KYC data');
+      console.log('🧪 [DEV] ========================================');
+
+      // Check current data before clearing
+      const beforeData = StorageService.loadPersonalInfo();
+      console.log('🧪 [DEV] KYC data BEFORE clearing:', beforeData);
+
+      try {
+        StorageService.savePersonalInfo({
+          name: '',
+          email: '',
+          phoneNumber: '',
+          dateOfBirth: '',
+          address: '',
+          streetNumber: '',
+          selectedCountry: {
+            code: '',
+            name: '',
+            flag: '',
+            dialCode: '',
+          },
+        });
+
+        // Verify data was cleared
+        const afterData = StorageService.loadPersonalInfo();
+        console.log('🧪 [DEV] KYC data AFTER clearing:', afterData);
+        console.log('🧪 [DEV] Data cleared successfully ✓');
+      } catch (error) {
+        console.error('🧪 [DEV] ❌ Error clearing KYC data:', error);
+      }
+    }
+  }, []); // Run once on mount
 
   const handleSubmit = async () => {
     if (pin.length === PIN_LENGTH) {

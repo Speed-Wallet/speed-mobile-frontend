@@ -33,7 +33,6 @@ import { Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import colors from '@/constants/colors';
-import { getCurrentVerificationLevel } from '@/utils/verification';
 import ScreenContainer from '@/components/ScreenContainer';
 import ScreenHeader from '@/components/ScreenHeader';
 import { useAlert } from '@/providers/AlertProvider';
@@ -117,23 +116,6 @@ const socialLinks = [
 export default function SettingsScreen() {
   const router = useRouter();
   const { alert, success } = useAlert();
-  const [verificationLevel, setVerificationLevel] = useState(0);
-
-  // Recalculate verification level whenever screen comes into focus
-  useFocusEffect(
-    React.useCallback(() => {
-      let mounted = true;
-      (async () => {
-        const level = await getCurrentVerificationLevel();
-        if (mounted) {
-          setVerificationLevel(level);
-        }
-      })();
-      return () => {
-        mounted = false;
-      };
-    }, []),
-  );
 
   // Get color for verification level
   const getVerificationColor = (level: number) => {

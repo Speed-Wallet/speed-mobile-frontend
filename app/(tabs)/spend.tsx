@@ -12,7 +12,7 @@ import {
 import * as Clipboard from 'expo-clipboard';
 import { useFocusEffect } from '@react-navigation/native';
 import { CreditCard } from 'lucide-react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import ScreenContainer from '@/components/ScreenContainer';
 import ScreenHeader from '@/components/ScreenHeader';
 import { StorageService } from '@/utils/storage';
@@ -20,7 +20,7 @@ import { PaymentCard } from '@/types/cards';
 import { sendUsdtToCashwyre } from '@/utils/sendTransaction';
 import { mockSendUsdtToCashwyre } from '@/utils/mockTransaction';
 import { setupNotificationListeners } from '@/services/notifications';
-import { getCurrentVerificationLevel } from '@/utils/verification';
+import { validatePersonalInfo } from '@/utils/verification';
 import {
   simulateUSDTReceived,
   getWalletAddress,
@@ -48,7 +48,6 @@ import PinVerificationScreen from '@/components/PinVerificationScreen';
 import { MMKVStorage } from '@/utils/mmkvStorage';
 // Note: cardCreationSteps service simplified since we now use status-based polling
 
-const MIN_KYC_LEVEL = 1; // Minimum KYC level required for virtual cards
 const SPEND_PIN_KEY = 'spend_pin_verified'; // Key to track PIN verification state
 
 // Configure notification handler
@@ -61,7 +60,10 @@ Notifications.setNotificationHandler({
 });
 
 export default function CardsScreen() {
-  const [isPinVerified, setIsPinVerified] = useState(false);
+  const params = useLocalSearchParams();
+  const pinVerifiedParam = params.pinVerified === 'true';
+
+  const [isPinVerified, setIsPinVerified] = useState(pinVerifiedParam);
   const [selectedBrand, setSelectedBrand] = useState<'mastercard' | 'visa'>(
     'visa',
   );
@@ -163,6 +165,28 @@ export default function CardsScreen() {
     const BETA_ACCESS_PIN = '615894';
 
     if (pin === BETA_ACCESS_PIN) {
+      console.log('🔐 [PIN] PIN verified successfully');
+
+      // Check KYC after successful PIN entry
+      console.log(
+        '🔍 [KYC CHECK] Checking KYC status after PIN verification...',
+      );
+      const isKYCComplete = await checkKYCComplete();
+
+      if (!isKYCComplete) {
+        console.log(
+          '🔍 [KYC CHECK] ❌ KYC incomplete - redirecting to KYC flow',
+        );
+        // Redirect to KYC immediately - but return true because PIN was correct
+        setTimeout(() => {
+          router.push('/kyc?from=spend&pinVerified=true');
+        }, 100); // Small delay to prevent UI flash
+        return true; // PIN was correct, just need KYC
+      }
+
+      console.log(
+        '🔍 [KYC CHECK] ✅ KYC complete - proceeding to spend screen',
+      );
       setIsPinVerified(true);
       return true;
     }
@@ -175,9 +199,16 @@ export default function CardsScreen() {
     router.push('/(tabs)' as any);
   };
 
-  const checkKYCLevel = async (minLevel: 1 | 2 | 3) => {
-    const verificationLevel = await getCurrentVerificationLevel();
-    return verificationLevel >= minLevel;
+  const checkKYCComplete = async (): Promise<boolean> => {
+    console.log('🔍 [KYC CHECK] checkKYCComplete called');
+    const personalInfo = await StorageService.loadPersonalInfo();
+    console.log('🔍 [KYC CHECK] Loaded personalInfo:', personalInfo);
+
+    const validation = validatePersonalInfo(personalInfo);
+    console.log('🔍 [KYC CHECK] Validation result:', validation);
+    console.log('🔍 [KYC CHECK] Is KYC complete?', validation.isValid);
+
+    return validation.isValid;
   };
 
   const showCustomAlert = (
@@ -228,30 +259,6 @@ export default function CardsScreen() {
   };
 
   const handleAddCardPress = async () => {
-    // Check KYC first
-    const isKYCCompliant = await checkKYCLevel(MIN_KYC_LEVEL);
-
-    if (!isKYCCompliant) {
-      // Show the KYC alert
-      Alert.alert(
-        'KYC Verification Required',
-        `You need to complete KYC Level ${MIN_KYC_LEVEL} verification to create virtual cards. Please complete your document verification first.`,
-        [
-          {
-            text: 'Cancel',
-            style: 'cancel',
-          },
-          {
-            text: 'Complete KYC',
-            onPress: () => {
-              router.push('/settings/kyc');
-            },
-          },
-        ],
-      );
-      return;
-    }
-
     // Open bottom sheet
     addCardBottomSheetRef.current?.present();
   };

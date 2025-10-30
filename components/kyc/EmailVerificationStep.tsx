@@ -52,9 +52,7 @@ const EmailVerificationStep: React.FC<EmailVerificationStepProps> = ({
 
   // Check if email is already verified on mount
   useEffect(() => {
-    if (initialEmail && validateEmail(initialEmail)) {
-      checkEmailVerificationStatus(initialEmail);
-    }
+    // Don't auto-check on mount - only check when user clicks verify
   }, []);
 
   const checkEmailVerificationStatus = async (emailToCheck: string) => {
@@ -62,12 +60,17 @@ const EmailVerificationStep: React.FC<EmailVerificationStepProps> = ({
       const statusResponse = await checkEmailStatus(emailToCheck);
       if (statusResponse.isVerified) {
         setEmailStatus('verified');
+        // If email is already verified, automatically proceed to next step
+        // This allows users who have already verified their email to skip OTP
+        return true;
       } else {
         setEmailStatus('needs_verification');
+        return false;
       }
     } catch (error) {
       console.error('Error checking email status:', error);
       setEmailStatus('needs_verification');
+      return false;
     }
   };
 
@@ -89,13 +92,8 @@ const EmailVerificationStep: React.FC<EmailVerificationStepProps> = ({
     }
   };
 
-  const handleEmailBlur = async () => {
+  const handleEmailBlur = () => {
     setEmailError(!validateEmail(email));
-
-    // Check if email is already verified on blur
-    if (validateEmail(email)) {
-      await checkEmailVerificationStatus(email);
-    }
   };
 
   const handleSendVerification = async () => {
@@ -108,15 +106,21 @@ const EmailVerificationStep: React.FC<EmailVerificationStepProps> = ({
     setIsSendingOtp(true);
     try {
       // First check if email is already verified in the backend
+      // This is secure because the backend checks user.userName (from JWT token)
+      console.log('🔍 Checking email verification status for:', email);
       const statusResponse = await checkEmailStatus(email);
+      console.log('✅ Email verification status response:', statusResponse);
+
       if (statusResponse.isVerified) {
-        // Email is already verified, update status
+        // Email is already verified for this username, skip OTP
+        console.log('✅ Email is already verified! Skipping OTP.');
         setEmailStatus('verified');
         setIsSendingOtp(false);
         return;
       }
 
       // Email not verified, proceed with OTP flow
+      console.log('📧 Email not verified yet, sending OTP...');
       const response = await sendOtp(email);
       setOtpId(response.otpId || null);
       setOtpExpiresAt(response.expiresAt || null);
@@ -127,7 +131,7 @@ const EmailVerificationStep: React.FC<EmailVerificationStepProps> = ({
         onShowOtpStep(email, response.otpId, response.expiresAt);
       }
     } catch (error) {
-      console.error('Error sending OTP:', error);
+      console.error('❌ Error in verification flow:', error);
       triggerShake(shakeAnimationValue);
     } finally {
       setIsSendingOtp(false);
@@ -268,6 +272,12 @@ const EmailVerificationStep: React.FC<EmailVerificationStepProps> = ({
           )}
 
           {/* Helper Text */}
+          {emailStatus === 'verified' && (
+            <Text style={styles.successText}>
+              ✓ Email already verified! You can continue to the next step.
+            </Text>
+          )}
+
           {emailStatus === 'needs_verification' &&
             !emailError &&
             email.trim().length > 0 && (
@@ -340,6 +350,12 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(13),
     color: '#9ca3af',
     marginTop: verticalScale(6),
+  },
+  successText: {
+    fontSize: moderateScale(13),
+    color: '#10b981',
+    marginTop: verticalScale(6),
+    fontWeight: '600',
   },
   changeEmailButton: {
     alignSelf: 'flex-start',

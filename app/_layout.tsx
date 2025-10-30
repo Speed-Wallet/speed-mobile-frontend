@@ -132,9 +132,18 @@ export default function RootLayout() {
 
   // Helper function to check if KYC is complete
   const checkKYCComplete = (): boolean => {
+    console.log('🔍 [KYC CHECK] ========================================');
+    console.log('🔍 [KYC CHECK] checkKYCComplete called in _layout.tsx');
+    console.log('🔍 [KYC CHECK] ========================================');
+
     try {
       const personalInfo = StorageService.loadPersonalInfo();
-      if (!personalInfo) return false;
+      console.log('🔍 [KYC CHECK] Loaded personalInfo:', personalInfo);
+
+      if (!personalInfo) {
+        console.log('🔍 [KYC CHECK] ❌ No personalInfo found - KYC incomplete');
+        return false;
+      }
 
       // Check if all required KYC fields are filled
       const isComplete = !!(
@@ -147,9 +156,23 @@ export default function RootLayout() {
         personalInfo.selectedCountry
       );
 
+      console.log('🔍 [KYC CHECK] Field checks:');
+      console.log('  - name:', !!personalInfo.name);
+      console.log('  - email:', !!personalInfo.email);
+      console.log('  - phoneNumber:', !!personalInfo.phoneNumber);
+      console.log('  - dateOfBirth:', !!personalInfo.dateOfBirth);
+      console.log('  - address:', !!personalInfo.address);
+      console.log('  - streetNumber:', !!personalInfo.streetNumber);
+      console.log('  - selectedCountry:', !!personalInfo.selectedCountry);
+      console.log(
+        '🔍 [KYC CHECK] Final result:',
+        isComplete ? '✅ KYC Complete' : '❌ KYC Incomplete',
+      );
+      console.log('🔍 [KYC CHECK] ========================================');
+
       return isComplete;
     } catch (error) {
-      console.error('Error checking KYC status:', error);
+      console.error('🔍 [KYC CHECK] ❌ Error checking KYC status:', error);
       return false;
     }
   };
@@ -221,14 +244,9 @@ export default function RootLayout() {
               onWalletSetupComplete={async () => {
                 // Small delay to allow success screen to be visible and prevent layout shift
                 setTimeout(async () => {
-                  // Check if KYC is complete
-                  const kycComplete = checkKYCComplete();
-
-                  if (kycComplete) {
-                    setWalletState('unlocked');
-                  } else {
-                    setWalletState('kyc_pending');
-                  }
+                  // Simply unlock the wallet after setup
+                  // KYC will be checked when user tries to access features that require it
+                  setWalletState('unlocked');
 
                   // Trigger authentication after wallet setup
                   try {
@@ -255,14 +273,9 @@ export default function RootLayout() {
           <AlertProvider>
             <EnterPinScreen
               onWalletUnlocked={async () => {
-                // Check if KYC is complete
-                const kycComplete = checkKYCComplete();
-
-                if (kycComplete) {
-                  setWalletState('unlocked');
-                } else {
-                  setWalletState('kyc_pending');
-                }
+                // Simply unlock the wallet - don't force KYC flow here
+                // KYC will be checked when user tries to access features that require it
+                setWalletState('unlocked');
 
                 // Trigger authentication after wallet unlock
                 try {
@@ -283,17 +296,30 @@ export default function RootLayout() {
   }
 
   if (walletState === 'kyc_pending') {
+    // Don't render KYCScreen directly - use the Stack and navigate to it
+    // This prevents the navigation context from being lost
     return (
       <SafeAreaProvider>
         <GestureHandlerRootView style={{ flex: 1 }}>
           <AlertProvider>
             <BottomSheetModalProvider>
-              <KYCScreen
-                onComplete={() => {
-                  // After KYC is complete, move to unlocked state
-                  setWalletState('unlocked');
+              <Stack
+                screenOptions={{
+                  headerShown: false,
+                  contentStyle: { backgroundColor: colors.backgroundDark },
                 }}
-              />
+              >
+                <Stack.Screen
+                  name="settings/kyc"
+                  options={{ headerShown: false }}
+                  initialParams={{
+                    onComplete: () => {
+                      // After KYC is complete, move to unlocked state
+                      setWalletState('unlocked');
+                    },
+                  }}
+                />
+              </Stack>
             </BottomSheetModalProvider>
           </AlertProvider>
         </GestureHandlerRootView>
