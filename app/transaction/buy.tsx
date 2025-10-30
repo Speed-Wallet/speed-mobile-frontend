@@ -263,7 +263,7 @@ export default function BuyScreen() {
         channelId: selectedChannel.id,
       });
 
-      const url = `https://payments-widget.netlify.app/landing/${apiKey}?${params.toString()}`;
+      const url = `https://widget.yellowcard.io/landing/${apiKey}?${params.toString()}`;
 
       await Linking.openURL(url);
     } catch (error) {
