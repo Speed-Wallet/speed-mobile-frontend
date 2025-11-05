@@ -357,6 +357,44 @@ export default function CardsScreen() {
         );
       }
 
+      // 🔍 DEBUG: Print stored address variables
+      console.log('📍 [ADDRESS DEBUG] Stored address data:');
+      console.log('  - streetNumber:', personalInfo.streetNumber);
+      console.log('  - address:', personalInfo.address);
+      console.log(
+        '  - Full personalInfo:',
+        JSON.stringify(personalInfo, null, 2),
+      );
+
+      // Validate that streetNumber exists
+      if (
+        !personalInfo.streetNumber ||
+        personalInfo.streetNumber.trim().length === 0
+      ) {
+        setIsLoading(false);
+        showCustomAlert(
+          '⚠️ Missing Street Number',
+          'Your address is missing a street number. Please update your KYC information to include your street number.',
+          'warning',
+          [
+            {
+              text: 'Update KYC',
+              onPress: () => {
+                hideCustomAlert();
+                router.push('/kyc?from=spend&pinVerified=true');
+              },
+              style: 'default',
+            },
+            {
+              text: 'Cancel',
+              onPress: hideCustomAlert,
+              style: 'cancel',
+            },
+          ],
+        );
+        return;
+      }
+
       // Split the name into first and last name
       const nameParts = personalInfo.name.split(' ');
       const firstName = nameParts[0] || '';
@@ -377,6 +415,12 @@ export default function CardsScreen() {
           selectedBrand.charAt(0).toUpperCase() +
           selectedBrand.slice(1).toLowerCase(),
       };
+
+      // 🔍 DEBUG: Print card data being sent
+      console.log('📋 [CARD DATA DEBUG] Data being sent to backend:');
+      console.log('  - homeAddressNumber:', cardData.homeAddressNumber);
+      console.log('  - homeAddress:', cardData.homeAddress);
+      console.log('  - Full cardData:', JSON.stringify(cardData, null, 2));
 
       // Calculate total amount including fees (same as displayed to user)
       const totalAmount =

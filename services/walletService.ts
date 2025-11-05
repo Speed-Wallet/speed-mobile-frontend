@@ -35,6 +35,7 @@ import {
   getNextAccountIndex,
 } from '@/utils/derivation';
 import { AuthService } from './authService';
+import { PBKDF2_ITERATION_COUNT, AES_KEY_SIZE } from '@/constants/encryption';
 import {
   getAppCrypto,
   getAllStoredWallets,
@@ -144,9 +145,6 @@ interface StoredWalletInfo {
 }
 
 // --- Encryption/Decryption Helpers ---
-const ITERATION_COUNT = 10000; // PBKDF2 iteration count
-const KEY_SIZE = 256 / 32; // 256-bit key
-
 const generateSalt = (): string =>
   CryptoJS.lib.WordArray.random(128 / 8).toString(CryptoJS.enc.Hex);
 const generateIV = (): string =>
@@ -154,8 +152,8 @@ const generateIV = (): string =>
 
 const deriveKey = (pin: string, salt: string): CryptoJS.lib.WordArray => {
   return CryptoJS.PBKDF2(pin, CryptoJS.enc.Hex.parse(salt), {
-    keySize: KEY_SIZE,
-    iterations: ITERATION_COUNT,
+    keySize: AES_KEY_SIZE,
+    iterations: PBKDF2_ITERATION_COUNT,
     hasher: CryptoJS.algo.SHA256,
   });
 };
@@ -790,8 +788,16 @@ export const saveWalletToList = async (
   derivationPath?: string,
 ): Promise<void> => {
   try {
+    // Batch ALL read operations for better performance
+    const [hasPin, existingWallets, appCrypto, hasMaster] = await Promise.all([
+      hasAppPin(),
+      getAllStoredWallets(),
+      getAppCrypto(),
+      hasMasterMnemonic(),
+    ]);
+
     // Check if app PIN exists, if not create it
-    if (!(await hasAppPin())) {
+    if (!hasPin) {
       await createAppPin(pin);
     } else {
       // Verify the PIN matches the app PIN
@@ -800,25 +806,48 @@ export const saveWalletToList = async (
       }
     }
 
-    // Get app-level crypto settings
-    const appCrypto = await getAppCrypto();
-    if (!appCrypto) {
+    // Ensure we have app crypto settings (either from batch read or after createAppPin)
+    const finalAppCrypto = appCrypto || (await getAppCrypto());
+    if (!finalAppCrypto) {
       throw new Error('Failed to get app crypto settings');
     }
 
     // Check if this is the first wallet
-    const existingWallets = await getAllStoredWallets();
     const isMasterWallet = existingWallets.length === 0;
 
-    // Store master mnemonic if this is the first wallet (and it doesn't exist already)
-    if (isMasterWallet && !(await hasMasterMnemonic())) {
-      // Store the master mnemonic encrypted with the app PIN
-      const masterEncryption = encryptMnemonic(
-        mnemonic,
-        pin,
-        appCrypto.salt,
-        appCrypto.iv,
-      );
+    // Start encryption operations in parallel (CPU-intensive)
+    const masterEncryptionPromise =
+      isMasterWallet && !hasMaster
+        ? Promise.resolve(
+            encryptMnemonic(
+              mnemonic,
+              pin,
+              finalAppCrypto.salt,
+              finalAppCrypto.iv,
+            ),
+          )
+        : Promise.resolve(null);
+
+    const walletEncryptionPromise = Promise.resolve(
+      encryptMnemonic(mnemonic, pin, finalAppCrypto.salt, finalAppCrypto.iv),
+    );
+
+    // Start creating keypair in parallel (also CPU-intensive)
+    const walletAccountIndex = accountIndex !== undefined ? accountIndex : 0;
+    const keypairPromise = createKeypairFromMnemonic(
+      mnemonic,
+      walletAccountIndex,
+    );
+
+    // Wait for all encryption operations to complete
+    const [masterEncryption, encryption, keypair] = await Promise.all([
+      masterEncryptionPromise,
+      walletEncryptionPromise,
+      keypairPromise,
+    ]);
+
+    // Store master mnemonic if this is the first wallet
+    if (masterEncryption) {
       SecureMMKVStorage.setItem(
         MASTER_MNEMONIC_KEY,
         masterEncryption.encryptedMnemonic,
@@ -826,13 +855,7 @@ export const saveWalletToList = async (
       console.log('Master mnemonic stored during initial wallet creation');
     }
 
-    // Encrypt with app-level salt/IV
-    const encryption = encryptMnemonic(
-      mnemonic,
-      pin,
-      appCrypto.salt,
-      appCrypto.iv,
-    );
+    // Create wallet item with encrypted mnemonic
     const walletItem: StoredWalletItem = {
       id,
       name,
@@ -846,17 +869,18 @@ export const saveWalletToList = async (
 
     const updatedWallets = [...existingWallets, walletItem];
 
-    SecureMMKVStorage.setItem(WALLETS_LIST_KEY, JSON.stringify(updatedWallets));
+    // Store wallet list and set active wallet in parallel
+    await Promise.all([
+      Promise.resolve(
+        SecureMMKVStorage.setItem(
+          WALLETS_LIST_KEY,
+          JSON.stringify(updatedWallets),
+        ),
+      ),
+      setActiveWallet(id),
+    ]);
 
-    // Set as active wallet
-    await setActiveWallet(id);
-
-    // Load wallet into memory immediately (default to accountIndex 0 for legacy wallets)
-    const walletAccountIndex = accountIndex !== undefined ? accountIndex : 0;
-    const keypair = await createKeypairFromMnemonic(
-      mnemonic,
-      walletAccountIndex,
-    );
+    // Load wallet into memory immediately (already computed above)
     WALLET = keypair;
     notifyWalletStateChange();
   } catch (error) {

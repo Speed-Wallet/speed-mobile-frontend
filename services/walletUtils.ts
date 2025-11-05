@@ -3,15 +3,12 @@ import { Keypair } from '@solana/web3.js';
 import CryptoJS from 'crypto-js';
 import { validateMnemonic } from '@/utils/bip39';
 import { createKeypairFromMnemonic } from '@/utils/derivation';
+import { PBKDF2_ITERATION_COUNT, AES_KEY_SIZE } from '@/constants/encryption';
 
 // Storage keys
 const WALLETS_LIST_KEY = 'solanaWalletsList'; // Key for storing wallet list
 const APP_SALT_KEY = 'appSalt'; // Key for storing app-level salt
 const APP_IV_KEY = 'appIV'; // Key for storing app-level IV
-
-// Encryption constants
-const ITERATION_COUNT = 10000; // PBKDF2 iteration count
-const KEY_SIZE = 256 / 32; // 256-bit key
 
 interface StoredWalletItem {
   id: string;
@@ -30,8 +27,8 @@ let TEMP_APP_PIN: string | null = null;
 
 const deriveKey = (pin: string, salt: string): CryptoJS.lib.WordArray => {
   return CryptoJS.PBKDF2(pin, CryptoJS.enc.Hex.parse(salt), {
-    keySize: KEY_SIZE,
-    iterations: ITERATION_COUNT,
+    keySize: AES_KEY_SIZE,
+    iterations: PBKDF2_ITERATION_COUNT,
     hasher: CryptoJS.algo.SHA256,
   });
 };

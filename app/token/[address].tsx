@@ -116,6 +116,15 @@ export default function TokenDetailScreen() {
 
       const response = await getHistoricalPrices(address, timeframe);
 
+      console.log('[TokenDetail] Historical API response:', {
+        success: response.success,
+        hasData: !!response.data,
+        hasItems: !!response.data?.items,
+        itemsLength: response.data?.items?.length || 0,
+        timeframe,
+        address,
+      });
+
       if (!response.success) {
         throw new Error(response.error || 'Failed to load historical data');
       }
@@ -126,6 +135,13 @@ export default function TokenDetailScreen() {
         response,
         timeframe,
       );
+
+      console.log('[TokenDetail] Formatted chart data:', {
+        formattedLength: formattedChart.length,
+        timeframe,
+        sampleData: formattedChart.slice(0, 3),
+      });
+
       setChartData(formattedChart);
 
       const change = calculatePriceChange(response, timeframe);

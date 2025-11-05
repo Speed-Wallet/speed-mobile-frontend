@@ -1,14 +1,6 @@
-import {
-  View,
-  Text,
-  StyleSheet,
-  TextInput,
-  Platform,
-  Animated,
-} from 'react-native';
+import { View, Text, StyleSheet, TextInput, Animated } from 'react-native';
 import { useState, useRef, useEffect } from 'react';
-import { User } from 'lucide-react-native';
-import { verticalScale, scale, moderateScale } from 'react-native-size-matters';
+import { verticalScale } from 'react-native-size-matters';
 import colors from '@/constants/colors';
 import BackButton from '@/components/buttons/BackButton';
 import PrimaryActionButton from '@/components/buttons/PrimaryActionButton';

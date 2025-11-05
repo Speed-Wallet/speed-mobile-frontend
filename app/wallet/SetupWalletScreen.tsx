@@ -153,13 +153,15 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
     setIsLoading(true);
 
     try {
-      // Create the app-level PIN first (this is the first wallet)
-      await createAppPin(pin);
-
-      // Generate unique wallet ID and save to multi-wallet system using app PIN
       const walletId = `wallet-${Date.now()}`;
       const walletName = 'Main';
-      await saveWalletToList(
+
+      // Show success immediately - don't wait for storage
+      setStep(WalletSetupStep.SUCCESS);
+      setIsLoading(false);
+
+      // Store wallet in background, then authenticate after it's saved
+      saveWalletToList(
         walletId,
         walletName,
         mnemonic,
@@ -167,13 +169,29 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
         pin,
         accountIndex,
         derivationPath,
-      );
-
-      setStep(WalletSetupStep.SUCCESS);
+      )
+        .then(() => {
+          // Only authenticate after wallet is successfully saved
+          return AuthService.authenticate();
+        })
+        .catch((error) => {
+          console.error('Failed to save wallet or authenticate:', error);
+          // Wallet saving failed - show warning but don't block user
+          if (error.message?.includes('App must be unlocked')) {
+            console.warn(
+              'Authentication skipped - will authenticate on next app launch',
+            );
+          } else {
+            showError(
+              'Warning',
+              'Wallet setup complete but may need re-import.',
+            );
+          }
+        });
     } catch (error) {
-      showError('Error', 'Could not save wallet. Please try again.');
-    } finally {
       setIsLoading(false);
+      showError('Error', 'Could not setup wallet. Please try again.');
+      console.error(error);
     }
   };
 

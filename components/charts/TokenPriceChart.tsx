@@ -60,10 +60,33 @@ const TokenPriceChart: React.FC<TokenPriceChartProps> = ({
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [isInteracting, setIsInteracting] = useState(false);
 
+  // Log initial data for debugging
+  console.log('[TokenPriceChart] Data received:', {
+    dataLength: data?.length || 0,
+    timeframe,
+    firstPoint: data?.[0],
+    lastPoint: data?.[data?.length - 1],
+    allPoints: data,
+  });
+
   if (!data || data.length === 0) {
+    console.log('[TokenPriceChart] No data available');
     return (
       <View style={[styles.container, { width, height }]}>
         <Text style={styles.noDataText}>No chart data available</Text>
+      </View>
+    );
+  }
+
+  // Need at least 2 points to draw a line chart
+  if (data.length < 2) {
+    console.log('[TokenPriceChart] Insufficient data points:', data.length);
+    return (
+      <View style={[styles.container, styles.centerContent, { width, height }]}>
+        <Text style={styles.noDataText}>Not enough chart data available</Text>
+        <Text style={styles.noDataSubtext}>
+          Need more historical data to display chart
+        </Text>
       </View>
     );
   }
@@ -80,10 +103,23 @@ const TokenPriceChart: React.FC<TokenPriceChartProps> = ({
   const minPrice = Math.min(...prices);
   const maxPrice = Math.max(...prices);
   const priceRange = maxPrice - minPrice;
+
+  console.log('[TokenPriceChart] Price analysis:', {
+    numPoints: prices.length,
+    minPrice,
+    maxPrice,
+    priceRange,
+    prices: prices.slice(0, 10), // First 10 prices
+  });
   const avgPrice = (minPrice + maxPrice) / 2;
 
   // Calculate volatility as percentage of average price
   const volatilityPercentage = (priceRange / avgPrice) * 100;
+
+  console.log('[TokenPriceChart] Volatility:', {
+    avgPrice,
+    volatilityPercentage,
+  });
 
   // Calculate adaptive padding multiplier
   const paddingMultiplier = calculatePaddingMultiplier(
@@ -107,6 +143,13 @@ const TokenPriceChart: React.FC<TokenPriceChartProps> = ({
 
   // Logarithmic scale option: Enable for very low prices or high vol to focus on % changes
   const useLogScale = avgPrice < 0.001 || volatilityPercentage > 20;
+
+  console.log('[TokenPriceChart] Scale decision:', {
+    useLogScale,
+    avgPrice,
+    volatilityPercentage,
+  });
+
   if (useLogScale) {
     const { paddedLogMin, paddedLogRange } = calculateLogScale(
       minPrice,
@@ -146,6 +189,19 @@ const TokenPriceChart: React.FC<TokenPriceChartProps> = ({
   const generatePaths = (splitIndex: number | null = null) => {
     if (data.length === 0)
       return { beforePath: '', afterPath: '', fullPath: '' };
+
+    console.log('[TokenPriceChart] Generating paths:', {
+      dataLength: data.length,
+      splitIndex,
+      chartWidth,
+      chartHeight,
+      samplePoints: data.slice(0, 3).map((d, i) => ({
+        index: i,
+        price: d.price,
+        x: scaleX(i),
+        y: scaleY(d.price),
+      })),
+    });
 
     let beforePath = '';
     let afterPath = '';
@@ -490,9 +546,20 @@ const styles = StyleSheet.create({
   container: {
     position: 'relative',
   },
+  centerContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   noDataText: {
     color: '#9ca3af',
     fontSize: scale(14),
+    textAlign: 'center',
+  },
+  noDataSubtext: {
+    color: '#6b7280',
+    fontSize: scale(12),
+    marginTop: verticalScale(4),
+    textAlign: 'center',
   },
   timeDisplay: {
     position: 'absolute',

@@ -41,6 +41,7 @@ const AddressStep: React.FC<AddressStepProps> = ({
   const [selectedAddress, setSelectedAddress] =
     useState<AddressAutocompleteResult | null>(null);
   const [addressError, setAddressError] = useState(false);
+  const [missingNumberError, setMissingNumberError] = useState(false);
   const [suggestions, setSuggestions] = useState<AddressAutocompleteResult[]>(
     [],
   );
@@ -63,6 +64,17 @@ const AddressStep: React.FC<AddressStepProps> = ({
   const hasMinimumAlphaCharacters = (text: string): boolean => {
     const alphaCount = (text.match(/[a-zA-Z]/g) || []).length;
     return alphaCount >= 4;
+  };
+
+  const firstWordIsNumeric = (text: string): boolean => {
+    const trimmedText = text.trim();
+    if (trimmedText.length === 0) return false;
+
+    // Get the first word (split by space, comma, or other common delimiters)
+    const firstWord = trimmedText.split(/[\s,]+/)[0];
+
+    // Check if the first word contains at least one digit
+    return /\d/.test(firstWord);
   };
 
   useEffect(() => {
@@ -114,6 +126,10 @@ const AddressStep: React.FC<AddressStepProps> = ({
     setSelectedAddress(null); // Clear selection when user types
     setShowSuggestions(true);
 
+    // Check if first word is numeric
+    const hasNumericStart = firstWordIsNumeric(text);
+    setMissingNumberError(text.trim().length > 0 && !hasNumericStart);
+
     // Clear error when user starts typing
     if (addressError) {
       setAddressError(!validateAddress(text));
@@ -128,6 +144,7 @@ const AddressStep: React.FC<AddressStepProps> = ({
     setShowSuggestions(false);
     setSuggestions([]);
     setAddressError(false);
+    setMissingNumberError(false);
     Keyboard.dismiss();
   };
 
@@ -169,6 +186,7 @@ const AddressStep: React.FC<AddressStepProps> = ({
     setSuggestions([]);
     setShowSuggestions(false);
     setAddressError(false);
+    setMissingNumberError(false);
     addressRef.current?.focus();
   };
 
@@ -197,11 +215,41 @@ const AddressStep: React.FC<AddressStepProps> = ({
     }
 
     try {
-      // Extract street number from selected address or use empty string
-      const streetNumber = selectedAddress?.address.addressNumber || '';
+      let streetNumber = '';
+      let addressWithoutNumber = address;
+
+      // Extract street number from selected address OR parse from manual input
+      if (selectedAddress?.address.addressNumber) {
+        // User selected from autocomplete - use the parsed number
+        streetNumber = selectedAddress.address.addressNumber;
+      } else {
+        // User typed manually - extract number from the beginning
+        const trimmedAddress = address.trim();
+        const firstWord = trimmedAddress.split(/[\s,]+/)[0];
+
+        // Check if first word contains digits
+        if (/\d/.test(firstWord)) {
+          streetNumber = firstWord;
+          // Remove the street number from the address
+          addressWithoutNumber = trimmedAddress
+            .substring(firstWord.length)
+            .trim();
+          // Remove leading comma if present
+          if (addressWithoutNumber.startsWith(',')) {
+            addressWithoutNumber = addressWithoutNumber.substring(1).trim();
+          }
+        }
+      }
+
+      // Validate that we have a street number
+      if (!streetNumber) {
+        setMissingNumberError(true);
+        triggerShake(shakeAnimationValue);
+        return;
+      }
 
       // Pass address WITHOUT number and street number separately
-      await onNext(address, streetNumber);
+      await onNext(addressWithoutNumber, streetNumber);
     } catch (error) {
       console.error('Error in address step:', error);
       triggerShake(shakeAnimationValue);
@@ -231,7 +279,7 @@ const AddressStep: React.FC<AddressStepProps> = ({
           <Animated.View
             style={[
               styles.inputWrapper,
-              addressError && styles.inputWrapperError,
+              (addressError || missingNumberError) && styles.inputWrapperError,
               { transform: [{ translateX: shakeAnimationValue }] },
             ]}
           >
@@ -305,12 +353,18 @@ const AddressStep: React.FC<AddressStepProps> = ({
           )}
 
           {/* Error Messages */}
-          {addressError && (
+          {missingNumberError && !selectedAddress && (
+            <Text style={styles.inputHintError}>
+              * Please include your street number at the beginning of the
+              address
+            </Text>
+          )}
+          {addressError && !missingNumberError && (
             <Text style={styles.inputHintError}>
               *Please enter a valid address (minimum 5 characters)*
             </Text>
           )}
-          {autocompleteError && !addressError && (
+          {autocompleteError && !addressError && !missingNumberError && (
             <Text style={styles.inputHintWarning}>
               Unable to fetch suggestions. You can still enter your address
               manually.
@@ -318,9 +372,11 @@ const AddressStep: React.FC<AddressStepProps> = ({
           )}
           {!addressError &&
             !autocompleteError &&
+            !missingNumberError &&
             (address.trim().length === 0 || !validateAddress(address)) && (
               <Text style={styles.inputHint}>
-                Start typing (at least 4 letters) for address suggestions.
+                Include street number and start typing for suggestions (e.g.,
+                123 Main Street).
               </Text>
             )}
         </View>
