@@ -21,9 +21,119 @@ export default function ChangePinScreen() {
   const [newPin, setNewPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isValidating, setIsValidating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const shakeAnimationValue = useRef(new Animated.Value(0)).current;
+
+  // Auto-verify current PIN when 6 digits entered
+  useEffect(() => {
+    if (step === 'current' && currentPin.length === 6 && !isValidating) {
+      setIsValidating(true);
+      setError(null);
+
+      requestAnimationFrame(async () => {
+        try {
+          const isValid = await verifyAppPin(currentPin);
+
+          if (isValid) {
+            setStep('new');
+            setIsValidating(false);
+          } else {
+            setTimeout(() => {
+              setError('Incorrect PIN');
+              setCurrentPin('');
+              triggerShake(shakeAnimationValue);
+              setIsValidating(false);
+            }, 200);
+          }
+        } catch (err) {
+          console.error('Error verifying PIN:', err);
+          setTimeout(() => {
+            setError('Failed to verify PIN');
+            setCurrentPin('');
+            triggerShake(shakeAnimationValue);
+            setIsValidating(false);
+          }, 200);
+        }
+      });
+    }
+  }, [currentPin, step, isValidating, shakeAnimationValue]);
+
+  // Auto-proceed to confirm when new PIN is 6 digits
+  useEffect(() => {
+    if (step === 'new' && newPin.length === 6 && !isValidating) {
+      setIsValidating(true);
+
+      requestAnimationFrame(() => {
+        if (newPin === currentPin) {
+          setTimeout(() => {
+            setError('New PIN must be different');
+            setNewPin('');
+            triggerShake(shakeAnimationValue);
+            setIsValidating(false);
+          }, 200);
+        } else {
+          setStep('confirm');
+          setIsValidating(false);
+        }
+      });
+    }
+  }, [newPin, step, currentPin, isValidating, shakeAnimationValue]);
+
+  // Auto-confirm when confirm PIN is 6 digits
+  useEffect(() => {
+    if (
+      step === 'confirm' &&
+      confirmPin.length === 6 &&
+      !isValidating &&
+      !isLoading
+    ) {
+      setIsValidating(true);
+      setError(null);
+
+      requestAnimationFrame(async () => {
+        if (confirmPin !== newPin) {
+          setTimeout(() => {
+            setError('PINs do not match');
+            setConfirmPin('');
+            triggerShake(shakeAnimationValue);
+            setIsValidating(false);
+          }, 200);
+        } else {
+          try {
+            setIsLoading(true);
+            await changeAppPin(currentPin, newPin);
+
+            success('PIN Changed', 'Your PIN has been successfully updated');
+
+            setTimeout(() => {
+              router.back();
+            }, 1500);
+          } catch (err) {
+            console.error('Error changing PIN:', err);
+            setTimeout(() => {
+              setError('Failed to change PIN');
+              setConfirmPin('');
+              triggerShake(shakeAnimationValue);
+              setIsLoading(false);
+              setIsValidating(false);
+            }, 200);
+          }
+        }
+      });
+    }
+  }, [
+    confirmPin,
+    newPin,
+    step,
+    isValidating,
+    isLoading,
+    currentPin,
+    shakeAnimationValue,
+    router,
+    success,
+  ]);
 
   const handleClose = () => {
     router.back();
@@ -64,6 +174,9 @@ export default function ChangePinScreen() {
   };
 
   const handleKeyPress = (key: string) => {
+    // Don't allow input while validating or loading
+    if (isValidating || isLoading) return;
+
     setError(null);
 
     if (key === 'backspace') {
@@ -82,125 +195,20 @@ export default function ChangePinScreen() {
       switch (step) {
         case 'current':
           if (currentPin.length < 6) {
-            const newCurrentPin = currentPin + key;
-            setCurrentPin(newCurrentPin);
-            if (newCurrentPin.length === 6) {
-              // Auto-verify when 6 digits entered
-              handleVerifyCurrentPin(newCurrentPin);
-            }
+            setCurrentPin(currentPin + key);
           }
           break;
         case 'new':
           if (newPin.length < 6) {
-            const newNewPin = newPin + key;
-            setNewPin(newNewPin);
-            if (newNewPin.length === 6) {
-              // Auto-proceed when 6 digits entered
-              handleSetNewPin(newNewPin);
-            }
+            setNewPin(newPin + key);
           }
           break;
         case 'confirm':
           if (confirmPin.length < 6) {
-            const newConfirmPin = confirmPin + key;
-            setConfirmPin(newConfirmPin);
-            if (newConfirmPin.length === 6) {
-              // Auto-confirm when 6 digits entered
-              handleConfirmNewPin(newConfirmPin);
-            }
+            setConfirmPin(confirmPin + key);
           }
           break;
       }
-    }
-  };
-
-  const handleVerifyCurrentPin = async (pinToVerify?: string) => {
-    const pin = pinToVerify || currentPin;
-    if (pin.length < 6) {
-      setError('PIN must be at least 6 digits');
-      triggerShake(shakeAnimationValue);
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const isValid = await verifyAppPin(pin);
-
-      if (isValid) {
-        // Move to next step
-        setStep('new');
-        setIsLoading(false);
-      } else {
-        setError('Incorrect PIN');
-        setCurrentPin('');
-        triggerShake(shakeAnimationValue);
-        setIsLoading(false);
-      }
-    } catch (err) {
-      console.error('Error verifying PIN:', err);
-      setError('Failed to verify PIN');
-      setCurrentPin('');
-      triggerShake(shakeAnimationValue);
-      setIsLoading(false);
-    }
-  };
-
-  const handleSetNewPin = (pinToSet?: string) => {
-    const pin = pinToSet || newPin;
-    if (pin.length < 6) {
-      setError('PIN must be at least 6 digits');
-      triggerShake(shakeAnimationValue);
-      return;
-    }
-
-    if (pin === currentPin) {
-      setError('New PIN must be different');
-      setNewPin('');
-      triggerShake(shakeAnimationValue);
-      return;
-    }
-
-    // Move to confirmation step
-    setStep('confirm');
-  };
-
-  const handleConfirmNewPin = async (pinToConfirm?: string) => {
-    const pin = pinToConfirm || confirmPin;
-    if (pin.length < 6) {
-      setError('PIN must be at least 6 digits');
-      triggerShake(shakeAnimationValue);
-      return;
-    }
-
-    if (pin !== newPin) {
-      setError('PINs do not match');
-      setConfirmPin('');
-      triggerShake(shakeAnimationValue);
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      // Use changeAppPin instead of createAppPin
-      await changeAppPin(currentPin, newPin);
-
-      success('PIN Changed', 'Your PIN has been successfully updated');
-
-      // Navigate back to settings
-      setTimeout(() => {
-        router.back();
-      }, 1500);
-    } catch (err) {
-      console.error('Error changing PIN:', err);
-      setError('Failed to change PIN');
-      setConfirmPin('');
-      triggerShake(shakeAnimationValue);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -223,6 +231,7 @@ export default function ChangePinScreen() {
             onKeyPress={handleKeyPress}
             maxLength={6}
             shakeAnimation={shakeAnimationValue}
+            isValidating={isValidating || isLoading}
           />
         </View>
       </View>

@@ -193,6 +193,7 @@ export default function TradeScreen() {
         fromToken!.address,
         toToken!.address,
         inAmount,
+        walletAddress || undefined, // Pass user's wallet address for accurate quotes
       );
 
       if (!newQuote) {

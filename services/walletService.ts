@@ -83,6 +83,62 @@ interface StoredWalletItem {
   isMasterWallet?: boolean; // True for the first wallet with the master mnemonic
 }
 
+// Cache for preloaded encrypted wallet data
+// This eliminates storage I/O delays when unlocking the app
+interface PreloadedWalletCache {
+  wallets: StoredWalletItem[] | null;
+  appCrypto: { salt: string; iv: string } | null;
+  activeWalletId: string | null;
+}
+
+let preloadedCache: PreloadedWalletCache = {
+  wallets: null,
+  appCrypto: null,
+  activeWalletId: null,
+};
+
+/**
+ * Preload encrypted wallet data into memory when EnterPinScreen mounts
+ * This eliminates the storage I/O delay when the user enters their PIN
+ */
+export const preloadEncryptedWallets = async (): Promise<void> => {
+  try {
+    console.log('Preloading encrypted wallet data...');
+
+    // Batch load all encrypted data in parallel
+    const [wallets, appCrypto, activeWalletId] = await Promise.all([
+      getAllStoredWallets(),
+      getAppCrypto(),
+      getActiveWalletId(),
+    ]);
+
+    // Cache the encrypted data in memory
+    preloadedCache = {
+      wallets: wallets || [],
+      appCrypto: appCrypto || null,
+      activeWalletId: activeWalletId || null,
+    };
+
+    console.log(
+      `Preloaded ${wallets?.length || 0} encrypted wallets into memory`,
+    );
+  } catch (error) {
+    console.error('Failed to preload encrypted wallets:', error);
+    // Don't throw - we can still fall back to loading on-demand
+  }
+};
+
+/**
+ * Clear the preloaded cache after successful unlock
+ */
+const clearPreloadedCache = (): void => {
+  preloadedCache = {
+    wallets: null,
+    appCrypto: null,
+    activeWalletId: null,
+  };
+};
+
 // Listener pattern for wallet state changes
 type WalletStateListener = (publicKey: string | null) => void;
 const walletStateListeners: Set<WalletStateListener> = new Set();
@@ -652,8 +708,7 @@ export {
 export interface PreparedJupiterSwap {
   signedTransaction: string;
   signature: string;
-  blockhash: string;
-  lastValidBlockHeight: number;
+  requestId: string; // Jupiter Ultra request ID
   userPublicKey: string;
   preparedAt: number; // Timestamp when transaction was prepared (ms)
 }
@@ -661,6 +716,7 @@ export interface PreparedJupiterSwap {
 /**
  * Prepare Jupiter swap transaction for preview (Step 1: Prepare and Sign)
  * This function is called when 'preview swap' is pressed
+ * Uses Jupiter Ultra API
  */
 export const prepareJupiterSwapTransaction = async (
   quoteResponse: JupiterQuoteResponse,
@@ -671,13 +727,17 @@ export const prepareJupiterSwapTransaction = async (
   }
 
   try {
-    // Step 1: Prepare the swap transaction on the backend
-    const { transaction, signature, blockhash, lastValidBlockHeight } =
-      await prepareJupiterSwap(
-        quoteResponse,
-        platformFee,
-        WALLET.publicKey.toBase58(),
-      );
+    // Step 1: Prepare the swap transaction on the backend (gets Jupiter Ultra order + prepares tx)
+    const { transaction, signature, requestId } = await prepareJupiterSwap(
+      quoteResponse,
+      platformFee,
+      WALLET.publicKey.toBase58(),
+    );
+
+    console.log('Transaction prepared from backend');
+    console.log('  Request ID:', requestId);
+    console.log('  Transaction size:', transaction.length, 'chars (base64)');
+
     // Step 2: Deserialize and sign the transaction locally
     const transactionBuffer = Buffer.from(transaction, 'base64');
     const versionedTransaction =
@@ -692,11 +752,12 @@ export const prepareJupiterSwapTransaction = async (
     );
     const signedTransaction = signedTransactionBuffer.toString('base64');
 
+    console.log('Transaction signed locally');
+
     return {
       signedTransaction,
       signature,
-      blockhash,
-      lastValidBlockHeight,
+      requestId,
       userPublicKey: WALLET.publicKey.toBase58(),
       preparedAt: Date.now(), // Track when transaction was prepared
     };
@@ -709,33 +770,52 @@ export const prepareJupiterSwapTransaction = async (
 /**
  * Confirm and submit Jupiter swap transaction (Step 2: Submit)
  * This function is called when 'confirm swap' is pressed
+ * Submits to Jupiter Ultra API execute endpoint
  */
 export const confirmJupiterSwap = async (
   preparedSwap: PreparedJupiterSwap,
 ): Promise<string> => {
   try {
-    // Check if transaction is getting stale
+    // Check if transaction is getting stale (Jupiter orders expire after 2 minutes)
     const ageSeconds = (Date.now() - preparedSwap.preparedAt) / 1000;
     console.log(`Transaction age: ${ageSeconds.toFixed(1)}s`);
 
-    if (ageSeconds > TRANSACTION.MAX_AGE_SECONDS) {
-      console.warn(
-        'Transaction is getting stale, may fail due to expired blockhash',
-      );
+    if (ageSeconds > 120) {
+      // 2 minutes for Jupiter Ultra
+      console.warn('Transaction order has expired (>2 minutes)');
       throw new Error(
-        'Transaction has expired. Please try again with a fresh quote.',
+        'Transaction order has expired. Please try again with a fresh quote.',
       );
     }
 
-    // Submit the signed transaction to the backend
-    const { signature } = await submitSignedTransaction(
+    console.log('Submitting to Jupiter Ultra execute endpoint...');
+    console.log('  Request ID:', preparedSwap.requestId);
+
+    // Submit the signed transaction to Jupiter Ultra API
+    const executeResponse = await submitSignedTransaction(
       preparedSwap.signedTransaction,
-      preparedSwap.signature,
-      preparedSwap.blockhash,
-      preparedSwap.lastValidBlockHeight,
+      preparedSwap.requestId,
     );
 
-    return signature;
+    console.log('Jupiter execute response:', executeResponse);
+
+    if (executeResponse.status === 'Success') {
+      if (!executeResponse.signature) {
+        throw new Error('No signature returned from Jupiter');
+      }
+      console.log('✅ Swap successful!');
+      console.log('  Signature:', executeResponse.signature);
+      return executeResponse.signature;
+    } else if (executeResponse.status === 'Failed') {
+      console.error('❌ Swap failed:', executeResponse.error);
+      throw new Error(executeResponse.error || 'Swap failed');
+    } else if (executeResponse.status === 'Pending') {
+      console.log('⏳ Swap is pending...');
+      // You can implement polling logic here if needed
+      throw new Error('Swap is still pending. Please check back later.');
+    }
+
+    throw new Error('Unknown swap status');
   } catch (error) {
     console.error('Jupiter swap confirmation error:', error);
     throw error;
@@ -1186,21 +1266,24 @@ export const unlockApp = async (pin: string): Promise<boolean> => {
       return false;
     }
 
-    // Get wallets and load active one if available
-    const wallets = await getAllStoredWallets();
+    // Use preloaded data if available, otherwise load on-demand
+    const wallets = preloadedCache.wallets || (await getAllStoredWallets());
+    const appCrypto = preloadedCache.appCrypto || (await getAppCrypto());
+    const activeWalletId =
+      preloadedCache.activeWalletId || (await getActiveWalletId());
+
     if (wallets.length === 0) {
       console.log('No wallets found - app unlocked but no wallets to load');
+      clearPreloadedCache();
       return true; // App is unlocked, just no wallets yet
     }
 
-    const activeWalletId = await getActiveWalletId();
     const activeWallet =
       wallets.find((w) => w.id === activeWalletId) || wallets[0];
 
-    // Get app crypto settings
-    const appCrypto = await getAppCrypto();
     if (!appCrypto) {
       console.log('No app crypto settings found');
+      clearPreloadedCache();
       return false;
     }
 
@@ -1214,6 +1297,7 @@ export const unlockApp = async (pin: string): Promise<boolean> => {
 
     if (!mnemonic || !(await validateMnemonic(mnemonic))) {
       console.error('Failed to decrypt active wallet');
+      clearPreloadedCache();
       return false;
     }
 
@@ -1229,9 +1313,13 @@ export const unlockApp = async (pin: string): Promise<boolean> => {
     WALLET = keypair;
     notifyWalletStateChange();
 
+    // Clear the cache after successful unlock
+    clearPreloadedCache();
+
     return true;
   } catch (error) {
     console.error('Failed to unlock app:', error);
+    clearPreloadedCache();
     return false;
   }
 };

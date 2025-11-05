@@ -1,9 +1,9 @@
 import { AuthService } from './authService';
 
 const BASE_BACKEND_URL = process.env.EXPO_PUBLIC_BASE_BACKEND_URL;
-const JUPITER_API_URL = 'https://lite-api.jup.ag/swap/v1/';
+const JUPITER_ULTRA_API = 'https://lite-api.jup.ag/ultra/v1';
 
-// Jupiter API response types
+// Jupiter Ultra API response types
 interface JupiterSwapInfo {
   ammKey: string;
   label: string;
@@ -18,73 +18,113 @@ interface JupiterSwapInfo {
 interface JupiterRoutePlan {
   swapInfo: JupiterSwapInfo;
   percent: number;
+  bps: number;
 }
 
-export interface JupiterQuoteResponse {
-  inputMint: string;
+export interface JupiterOrderResponse {
+  mode: string;
   inAmount: string;
-  outputMint: string;
   outAmount: string;
   otherAmountThreshold: string;
   swapMode: string;
   slippageBps: number;
-  platformFee: null | any;
   priceImpactPct: string;
   routePlan: JupiterRoutePlan[];
-  contextSlot: number;
-  timeTaken: number;
+  feeMint: string;
+  feeBps: number;
+  taker: string;
+  gasless: boolean;
+  signatureFeeLamports: number;
+  transaction: string;
+  prioritizationFeeLamports: number;
+  rentFeeLamports: number;
+  inputMint: string;
+  outputMint: string;
+  swapType: string;
+  router: string;
+  requestId: string;
+  inUsdValue?: number;
+  outUsdValue?: number;
+  priceImpact?: number;
+  swapUsdValue?: number;
+  totalTime?: number;
+  // Error fields
+  errorCode?: number;
+  errorMessage?: string;
+  error?: string;
 }
+
+// Keep old interface for backwards compatibility during migration
+export interface JupiterQuoteResponse extends JupiterOrderResponse {}
 
 export interface JupiterSwapResponse {
   transaction: string;
   signature: string;
-  blockhash: string;
-  lastValidBlockHeight: number;
-  message: string;
-}
-
-export interface SubmitTransactionResponse {
-  signature: string;
-  status: string;
+  requestId: string;
   message: string;
 }
 
 /**
- * Get a quote from Jupiter for a token swap
+ * Get an order (quote) from Jupiter Ultra API
+ * This replaces the old getJupiterQuote function
  */
 export const getJupiterQuote = async (
   fromMint: string,
   toMint: string,
   amount: number,
-): Promise<JupiterQuoteResponse> => {
+  userPublicKey: string, // Required: user's wallet address for balance validation
+): Promise<JupiterOrderResponse> => {
   // Ensure amount is an integer to avoid floating point issues
   const amountInt = Math.round(amount);
 
-  const quoteQueries = [
-    `inputMint=${fromMint}`,
-    `outputMint=${toMint}`,
-    `amount=${amountInt}`,
-    'restrictIntermediateTokens=true',
-    'dynamicSlippage=true',
-  ];
+  const taker = userPublicKey;
 
-  const url = `${JUPITER_API_URL}quote?${quoteQueries.join('&')}`;
+  const url =
+    `${JUPITER_ULTRA_API}/order` +
+    `?inputMint=${fromMint}` +
+    `&outputMint=${toMint}` +
+    `&amount=${amountInt}` +
+    `&taker=${taker}` +
+    `&slippageBps=50` +
+    `&gasless=true`;
 
   const response = await fetch(url);
   const json = await response.json();
 
   if (!response.ok) {
-    throw new Error(`Failed to get Jupiter quote: ${response.statusText}`);
+    throw new Error(`Failed to get Jupiter order: ${response.statusText}`);
+  }
+
+  // Check for error codes in response
+  if (json.error || json.errorCode) {
+    console.error('Jupiter order error:', json);
+    return json; // Return error response for handling
   }
 
   return json;
 };
 
+export interface JupiterSwapResponse {
+  transaction: string;
+  signature: string;
+  requestId: string;
+  message: string;
+}
+
+export interface JupiterExecuteResponse {
+  status: 'Success' | 'Failed' | 'Pending';
+  signature?: string;
+  error?: string;
+  message?: string;
+  slot?: string;
+  code?: number;
+}
+
 /**
- * Prepare a Jupiter swap transaction on the backend
+ * Prepare a Jupiter swap transaction via backend (gets order from Jupiter Ultra API)
  */
 export const prepareJupiterSwap = async (
-  quoteResponse: JupiterQuoteResponse,
+  quoteResponse: JupiterOrderResponse,
   platformFee: number,
   userPublicKey: string,
 ): Promise<JupiterSwapResponse> => {
@@ -94,48 +134,65 @@ export const prepareJupiterSwap = async (
     throw new Error('No authentication token available');
   }
 
-  console.log('input mint being sent to backend: ', quoteResponse.inputMint);
-  const response = await fetch(`${BASE_BACKEND_URL}/api/swap/jupiter`, {
+  console.log('Preparing Jupiter Ultra swap...');
+  console.log('  Input mint:', quoteResponse.inputMint);
+  console.log('  Output mint:', quoteResponse.outputMint);
+  console.log('  Amount:', quoteResponse.inAmount);
+
+  // Get fresh order from backend with correct user public key
+  const response = await fetch(`${BASE_BACKEND_URL}/api/jupiter/order`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({
-      quoteResponse,
-      platformFee,
+      inputMint: quoteResponse.inputMint,
+      outputMint: quoteResponse.outputMint,
+      amount: parseInt(quoteResponse.inAmount),
       userPublicKey,
+      slippageBps: quoteResponse.slippageBps,
     }),
   });
-  const json = await response.json();
-  console.log('json response: ', json);
+
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     throw new Error(
-      errorData.error ||
-        `Failed to prepare Jupiter swap: ${response.statusText}`,
+      errorData.error || `Failed to get Jupiter order: ${response.statusText}`,
     );
   }
 
-  return json;
+  const orderResponse = await response.json();
+  console.log('Order received from backend');
+  console.log('  Request ID:', orderResponse.requestId);
+  console.log('  Transaction present:', !!orderResponse.transaction);
+
+  // Return the order response directly - it contains the transaction
+  return {
+    transaction: orderResponse.transaction,
+    signature: '', // Will be filled after signing
+    requestId: orderResponse.requestId,
+    message: 'Order prepared successfully',
+  };
 };
 
 /**
- * Submit a signed transaction to the backend
+ * Submit a signed transaction via backend (which calls Jupiter Ultra API execute endpoint)
  */
 export const submitSignedTransaction = async (
   signedTransaction: string,
-  signature: string,
-  blockhash: string,
-  lastValidBlockHeight: number,
-): Promise<SubmitTransactionResponse> => {
+  requestId: string,
+): Promise<JupiterExecuteResponse> => {
   const token = await AuthService.getToken();
 
   if (!token) {
     throw new Error('No authentication token available');
   }
 
-  const response = await fetch(`${BASE_BACKEND_URL}/api/transaction/submit`, {
+  console.log('Submitting signed transaction via backend...');
+  console.log('  Request ID:', requestId);
+
+  const response = await fetch(`${BASE_BACKEND_URL}/api/jupiter/submit`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -143,28 +200,28 @@ export const submitSignedTransaction = async (
     },
     body: JSON.stringify({
       signedTransaction,
-      signature,
-      blockhash,
-      lastValidBlockHeight,
+      requestId,
     }),
   });
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
 
-    // Create a more descriptive error with the backend error details
+    // Create a more descriptive error with Jupiter error details
     const error: any = new Error(
       errorData.error || `Failed to submit transaction: ${response.statusText}`,
     );
 
     // Attach error metadata for better error handling
     error.details = errorData.details;
-    error.errorType = errorData.errorType;
-    error.isBlockhashExpired = errorData.isBlockhashExpired;
-    error.isInsufficientBalance = errorData.isInsufficientBalance;
+    error.code = errorData.code;
+    error.status = errorData.status;
 
     throw error;
   }
 
-  return response.json();
+  const result = await response.json();
+  console.log('Jupiter execute response:', result);
+
+  return result;
 };

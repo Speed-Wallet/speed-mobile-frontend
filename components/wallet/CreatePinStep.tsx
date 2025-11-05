@@ -122,6 +122,7 @@ const CreatePinStep: React.FC<CreatePinStepProps> = ({
           onKeyPress={handleKeyPress}
           maxLength={6}
           shakeAnimation={shakeAnimationValue}
+          isValidating={isValidating || isLoading}
         />
       </View>
     </View>

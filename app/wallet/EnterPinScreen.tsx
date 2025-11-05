@@ -1,16 +1,24 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, StyleSheet, Animated, Modal } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  Animated,
+  Modal,
+  ActivityIndicator,
+} from 'react-native';
 import { scale } from 'react-native-size-matters';
 import {
   unlockApp,
   recoverWalletWithSeedPhrase,
   validateSeedPhraseForRecovery,
+  preloadEncryptedWallets,
 } from '@/services/walletService';
 import { triggerShake } from '@/utils/animations';
 import ScreenContainer from '@/components/ScreenContainer';
 import PinInputSection from '@/components/PinInputSection';
 import RecoverWalletStep from '@/components/wallet/RecoverWalletStep';
 import RecoveryPinSetup from '@/components/wallet/RecoveryPinSetup';
+import colors from '@/constants/colors';
 
 interface EnterPinScreenProps {
   onWalletUnlocked: () => void;
@@ -28,12 +36,31 @@ const EnterPinScreen: React.FC<EnterPinScreenProps> = ({
   const [recoveryStep, setRecoveryStep] = useState<'seed' | 'pin'>('seed');
   const [recoveredSeedPhrase, setRecoveredSeedPhrase] = useState<string>('');
   const [isRecovering, setIsRecovering] = useState(false);
+  const [isPreloading, setIsPreloading] = useState(true);
   const shakeAnimationValue = useRef(new Animated.Value(0)).current;
+
+  // Preload encrypted wallet data on mount
+  useEffect(() => {
+    const preloadData = async () => {
+      try {
+        await preloadEncryptedWallets();
+      } catch (error) {
+        console.error('Failed to preload wallet data:', error);
+      } finally {
+        setIsPreloading(false);
+      }
+    };
+
+    preloadData();
+  }, []);
 
   useEffect(() => {
     console.log(process.env.EXPO_PUBLIC_APP_ENV);
     console.log(process.env.EXPO_PUBLIC_DEV_PIN);
     const autoUnlockDev = async () => {
+      // Wait for preloading to complete before auto-unlock
+      if (isPreloading) return;
+
       if (process.env.EXPO_PUBLIC_APP_ENV === 'development') {
         const devPin = process.env.EXPO_PUBLIC_DEV_PIN;
         if (devPin) {
@@ -61,7 +88,7 @@ const EnterPinScreen: React.FC<EnterPinScreenProps> = ({
     };
 
     autoUnlockDev();
-  }, [onWalletUnlocked]);
+  }, [onWalletUnlocked, isPreloading]);
 
   // Auto-validate PIN when 6th digit is entered
   useEffect(() => {
@@ -72,6 +99,15 @@ const EnterPinScreen: React.FC<EnterPinScreenProps> = ({
       // Use requestAnimationFrame to ensure the UI updates (6th dot fills) before validation
       requestAnimationFrame(async () => {
         try {
+          // If still preloading, wait for it to complete
+          if (isPreloading) {
+            console.log('Waiting for preload to complete...');
+            // The preload effect will set isPreloading to false when done
+            // This validation will be retriggered by the pin/isPreloading dependency
+            setIsValidating(false);
+            return;
+          }
+
           const success = await unlockApp(pin);
           if (success) {
             onWalletUnlocked();
@@ -95,12 +131,12 @@ const EnterPinScreen: React.FC<EnterPinScreenProps> = ({
         }
       });
     }
-  }, [pin, isValidating, onWalletUnlocked, shakeAnimationValue]);
+  }, [pin, isValidating, isPreloading, onWalletUnlocked, shakeAnimationValue]);
 
   // Handle keyboard input
   const handleKeyPress = useCallback(
     (key: string) => {
-      // Don't allow input while validating
+      // Don't allow input while validating (but allow during preloading)
       if (isValidating) return;
 
       if (key === 'backspace') {
@@ -185,6 +221,7 @@ const EnterPinScreen: React.FC<EnterPinScreenProps> = ({
           shakeAnimation={shakeAnimationValue}
           showForgot={true}
           onForgotPress={handleForgotPress}
+          isValidating={isValidating}
         />
       </View>
 

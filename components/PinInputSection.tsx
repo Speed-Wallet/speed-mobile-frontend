@@ -1,8 +1,15 @@
 import React, { useRef, useEffect } from 'react';
-import { StyleSheet, View, Text, Animated } from 'react-native';
+import {
+  StyleSheet,
+  View,
+  Text,
+  Animated,
+  ActivityIndicator,
+} from 'react-native';
 import { verticalScale, moderateScale } from 'react-native-size-matters';
 import CircularNumericKeyboard from '@/components/keyboard/CircularNumericKeyboard';
 import PinDots from '@/components/PinDots';
+import colors from '@/constants/colors';
 
 interface PinInputSectionProps {
   title: string;
@@ -13,6 +20,7 @@ interface PinInputSectionProps {
   shakeAnimation?: any; // Animated.Value for shake effect
   showForgot?: boolean;
   onForgotPress?: () => void;
+  isValidating?: boolean;
 }
 
 const PinInputSection: React.FC<PinInputSectionProps> = ({
@@ -24,6 +32,7 @@ const PinInputSection: React.FC<PinInputSectionProps> = ({
   shakeAnimation,
   showForgot = false,
   onForgotPress,
+  isValidating = false,
 }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.95)).current;
@@ -61,6 +70,13 @@ const PinInputSection: React.FC<PinInputSectionProps> = ({
           },
         ]}
       >
+        {/* Loading Spinner - shown above title when validating */}
+        {isValidating && (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={colors.primary} />
+          </View>
+        )}
+
         <Animated.View
           style={[
             styles.titleContainer,
@@ -112,6 +128,9 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  loadingContainer: {
+    marginBottom: verticalScale(24),
   },
   titleContainer: {
     marginBottom: 16,
