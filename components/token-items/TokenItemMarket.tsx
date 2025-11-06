@@ -32,6 +32,7 @@ interface TokenItemMarketProps {
   displayMetric?: DisplayMetric; // What metric to display
   isLoading?: boolean;
   backgroundColor?: string;
+  hasWarning?: boolean; // Show red exclamation mark on logo
 }
 
 /**
@@ -51,6 +52,7 @@ const TokenItemMarket = ({
   displayMetric = 'price',
   isLoading = false,
   backgroundColor,
+  hasWarning = false,
 }: TokenItemMarketProps) => {
   // Determine what to display based on displayMetric
   let mainValue: string | undefined;
@@ -104,6 +106,7 @@ const TokenItemMarket = ({
       onPress={onPress}
       isLoading={isLoading}
       backgroundColor={backgroundColor}
+      hasWarning={hasWarning}
       secondaryContent={<Text style={styles.symbol}>{token.symbol}</Text>}
       rightContent={
         hasValue && mainValue ? (

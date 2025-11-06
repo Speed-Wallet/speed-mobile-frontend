@@ -1,4 +1,4 @@
-import React, { useRef, forwardRef, useImperativeHandle } from 'react';
+import React, { useRef, forwardRef, useImperativeHandle, useMemo } from 'react';
 import { StyleSheet, View, ActivityIndicator, Text } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import SearchBar from '@/components/SearchBar';
@@ -14,6 +14,10 @@ import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import { TokenAsset, TokenMetadata } from '@/services/tokenAssetService';
 import { useSharedValue, withTiming } from 'react-native-reanimated';
 import BottomActionContainer from '@/components/BottomActionContainer';
+import {
+  useShieldInfo,
+  hasCriticalWarnings,
+} from '@/services/jupiterShieldService';
 
 interface TokenSelectorBottomSheetProps {
   tokens: (TokenAsset | TokenMetadata)[];
@@ -51,6 +55,17 @@ const TokenSelectorBottomSheet = forwardRef<
     const searchBarTranslateY = useSharedValue(0);
     const lastScrollY = useRef(0);
 
+    // Extract all token addresses for shield check
+    const tokenAddresses = useMemo(() => {
+      return tokens.map((token) => token.address);
+    }, [tokens]);
+
+    // Fetch shield information for all tokens with 30-second cache
+    const { data: shieldData } = useShieldInfo(
+      tokenAddresses,
+      tokens.length > 0,
+    );
+
     useImperativeHandle(ref, () => ({
       present: () => bottomSheetRef.current?.present(),
       dismiss: () => bottomSheetRef.current?.dismiss(),
@@ -81,6 +96,10 @@ const TokenSelectorBottomSheet = forwardRef<
       // Check if item is a TokenAsset (has balance property)
       const isTokenAsset = 'balance' in item;
 
+      // Check if token has critical warnings
+      const tokenWarnings = shieldData?.warnings[item.address] || [];
+      const hasWarning = hasCriticalWarnings(tokenWarnings);
+
       return (
         <TokenItemSelector
           token={{
@@ -99,6 +118,7 @@ const TokenSelectorBottomSheet = forwardRef<
           totalPrice={
             isTokenAsset ? (item as TokenAsset).totalPrice : undefined
           }
+          hasWarning={hasWarning}
         />
       );
     };

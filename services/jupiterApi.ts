@@ -3,6 +3,21 @@ import { AuthService } from './authService';
 const BASE_BACKEND_URL = process.env.EXPO_PUBLIC_BASE_BACKEND_URL;
 const JUPITER_ULTRA_API = 'https://lite-api.jup.ag/ultra/v1';
 
+// Fee configuration for Speed Wallet integrator fees
+const REFERRAL_ACCOUNT = '7PK4moyxtH8wLCNtJAwXb3EmhEkAna3SzstcPNDAN3Ca'; // Speed Wallet referral account
+const REFERRAL_FEE_BPS = 50; // 0.5% fee (50 basis points)
+
+// How Jupiter Ultra Integrator Fees Work:
+// 1. Without integrator fees: Jupiter charges 5-10 bps base fee
+// 2. WITH integrator fees:
+//    - User pays exactly what you set as referralFee (e.g., 50 bps = 0.5%)
+//    - Jupiter takes 20% of that (e.g., 10 bps = 0.1%)
+//    - Speed Wallet receives 80% of that (e.g., 40 bps = 0.4%)
+//    - NO additional Jupiter base fee is charged
+//
+// IMPORTANT: referralFee must be between 50-255 bps (0.5% - 2.55%)
+// Fees accumulate in referral account and can be claimed to multisig: 3m2faWg4GnRehXzBEHCq5hKACVr6yH6fDC1odKzEAcWN
+
 // Jupiter Ultra API response types
 interface JupiterSwapInfo {
   ammKey: string;
@@ -86,7 +101,13 @@ export const getJupiterQuote = async (
     `&amount=${amountInt}` +
     `&taker=${taker}` +
     `&slippageBps=50` +
-    `&gasless=true`;
+    `&gasless=true` +
+    `&referralAccount=${REFERRAL_ACCOUNT}` +
+    `&referralFee=${REFERRAL_FEE_BPS}`;
+
+  console.log('Fetching Jupiter order with integrator fees...');
+  console.log('  Referral Account:', REFERRAL_ACCOUNT);
+  console.log('  Referral Fee:', REFERRAL_FEE_BPS, 'bps (0.5%)');
 
   const response = await fetch(url);
   const json = await response.json();
@@ -100,6 +121,19 @@ export const getJupiterQuote = async (
     console.error('Jupiter order error:', json);
     return json; // Return error response for handling
   }
+
+  // Log fee details from response
+  console.log('Jupiter order received successfully');
+  console.log('  Router:', json.router);
+  console.log('  Fee Mint:', json.feeMint || 'N/A');
+  console.log(
+    '  Fee BPS:',
+    json.feeBps
+      ? `${json.feeBps} bps (${(json.feeBps / 100).toFixed(2)}%)`
+      : 'N/A',
+  );
+  console.log('  In Amount:', json.inAmount);
+  console.log('  Out Amount:', json.outAmount);
 
   return json;
 };

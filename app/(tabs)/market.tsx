@@ -29,6 +29,10 @@ import {
 } from '@/services/jupiterService';
 import { JupiterToken } from '@/types/jupiter';
 import { useTabBarVisibility } from '@/contexts/TabBarVisibilityContext';
+import {
+  useShieldInfo,
+  hasCriticalWarnings,
+} from '@/services/jupiterShieldService';
 
 export default function MarketScreen() {
   const router = useRouter();
@@ -194,6 +198,17 @@ export default function MarketScreen() {
     return filtered;
   }, [sortedData, searchQuery, jupiterSearchResults]);
 
+  // Extract all token addresses for shield check
+  const tokenAddresses = useMemo(() => {
+    return filteredData.map((token) => token.id);
+  }, [filteredData]);
+
+  // Fetch shield information for all tokens with 30-second cache
+  const { data: shieldData } = useShieldInfo(
+    tokenAddresses,
+    tokenAddresses.length > 0,
+  );
+
   // Handle scroll with debounce/threshold - memoized for performance
   const handleScroll = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -263,6 +278,10 @@ export default function MarketScreen() {
     const totalVolume =
       (item.stats24h?.buyVolume || 0) + (item.stats24h?.sellVolume || 0);
 
+    // Check if token has critical warnings
+    const tokenWarnings = shieldData?.warnings[item.id] || [];
+    const hasWarning = hasCriticalWarnings(tokenWarnings);
+
     return (
       <Animated.View
         entering={FadeInRight.delay(100 + index * 100).duration(400)}
@@ -284,6 +303,7 @@ export default function MarketScreen() {
           organicScore={item.organicScore}
           marketCap={item.mcap}
           displayMetric={sortMetric}
+          hasWarning={hasWarning}
           onPress={() =>
             router.push(
               `/token/${item.id}?symbol=${encodeURIComponent(item.symbol)}&name=${encodeURIComponent(item.name)}`,

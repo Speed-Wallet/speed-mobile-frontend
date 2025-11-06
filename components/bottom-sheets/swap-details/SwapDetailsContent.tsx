@@ -86,7 +86,9 @@ export default function SwapDetailsContent({
 
         <View style={styles.swapDetailRow}>
           <Text style={styles.swapDetailLabel}>Trade Fee</Text>
-          <Text style={styles.swapDetailValue}>0.2%</Text>
+          <Text style={styles.swapDetailValue}>
+            {quote?.feeBps ? `${(quote.feeBps / 100).toFixed(2)}%` : 'NA'}
+          </Text>
         </View>
 
         {quote && (

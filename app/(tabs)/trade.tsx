@@ -189,11 +189,17 @@ export default function TradeScreen() {
 
   async function fetchAndApplyQuote(inAmount: number) {
     try {
+      if (!walletAddress) {
+        console.error('No wallet address available for quote');
+        setQuote(undefined);
+        return;
+      }
+
       const newQuote = await getJupiterQuote(
         fromToken!.address,
         toToken!.address,
         inAmount,
-        walletAddress || undefined, // Pass user's wallet address for accurate quotes
+        walletAddress, // Pass user's wallet address for accurate quotes
       );
 
       if (!newQuote) {

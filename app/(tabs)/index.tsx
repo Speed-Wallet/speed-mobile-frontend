@@ -31,6 +31,7 @@ import {
   USDT_TOKEN,
   cbBTC_TOKEN,
   WBNB_TOKEN,
+  WETH_TOKEN,
 } from '@/constants/popularTokens';
 import { generateSignature } from '@/utils/signature';
 import Animated, { FadeInRight } from 'react-native-reanimated';
@@ -161,7 +162,13 @@ export default function HomeScreen() {
   };
 
   // Suggested tokens to show at the bottom (tokens user doesn't own yet)
-  const SUGGESTED_TOKENS = [USDC_TOKEN, cbBTC_TOKEN, WBNB_TOKEN, USDT_TOKEN];
+  const SUGGESTED_TOKENS = [
+    USDC_TOKEN,
+    cbBTC_TOKEN,
+    WBNB_TOKEN,
+    USDT_TOKEN,
+    WETH_TOKEN,
+  ];
 
   // Filter out tokens the user already owns - only if assets are loaded
   const suggestedTokens = isLoadingAssets

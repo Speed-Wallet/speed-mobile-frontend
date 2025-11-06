@@ -32,6 +32,14 @@ export const cbBTC_TOKEN = {
     'https://ipfs.io/ipfs/QmZ7L8yd5j36oXXydUiYFiFsRHbi3EdgC4RuFwvM7dcqge',
   decimals: 8,
 };
+export const WETH_TOKEN = {
+  address: '7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs',
+  name: 'Wrapped Ether (Wormhole)',
+  symbol: 'WETH',
+  logoURI:
+    'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs/logo.png',
+  decimals: 8,
+};
 export const WBNB_TOKEN = {
   address: '9gP2kCy3wA1ctvYWQk75guqXuHfrEomqydHLtcTCqiLa',
   name: 'Wrapped BNB (Wormhole)',

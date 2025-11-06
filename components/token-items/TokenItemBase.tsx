@@ -22,6 +22,9 @@ interface TokenItemBaseProps {
   secondaryContent?: ReactNode; // Content below name (left side)
   rightContent?: ReactNode; // Content on the right side
   rightIcon?: ReactNode; // Optional icon on far right
+
+  // Shield warning
+  hasWarning?: boolean; // Show red exclamation mark on logo
 }
 
 const TokenItemBase = ({
@@ -34,6 +37,7 @@ const TokenItemBase = ({
   secondaryContent,
   rightContent,
   rightIcon,
+  hasWarning = false,
 }: TokenItemBaseProps) => {
   // Format balance if provided and not loading
   const formattedBalance =
@@ -48,7 +52,11 @@ const TokenItemBase = ({
       >
         {/* Left Section - Logo */}
         <View style={styles.leftSection}>
-          <TokenLogo logoURI={logoURI} size={moderateScale(32, 0.5)} />
+          <TokenLogo
+            logoURI={logoURI}
+            size={moderateScale(32, 0.5)}
+            hasWarning={hasWarning}
+          />
         </View>
 
         {/* Middle Section - Name & Secondary Content */}

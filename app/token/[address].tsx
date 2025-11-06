@@ -14,6 +14,12 @@ import {
   ArrowUpRight,
   ArrowRightLeft,
   Copy,
+  ChevronDown,
+  ChevronUp,
+  AlertTriangle,
+  TrendingDown,
+  Activity,
+  Sparkles,
 } from 'lucide-react-native';
 import { useState, useEffect, useRef } from 'react';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
@@ -51,6 +57,11 @@ import {
   cbBTC_TOKEN,
 } from '@/constants/popularTokens';
 import { TokenMetadata } from '@/services/tokenAssetService';
+import {
+  useShieldInfo,
+  ShieldWarning,
+  CRITICAL_WARNING_TYPES,
+} from '@/services/jupiterShieldService';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -75,6 +86,7 @@ export default function TokenDetailScreen() {
     timestamp: number;
     isInteracting: boolean;
   } | null>(null);
+  const [isWarningsExpanded, setIsWarningsExpanded] = useState(false);
 
   const bottomActionTranslateY = useSharedValue(0);
   const lastScrollY = useRef(0);
@@ -101,6 +113,19 @@ export default function TokenDetailScreen() {
   const userHolding = tokenAssets?.tokenAssets?.find(
     (asset) => asset.address === address,
   );
+
+  // Fetch shield information for this token - will use cache if available
+  const { data: shieldData } = useShieldInfo(
+    address ? [address] : [],
+    !!address,
+  );
+
+  // Get warnings for this specific token - filter to only critical warnings
+  const allWarnings = (address && shieldData?.warnings[address]) || [];
+  const tokenWarnings = allWarnings.filter((warning) =>
+    CRITICAL_WARNING_TYPES.includes(warning.type),
+  );
+  const hasWarnings = tokenWarnings.length > 0;
 
   useEffect(() => {
     if (address && tokenData) {
@@ -496,6 +521,64 @@ export default function TokenDetailScreen() {
           ))}
         </View>
 
+        {/* Token Warnings Section */}
+        {hasWarnings && (
+          <View style={styles.warningsSection}>
+            <TouchableOpacity
+              style={styles.warningHeader}
+              onPress={() => setIsWarningsExpanded(!isWarningsExpanded)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.warningHeaderLeft}>
+                <AlertTriangle size={scale(20)} color="#fbbf24" />
+                <View style={styles.warningHeaderText}>
+                  <Text style={styles.warningTitle}>
+                    This token may carry risks
+                  </Text>
+                  <Text style={styles.warningSubtitle}>
+                    {tokenWarnings.length} warning
+                    {tokenWarnings.length !== 1 ? 's' : ''} found
+                  </Text>
+                </View>
+              </View>
+              {isWarningsExpanded ? (
+                <ChevronUp size={scale(20)} color="#fbbf24" />
+              ) : (
+                <ChevronDown size={scale(20)} color="#fbbf24" />
+              )}
+            </TouchableOpacity>
+
+            {isWarningsExpanded && (
+              <View style={styles.warningsList}>
+                {tokenWarnings.map((warning, index) => {
+                  // Use specific icons for certain warning types, all with yellow color
+                  let IconComponent = AlertTriangle;
+                  const iconColor = '#fbbf24'; // yellow for all warnings
+
+                  // Use specific icons for certain warning types
+                  if (
+                    warning.type === 'LOW_LIQUIDITY' ||
+                    warning.type === 'VERY_LOW_TRADING_ACTIVITY'
+                  ) {
+                    IconComponent = TrendingDown;
+                  } else if (warning.type === 'NEW_LISTING') {
+                    IconComponent = Sparkles;
+                  }
+
+                  return (
+                    <View key={index} style={styles.warningItem}>
+                      <IconComponent size={scale(18)} color={iconColor} />
+                      <Text style={styles.warningMessage}>
+                        {warning.message}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
+          </View>
+        )}
+
         {/* Your Holdings Section - Only show if user holds this token */}
         {holdingsData && (
           <View style={styles.section}>
@@ -774,6 +857,73 @@ const styles = StyleSheet.create({
   },
   timeframeTextActive: {
     color: '#000',
+  },
+  warningsSection: {
+    marginHorizontal: scale(16),
+    marginBottom: verticalScale(16),
+    borderRadius: scale(12),
+    borderWidth: 1.5,
+    borderColor: '#b45309',
+    backgroundColor: 'rgba(180, 83, 9, 0.15)',
+    overflow: 'hidden',
+  },
+  warningHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: scale(16),
+  },
+  warningHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scale(12),
+    flex: 1,
+  },
+  warningHeaderText: {
+    flex: 1,
+  },
+  warningTitle: {
+    fontSize: scale(15),
+    fontWeight: '600',
+    color: '#fbbf24',
+    marginBottom: verticalScale(2),
+  },
+  warningSubtitle: {
+    fontSize: scale(12),
+    color: '#fcd34d',
+    fontWeight: '400',
+  },
+  warningsList: {
+    borderTopWidth: 1,
+    borderTopColor: '#b45309',
+    paddingTop: verticalScale(8),
+  },
+  warningItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: scale(10),
+    paddingHorizontal: scale(16),
+    paddingVertical: verticalScale(12),
+    borderRadius: scale(8),
+    marginHorizontal: scale(8),
+    marginBottom: verticalScale(8),
+    backgroundColor: 'rgba(180, 83, 9, 0.2)',
+    borderWidth: 1,
+    borderColor: '#b45309',
+  },
+  warningItemCritical: {
+    backgroundColor: 'rgba(180, 83, 9, 0.2)',
+    borderColor: '#b45309',
+  },
+  warningItemInfo: {
+    backgroundColor: 'rgba(180, 83, 9, 0.2)',
+    borderColor: '#b45309',
+  },
+  warningMessage: {
+    flex: 1,
+    fontSize: scale(13),
+    color: '#fcd34d',
+    lineHeight: scale(18),
   },
   section: {
     paddingHorizontal: scale(16),

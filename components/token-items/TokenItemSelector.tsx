@@ -16,6 +16,7 @@ interface TokenItemSelectorProps {
   backgroundColor?: string;
   balance?: number;
   totalPrice?: number;
+  hasWarning?: boolean; // Show red exclamation mark on logo
 }
 
 /**
@@ -30,6 +31,7 @@ const TokenItemSelector = ({
   backgroundColor,
   balance,
   totalPrice,
+  hasWarning = false,
 }: TokenItemSelectorProps) => {
   const bgColor =
     backgroundColor ||
@@ -63,6 +65,7 @@ const TokenItemSelector = ({
       backgroundColor={bgColor}
       secondaryContent={<Text style={styles.symbol}>{token.symbol}</Text>}
       rightContent={rightContent}
+      hasWarning={hasWarning}
       rightIcon={
         showSelectorIcon ? (
           <ChevronDown
