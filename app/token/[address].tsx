@@ -20,6 +20,11 @@ import {
   TrendingDown,
   Activity,
   Sparkles,
+  ShieldAlert,
+  Lock,
+  Users,
+  Zap,
+  Ban,
 } from 'lucide-react-native';
 import { useState, useEffect, useRef } from 'react';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
@@ -141,15 +146,6 @@ export default function TokenDetailScreen() {
 
       const response = await getHistoricalPrices(address, timeframe);
 
-      console.log('[TokenDetail] Historical API response:', {
-        success: response.success,
-        hasData: !!response.data,
-        hasItems: !!response.data?.items,
-        itemsLength: response.data?.items?.length || 0,
-        timeframe,
-        address,
-      });
-
       if (!response.success) {
         throw new Error(response.error || 'Failed to load historical data');
       }
@@ -160,12 +156,6 @@ export default function TokenDetailScreen() {
         response,
         timeframe,
       );
-
-      console.log('[TokenDetail] Formatted chart data:', {
-        formattedLength: formattedChart.length,
-        timeframe,
-        sampleData: formattedChart.slice(0, 3),
-      });
 
       setChartData(formattedChart);
 
@@ -436,209 +426,240 @@ export default function TokenDetailScreen() {
         onScroll={handleScroll}
         scrollEventThrottle={16}
       >
-        {/* Price Section */}
-        <View style={styles.priceSection}>
-          <View style={styles.priceRow}>
-            {/* Left: Price */}
-            <Text style={styles.price}>
-              {chartSelectedData?.isInteracting
-                ? formatPrice(chartSelectedData.selectedPrice)
-                : formatPrice(currentPrice)}
-            </Text>
+        <View style={styles.scrollViewContent}>
+          {/* Price Section */}
+          <View style={styles.priceSection}>
+            <View style={styles.priceRow}>
+              {/* Left: Price */}
+              <Text style={styles.price}>
+                {chartSelectedData?.isInteracting
+                  ? formatPrice(chartSelectedData.selectedPrice)
+                  : formatPrice(currentPrice)}
+              </Text>
 
-            {/* Right: Percentage Change and Date stacked */}
-            <View style={styles.priceRightColumn}>
-              <Text
-                style={[
-                  styles.percentageChange,
-                  {
-                    color: chartSelectedData?.isInteracting
-                      ? chartSelectedData.percentageChange < 0
-                        ? '#ef4444'
-                        : '#10b981'
-                      : isNegative
-                        ? '#ef4444'
-                        : '#10b981',
-                  },
-                ]}
-              >
-                {chartSelectedData?.isInteracting
-                  ? `${chartSelectedData.percentageChange >= 0 ? '↑' : '↓'} ${Math.abs(chartSelectedData.percentageChange).toFixed(2)}%`
-                  : `${displayPriceChange.changePercentage >= 0 ? '↑' : '↓'} ${Math.abs(displayPriceChange.changePercentage).toFixed(2)}%`}
-              </Text>
-              <Text style={styles.dateLabel}>
-                {chartSelectedData?.isInteracting
-                  ? formatDisplayDate(chartSelectedData.timestamp)
-                  : chartData && chartData.length > 0
-                    ? formatDisplayDate(
-                        chartData[chartData.length - 1].timestamp,
-                      )
-                    : formatDisplayDate(Date.now())}
-              </Text>
+              {/* Right: Percentage Change and Date stacked */}
+              <View style={styles.priceRightColumn}>
+                <Text
+                  style={[
+                    styles.percentageChange,
+                    {
+                      color: chartSelectedData?.isInteracting
+                        ? chartSelectedData.percentageChange < 0
+                          ? '#ef4444'
+                          : '#10b981'
+                        : isNegative
+                          ? '#ef4444'
+                          : '#10b981',
+                    },
+                  ]}
+                >
+                  {chartSelectedData?.isInteracting
+                    ? `${chartSelectedData.percentageChange >= 0 ? '↑' : '↓'} ${Math.abs(chartSelectedData.percentageChange).toFixed(2)}%`
+                    : `${displayPriceChange.changePercentage >= 0 ? '↑' : '↓'} ${Math.abs(displayPriceChange.changePercentage).toFixed(2)}%`}
+                </Text>
+                <Text style={styles.dateLabel}>
+                  {chartSelectedData?.isInteracting
+                    ? formatDisplayDate(chartSelectedData.timestamp)
+                    : chartData && chartData.length > 0
+                      ? formatDisplayDate(
+                          chartData[chartData.length - 1].timestamp,
+                        )
+                      : formatDisplayDate(Date.now())}
+                </Text>
+              </View>
             </View>
           </View>
-        </View>
 
-        {/* Chart */}
-        <View style={styles.chartContainer}>
-          {loading ? (
-            <>
-              <ActivityIndicator size="large" color="#6366f1" />
-              <Text style={styles.chartLoadingText}>Loading chart...</Text>
-            </>
-          ) : chartData && chartData.length > 0 ? (
-            <TokenPriceChart
-              data={chartData}
-              timeframe={selectedTimeframe}
-              isPositive={priceChange.changePercentage >= 0}
-              onInteraction={handleChartInteraction}
-            />
-          ) : (
-            <Text style={styles.chartErrorText}>Chart data unavailable</Text>
-          )}
-        </View>
-
-        {/* Timeframe Selector */}
-        <View style={styles.timeframeContainer}>
-          {timeframes.map((timeframe) => (
-            <TouchableOpacity
-              key={timeframe}
-              style={[
-                styles.timeframeButton,
-                selectedTimeframe === timeframe && styles.timeframeButtonActive,
-              ]}
-              onPress={() => handleTimeframeChange(timeframe)}
-            >
-              <Text
-                style={[
-                  styles.timeframeText,
-                  selectedTimeframe === timeframe && styles.timeframeTextActive,
-                ]}
-              >
-                {timeframe}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Token Warnings Section */}
-        {hasWarnings && (
-          <View style={styles.warningsSection}>
-            <TouchableOpacity
-              style={styles.warningHeader}
-              onPress={() => setIsWarningsExpanded(!isWarningsExpanded)}
-              activeOpacity={0.7}
-            >
-              <View style={styles.warningHeaderLeft}>
-                <AlertTriangle size={scale(20)} color="#fbbf24" />
-                <View style={styles.warningHeaderText}>
-                  <Text style={styles.warningTitle}>
-                    This token may carry risks
-                  </Text>
-                  <Text style={styles.warningSubtitle}>
-                    {tokenWarnings.length} warning
-                    {tokenWarnings.length !== 1 ? 's' : ''} found
-                  </Text>
-                </View>
-              </View>
-              {isWarningsExpanded ? (
-                <ChevronUp size={scale(20)} color="#fbbf24" />
-              ) : (
-                <ChevronDown size={scale(20)} color="#fbbf24" />
-              )}
-            </TouchableOpacity>
-
-            {isWarningsExpanded && (
-              <View style={styles.warningsList}>
-                {tokenWarnings.map((warning, index) => {
-                  // Use specific icons for certain warning types, all with yellow color
-                  let IconComponent = AlertTriangle;
-                  const iconColor = '#fbbf24'; // yellow for all warnings
-
-                  // Use specific icons for certain warning types
-                  if (
-                    warning.type === 'LOW_LIQUIDITY' ||
-                    warning.type === 'VERY_LOW_TRADING_ACTIVITY'
-                  ) {
-                    IconComponent = TrendingDown;
-                  } else if (warning.type === 'NEW_LISTING') {
-                    IconComponent = Sparkles;
-                  }
-
-                  return (
-                    <View key={index} style={styles.warningItem}>
-                      <IconComponent size={scale(18)} color={iconColor} />
-                      <Text style={styles.warningMessage}>
-                        {warning.message}
-                      </Text>
-                    </View>
-                  );
-                })}
-              </View>
+          {/* Chart */}
+          <View style={styles.chartContainer}>
+            {loading ? (
+              <>
+                <ActivityIndicator size="large" color="#6366f1" />
+                <Text style={styles.chartLoadingText}>Loading chart...</Text>
+              </>
+            ) : chartData && chartData.length > 0 ? (
+              <TokenPriceChart
+                data={chartData}
+                timeframe={selectedTimeframe}
+                isPositive={priceChange.changePercentage >= 0}
+                onInteraction={handleChartInteraction}
+              />
+            ) : (
+              <Text style={styles.chartErrorText}>Chart data unavailable</Text>
             )}
           </View>
-        )}
 
-        {/* Your Holdings Section - Only show if user holds this token */}
-        {holdingsData && (
+          {/* Timeframe Selector */}
+          <View style={styles.timeframeContainer}>
+            {timeframes.map((timeframe) => (
+              <TouchableOpacity
+                key={timeframe}
+                style={[
+                  styles.timeframeButton,
+                  selectedTimeframe === timeframe &&
+                    styles.timeframeButtonActive,
+                ]}
+                onPress={() => handleTimeframeChange(timeframe)}
+              >
+                <Text
+                  style={[
+                    styles.timeframeText,
+                    selectedTimeframe === timeframe &&
+                      styles.timeframeTextActive,
+                  ]}
+                >
+                  {timeframe}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* Token Warnings Section */}
+          {hasWarnings && (
+            <View style={styles.warningsSection}>
+              <TouchableOpacity
+                style={styles.warningHeader}
+                onPress={() => setIsWarningsExpanded(!isWarningsExpanded)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.warningHeaderLeft}>
+                  <AlertTriangle size={scale(20)} color="#fbbf24" />
+                  <View style={styles.warningHeaderText}>
+                    <Text style={styles.warningTitle}>
+                      This token may carry risks
+                    </Text>
+                    <Text style={styles.warningSubtitle}>
+                      {tokenWarnings.length} warning
+                      {tokenWarnings.length !== 1 ? 's' : ''} found
+                    </Text>
+                  </View>
+                </View>
+                {isWarningsExpanded ? (
+                  <ChevronUp size={scale(20)} color="#fbbf24" />
+                ) : (
+                  <ChevronDown size={scale(20)} color="#fbbf24" />
+                )}
+              </TouchableOpacity>
+
+              {isWarningsExpanded && (
+                <View style={styles.warningsList}>
+                  {tokenWarnings.map((warning, index) => {
+                    // Use specific icons for each warning type
+                    let IconComponent = AlertTriangle; // default fallback
+                    const iconColor = '#fbbf24'; // yellow for all warnings
+
+                    // Map warning types to specific icons
+                    switch (warning.type) {
+                      case 'LOW_LIQUIDITY':
+                        IconComponent = TrendingDown;
+                        break;
+                      case 'VERY_LOW_TRADING_ACTIVITY':
+                        IconComponent = Activity;
+                        break;
+                      case 'NEW_LISTING':
+                        IconComponent = Sparkles;
+                        break;
+                      case 'NOT_VERIFIED':
+                        IconComponent = ShieldAlert;
+                        break;
+                      case 'LOW_ORGANIC_ACTIVITY':
+                        IconComponent = Users;
+                        break;
+                      case 'NOT_SELLABLE':
+                        IconComponent = Ban;
+                        break;
+                      case 'HAS_MINT_AUTHORITY':
+                      case 'HAS_FREEZE_AUTHORITY':
+                      case 'HAS_PERMANENT_DELEGATE':
+                        IconComponent = Lock;
+                        break;
+                      case 'SUSPICIOUS_DEV_ACTIVITY':
+                      case 'SUSPICIOUS_TOP_HOLDER_ACTIVITY':
+                        IconComponent = Zap;
+                        break;
+                      case 'HIGH_SUPPLY_CONCENTRATION':
+                      case 'HIGH_SINGLE_OWNERSHIP':
+                        IconComponent = Users;
+                        break;
+                      default:
+                        IconComponent = AlertTriangle;
+                    }
+
+                    return (
+                      <View key={index} style={styles.warningItem}>
+                        <IconComponent size={scale(18)} color={iconColor} />
+                        <Text style={styles.warningMessage}>
+                          {warning.message}
+                        </Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
+            </View>
+          )}
+
+          {/* Your Holdings Section - Only show if user holds this token */}
+          {holdingsData && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Your Holdings</Text>
+              <View style={styles.statsContainer}>
+                {holdingsData.map((stat, index) => (
+                  <View
+                    key={index}
+                    style={[
+                      styles.statRow,
+                      index === holdingsData.length - 1 && styles.lastStatRow,
+                    ]}
+                  >
+                    <Text style={styles.statLabel}>{stat.label}</Text>
+                    <Text style={styles.statValue}>{stat.value}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+
+          {/* Market Info */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Your Holdings</Text>
+            <Text style={styles.sectionTitle}>Market Info</Text>
             <View style={styles.statsContainer}>
-              {holdingsData.map((stat, index) => (
+              {statsData.map((stat, index) => (
                 <View
                   key={index}
                   style={[
                     styles.statRow,
-                    index === holdingsData.length - 1 && styles.lastStatRow,
+                    index === statsData.length - 1 && styles.lastStatRow,
                   ]}
                 >
                   <Text style={styles.statLabel}>{stat.label}</Text>
-                  <Text style={styles.statValue}>{stat.value}</Text>
+                  <View style={styles.statValueContainer}>
+                    <Text style={styles.statValue}>{stat.value}</Text>
+                    {stat.icon === 'copy' && (
+                      <TouchableOpacity
+                        onPress={stat.action}
+                        style={styles.copyButton}
+                      >
+                        <Copy size={scale(14)} color="#9ca3af" />
+                      </TouchableOpacity>
+                    )}
+                  </View>
                 </View>
               ))}
             </View>
           </View>
-        )}
 
-        {/* Market Info */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Market Info</Text>
-          <View style={styles.statsContainer}>
-            {statsData.map((stat, index) => (
-              <View
-                key={index}
-                style={[
-                  styles.statRow,
-                  index === statsData.length - 1 && styles.lastStatRow,
-                ]}
-              >
-                <Text style={styles.statLabel}>{stat.label}</Text>
-                <View style={styles.statValueContainer}>
-                  <Text style={styles.statValue}>{stat.value}</Text>
-                  {stat.icon === 'copy' && (
-                    <TouchableOpacity
-                      onPress={stat.action}
-                      style={styles.copyButton}
-                    >
-                      <Copy size={scale(14)} color="#9ca3af" />
-                    </TouchableOpacity>
-                  )}
-                </View>
-              </View>
-            ))}
+          {/* About Token */}
+          <View style={styles.aboutSection}>
+            <Text style={styles.sectionTitle}>
+              About {tokenData.name || tokenData.symbol || 'Token'}
+            </Text>
+            <Text style={styles.description}>
+              {tokenData.name || tokenData.symbol || 'This token'} is a
+              cryptocurrency token on Solana. Current price data and market
+              information are provided by Jupiter.
+            </Text>
           </View>
-        </View>
-
-        {/* About Token */}
-        <View style={styles.aboutSection}>
-          <Text style={styles.sectionTitle}>
-            About {tokenData.name || tokenData.symbol || 'Token'}
-          </Text>
-          <Text style={styles.description}>
-            {tokenData.name || tokenData.symbol || 'This token'} is a
-            cryptocurrency token on Solana. Current price data and market
-            information are provided by Jupiter.
-          </Text>
         </View>
       </ScrollView>
 
@@ -721,6 +742,9 @@ export default function TokenDetailScreen() {
 const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
+  },
+  scrollViewContent: {
+    gap: 14,
   },
   headerButton: {
     width: 40,
@@ -838,7 +862,7 @@ const styles = StyleSheet.create({
   timeframeContainer: {
     flexDirection: 'row',
     paddingHorizontal: scale(16),
-    marginBottom: 10,
+    // marginBottom: 10,
     justifyContent: 'space-between',
   },
   timeframeButton: {
@@ -860,11 +884,11 @@ const styles = StyleSheet.create({
   },
   warningsSection: {
     marginHorizontal: scale(16),
-    marginBottom: verticalScale(16),
+    // marginBottom: verticalScale(16),
     borderRadius: scale(12),
-    borderWidth: 1.5,
-    borderColor: '#b45309',
-    backgroundColor: 'rgba(180, 83, 9, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(251, 146, 60, 0.4)',
+    backgroundColor: 'rgba(251, 191, 36, 0.04)',
     overflow: 'hidden',
   },
   warningHeader: {
@@ -884,18 +908,18 @@ const styles = StyleSheet.create({
   },
   warningTitle: {
     fontSize: scale(15),
-    fontWeight: '600',
+    fontWeight: '400',
     color: '#fbbf24',
     marginBottom: verticalScale(2),
   },
   warningSubtitle: {
     fontSize: scale(12),
-    color: '#fcd34d',
+    color: 'rgba(252, 211, 77, 0.6)',
     fontWeight: '400',
   },
   warningsList: {
     borderTopWidth: 1,
-    borderTopColor: '#b45309',
+    borderTopColor: 'rgba(251, 146, 60, 0.4)',
     paddingTop: verticalScale(8),
   },
   warningItem: {
@@ -907,27 +931,27 @@ const styles = StyleSheet.create({
     borderRadius: scale(8),
     marginHorizontal: scale(8),
     marginBottom: verticalScale(8),
-    backgroundColor: 'rgba(180, 83, 9, 0.2)',
+    backgroundColor: 'rgba(251, 191, 36, 0.12)',
     borderWidth: 1,
-    borderColor: '#b45309',
+    borderColor: 'rgba(251, 146, 60, 0.4)',
   },
   warningItemCritical: {
-    backgroundColor: 'rgba(180, 83, 9, 0.2)',
-    borderColor: '#b45309',
+    backgroundColor: 'rgba(251, 191, 36, 0.12)',
+    borderColor: 'rgba(251, 146, 60, 0.4)',
   },
   warningItemInfo: {
-    backgroundColor: 'rgba(180, 83, 9, 0.2)',
-    borderColor: '#b45309',
+    backgroundColor: 'rgba(251, 191, 36, 0.12)',
+    borderColor: 'rgba(251, 146, 60, 0.4)',
   },
   warningMessage: {
     flex: 1,
     fontSize: scale(13),
-    color: '#fcd34d',
+    color: '#d9a940',
     lineHeight: scale(18),
   },
   section: {
     paddingHorizontal: scale(16),
-    marginBottom: 10,
+    // marginBottom: 10,
   },
   aboutSection: {
     paddingHorizontal: scale(16),

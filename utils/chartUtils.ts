@@ -116,20 +116,11 @@ export function formatHistoricalDataForCustomChart(
   historicalResponse: HistoricalPricesResponse,
   timeframe: string,
 ): ChartDataPoint[] {
-  console.log('[chartUtils] formatHistoricalDataForCustomChart input:', {
-    success: historicalResponse.success,
-    hasData: !!historicalResponse.data,
-    hasItems: !!historicalResponse.data?.items,
-    itemsLength: historicalResponse.data?.items?.length || 0,
-    timeframe,
-  });
-
   if (
     !historicalResponse.success ||
     !historicalResponse.data?.items ||
     historicalResponse.data.items.length === 0
   ) {
-    console.log('[chartUtils] Returning empty array - validation failed');
     return [];
   }
 
@@ -170,14 +161,6 @@ export function formatHistoricalDataForCustomChart(
       price: item.value,
     });
   }
-
-  console.log('[chartUtils] Returning formatted data:', {
-    length: formattedData.length,
-    step,
-    maxDataPoints,
-    originalDataPoints: dataPoints,
-    sample: formattedData.slice(0, 3),
-  });
 
   return formattedData;
 }
