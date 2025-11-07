@@ -73,7 +73,8 @@
       "statusBar": {
         "backgroundColor": "#121212",
         "barStyle": "light-content"
-      }
+      },
+      "16kbPageAgnostic": true
     },
     "runtimeVersion": "1.0.0",
     "updates": {
