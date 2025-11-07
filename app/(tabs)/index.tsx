@@ -26,6 +26,7 @@ import ScreenContainer from '@/components/ScreenContainer';
 import TabSelector from '@/components/TabSelector';
 import { AuthService } from '@/services/authService';
 import { useTokenAssets } from '@/hooks/useTokenAsset';
+import { useTokenPrices } from '@/hooks/useTokenPrices';
 import {
   USDC_TOKEN,
   USDT_TOKEN,
@@ -170,6 +171,13 @@ export default function HomeScreen() {
     WETH_TOKEN,
   ];
 
+  // Fetch price changes for all tokens (user tokens + suggested tokens)
+  const userTokenAddresses =
+    tokenAssets?.tokenAssets?.map((t) => t.address) || [];
+  const suggestedTokenAddresses = SUGGESTED_TOKENS.map((t) => t.address);
+  const allTokenAddresses = [...userTokenAddresses, ...suggestedTokenAddresses];
+  const { priceChanges } = useTokenPrices(allTokenAddresses);
+
   // Filter out tokens the user already owns - only if assets are loaded
   const suggestedTokens = isLoadingAssets
     ? []
@@ -283,6 +291,7 @@ export default function HomeScreen() {
                 <TokenItemHome
                   token={item}
                   isLoading={isLoadingAssets}
+                  priceChangePercentage={priceChanges[item.address]}
                   onPress={() =>
                     router.push(
                       `/token/${item.address}?symbol=${encodeURIComponent(item.symbol)}&name=${encodeURIComponent(item.name)}`,

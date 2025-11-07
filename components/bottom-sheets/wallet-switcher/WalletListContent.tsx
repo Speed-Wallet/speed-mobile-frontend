@@ -28,6 +28,7 @@ interface WalletListContentProps {
   copiedAddressId: string | null;
   onSwitchWallet: (walletId: string) => void;
   onCopyAddress: (publicKey: string, walletId: string) => void;
+  onDeleteWallet: (walletId: string) => void;
   onAddWalletPress: () => void;
   renderScrollComponent?: any;
 }
@@ -38,6 +39,7 @@ const WalletListContent: React.FC<WalletListContentProps> = ({
   copiedAddressId,
   onSwitchWallet,
   onCopyAddress,
+  onDeleteWallet,
   onAddWalletPress,
   renderScrollComponent,
 }) => {
@@ -49,8 +51,10 @@ const WalletListContent: React.FC<WalletListContentProps> = ({
       isActive={item.isActive}
       isCopied={copiedAddressId === item.id}
       loading={loading}
+      isMasterWallet={item.isMasterWallet}
       onPress={() => onSwitchWallet(item.id)}
       onCopyAddress={onCopyAddress}
+      onDeleteWallet={onDeleteWallet}
     />
   );
 

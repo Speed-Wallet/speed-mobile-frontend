@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Check, Copy } from 'lucide-react-native';
+import { Check, Copy, Trash2 } from 'lucide-react-native';
 import colors from '@/constants/colors';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 
@@ -11,8 +11,10 @@ interface WalletItemProps {
   isActive: boolean;
   isCopied: boolean;
   loading: boolean;
+  isMasterWallet?: boolean;
   onPress: () => void;
   onCopyAddress: (publicKey: string, walletId: string) => void;
+  onDeleteWallet: (walletId: string) => void;
 }
 
 const WalletItem: React.FC<WalletItemProps> = ({
@@ -22,8 +24,10 @@ const WalletItem: React.FC<WalletItemProps> = ({
   isActive,
   isCopied,
   loading,
+  isMasterWallet,
   onPress,
   onCopyAddress,
+  onDeleteWallet,
 }) => {
   return (
     <View style={[styles.walletCard, isActive && styles.activeWalletCard]}>
@@ -42,6 +46,15 @@ const WalletItem: React.FC<WalletItemProps> = ({
           </Text>
         </View>
       </TouchableOpacity>
+      {!isMasterWallet && (
+        <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={() => onDeleteWallet(id)}
+          activeOpacity={0.7}
+        >
+          <Trash2 size={20} color={colors.textSecondary} />
+        </TouchableOpacity>
+      )}
       <TouchableOpacity
         style={styles.copyButton}
         onPress={() => onCopyAddress(publicKey, id)}
@@ -68,7 +81,8 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   activeWalletCard: {
-    backgroundColor: colors.backgroundLight,
+    backgroundColor: colors.primary + '1A', // Brighter with 10% opacity
+    borderColor: colors.primary,
   },
   walletMainArea: {
     flex: 1,
@@ -93,6 +107,12 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(12),
     fontFamily: 'Inter-Regular',
     color: colors.textSecondary,
+  },
+  deleteButton: {
+    width: scale(50),
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderLeftColor: colors.backgroundDark,
   },
   copyButton: {
     width: scale(50),

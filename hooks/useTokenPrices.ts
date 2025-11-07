@@ -16,6 +16,7 @@ export const useTokenPrice = (
   tokenAddress: string | undefined,
 ): {
   price: number | undefined;
+  priceChange24h: number | undefined;
   isLoading: boolean;
   error: Error | null;
 } => {
@@ -46,9 +47,11 @@ export const useTokenPrice = (
 
   // Prefer cached price from token assets, fallback to Jupiter API
   const jupiterPrice = tokenAddress && data?.[tokenAddress]?.usdPrice;
+  const priceChange24h = tokenAddress && data?.[tokenAddress]?.priceChange24h;
 
   return {
     price: hasCachedPrice ? pricePerToken : jupiterPrice || undefined,
+    priceChange24h: priceChange24h || undefined,
     isLoading: hasCachedPrice ? false : isLoading || assetLoading,
     error: error as Error | null,
   };
@@ -58,37 +61,24 @@ export const useTokenPrice = (
  * Hook to fetch prices for multiple tokens from Jupiter API
  * First checks useTokenAsset for cached prices, then falls back to Jupiter API
  * @param tokenAddresses - Array of Solana token addresses
- * @returns Object mapping token addresses to their prices
+ * @returns Object mapping token addresses to their prices and price changes
  */
 export const useTokenPrices = (
   tokenAddresses: string[] = [],
 ): {
   prices: Record<string, number>;
+  priceChanges: Record<string, number>;
   isLoading: boolean;
   error: Error | null;
 } => {
   // Filter out any undefined or empty addresses
   const validAddresses = tokenAddresses.filter(Boolean);
 
-  // Check token assets for cached prices
-  // Note: This creates multiple hook calls, but they use the same cached query
-  const cachedPrices: Record<string, number> = {};
-  const addressesNeedingFetch: string[] = [];
-
-  validAddresses.forEach((address) => {
-    const { pricePerToken } = useTokenAsset(address);
-    if (pricePerToken !== undefined && pricePerToken > 0) {
-      cachedPrices[address] = pricePerToken;
-    } else {
-      addressesNeedingFetch.push(address);
-    }
-  });
-
-  // Only fetch from Jupiter for addresses without cached prices
+  // Fetch from Jupiter for all addresses
   const { data, isLoading, error } = useQuery<JupiterPriceResponse>({
-    queryKey: ['jupiterPrices', ...addressesNeedingFetch.sort()],
-    queryFn: () => getJupiterPrices(addressesNeedingFetch),
-    enabled: addressesNeedingFetch.length > 0,
+    queryKey: ['jupiterPrices', ...validAddresses.sort()],
+    queryFn: () => getJupiterPrices(validAddresses),
+    enabled: validAddresses.length > 0,
     staleTime: CACHE_TIME.TOKEN_ASSETS.STALE_TIME,
     gcTime: CACHE_TIME.TOKEN_ASSETS.GC_TIME,
     refetchInterval: CACHE_TIME.TOKEN_ASSETS.REFETCH_INTERVAL,
@@ -98,20 +88,25 @@ export const useTokenPrices = (
     refetchOnReconnect: true,
   });
 
-  // Combine cached prices with fetched prices from Jupiter
-  const allPrices: Record<string, number> = { ...cachedPrices };
+  // Extract prices and price changes from Jupiter data
+  const allPrices: Record<string, number> = {};
+  const priceChanges: Record<string, number> = {};
 
   if (data) {
-    addressesNeedingFetch.forEach((address) => {
+    validAddresses.forEach((address) => {
       if (data[address]?.usdPrice) {
         allPrices[address] = data[address].usdPrice;
+      }
+      if (data[address]?.priceChange24h !== undefined) {
+        priceChanges[address] = data[address].priceChange24h;
       }
     });
   }
 
   return {
     prices: allPrices,
-    isLoading: addressesNeedingFetch.length > 0 ? isLoading : false,
+    priceChanges,
+    isLoading: validAddresses.length > 0 ? isLoading : false,
     error: error as Error | null,
   };
 };

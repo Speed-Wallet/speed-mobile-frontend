@@ -5,7 +5,6 @@ const JUPITER_ULTRA_API = 'https://lite-api.jup.ag/ultra/v1';
 
 // Fee configuration for Speed Wallet integrator fees
 const REFERRAL_ACCOUNT = '7PK4moyxtH8wLCNtJAwXb3EmhEkAna3SzstcPNDAN3Ca'; // Speed Wallet referral account
-const REFERRAL_FEE_BPS = 50; // 0.5% fee (50 basis points)
 
 // How Jupiter Ultra Integrator Fees Work:
 // 1. Without integrator fees: Jupiter charges 5-10 bps base fee
@@ -88,26 +87,20 @@ export const getJupiterQuote = async (
   toMint: string,
   amount: number,
   userPublicKey: string, // Required: user's wallet address for balance validation
+  referralFeeBps: number, // Required: referral fee in basis points (e.g., 50 = 0.5%)
 ): Promise<JupiterOrderResponse> => {
   // Ensure amount is an integer to avoid floating point issues
   const amountInt = Math.round(amount);
-
-  const taker = userPublicKey;
 
   const url =
     `${JUPITER_ULTRA_API}/order` +
     `?inputMint=${fromMint}` +
     `&outputMint=${toMint}` +
     `&amount=${amountInt}` +
-    `&taker=${taker}` +
     `&slippageBps=50` +
     `&gasless=true` +
     `&referralAccount=${REFERRAL_ACCOUNT}` +
-    `&referralFee=${REFERRAL_FEE_BPS}`;
-
-  console.log('Fetching Jupiter order with integrator fees...');
-  console.log('  Referral Account:', REFERRAL_ACCOUNT);
-  console.log('  Referral Fee:', REFERRAL_FEE_BPS, 'bps (0.5%)');
+    `&referralFee=${referralFeeBps}`;
 
   const response = await fetch(url);
   const json = await response.json();
@@ -121,19 +114,6 @@ export const getJupiterQuote = async (
     console.error('Jupiter order error:', json);
     return json; // Return error response for handling
   }
-
-  // Log fee details from response
-  console.log('Jupiter order received successfully');
-  console.log('  Router:', json.router);
-  console.log('  Fee Mint:', json.feeMint || 'N/A');
-  console.log(
-    '  Fee BPS:',
-    json.feeBps
-      ? `${json.feeBps} bps (${(json.feeBps / 100).toFixed(2)}%)`
-      : 'N/A',
-  );
-  console.log('  In Amount:', json.inAmount);
-  console.log('  Out Amount:', json.outAmount);
 
   return json;
 };

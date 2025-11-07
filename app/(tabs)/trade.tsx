@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback, memo } from 'react';
 import {
   View,
   Text,
@@ -55,6 +55,30 @@ import { useTradeTokens } from '@/hooks/useTradeTokens';
 const WAIT_ON_AMOUNT_CHANGE = 2000;
 const LOOP_QUOTE_INTERVAL = 300000;
 
+// Loading dots component for quote fetching
+const LoadingDots = memo(() => {
+  const [dots, setDots] = useState('.');
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setDots((prev) => {
+        if (prev.length >= 10) return '.';
+        return prev + '.';
+      });
+    }, 400);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <Text style={styles.estimatedOutputText}>
+      <Text style={styles.estimatedOutputSymbol}>≈ {dots}</Text>
+    </Text>
+  );
+});
+
+LoadingDots.displayName = 'LoadingDots';
+
 /**
  * Trade Screen - Token Swap Interface
  *
@@ -88,6 +112,7 @@ export default function TradeScreen() {
   const lastQuoteTimeRef = useRef(0);
   const timeoutIDRef = useRef<NodeJS.Timeout | undefined>();
   const intervalIDRef = useRef<NodeJS.Timeout | undefined>();
+  const lastValidExchangeRateRef = useRef<number | null>(null);
   const [platformFee, setPlatformFee] = useState<number>(0);
   const [quote, setQuote] = useState<any>(undefined);
 
@@ -144,6 +169,7 @@ export default function TradeScreen() {
   );
   const [isPreparingSwap, setIsPreparingSwap] = useState(false);
   const [isConfirmingSwap, setIsConfirmingSwap] = useState(false);
+  const [isFetchingQuote, setIsFetchingQuote] = useState(false);
 
   // Always focus on 'from' input since 'to' is disabled
   const [activeInput, setActiveInput] = useState<'from' | 'to' | null>('from');
@@ -170,9 +196,8 @@ export default function TradeScreen() {
     if (isNaN(amountEntered) || amountEntered === 0) return;
 
     const amount = Math.round(amountEntered * 10 ** fromToken!.decimals);
-    const calculatedPlatformFee = Math.round(amount * swapFeeRate);
-    setPlatformFee(calculatedPlatformFee);
-    const inAmount = amount - calculatedPlatformFee;
+    // Jupiter handles referral fees automatically based on the fee passed to the API
+    const inAmount = amount;
     const diff = Date.now() - lastQuoteTimeRef.current;
 
     if (diff < WAIT_ON_AMOUNT_CHANGE) {
@@ -189,40 +214,47 @@ export default function TradeScreen() {
 
   async function fetchAndApplyQuote(inAmount: number) {
     try {
+      setIsFetchingQuote(true);
       if (!walletAddress) {
         console.error('No wallet address available for quote');
         setQuote(undefined);
+        setIsFetchingQuote(false);
         return;
       }
+
+      // Convert swapFeeRate (decimal, e.g., 0.005) to basis points (e.g., 50)
+      // swapFeeRate is guaranteed to exist here because updateAmounts checks for it
+      const referralFeeBps = Math.round(swapFeeRate! * 10000);
 
       const newQuote = await getJupiterQuote(
         fromToken!.address,
         toToken!.address,
         inAmount,
         walletAddress, // Pass user's wallet address for accurate quotes
+        referralFeeBps, // Pass fee from config in basis points
       );
 
       if (!newQuote) {
         setQuote(undefined);
+        setIsFetchingQuote(false);
         return;
       } else if ('error' in newQuote || 'errorCode' in newQuote) {
         console.error(newQuote);
         setQuote(undefined);
+        setIsFetchingQuote(false);
         return;
       }
 
       setQuote(newQuote);
-      console.log('quote: ', newQuote);
 
       const outAmount = parseFloat(newQuote.outAmount);
 
-      console.log(
-        `Quote received: ${newQuote.inAmount} -> ${newQuote.outAmount} (${newQuote.slippageBps})`,
-      );
       if (!isNaN(outAmount)) {
         const val = outAmount * 10 ** -toToken!.decimals;
         setToAmount(parseFloat(val.toPrecision(12)).toString()); // Use reasonable precision without trailing zeros
       }
+
+      setIsFetchingQuote(false);
 
       if (!intervalIDRef.current) {
         intervalIDRef.current = setInterval(
@@ -234,6 +266,7 @@ export default function TradeScreen() {
     } catch (err: any) {
       console.error(err);
       showToast('Network error, unable to fetch quote', 'error');
+      setIsFetchingQuote(false);
     }
   }
 
@@ -475,15 +508,31 @@ export default function TradeScreen() {
   };
 
   // Calculate exchange rate and receive amount for display
-  const exchangeRate =
-    quote &&
-    toToken &&
-    fromToken &&
-    parseFloat(unformatAmountInput(fromAmount)) > 0
-      ? parseFloat(quote.outAmount) /
-        10 ** toToken.decimals /
-        parseFloat(unformatAmountInput(fromAmount))
-      : null;
+  const exchangeRate = useMemo(() => {
+    if (isFetchingQuote && lastValidExchangeRateRef.current !== null) {
+      // While fetching, keep showing the last valid rate
+      return lastValidExchangeRateRef.current;
+    }
+
+    if (quote && toToken && fromToken) {
+      // Calculate rate as: 1 fromToken = X toToken
+      // This is independent of the input amount
+      const inputAmount = parseFloat(quote.inAmount);
+      const outputAmount = parseFloat(quote.outAmount);
+
+      if (inputAmount > 0) {
+        const rate =
+          outputAmount /
+          10 ** toToken.decimals /
+          (inputAmount / 10 ** fromToken.decimals);
+        // Store the new valid rate
+        lastValidExchangeRateRef.current = rate;
+        return rate;
+      }
+    }
+
+    return lastValidExchangeRateRef.current;
+  }, [quote, toToken, fromToken, isFetchingQuote]);
 
   const totalValueDisplay =
     fromAmount && fromToken && parseFloat(unformatAmountInput(fromAmount)) > 0
@@ -738,12 +787,28 @@ export default function TradeScreen() {
                       </Text>
                     )}
                   </Text>
-                  {toAmount && toToken && (
-                    <Text style={styles.estimatedOutputText}>
-                      ≈ {formatAmountInput(toAmount)} {toToken.symbol}
-                    </Text>
-                  )}
+                  {toToken &&
+                    (isFetchingQuote ? (
+                      <LoadingDots />
+                    ) : (
+                      <Text style={styles.estimatedOutputText}>
+                        <Text style={styles.estimatedOutputSymbol}>≈ </Text>
+                        {formatAmountInput(toAmount) || '0'}
+                        <Text style={styles.estimatedOutputSymbol}>
+                          {' '}
+                          {toToken.symbol}
+                        </Text>
+                      </Text>
+                    ))}
                 </TouchableOpacity>
+                {fromToken && toToken && exchangeRate && (
+                  <View style={styles.exchangeRateContainer}>
+                    <Text style={styles.exchangeRateText}>
+                      1 {fromToken.symbol} ≈ {exchangeRate.toFixed(6)}{' '}
+                      {toToken.symbol}
+                    </Text>
+                  </View>
+                )}
               </View>
 
               {/* Row 2: Preview Swap Button */}
@@ -922,7 +987,7 @@ const styles = StyleSheet.create({
   // Row 1: Amount Display Section
   amountSection: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: '#1A1A1A',
     borderRadius: 12,
@@ -933,6 +998,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: scale(16),
+    flex: 1,
   },
   amountText: {
     fontSize: moderateScale(30),
@@ -946,11 +1012,29 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   estimatedOutputText: {
-    fontSize: moderateScale(16),
+    fontSize: moderateScale(18),
     fontFamily: 'Inter-Regular',
-    color: colors.textSecondary,
+    color: colors.white,
     marginTop: verticalScale(8),
     textAlign: 'center',
+  },
+  estimatedOutputSymbol: {
+    fontSize: moderateScale(18),
+    fontFamily: 'Inter-Regular',
+    color: colors.textSecondary,
+  },
+  exchangeRateText: {
+    fontSize: moderateScale(14),
+    fontFamily: 'Inter-Regular',
+    color: colors.textSecondary,
+    marginTop: verticalScale(6),
+    textAlign: 'center',
+    opacity: 0.7,
+  },
+  exchangeRateContainer: {
+    width: '100%',
+    paddingVertical: verticalScale(8),
+    paddingHorizontal: scale(16),
   },
   // Row 2: Token Selectors
   tokenSelectorsRow: {

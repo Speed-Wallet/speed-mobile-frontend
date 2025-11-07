@@ -5,7 +5,7 @@ import React, {
   forwardRef,
   useImperativeHandle,
 } from 'react';
-import { StyleSheet, BackHandler } from 'react-native';
+import { StyleSheet, BackHandler, Alert } from 'react-native';
 import {
   BottomSheetModal,
   BottomSheetView,
@@ -207,6 +207,44 @@ const WalletSwitcherBottomSheet = forwardRef<
     }
   };
 
+  const handleDeleteWallet = async (walletId: string) => {
+    const wallet = wallets.find((w) => w.id === walletId);
+
+    if (wallet?.isMasterWallet) {
+      // This should never happen as the button is hidden, but double-check
+      return;
+    }
+
+    Alert.alert(
+      'Remove Wallet',
+      `Are you sure you want to remove "${wallet?.name}" from this device? This action cannot be undone.`,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setLoading(true);
+              await removeWalletFromList(walletId);
+              await loadWallets();
+              // Don't call onDeleteWallet - it would show an unwanted alert
+              // Just refresh the parent's data via onSuccess callback
+              onSuccess?.();
+            } catch (error) {
+              console.error('Error deleting wallet:', error);
+            } finally {
+              setLoading(false);
+            }
+          },
+        },
+      ],
+    );
+  };
+
   const renderBackdrop = (props: any) => (
     <BottomSheetBackdrop
       {...props}
@@ -245,6 +283,7 @@ const WalletSwitcherBottomSheet = forwardRef<
             copiedAddressId={copiedAddressId}
             onSwitchWallet={handleSwitchWallet}
             onCopyAddress={copyAddress}
+            onDeleteWallet={handleDeleteWallet}
             onAddWalletPress={() => setViewMode('add')}
             renderScrollComponent={BottomSheetFlashListScrollable}
           />
