@@ -79,14 +79,14 @@ const TokenItemHome = ({
 
 const styles = StyleSheet.create({
   totalPrice: {
-    fontSize: moderateScale(12),
-    fontFamily: 'Inter-Regular',
-    color: colors.textSecondary,
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
+    color: colors.textPrimary,
   },
   changeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: verticalScale(3),
+    marginTop: 2,
   },
   changeIcon: {
     marginRight: scale(3),
