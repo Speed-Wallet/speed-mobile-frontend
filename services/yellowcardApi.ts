@@ -92,3 +92,46 @@ export function getActiveDepositChannels(
     return true;
   });
 }
+
+/**
+ * Generate widget signature from backend
+ * The backend securely signs the widget parameters using the secret key
+ */
+export async function getWidgetSignature(
+  walletAddress: string,
+  token: string,
+): Promise<string> {
+  if (!BASE_BACKEND_URL) {
+    throw new Error('Backend URL not configured');
+  }
+
+  try {
+    const response = await fetch(
+      `${BASE_BACKEND_URL}/api/yellowcard/signature`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          walletAddress,
+          token,
+        }),
+      },
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      console.error('Signature generation error:', response.status, errorData);
+      throw new Error(
+        `Signature generation error: ${response.status} ${response.statusText}`,
+      );
+    }
+
+    const data = await response.json();
+    return data.signature;
+  } catch (error) {
+    console.error('Failed to generate widget signature:', error);
+    throw error;
+  }
+}

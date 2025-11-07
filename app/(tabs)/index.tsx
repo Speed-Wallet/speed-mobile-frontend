@@ -34,7 +34,6 @@ import {
   WBNB_TOKEN,
   WETH_TOKEN,
 } from '@/constants/popularTokens';
-import { generateSignature } from '@/utils/signature';
 import Animated, { FadeInRight } from 'react-native-reanimated';
 import CustomAlert from '@/components/CustomAlert';
 import WalletSwitcherBottomSheet, {

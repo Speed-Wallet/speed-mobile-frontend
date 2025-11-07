@@ -20,7 +20,7 @@ import { Country, countries } from '@/constants/countries';
 import colors from '@/constants/colors';
 import { formatNumber } from '@/utils/formatters';
 import { useWalletPublicKey } from '@/services/walletService';
-import { generateSignature } from '@/utils/signature';
+import { getWidgetSignature } from '@/services/yellowcardApi';
 import {
   useCountryPaymentMethods,
   useActiveYellowCardChannels,
@@ -249,7 +249,7 @@ export default function BuyScreen() {
       }
 
       // Generate signature for wallet address and token
-      const signature = await generateSignature(walletAddress, 'SOL');
+      const signature = await getWidgetSignature(walletAddress, 'SOL');
 
       // Build query parameters
       const params = new URLSearchParams({
