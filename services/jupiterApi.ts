@@ -148,11 +148,6 @@ export const prepareJupiterSwap = async (
     throw new Error('No authentication token available');
   }
 
-  console.log('Preparing Jupiter Ultra swap...');
-  console.log('  Input mint:', quoteResponse.inputMint);
-  console.log('  Output mint:', quoteResponse.outputMint);
-  console.log('  Amount:', quoteResponse.inAmount);
-
   // Get fresh order from backend with correct user public key
   const response = await fetch(`${BASE_BACKEND_URL}/api/jupiter/order`, {
     method: 'POST',
