@@ -70,13 +70,7 @@ const PinInputSection: React.FC<PinInputSectionProps> = ({
           },
         ]}
       >
-        {/* Loading Spinner - shown above title when validating */}
-        {isValidating && (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={colors.primary} />
-          </View>
-        )}
-
+        {/* Title or Loading Spinner - loading replaces title without moving layout */}
         <Animated.View
           style={[
             styles.titleContainer,
@@ -85,8 +79,14 @@ const PinInputSection: React.FC<PinInputSectionProps> = ({
             },
           ]}
         >
-          <Text style={styles.title}>{title}</Text>
-          {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+          {isValidating ? (
+            <ActivityIndicator size="large" color={colors.primary} />
+          ) : (
+            <>
+              <Text style={styles.title}>{title}</Text>
+              {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+            </>
+          )}
         </Animated.View>
 
         <Animated.View
@@ -128,9 +128,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  loadingContainer: {
-    marginBottom: verticalScale(24),
   },
   titleContainer: {
     marginBottom: 16,

@@ -233,14 +233,14 @@ export default function SettingsScreen() {
         </View>
 
         {/* Preferences Section */}
-        <View style={styles.section}>
+        {/* <View style={styles.section}>
           <Text style={styles.sectionTitle}>Preferences</Text>
           <View style={styles.sectionContent}>
             {preferencesOptions.map((option, index, array) =>
               renderSettingItem(option, index, array),
             )}
           </View>
-        </View>
+        </View> */}
 
         {/* Referrals & Affiliates Section */}
         {/* <View style={styles.section}>
