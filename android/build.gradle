@@ -6,18 +6,21 @@ buildscript {
         minSdkVersion = Integer.parseInt(findProperty('android.minSdkVersion') ?: '24')
         compileSdkVersion = Integer.parseInt(findProperty('android.compileSdkVersion') ?: '35')
         targetSdkVersion = Integer.parseInt(findProperty('android.targetSdkVersion') ?: '35')
-        kotlinVersion = findProperty('android.kotlinVersion') ?: '1.9.25'
+        kotlinVersion = findProperty('android.kotlinVersion') ?: '2.0.21'
 
-        ndkVersion = "26.1.10909125"
+        // NDK r28+ compiles with 16KB alignment by default
+        // See: https://developer.android.com/guide/practices/page-sizes
+        ndkVersion = "28.0.12674087"
     }
     repositories {
         google()
         mavenCentral()
     }
     dependencies {
-        classpath('com.android.tools.build:gradle')
+        classpath('com.android.tools.build:gradle:8.12.2')
         classpath('com.facebook.react:react-native-gradle-plugin')
-        classpath('org.jetbrains.kotlin:kotlin-gradle-plugin')
+        classpath('org.jetbrains.kotlin:kotlin-gradle-plugin:2.0.21')
+        classpath('com.google.devtools.ksp:symbol-processing-gradle-plugin:2.0.21-1.0.28')
     }
 }
 

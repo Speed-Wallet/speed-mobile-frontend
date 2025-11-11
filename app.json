@@ -69,12 +69,7 @@
         "foregroundImage": "./assets/images/icons/speed-wallet-adaptive-foreground.png",
         "backgroundColor": "#1A1B23"
       },
-      "versionCode": 1,
-      "statusBar": {
-        "backgroundColor": "#121212",
-        "barStyle": "light-content"
-      },
-      "16kbPageAgnostic": true
+      "versionCode": 1
     },
     "runtimeVersion": "1.0.0",
     "updates": {
