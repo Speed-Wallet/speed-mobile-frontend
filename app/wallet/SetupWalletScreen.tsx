@@ -55,9 +55,11 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [pin, setPin] = useState('');
   const [isImporting, setIsImporting] = useState(false);
+  const [isImportFlow, setIsImportFlow] = useState(false); // Track if user is in import flow
 
   const handleCreateWallet = async () => {
     setIsLoading(true);
+    setIsImportFlow(false); // Creating new wallet, not importing
     try {
       const wallet = await generateInitialSolanaWallet();
       setMnemonic(wallet.mnemonic);
@@ -196,18 +198,20 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
   };
 
   const handleImportWallet = () => {
+    setIsImportFlow(true); // Set import flow immediately when user chooses to import
     setStep(WalletSetupStep.IMPORT);
   };
 
   const processImportWallet = async (seedPhrase: string) => {
     setIsImporting(true);
+    setIsImportFlow(true); // User is importing, not creating
     try {
       const wallet = await importWalletFromMnemonic(seedPhrase);
 
-      // Set the imported wallet data and proceed to verification
+      // Set the imported wallet data and proceed to username (skip verification for imports)
       setMnemonic(wallet.mnemonic);
       setPublicKey(wallet.publicKey);
-      setStep(WalletSetupStep.VERIFY_MNEMONIC);
+      setStep(WalletSetupStep.USERNAME);
     } catch (error) {
       setIsImporting(false);
       throw error; // Let the ImportWalletStep handle the error display
@@ -259,21 +263,40 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
 
   // Helper function to get progress bar info
   const getProgressInfo = () => {
-    const progressMap = {
-      [WalletSetupStep.INTRO]: 0,
-      [WalletSetupStep.IMPORT]: 1,
-      [WalletSetupStep.SHOW_MNEMONIC]: 1,
-      [WalletSetupStep.VERIFY_MNEMONIC]: 2,
-      [WalletSetupStep.USERNAME]: 3,
-      [WalletSetupStep.INVITE_CODE]: 4,
-      [WalletSetupStep.CREATE_PIN]: 5,
-      [WalletSetupStep.SUCCESS]: 6,
-    };
+    // For import flow: IMPORT(1) -> USERNAME(2) -> INVITE_CODE(3) -> CREATE_PIN(4) -> SUCCESS(5)
+    // For create flow: SHOW_MNEMONIC(1) -> VERIFY_MNEMONIC(2) -> USERNAME(3) -> INVITE_CODE(4) -> CREATE_PIN(5) -> SUCCESS(6)
 
-    return {
-      current: progressMap[step] || 0,
-      total: 6,
-    };
+    if (isImportFlow) {
+      const importProgressMap: Record<WalletSetupStep, number> = {
+        [WalletSetupStep.INTRO]: 0,
+        [WalletSetupStep.IMPORT]: 1,
+        [WalletSetupStep.SHOW_MNEMONIC]: 0,
+        [WalletSetupStep.VERIFY_MNEMONIC]: 0,
+        [WalletSetupStep.USERNAME]: 2,
+        [WalletSetupStep.INVITE_CODE]: 3,
+        [WalletSetupStep.CREATE_PIN]: 4,
+        [WalletSetupStep.SUCCESS]: 5,
+      };
+      return {
+        current: importProgressMap[step] || 0,
+        total: 5,
+      };
+    } else {
+      const createProgressMap: Record<WalletSetupStep, number> = {
+        [WalletSetupStep.INTRO]: 0,
+        [WalletSetupStep.IMPORT]: 0,
+        [WalletSetupStep.SHOW_MNEMONIC]: 1,
+        [WalletSetupStep.VERIFY_MNEMONIC]: 2,
+        [WalletSetupStep.USERNAME]: 3,
+        [WalletSetupStep.INVITE_CODE]: 4,
+        [WalletSetupStep.CREATE_PIN]: 5,
+        [WalletSetupStep.SUCCESS]: 6,
+      };
+      return {
+        current: createProgressMap[step] || 0,
+        total: 6,
+      };
+    }
   };
 
   const progressInfo = getProgressInfo();
@@ -323,7 +346,13 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
       {step === WalletSetupStep.USERNAME && (
         <CreateUsernameStep
           onNext={handleUsernameNext}
-          onBack={() => setStep(WalletSetupStep.VERIFY_MNEMONIC)}
+          onBack={() =>
+            setStep(
+              isImportFlow
+                ? WalletSetupStep.IMPORT
+                : WalletSetupStep.VERIFY_MNEMONIC,
+            )
+          }
           isLoading={isLoading}
         />
       )}

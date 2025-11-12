@@ -266,11 +266,6 @@ const styles = StyleSheet.create({
     width: '100%',
     borderRadius: scale(16),
     overflow: 'hidden',
-    elevation: 10,
-    shadowColor: '#22d3ee',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
   },
   primaryButtonGradient: {
     flexDirection: 'row',

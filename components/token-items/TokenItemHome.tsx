@@ -3,7 +3,11 @@ import { Text, View, StyleSheet } from 'react-native';
 import { ArrowUpRight, ArrowDownRight } from 'lucide-react-native';
 import { scale, moderateScale, verticalScale } from 'react-native-size-matters';
 import colors from '@/constants/colors';
-import { formatCurrency, formatPercentage } from '@/utils/formatters';
+import {
+  formatCurrency,
+  formatPercentage,
+  formatBalance,
+} from '@/utils/formatters';
 import { TokenAsset } from '@/services/tokenAssetService';
 import TokenItemBase from './TokenItemBase';
 
@@ -12,6 +16,7 @@ interface TokenItemHomeProps {
   onPress: () => void;
   isLoading?: boolean;
   backgroundColor?: string;
+  tokenPrice?: number; // Price per token from useTokenPrices
   priceChangePercentage?: number; // 24h price change percentage
 }
 
@@ -23,6 +28,7 @@ const TokenItemHome = ({
   onPress,
   isLoading = false,
   backgroundColor,
+  tokenPrice,
   priceChangePercentage,
 }: TokenItemHomeProps) => {
   const hasValidPriceChange =
@@ -31,6 +37,9 @@ const TokenItemHome = ({
     !isNaN(priceChangePercentage);
   const isPositiveChange = (priceChangePercentage ?? 0) >= 0;
 
+  // Use tokenPrice from props if available, fallback to token.pricePerToken
+  const displayPrice = tokenPrice ?? token.pricePerToken ?? 0;
+
   return (
     <TokenItemBase
       logoURI={token.logoURI}
@@ -38,7 +47,17 @@ const TokenItemHome = ({
       onPress={onPress}
       isLoading={isLoading}
       backgroundColor={backgroundColor}
-      balance={token.balance}
+      secondaryContent={
+        <View style={styles.balancePriceContainer}>
+          <Text style={styles.balanceText}>
+            {isLoading ? '0.00' : formatBalance(token.balance)}
+          </Text>
+          <Text style={styles.bulletText}>•</Text>
+          <Text style={styles.priceText}>
+            {isLoading ? formatCurrency(0) : formatCurrency(displayPrice)}
+          </Text>
+        </View>
+      }
       rightContent={
         <>
           <Text style={styles.totalPrice}>
@@ -78,6 +97,27 @@ const TokenItemHome = ({
 };
 
 const styles = StyleSheet.create({
+  balancePriceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 2,
+  },
+  balanceText: {
+    fontSize: 12,
+    fontFamily: 'Inter-Regular',
+    color: colors.textSecondary,
+  },
+  bulletText: {
+    fontSize: 12,
+    fontFamily: 'Inter-Regular',
+    color: colors.textSecondary,
+    marginHorizontal: scale(4),
+  },
+  priceText: {
+    fontSize: 12,
+    fontFamily: 'Inter-Regular',
+    color: colors.textSecondary,
+  },
   totalPrice: {
     fontSize: 14,
     fontFamily: 'Inter-SemiBold',

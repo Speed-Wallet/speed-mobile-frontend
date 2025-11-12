@@ -103,8 +103,6 @@ let preloadedCache: PreloadedWalletCache = {
  */
 export const preloadEncryptedWallets = async (): Promise<void> => {
   try {
-    console.log('Preloading encrypted wallet data...');
-
     // Batch load all encrypted data in parallel
     const [wallets, appCrypto, activeWalletId] = await Promise.all([
       getAllStoredWallets(),
@@ -118,10 +116,6 @@ export const preloadEncryptedWallets = async (): Promise<void> => {
       appCrypto: appCrypto || null,
       activeWalletId: activeWalletId || null,
     };
-
-    console.log(
-      `Preloaded ${wallets?.length || 0} encrypted wallets into memory`,
-    );
   } catch (error) {
     console.error('Failed to preload encrypted wallets:', error);
     // Don't throw - we can still fall back to loading on-demand
@@ -282,8 +276,6 @@ export const createAppPin = async (pin: string): Promise<void> => {
 
   // Store temporarily for immediate use
   setTempAppPin(pin);
-
-  console.log('App-level PIN created successfully');
 };
 
 export const verifyAppPin = async (pin: string): Promise<boolean> => {

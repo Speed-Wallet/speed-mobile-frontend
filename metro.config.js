@@ -11,6 +11,19 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
       platform,
     );
   }
+
+  // Suppress warnings for known packages with incomplete exports
+  const suppressWarnings = ['rpc-websockets', '@noble/hashes/crypto.js'];
+
+  if (suppressWarnings.some((pkg) => moduleName.includes(pkg))) {
+    try {
+      return context.resolveRequest(context, moduleName, platform);
+    } catch (error) {
+      // Fallback to file-based resolution without warning
+      return context.resolveRequest(context, moduleName, platform);
+    }
+  }
+
   // otherwise chain to the standard Metro resolver.
   return context.resolveRequest(context, moduleName, platform);
 };

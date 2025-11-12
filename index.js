@@ -1,3 +1,8 @@
+// Workaround for RN 0.79+ TurboModule init race condition
+// Forces Platform module to initialize before other native modules
+import { Platform } from 'react-native';
+console.log('Platform initialized:', Platform.OS);
+
 import { install } from 'react-native-quick-crypto';
 install();
 

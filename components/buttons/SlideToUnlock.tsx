@@ -105,11 +105,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
-    elevation: 10,
-    shadowColor: '#22d3ee',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
   },
   sliderText: {
     fontSize: moderateScale(16),
@@ -127,11 +122,6 @@ const styles = StyleSheet.create({
     borderRadius: scale(25),
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
   },
 });
 

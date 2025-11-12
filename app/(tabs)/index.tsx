@@ -175,7 +175,7 @@ export default function HomeScreen() {
     tokenAssets?.tokenAssets?.map((t) => t.address) || [];
   const suggestedTokenAddresses = SUGGESTED_TOKENS.map((t) => t.address);
   const allTokenAddresses = [...userTokenAddresses, ...suggestedTokenAddresses];
-  const { priceChanges } = useTokenPrices(allTokenAddresses);
+  const { prices, priceChanges } = useTokenPrices(allTokenAddresses);
 
   // Filter out tokens the user already owns - only if assets are loaded
   const suggestedTokens = isLoadingAssets
@@ -233,6 +233,7 @@ export default function HomeScreen() {
           keyExtractor={(item) => item.address}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.flatListContent}
+          estimatedItemSize={100}
           ListHeaderComponent={
             <>
               {/* Header section */}
@@ -290,6 +291,7 @@ export default function HomeScreen() {
                 <TokenItemHome
                   token={item}
                   isLoading={isLoadingAssets}
+                  tokenPrice={prices[item.address]}
                   priceChangePercentage={priceChanges[item.address]}
                   onPress={() =>
                     router.push(
