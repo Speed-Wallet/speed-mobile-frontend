@@ -495,6 +495,9 @@ export async function simulateCardCreated(
 export async function createUser(
   username: string,
   publicKey: string,
+  signature?: string,
+  message?: string,
+  timestamp?: number,
 ): Promise<{
   success: boolean;
   data?: any;
@@ -502,15 +505,24 @@ export async function createUser(
   statusCode?: number;
 }> {
   try {
+    const body: any = {
+      username,
+      publicKey,
+    };
+
+    // Include signature params if provided (for imports)
+    if (signature && message && timestamp) {
+      body.signature = signature;
+      body.message = message;
+      body.timestamp = timestamp;
+    }
+
     const response = await fetch(`${BASE_BACKEND_URL}/addUser`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        username,
-        publicKey,
-      }),
+      body: JSON.stringify(body),
     });
 
     if (!response.ok) {

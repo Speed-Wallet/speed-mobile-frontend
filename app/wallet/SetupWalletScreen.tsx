@@ -18,10 +18,16 @@ import CreateUsernameStep from '@/components/wallet/CreateUsernameStep';
 import CreatePinStep from '@/components/wallet/CreatePinStep';
 import WalletSetupSuccessStep from '@/components/wallet/WalletSetupSuccessStep';
 import ImportWalletStep from '@/components/wallet/ImportWalletStep';
+import VerifyOwnershipStep from '@/components/wallet/VerifyOwnershipStep';
+import CheckUserStep from '@/components/wallet/CheckUserStep';
+import ShowExistingUsernameStep from '@/components/wallet/ShowExistingUsernameStep';
 import InviteCodeStep from '@/components/wallet/InviteCodeStep';
 import ProgressBar from '@/components/ProgressBar';
 import 'react-native-get-random-values';
-
+import { Keypair } from '@solana/web3.js';
+import { signAsync } from '@noble/ed25519';
+import { mnemonicToSeed } from '@/utils/bip39';
+import { deriveKeyFromPath } from '@/utils/derivation';
 export enum WalletSetupStep {
   INTRO = 1,
   SHOW_MNEMONIC,
@@ -31,6 +37,9 @@ export enum WalletSetupStep {
   CREATE_PIN,
   SUCCESS,
   IMPORT = 9,
+  VERIFY_OWNERSHIP = 10,
+  CHECK_USER = 11,
+  SHOW_EXISTING_USERNAME = 12,
 }
 
 interface SetupWalletScreenProps {
@@ -56,6 +65,7 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
   const [pin, setPin] = useState('');
   const [isImporting, setIsImporting] = useState(false);
   const [isImportFlow, setIsImportFlow] = useState(false); // Track if user is in import flow
+  const [showUsernameCreation, setShowUsernameCreation] = useState(false); // Control whether to show username creation
 
   const handleCreateWallet = async () => {
     setIsLoading(true);
@@ -92,17 +102,43 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
 
     setIsLoading(true);
     try {
-      // Create user in backend
-      const result = await createUser(selectedUsername, publicKey);
+      let result;
+
+      // For import flow, include signature verification
+      if (isImportFlow && mnemonic) {
+        // Derive keypair and sign message
+        const seed = await mnemonicToSeed(mnemonic);
+        const derivedKey = deriveKeyFromPath(seed, 0);
+        const keypair = Keypair.fromSeed(derivedKey);
+
+        const timestamp = Date.now();
+        const message = `Speed Wallet Import\nPublic Key: ${publicKey}\nTimestamp: ${timestamp}`;
+        const messageBytes = new TextEncoder().encode(message);
+        const privateKey = keypair.secretKey.subarray(0, 32);
+        const signatureBytes = await signAsync(messageBytes, privateKey);
+        const signature = Buffer.from(signatureBytes).toString('base64');
+
+        result = await createUser(
+          selectedUsername,
+          publicKey,
+          signature,
+          message,
+          timestamp,
+        );
+      } else {
+        // For create flow, no signature needed (yet - can be added later)
+        result = await createUser(selectedUsername, publicKey);
+      }
 
       if (!result.success) {
         // Handle specific error cases
         if (
           result.error?.includes('User already exists') ||
+          result.error?.includes('Public key already registered') ||
           result.statusCode === 409
         ) {
           // Throw error to let the child component handle the visual feedback
-          throw new Error('Username already exists');
+          throw new Error(result.error || 'User already exists');
         } else {
           showError(
             'Error',
@@ -129,6 +165,7 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
       // Only show alert for unknown errors, not for username taken
       if (
         error instanceof Error &&
+        !error.message.includes('already') &&
         error.message !== 'Username already exists'
       ) {
         showError(
@@ -208,15 +245,45 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
     try {
       const wallet = await importWalletFromMnemonic(seedPhrase);
 
-      // Set the imported wallet data and proceed to username (skip verification for imports)
+      // Set the imported wallet data
       setMnemonic(wallet.mnemonic);
       setPublicKey(wallet.publicKey);
-      setStep(WalletSetupStep.USERNAME);
+
+      // Move to verification step (components will derive keypair from mnemonic)
+      setStep(WalletSetupStep.VERIFY_OWNERSHIP);
     } catch (error) {
       setIsImporting(false);
       throw error; // Let the ImportWalletStep handle the error display
     }
     setIsImporting(false);
+  };
+
+  const handleVerificationComplete = () => {
+    // After verification, check if user exists
+    setStep(WalletSetupStep.CHECK_USER);
+  };
+
+  const handleUserExists = (
+    existingUsername: string,
+    usedReferralCode: string | null,
+  ) => {
+    // User already exists - show the username screen
+    setUsername(existingUsername);
+    AuthService.storeUsername(existingUsername);
+    setShowUsernameCreation(false);
+
+    // Store the used referral code for display
+    if (usedReferralCode) {
+      setUserReferralCode(usedReferralCode);
+    }
+
+    setStep(WalletSetupStep.SHOW_EXISTING_USERNAME);
+  };
+
+  const handleUserNew = () => {
+    // New user - proceed to username creation
+    setShowUsernameCreation(true);
+    setStep(WalletSetupStep.USERNAME);
   };
 
   const handleInviteCodeNext = async (inviteCode: string) => {
@@ -263,28 +330,36 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
 
   // Helper function to get progress bar info
   const getProgressInfo = () => {
-    // For import flow: IMPORT(1) -> USERNAME(2) -> INVITE_CODE(3) -> CREATE_PIN(4) -> SUCCESS(5)
+    // For import flow with existing user: IMPORT(1) -> VERIFY_OWNERSHIP(2) -> CHECK_USER(3) -> SHOW_EXISTING_USERNAME(4) -> INVITE_CODE(5) -> CREATE_PIN(6) -> SUCCESS(7)
+    // For import flow with new user: IMPORT(1) -> VERIFY_OWNERSHIP(2) -> CHECK_USER(3) -> USERNAME(4) -> INVITE_CODE(5) -> CREATE_PIN(6) -> SUCCESS(7)
     // For create flow: SHOW_MNEMONIC(1) -> VERIFY_MNEMONIC(2) -> USERNAME(3) -> INVITE_CODE(4) -> CREATE_PIN(5) -> SUCCESS(6)
 
     if (isImportFlow) {
       const importProgressMap: Record<WalletSetupStep, number> = {
         [WalletSetupStep.INTRO]: 0,
         [WalletSetupStep.IMPORT]: 1,
+        [WalletSetupStep.VERIFY_OWNERSHIP]: 2,
+        [WalletSetupStep.CHECK_USER]: 3,
+        [WalletSetupStep.SHOW_EXISTING_USERNAME]: 4,
         [WalletSetupStep.SHOW_MNEMONIC]: 0,
         [WalletSetupStep.VERIFY_MNEMONIC]: 0,
-        [WalletSetupStep.USERNAME]: 2,
-        [WalletSetupStep.INVITE_CODE]: 3,
-        [WalletSetupStep.CREATE_PIN]: 4,
-        [WalletSetupStep.SUCCESS]: 5,
+        [WalletSetupStep.USERNAME]: 4,
+        [WalletSetupStep.INVITE_CODE]: 5,
+        [WalletSetupStep.CREATE_PIN]: 6,
+        [WalletSetupStep.SUCCESS]: 7,
       };
       return {
         current: importProgressMap[step] || 0,
-        total: 5,
+        total: 7,
       };
     } else {
+      // Create flow
       const createProgressMap: Record<WalletSetupStep, number> = {
         [WalletSetupStep.INTRO]: 0,
         [WalletSetupStep.IMPORT]: 0,
+        [WalletSetupStep.VERIFY_OWNERSHIP]: 0,
+        [WalletSetupStep.CHECK_USER]: 0,
+        [WalletSetupStep.SHOW_EXISTING_USERNAME]: 0,
         [WalletSetupStep.SHOW_MNEMONIC]: 1,
         [WalletSetupStep.VERIFY_MNEMONIC]: 2,
         [WalletSetupStep.USERNAME]: 3,
@@ -362,6 +437,7 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
           onNext={handleInviteCodeNext}
           onSkip={handleInviteCodeSkip}
           isLoading={isLoading}
+          existingCode={userReferralCode}
         />
       )}
 
@@ -387,6 +463,31 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
           onNext={processImportWallet}
           onBack={() => setStep(WalletSetupStep.INTRO)}
           isLoading={isImporting}
+        />
+      )}
+
+      {step === WalletSetupStep.VERIFY_OWNERSHIP && mnemonic && (
+        <VerifyOwnershipStep
+          mnemonic={mnemonic}
+          onNext={handleVerificationComplete}
+          onBack={() => setStep(WalletSetupStep.IMPORT)}
+        />
+      )}
+
+      {step === WalletSetupStep.CHECK_USER && mnemonic && (
+        <CheckUserStep
+          mnemonic={mnemonic}
+          onUserExists={handleUserExists}
+          onUserNew={handleUserNew}
+          onBack={() => setStep(WalletSetupStep.VERIFY_OWNERSHIP)}
+        />
+      )}
+
+      {step === WalletSetupStep.SHOW_EXISTING_USERNAME && username && (
+        <ShowExistingUsernameStep
+          username={username}
+          onNext={() => setStep(WalletSetupStep.INVITE_CODE)}
+          onBack={() => setStep(WalletSetupStep.CHECK_USER)}
         />
       )}
     </ScreenContainer>

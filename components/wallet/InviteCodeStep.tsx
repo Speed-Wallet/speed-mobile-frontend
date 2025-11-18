@@ -17,12 +17,14 @@ interface InviteCodeStepProps {
   onNext: (inviteCode: string) => Promise<void>;
   onSkip: () => void;
   isLoading?: boolean;
+  existingCode?: string | null;
 }
 
 const InviteCodeStep: React.FC<InviteCodeStepProps> = ({
   onNext,
   onSkip,
   isLoading = false,
+  existingCode = null,
 }) => {
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
@@ -72,6 +74,33 @@ const InviteCodeStep: React.FC<InviteCodeStepProps> = ({
       setIsCodeInvalid(false);
     }
   };
+
+  // If user already has an existing code, show read-only view
+  if (existingCode) {
+    return (
+      <IntroScreen
+        title="Invite Code"
+        subtitle="You have already used an invite code. This cannot be changed."
+        footer={
+          <PrimaryActionButton
+            title="Continue"
+            onPress={onSkip}
+            disabled={isLoading}
+            loading={isLoading}
+          />
+        }
+      >
+        <View style={styles.contentContainer}>
+          <View style={styles.readOnlyCodeContainer}>
+            <Text style={styles.readOnlyCodeLabel}>Your invite code</Text>
+            <View style={styles.readOnlyCodeBox}>
+              <Text style={styles.readOnlyCodeText}>{existingCode}</Text>
+            </View>
+          </View>
+        </View>
+      </IntroScreen>
+    );
+  }
 
   return (
     <IntroScreen
@@ -174,6 +203,33 @@ const styles = StyleSheet.create({
   },
   submitButtonContainer: {
     flex: 7,
+  },
+  readOnlyCodeContainer: {
+    alignItems: 'center',
+    width: '100%',
+    paddingHorizontal: scale(20),
+  },
+  readOnlyCodeLabel: {
+    fontSize: moderateScale(14),
+    fontFamily: 'Inter-Regular',
+    color: colors.textSecondary,
+    marginBottom: verticalScale(12),
+  },
+  readOnlyCodeBox: {
+    backgroundColor: colors.backgroundLight,
+    borderWidth: 2,
+    borderColor: colors.primary,
+    borderRadius: moderateScale(12),
+    paddingVertical: verticalScale(20),
+    paddingHorizontal: scale(40),
+    minWidth: scale(200),
+    alignItems: 'center',
+  },
+  readOnlyCodeText: {
+    fontSize: moderateScale(24),
+    fontFamily: 'Inter-SemiBold',
+    color: colors.textPrimary,
+    letterSpacing: 4,
   },
 });
 
