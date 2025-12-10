@@ -6,6 +6,7 @@ import {
   saveWalletToList,
   createAppPin,
   importWalletFromMnemonic,
+  signWalletOwnershipMessage,
 } from '@/services/walletService';
 import { createUser, useReferralCode } from '@/services/apis';
 import { AuthService } from '@/services/authService';
@@ -24,10 +25,7 @@ import ShowExistingUsernameStep from '@/components/wallet/ShowExistingUsernameSt
 import InviteCodeStep from '@/components/wallet/InviteCodeStep';
 import ProgressBar from '@/components/ProgressBar';
 import 'react-native-get-random-values';
-import { Keypair } from '@solana/web3.js';
-import { signAsync } from '@noble/ed25519';
-import { mnemonicToSeed } from '@/utils/bip39';
-import { deriveKeyFromPath } from '@/utils/derivation';
+
 export enum WalletSetupStep {
   INTRO = 1,
   SHOW_MNEMONIC,
@@ -60,7 +58,7 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
     undefined,
   );
   const [username, setUsername] = useState<string>('');
-  const [userReferralCode, setUserReferralCode] = useState<string | null>(null);
+  const [usedReferralCode, setUsedReferralCode] = useState<string | null>(null); // The referral code the user has already used
   const [isLoading, setIsLoading] = useState(false);
   const [pin, setPin] = useState('');
   const [isImporting, setIsImporting] = useState(false);
@@ -104,19 +102,10 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
     try {
       let result;
 
-      // For import flow, include signature verification
-      if (isImportFlow && mnemonic) {
-        // Derive keypair and sign message
-        const seed = await mnemonicToSeed(mnemonic);
-        const derivedKey = deriveKeyFromPath(seed, 0);
-        const keypair = Keypair.fromSeed(derivedKey);
-
-        const timestamp = Date.now();
-        const message = `Speed Wallet Import\nPublic Key: ${publicKey}\nTimestamp: ${timestamp}`;
-        const messageBytes = new TextEncoder().encode(message);
-        const privateKey = keypair.secretKey.subarray(0, 32);
-        const signatureBytes = await signAsync(messageBytes, privateKey);
-        const signature = Buffer.from(signatureBytes).toString('base64');
+      // Both create and import flows now require signature verification
+      if (mnemonic) {
+        const { signature, message, timestamp } =
+          await signWalletOwnershipMessage(mnemonic, accountIndex ?? 0);
 
         result = await createUser(
           selectedUsername,
@@ -126,8 +115,9 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
           timestamp,
         );
       } else {
-        // For create flow, no signature needed (yet - can be added later)
-        result = await createUser(selectedUsername, publicKey);
+        // Fallback for cases where mnemonic is not available
+        showError('Error', 'Wallet data not available. Please try again.');
+        return;
       }
 
       if (!result.success) {
@@ -152,10 +142,13 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
       await AuthService.storeUsername(selectedUsername);
       setUsername(selectedUsername);
 
-      // Store the user's own referral code if provided
+      // Note: result.data.referralCode is the user's OWN referral code (to share with others)
+      // We do NOT store it in usedReferralCode, which is only for codes they've already used
       if (result.data?.referralCode) {
-        setUserReferralCode(result.data.referralCode);
-        console.log('User referral code:', result.data.referralCode);
+        console.log(
+          'User own referral code generated:',
+          result.data.referralCode,
+        );
       }
 
       setStep(WalletSetupStep.INVITE_CODE);
@@ -265,16 +258,16 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
 
   const handleUserExists = (
     existingUsername: string,
-    usedReferralCode: string | null,
+    usedReferralCodeParam: string | null,
   ) => {
     // User already exists - show the username screen
     setUsername(existingUsername);
     AuthService.storeUsername(existingUsername);
     setShowUsernameCreation(false);
 
-    // Store the used referral code for display
-    if (usedReferralCode) {
-      setUserReferralCode(usedReferralCode);
+    // Store the used referral code for display (code they already used, if any)
+    if (usedReferralCodeParam) {
+      setUsedReferralCode(usedReferralCodeParam);
     }
 
     setStep(WalletSetupStep.SHOW_EXISTING_USERNAME);
@@ -437,7 +430,7 @@ const SetupWalletScreen: React.FC<SetupWalletScreenProps> = ({
           onNext={handleInviteCodeNext}
           onSkip={handleInviteCodeSkip}
           isLoading={isLoading}
-          existingCode={userReferralCode}
+          existingCode={usedReferralCode}
         />
       )}
 

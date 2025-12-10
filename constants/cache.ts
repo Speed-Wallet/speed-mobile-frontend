@@ -29,7 +29,7 @@ export const CACHE_TIME = {
   CARDS: {
     STALE_TIME: 30 * 1000, // 30 seconds
     GC_TIME: 5 * 60 * 1000, // 5 minutes
-    REFETCH_INTERVAL: 30 * 1000, // 30 seconds
+    REFETCH_INTERVAL: 10 * 1000, // 10 seconds
   },
 
   // App configuration

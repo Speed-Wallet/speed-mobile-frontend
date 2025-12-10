@@ -36,6 +36,7 @@ import { AlertProvider } from '@/providers/AlertProvider';
 import { ToastProvider } from '@/providers/ToastProvider';
 import { prefetchAppConfig } from '@/utils/configPrefetch';
 import { StorageService } from '@/utils/storage';
+import { initializePushNotifications } from '@/services/notifications';
 import 'react-native-get-random-values';
 
 // Prevent splash screen from auto-hiding
@@ -132,16 +133,10 @@ export default function RootLayout() {
 
   // Helper function to check if KYC is complete
   const checkKYCComplete = (): boolean => {
-    console.log('🔍 [KYC CHECK] ========================================');
-    console.log('🔍 [KYC CHECK] checkKYCComplete called in _layout.tsx');
-    console.log('🔍 [KYC CHECK] ========================================');
-
     try {
       const personalInfo = StorageService.loadPersonalInfo();
-      console.log('🔍 [KYC CHECK] Loaded personalInfo:', personalInfo);
 
       if (!personalInfo) {
-        console.log('🔍 [KYC CHECK] ❌ No personalInfo found - KYC incomplete');
         return false;
       }
 
@@ -156,23 +151,9 @@ export default function RootLayout() {
         personalInfo.selectedCountry
       );
 
-      console.log('🔍 [KYC CHECK] Field checks:');
-      console.log('  - name:', !!personalInfo.name);
-      console.log('  - email:', !!personalInfo.email);
-      console.log('  - phoneNumber:', !!personalInfo.phoneNumber);
-      console.log('  - dateOfBirth:', !!personalInfo.dateOfBirth);
-      console.log('  - address:', !!personalInfo.address);
-      console.log('  - streetNumber:', !!personalInfo.streetNumber);
-      console.log('  - selectedCountry:', !!personalInfo.selectedCountry);
-      console.log(
-        '🔍 [KYC CHECK] Final result:',
-        isComplete ? '✅ KYC Complete' : '❌ KYC Incomplete',
-      );
-      console.log('🔍 [KYC CHECK] ========================================');
-
       return isComplete;
     } catch (error) {
-      console.error('🔍 [KYC CHECK] ❌ Error checking KYC status:', error);
+      console.error('Error checking KYC status:', error);
       return false;
     }
   };
@@ -251,6 +232,8 @@ export default function RootLayout() {
                   // Trigger authentication after wallet setup
                   try {
                     await AuthService.authenticate();
+                    // Initialize push notifications and register with backend
+                    initializePushNotifications();
                   } catch (error) {
                     console.error(
                       'Authentication failed after wallet setup:',
@@ -280,6 +263,8 @@ export default function RootLayout() {
                 // Trigger authentication after wallet unlock
                 try {
                   await AuthService.authenticate();
+                  // Initialize push notifications and register with backend
+                  initializePushNotifications();
                 } catch (error) {
                   console.error(
                     'Authentication failed after wallet unlock:',
@@ -350,7 +335,7 @@ export default function RootLayout() {
                   />
                   <Stack.Screen
                     name="transaction/send"
-                    options={{ presentation: 'modal' }}
+                    options={{ animation: 'slide_from_bottom' }}
                   />
                   <Stack.Screen
                     name="transaction/receive"

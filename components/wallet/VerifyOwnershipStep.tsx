@@ -12,10 +12,7 @@ import BackButton from '@/components/buttons/BackButton';
 import PrimaryActionButton from '@/components/buttons/PrimaryActionButton';
 import { triggerShake } from '@/utils/animations';
 import IntroScreen from './IntroScreen';
-import { Keypair } from '@solana/web3.js';
-import { signAsync } from '@noble/ed25519';
-import { mnemonicToSeed } from '@/utils/bip39';
-import { deriveKeyFromPath } from '@/utils/derivation';
+import { signWalletOwnershipMessage } from '@/services/walletService';
 
 const BASE_BACKEND_URL = process.env.EXPO_PUBLIC_BASE_BACKEND_URL;
 
@@ -62,20 +59,8 @@ export default function VerifyOwnershipStep({
     setError('');
 
     try {
-      // Derive keypair from mnemonic
-      const seed = await mnemonicToSeed(mnemonic);
-      const derivedKey = deriveKeyFromPath(seed, 0);
-      const keypair = Keypair.fromSeed(derivedKey);
-
-      const publicKey = keypair.publicKey.toBase58();
-      const timestamp = Date.now();
-      const message = `Speed Wallet Import\nPublic Key: ${publicKey}\nTimestamp: ${timestamp}`;
-
-      // Sign the message
-      const messageBytes = new TextEncoder().encode(message);
-      const privateKey = keypair.secretKey.subarray(0, 32);
-      const signatureBytes = await signAsync(messageBytes, privateKey);
-      const signature = Buffer.from(signatureBytes).toString('base64');
+      const { publicKey, signature, timestamp } =
+        await signWalletOwnershipMessage(mnemonic, 0);
 
       // Verify with backend
       const response = await fetch(`${BASE_BACKEND_URL}/verifySignature`, {
@@ -85,7 +70,7 @@ export default function VerifyOwnershipStep({
         },
         body: JSON.stringify({
           publicKey,
-          message,
+          // message,
           signature,
           timestamp,
         }),

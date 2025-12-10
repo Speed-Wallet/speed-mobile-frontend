@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Alert } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import ScreenContainer from '@/components/ScreenContainer';
 import ProgressBar from '@/components/ProgressBar';
@@ -13,6 +13,8 @@ import EmailOtpVerificationStep from '@/components/kyc/EmailOtpVerificationStep'
 import DateOfBirthStep from '@/components/kyc/DateOfBirthStep';
 import VerificationCompleteStep from '@/components/kyc/VerificationCompleteStep';
 import { sendOtp } from '@/services/otpService';
+import { submitKYC } from '@/services/kycService';
+import { AuthService } from '@/services/authService';
 import 'react-native-get-random-values';
 
 export enum KYCStep {
@@ -217,8 +219,54 @@ export default function KYCScreen({ onComplete }: KYCScreenProps = {}) {
       dateOfBirth: date.toISOString(),
     });
 
-    // Move to verification complete step
-    setStep(KYCStep.VERIFICATION_COMPLETE);
+    // Submit KYC data to backend for secure storage
+    setIsLoading(true);
+    try {
+      const username = AuthService.getStoredUsername();
+
+      if (username) {
+        const kycData = {
+          email,
+          name: `${firstName} ${lastName}`,
+          phoneNumber,
+          dateOfBirth: date.toISOString(),
+          address,
+          streetNumber,
+          selectedCountry,
+        };
+
+        const result = await submitKYC(username, kycData);
+
+        if (result.success) {
+          console.log('✅ KYC data submitted successfully to backend');
+          // Move to verification complete step
+          setStep(KYCStep.VERIFICATION_COMPLETE);
+        } else {
+          console.error('❌ Failed to submit KYC to backend:', result.error);
+          Alert.alert(
+            'Verification Failed',
+            'Unable to verify your identity at this time. Please try again later.',
+            [{ text: 'OK' }],
+          );
+        }
+      } else {
+        console.error('❌ No username found, cannot submit KYC');
+        Alert.alert(
+          'Verification Failed',
+          'Username not found. Please log in again.',
+          [{ text: 'OK' }],
+        );
+      }
+    } catch (error) {
+      console.error('Error submitting KYC to backend:', error);
+      Alert.alert(
+        'Verification Failed',
+        'An error occurred while verifying your identity. Please try again later.',
+        [{ text: 'OK' }],
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleVerificationComplete = () => {

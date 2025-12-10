@@ -107,20 +107,16 @@ const EmailVerificationStep: React.FC<EmailVerificationStepProps> = ({
     try {
       // First check if email is already verified in the backend
       // This is secure because the backend checks user.userName (from JWT token)
-      console.log('🔍 Checking email verification status for:', email);
       const statusResponse = await checkEmailStatus(email);
-      console.log('✅ Email verification status response:', statusResponse);
 
       if (statusResponse.isVerified) {
         // Email is already verified for this username, skip OTP
-        console.log('✅ Email is already verified! Skipping OTP.');
         setEmailStatus('verified');
         setIsSendingOtp(false);
         return;
       }
 
       // Email not verified, proceed with OTP flow
-      console.log('📧 Email not verified yet, sending OTP...');
       const response = await sendOtp(email);
       setOtpId(response.otpId || null);
       setOtpExpiresAt(response.expiresAt || null);

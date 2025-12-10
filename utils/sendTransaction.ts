@@ -247,6 +247,7 @@ export async function sendUsdtToCashwyre(
         cashwyreWalletAddress: walletAddress,
         userWalletAddress: WALLET?.publicKey.toBase58() || '',
         cardCreationData: {
+          walletAddress: WALLET?.publicKey.toBase58() || '', // Add wallet address for backend KYC lookup
           firstName: cardData.firstName,
           lastName: cardData.lastName,
           email: cardData.email,

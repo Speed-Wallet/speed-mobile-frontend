@@ -165,18 +165,10 @@ export default function CardsScreen() {
     const BETA_ACCESS_PIN = '615894';
 
     if (pin === BETA_ACCESS_PIN) {
-      console.log('🔐 [PIN] PIN verified successfully');
-
       // Check KYC after successful PIN entry
-      console.log(
-        '🔍 [KYC CHECK] Checking KYC status after PIN verification...',
-      );
       const isKYCComplete = await checkKYCComplete();
 
       if (!isKYCComplete) {
-        console.log(
-          '🔍 [KYC CHECK] ❌ KYC incomplete - redirecting to KYC flow',
-        );
         // Redirect to KYC immediately - but return true because PIN was correct
         setTimeout(() => {
           router.push('/kyc?from=spend&pinVerified=true');
@@ -184,9 +176,6 @@ export default function CardsScreen() {
         return true; // PIN was correct, just need KYC
       }
 
-      console.log(
-        '🔍 [KYC CHECK] ✅ KYC complete - proceeding to spend screen',
-      );
       setIsPinVerified(true);
       return true;
     }
@@ -200,14 +189,8 @@ export default function CardsScreen() {
   };
 
   const checkKYCComplete = async (): Promise<boolean> => {
-    console.log('🔍 [KYC CHECK] checkKYCComplete called');
     const personalInfo = await StorageService.loadPersonalInfo();
-    console.log('🔍 [KYC CHECK] Loaded personalInfo:', personalInfo);
-
     const validation = validatePersonalInfo(personalInfo);
-    console.log('🔍 [KYC CHECK] Validation result:', validation);
-    console.log('🔍 [KYC CHECK] Is KYC complete?', validation.isValid);
-
     return validation.isValid;
   };
 

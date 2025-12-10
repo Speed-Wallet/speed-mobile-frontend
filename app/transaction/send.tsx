@@ -483,19 +483,19 @@ export default function SendScreen() {
             onHide={() => setToast(null)}
           />
         )}
-      </ScreenContainer>
 
-      {/* Token Selector Bottom Sheet */}
-      <TokenSelectorBottomSheet
-        ref={tokenSelectorRef}
-        tokens={tokens}
-        searchQuery={tokenSearchQuery}
-        onSearchChange={setTokenSearchQuery}
-        isLoading={isTokensLoading}
-        onTokenSelect={handleTokenSelect}
-        onClose={handleTokenSelectorClose}
-        selectedAddress={selectedToken?.address}
-      />
+        {/* Token Selector Bottom Sheet - Inside ScreenContainer for proper z-index */}
+        <TokenSelectorBottomSheet
+          ref={tokenSelectorRef}
+          tokens={tokens}
+          searchQuery={tokenSearchQuery}
+          onSearchChange={setTokenSearchQuery}
+          isLoading={isTokensLoading}
+          onTokenSelect={handleTokenSelect}
+          onClose={handleTokenSelectorClose}
+          selectedAddress={selectedToken?.address}
+        />
+      </ScreenContainer>
     </GestureHandlerRootView>
   );
 }

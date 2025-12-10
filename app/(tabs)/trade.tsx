@@ -419,7 +419,6 @@ export default function TradeScreen() {
     try {
       const prepared = await prepareJupiterSwapTransaction(quote, platformFee);
       setPreparedSwap(prepared);
-      console.log('Swap prepared successfully');
     } catch (err: any) {
       console.error('Failed to prepare swap:', err);
       showToast('Failed to prepare swap. Please try again.', 'error');

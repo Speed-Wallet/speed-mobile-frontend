@@ -43,6 +43,8 @@ import {
   setTempAppPin,
 } from './walletUtils';
 import { TRANSACTION } from '@/constants/cache';
+import { signAsync } from '@noble/ed25519';
+import { deriveKeyFromPath } from '@/utils/derivation';
 
 export const CONNECTION = new Connection(
   `https://mainnet.helius-rpc.com/?api-key=${process.env.EXPO_PUBLIC_HELIUS_API_KEY}`,
@@ -726,10 +728,6 @@ export const prepareJupiterSwapTransaction = async (
       WALLET.publicKey.toBase58(),
     );
 
-    console.log('Transaction prepared from backend');
-    console.log('  Request ID:', requestId);
-    console.log('  Transaction size:', transaction.length, 'chars (base64)');
-
     // Step 2: Deserialize and sign the transaction locally
     const transactionBuffer = Buffer.from(transaction, 'base64');
     const versionedTransaction =
@@ -743,8 +741,6 @@ export const prepareJupiterSwapTransaction = async (
       versionedTransaction.serialize(),
     );
     const signedTransaction = signedTransactionBuffer.toString('base64');
-
-    console.log('Transaction signed locally');
 
     return {
       signedTransaction,
@@ -770,7 +766,6 @@ export const confirmJupiterSwap = async (
   try {
     // Check if transaction is getting stale (Jupiter orders expire after 2 minutes)
     const ageSeconds = (Date.now() - preparedSwap.preparedAt) / 1000;
-    console.log(`Transaction age: ${ageSeconds.toFixed(1)}s`);
 
     if (ageSeconds > 120) {
       // 2 minutes for Jupiter Ultra
@@ -780,31 +775,20 @@ export const confirmJupiterSwap = async (
       );
     }
 
-    console.log('Submitting to Jupiter Ultra execute endpoint...');
-    console.log('  Request ID:', preparedSwap.requestId);
-
     // Submit the signed transaction to Jupiter Ultra API
     const executeResponse = await submitSignedTransaction(
       preparedSwap.signedTransaction,
       preparedSwap.requestId,
     );
 
-    console.log('Jupiter execute response:', executeResponse);
-
     if (executeResponse.status === 'Success') {
       if (!executeResponse.signature) {
         throw new Error('No signature returned from Jupiter');
       }
-      console.log('✅ Swap successful!');
-      console.log('  Signature:', executeResponse.signature);
       return executeResponse.signature;
     } else if (executeResponse.status === 'Failed') {
       console.error('❌ Swap failed:', executeResponse.error);
       throw new Error(executeResponse.error || 'Swap failed');
-    } else if (executeResponse.status === 'Pending') {
-      console.log('⏳ Swap is pending...');
-      // You can implement polling logic here if needed
-      throw new Error('Swap is still pending. Please check back later.');
     }
 
     throw new Error('Unknown swap status');
@@ -1582,3 +1566,36 @@ export const recoverWalletWithSeedPhrase = async (
     throw error;
   }
 };
+
+/**
+ * Sign a message to prove wallet ownership
+ */
+export async function signWalletOwnershipMessage(
+  mnemonic: string,
+  accountIndex: number = 0,
+): Promise<{
+  signature: string;
+  message: string;
+  timestamp: number;
+  publicKey: string;
+}> {
+  const seed = await mnemonicToSeed(mnemonic);
+  const derivedKey = deriveKeyFromPath(seed, accountIndex);
+  const keypair = Keypair.fromSeed(derivedKey);
+  const publicKey = keypair.publicKey.toBase58();
+
+  const timestamp = Date.now();
+  const message = `Speed Wallet Import\nPublic Key: ${publicKey}\nTimestamp: ${timestamp}`;
+
+  const messageBytes = new TextEncoder().encode(message);
+  const privateKey = keypair.secretKey.subarray(0, 32);
+  const signatureBytes = await signAsync(messageBytes, privateKey);
+  const signature = Buffer.from(signatureBytes).toString('base64');
+
+  return {
+    signature,
+    message,
+    timestamp,
+    publicKey,
+  };
+}

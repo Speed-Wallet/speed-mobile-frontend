@@ -126,7 +126,7 @@ export interface JupiterSwapResponse {
 }
 
 export interface JupiterExecuteResponse {
-  status: 'Success' | 'Failed' | 'Pending';
+  status: 'Success' | 'Failed';
   signature?: string;
   error?: string;
   message?: string;
@@ -172,9 +172,6 @@ export const prepareJupiterSwap = async (
   }
 
   const orderResponse = await response.json();
-  console.log('Order received from backend');
-  console.log('  Request ID:', orderResponse.requestId);
-  console.log('  Transaction present:', !!orderResponse.transaction);
 
   // Return the order response directly - it contains the transaction
   return {
@@ -187,6 +184,19 @@ export const prepareJupiterSwap = async (
 
 /**
  * Submit a signed transaction via backend (which calls Jupiter Ultra API execute endpoint)
+ * Implements automatic retry logic to handle API Gateway timeouts
+ *
+ * Jupiter's /execute endpoint can take up to 2 minutes to process, but API Gateway
+ * has a 30-second timeout. This function automatically retries with exponential backoff
+ * to poll for the transaction status without risking double-execution (same signature).
+ *
+ * Retry strategy: Up to 2 minutes total (Jupiter's limit)
+ * - Attempt 1: 0s (immediate)
+ * - Attempt 2: +3s delay = 33s
+ * - Attempt 3: +5s delay = 68s
+ * - Attempt 4: +8s delay = 106s
+ * - Attempt 5: +12s delay = 148s
+ * Total: ~150 seconds (well within 2-minute window)
  */
 export const submitSignedTransaction = async (
   signedTransaction: string,
@@ -198,39 +208,92 @@ export const submitSignedTransaction = async (
     throw new Error('No authentication token available');
   }
 
-  console.log('Submitting signed transaction via backend...');
-  console.log('  Request ID:', requestId);
+  const maxRetries = 4; // 5 total attempts over ~150 seconds
+  const retryDelays = [0, 3000, 5000, 8000, 12000]; // Delays in ms before each attempt
+  let lastError: any = null;
 
-  const response = await fetch(`${BASE_BACKEND_URL}/api/jupiter/submit`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({
-      signedTransaction,
-      requestId,
-    }),
-  });
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      if (attempt > 0) {
+        const delayMs = retryDelays[attempt];
+        console.log(
+          `  Retry attempt ${attempt}/${maxRetries} after ${delayMs}ms delay...`,
+        );
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      }
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
+      // Create AbortController with timeout (AbortSignal.timeout not available in React Native)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 35000);
 
-    // Create a more descriptive error with Jupiter error details
-    const error: any = new Error(
-      errorData.error || `Failed to submit transaction: ${response.statusText}`,
-    );
+      const response = await fetch(`${BASE_BACKEND_URL}/api/jupiter/submit`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          signedTransaction,
+          requestId,
+        }),
+        // 35 seconds timeout (slightly longer than API Gateway's 30s)
+        signal: controller.signal,
+      });
 
-    // Attach error metadata for better error handling
-    error.details = errorData.details;
-    error.code = errorData.code;
-    error.status = errorData.status;
+      clearTimeout(timeoutId);
 
-    throw error;
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+
+        // Check if this is a 504 Gateway Timeout - this is expected and retriable
+        if (response.status === 504) {
+          console.log(
+            '  API Gateway timeout (expected) - will retry to poll status',
+          );
+          lastError = new Error(
+            'Gateway timeout - transaction still processing',
+          );
+          continue; // Retry
+        }
+
+        // For other errors, throw immediately
+        const error: any = new Error(
+          errorData.error ||
+            `Failed to submit transaction: ${response.statusText}`,
+        );
+        error.details = errorData.details;
+        error.code = errorData.code;
+        error.status = errorData.status;
+        throw error;
+      }
+
+      const result = await response.json();
+
+      // Success or definitive failure - return immediately
+      if (result.status === 'Success' || result.status === 'Failed') {
+        return result;
+      }
+
+      // Unexpected status - treat as error
+      throw new Error(`Unexpected response status: ${result.status}`);
+    } catch (error: any) {
+      // Check if it's a fetch timeout/abort
+      if (error.name === 'AbortError' || error.name === 'TimeoutError') {
+        console.log('  Request timeout - will retry to poll status');
+        lastError = error;
+        continue; // Retry
+      }
+
+      // For other errors, throw immediately
+      throw error;
+    }
   }
 
-  const result = await response.json();
-  console.log('Jupiter execute response:', result);
-
-  return result;
+  // Exhausted all retries
+  console.error('All retry attempts exhausted after ~150 seconds');
+  throw new Error(
+    `Transaction status unknown after ${maxRetries + 1} attempts over 2.5 minutes. ` +
+      `Please check Solscan with your wallet address to verify transaction status. ` +
+      `Last error: ${lastError?.message || 'Unknown'}`,
+  );
 };

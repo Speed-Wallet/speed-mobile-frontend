@@ -34,14 +34,6 @@ const PinVerificationScreen: React.FC<PinVerificationScreenProps> = ({
   // Clear KYC data in development mode when spend PIN screen loads
   useEffect(() => {
     if (process.env.EXPO_PUBLIC_APP_ENV === 'development') {
-      console.log('🧪 [DEV] ========================================');
-      console.log('🧪 [DEV] SPEND PIN SCREEN LOADED - Clearing KYC data');
-      console.log('🧪 [DEV] ========================================');
-
-      // Check current data before clearing
-      const beforeData = StorageService.loadPersonalInfo();
-      console.log('🧪 [DEV] KYC data BEFORE clearing:', beforeData);
-
       try {
         StorageService.savePersonalInfo({
           name: '',
@@ -57,13 +49,8 @@ const PinVerificationScreen: React.FC<PinVerificationScreenProps> = ({
             dialCode: '',
           },
         });
-
-        // Verify data was cleared
-        const afterData = StorageService.loadPersonalInfo();
-        console.log('🧪 [DEV] KYC data AFTER clearing:', afterData);
-        console.log('🧪 [DEV] Data cleared successfully ✓');
       } catch (error) {
-        console.error('🧪 [DEV] ❌ Error clearing KYC data:', error);
+        console.error('Error clearing KYC data:', error);
       }
     }
   }, []); // Run once on mount

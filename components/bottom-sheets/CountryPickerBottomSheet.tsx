@@ -183,6 +183,7 @@ const CountryPickerBottomSheet = forwardRef<
             renderScrollComponent={BottomSheetFlashListScrollable}
             onScroll={handleScroll}
             scrollEventThrottle={16}
+            estimatedItemSize={74}
           />
 
           {/* Search Bar - Using BottomActionContainer with keyboard avoidance */}

@@ -317,9 +317,8 @@ export class AuthService {
 
       // Step 3: Submit signed message and get JWT
       await this.submitLogin(authMessage, signature);
-      console.log('✅ Authentication successful');
     } catch (error) {
-      console.error('❌ Authentication failed:', error);
+      console.error('Authentication failed:', error);
       showToast('Authentication failed, please try again later');
       await this.clearStoredAuth();
       throw error;

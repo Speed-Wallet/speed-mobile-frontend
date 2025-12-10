@@ -9,6 +9,10 @@ export {
   registerToastCallback,
   unregisterToastCallback,
 } from './toast';
-export { registerForPushNotificationsAsync } from './pushNotifications';
+export {
+  registerForPushNotificationsAsync,
+  registerPushTokenWithBackend,
+  initializePushNotifications,
+} from './pushNotifications';
 export { showLocalNotification } from './localNotifications';
 export { setupNotificationListeners } from './handlers';
