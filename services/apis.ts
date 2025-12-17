@@ -51,6 +51,7 @@ export interface PrepareTransactionRequest {
   tokenSymbol: string;
   tokenDecimals: number;
   sendCashwyreFee?: boolean;
+  cardBalance?: string; // The card balance amount (used to calculate 1% fee)
   senderPublicKey: string;
 }
 

@@ -1,4 +1,4 @@
-import { MMKVStorage } from './mmkvStorage';
+import { SecureMMKVStorage } from './mmkvStorage';
 
 export interface PaymentCard {
   id: string;
@@ -36,10 +36,10 @@ const STORAGE_KEYS = {
 };
 
 export const StorageService = {
-  // Card operations - now synchronous with MMKV!
+  // Card operations - stored in secure encrypted storage
   saveCards(cards: PaymentCard[]): void {
     try {
-      MMKVStorage.setObject(STORAGE_KEYS.CARDS, cards);
+      SecureMMKVStorage.setObject(STORAGE_KEYS.CARDS, cards);
     } catch (error) {
       console.error('Error saving cards:', error);
     }
@@ -47,17 +47,19 @@ export const StorageService = {
 
   loadCards(): PaymentCard[] {
     try {
-      return MMKVStorage.getObject<PaymentCard[]>(STORAGE_KEYS.CARDS) || [];
+      return (
+        SecureMMKVStorage.getObject<PaymentCard[]>(STORAGE_KEYS.CARDS) || []
+      );
     } catch (error) {
       console.error('Error loading cards:', error);
       return [];
     }
   },
 
-  // Personal info operations - now synchronous with MMKV!
+  // Personal info operations - stored in secure encrypted storage
   savePersonalInfo(info: PersonalInfo): void {
     try {
-      MMKVStorage.setObject(STORAGE_KEYS.PERSONAL_INFO, info);
+      SecureMMKVStorage.setObject(STORAGE_KEYS.PERSONAL_INFO, info);
     } catch (error) {
       console.error('Error saving personal info:', error);
     }
@@ -65,7 +67,9 @@ export const StorageService = {
 
   loadPersonalInfo(): PersonalInfo | null {
     try {
-      return MMKVStorage.getObject<PersonalInfo>(STORAGE_KEYS.PERSONAL_INFO);
+      return SecureMMKVStorage.getObject<PersonalInfo>(
+        STORAGE_KEYS.PERSONAL_INFO,
+      );
     } catch (error) {
       console.error('Error loading personal info:', error);
       return null;

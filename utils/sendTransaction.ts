@@ -16,11 +16,13 @@ export interface SendTransactionParams {
   tokenAddress: string;
   tokenSymbol: string;
   tokenDecimals: number;
+  cardBalance?: number; // The card balance amount (used to calculate 1% fee)
   cashwyreData?: {
     pushToken: string;
     cashwyreWalletAddress: string;
     userWalletAddress: string;
     cardCreationData: {
+      walletAddress: string;
       firstName: string;
       lastName: string;
       email: string;
@@ -72,6 +74,7 @@ export async function prepareSendTransaction(
     tokenAddress,
     tokenSymbol,
     tokenDecimals,
+    cardBalance,
     cashwyreData,
   } = params;
 
@@ -80,7 +83,6 @@ export async function prepareSendTransaction(
   }
 
   try {
-    console.log('preparing send transaction');
     // Step 1: Prepare transaction on backend
     const prepareResult = await prepareTokenTransaction({
       amount,
@@ -89,10 +91,9 @@ export async function prepareSendTransaction(
       tokenSymbol,
       tokenDecimals,
       sendCashwyreFee: !!cashwyreData, // True if cashwyreData exists
+      cardBalance: cardBalance?.toString(), // Pass cardBalance to backend for fee calculation
       senderPublicKey: WALLET.publicKey.toBase58(),
     });
-
-    console.log('send transaction prepared: ', prepareResult);
     if (
       !prepareResult.success ||
       !prepareResult.transaction ||
@@ -132,12 +133,9 @@ export async function confirmSendTransaction(
   preparedTransaction: PreparedSendTransaction,
 ): Promise<SendTransactionResult> {
   try {
-    console.log('confirming send transaction');
-
-    // Step 3: Submit signed transaction to backend
+    // Submit signed transaction to backend
     // If this is a Cashwyre transaction with card creation data, use the combined endpoint
     if (preparedTransaction.cashwyreData) {
-      console.log('submitting cashwyre transaction');
       const submitResult = await submitSignedTransactionAndRegisterUsdt({
         signedTransaction: preparedTransaction.signedTransaction,
         signature: preparedTransaction.signature,
@@ -152,7 +150,6 @@ export async function confirmSendTransaction(
         userWalletAddress: preparedTransaction.cashwyreData.userWalletAddress,
         cardCreationData: preparedTransaction.cashwyreData.cardCreationData,
       });
-      console.log('cashwyre transaction submitted: ', submitResult);
       return submitResult;
     } else {
       // Use regular transaction submission
@@ -213,6 +210,7 @@ export async function sendUsdtToCashwyre(
     cardName: string;
     cardBrand: string;
   },
+  cardBalance: number, // The card balance amount (actual card funding, used to calculate 1% fee)
 ): Promise<SendTransactionResult> {
   try {
     // 1. Get wallet address from APIs
@@ -242,6 +240,7 @@ export async function sendUsdtToCashwyre(
       tokenAddress: USDT_ADDRESS, // USDT mainnet address
       tokenSymbol: 'USDT',
       tokenDecimals: 6,
+      cardBalance, // Pass cardBalance for fee calculation
       cashwyreData: {
         pushToken: pushToken || '',
         cashwyreWalletAddress: walletAddress,
@@ -258,21 +257,18 @@ export async function sendUsdtToCashwyre(
           homeAddress: cardData.homeAddress,
           cardName: cardData.cardName,
           cardBrand: cardData.cardBrand.toLowerCase(),
-          amountInUSD: parseFloat(amount),
+          amountInUSD: cardBalance, // Use card balance (actual card funding amount), not total with fees
         },
       },
     });
 
     const sendResult = await confirmSendTransaction(preparedTransaction);
 
-    console.log('sendResult: ', sendResult);
-
     if (!sendResult.success) {
       console.error('Failed to send USDT to cashwyre:', sendResult.error);
       return sendResult;
     }
 
-    console.log('USDT sent successfully. Signature:', sendResult.signature);
     return sendResult;
   } catch (error) {
     console.error('Error in sendUsdtToCashwyre:', error);

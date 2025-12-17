@@ -10,6 +10,7 @@ interface SettingsHeaderProps {
   backgroundColor?: string;
   textColor?: string;
   noPadding?: boolean;
+  showCloseButton?: boolean;
 }
 
 const SettingsHeader: React.FC<SettingsHeaderProps> = ({
@@ -18,19 +19,22 @@ const SettingsHeader: React.FC<SettingsHeaderProps> = ({
   // backgroundColor = colors.backgroundMedium,
   textColor = colors.textPrimary,
   noPadding = false,
+  showCloseButton = true,
 }) => {
   return (
     <View style={[styles.header, noPadding && styles.noPadding]}>
       <Text style={[styles.title, { color: textColor }]}>{title}</Text>
-      <TouchableOpacity
-        onPress={onClose}
-        style={[
-          styles.closeButton,
-          // { backgroundColor }
-        ]}
-      >
-        <X size={scale(22)} color={textColor} />
-      </TouchableOpacity>
+      {showCloseButton && (
+        <TouchableOpacity
+          onPress={onClose}
+          style={[
+            styles.closeButton,
+            // { backgroundColor }
+          ]}
+        >
+          <X size={scale(22)} color={textColor} />
+        </TouchableOpacity>
+      )}
     </View>
   );
 };

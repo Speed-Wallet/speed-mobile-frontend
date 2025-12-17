@@ -15,8 +15,10 @@ import { CreditCard } from 'lucide-react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import ScreenContainer from '@/components/ScreenContainer';
 import ScreenHeader from '@/components/ScreenHeader';
-import { StorageService } from '@/utils/storage';
+import { StorageService, PersonalInfo } from '@/utils/storage';
 import { PaymentCard } from '@/types/cards';
+import { getKYC } from '@/services/kycService';
+import { AuthService } from '@/services/authService';
 import { sendUsdtToCashwyre } from '@/utils/sendTransaction';
 import { mockSendUsdtToCashwyre } from '@/utils/mockTransaction';
 import { setupNotificationListeners } from '@/services/notifications';
@@ -44,11 +46,8 @@ import PrimaryActionButton from '@/components/buttons/PrimaryActionButton';
 import CreateCardBottomSheet, {
   CreateCardBottomSheetRef,
 } from '@/components/bottom-sheets/CreateCardBottomSheet';
-import PinVerificationScreen from '@/components/PinVerificationScreen';
 import { MMKVStorage } from '@/utils/mmkvStorage';
 // Note: cardCreationSteps service simplified since we now use status-based polling
-
-const SPEND_PIN_KEY = 'spend_pin_verified'; // Key to track PIN verification state
 
 // Configure notification handler
 Notifications.setNotificationHandler({
@@ -56,23 +55,23 @@ Notifications.setNotificationHandler({
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: false,
+    shouldShowBanner: true,
+    shouldShowList: true,
   }),
 });
 
 export default function CardsScreen() {
-  const params = useLocalSearchParams();
-  const pinVerifiedParam = params.pinVerified === 'true';
-
-  const [isPinVerified, setIsPinVerified] = useState(pinVerifiedParam);
   const [selectedBrand, setSelectedBrand] = useState<'mastercard' | 'visa'>(
     'visa',
   );
   const [isLoading, setIsLoading] = useState(false);
+  const [isCheckingKYC, setIsCheckingKYC] = useState(true);
   const [visibleCards, setVisibleCards] = useState<{ [key: string]: boolean }>(
     {},
   );
 
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [personalInfo, setPersonalInfo] = useState<PersonalInfo | null>(null);
   const [customAlert, setCustomAlert] = useState<{
     visible: boolean;
     title: string;
@@ -101,6 +100,7 @@ export default function CardsScreen() {
   } = useConfig();
   const virtualCardCreationFee = config?.virtualCardCreationFee;
   const cashwyreBaseFee = config?.cashwyreBaseFee;
+  const speedBaseFee = config?.speedBaseFee;
 
   // Get USDT balance for validation
   const { balance: usdtBalance } = useTokenAsset(USDT_ADDRESS);
@@ -115,33 +115,72 @@ export default function CardsScreen() {
   // Bottom sheet ref
   const addCardBottomSheetRef = useRef<CreateCardBottomSheetRef>(null);
 
-  // Check PIN verification status when screen comes into focus
-  useFocusEffect(
-    React.useCallback(() => {
-      // Reset PIN verification when screen loses focus
-      return () => {
-        setIsPinVerified(false);
-      };
-    }, []),
-  );
-
   useFocusEffect(
     React.useCallback(() => {
       let mounted = true;
 
-      // Load user email when screen comes into focus
-      const loadUserEmail = async () => {
+      // Fetch KYC from backend when screen comes into focus
+      const fetchKYCFromBackend = async () => {
+        setIsCheckingKYC(true);
         try {
-          const personalInfo = await StorageService.loadPersonalInfo();
-          if (mounted && personalInfo) {
-            setUserEmail(personalInfo.email);
+          const username = AuthService.getCurrentUsername();
+          if (!username) {
+            console.error('No username found');
+            if (mounted) {
+              router.push('/kyc?from=spend');
+            }
+            return;
+          }
+
+          const token = await AuthService.getToken();
+          if (!token) {
+            console.error('No auth token found');
+            if (mounted) {
+              router.push('/kyc?from=spend');
+            }
+            return;
+          }
+
+          const result = await getKYC(username, token);
+
+          if (mounted) {
+            if (result.success && result.kyc) {
+              // Map KYC data to PersonalInfo format
+              const kycData: PersonalInfo = {
+                name: result.kyc.name,
+                email: result.kyc.email,
+                phoneNumber: result.kyc.phoneNumber,
+                dateOfBirth: result.kyc.dateOfBirth,
+                address: result.kyc.address,
+                streetNumber: result.kyc.streetNumber,
+                selectedCountry: result.kyc.selectedCountry,
+              };
+
+              // Validate KYC is complete
+              const validation = validatePersonalInfo(kycData);
+              if (!validation.isValid) {
+                router.push('/kyc?from=spend');
+                return;
+              }
+
+              setPersonalInfo(kycData);
+              setUserEmail(kycData.email);
+              setIsCheckingKYC(false);
+            } else {
+              // No KYC data found in backend, redirect to KYC screen
+              router.push('/kyc?from=spend');
+              return;
+            }
           }
         } catch (error) {
-          console.error('Error loading user email:', error);
+          console.error('Error fetching KYC from backend:', error);
+          if (mounted) {
+            router.push('/kyc?from=spend');
+          }
         }
       };
 
-      loadUserEmail();
+      fetchKYCFromBackend();
 
       // Set up notification listeners with card refresh callback
       const cleanupNotifications = setupNotificationListeners(() => {
@@ -160,36 +199,7 @@ export default function CardsScreen() {
     }, [refetchCards]),
   );
 
-  const handlePinVerification = async (pin: string): Promise<boolean> => {
-    // Fixed PIN for virtual cards beta access
-    const BETA_ACCESS_PIN = '615894';
-
-    if (pin === BETA_ACCESS_PIN) {
-      // Check KYC after successful PIN entry
-      const isKYCComplete = await checkKYCComplete();
-
-      if (!isKYCComplete) {
-        // Redirect to KYC immediately - but return true because PIN was correct
-        setTimeout(() => {
-          router.push('/kyc?from=spend&pinVerified=true');
-        }, 100); // Small delay to prevent UI flash
-        return true; // PIN was correct, just need KYC
-      }
-
-      setIsPinVerified(true);
-      return true;
-    }
-
-    return false;
-  };
-
-  const handleBackFromPin = () => {
-    // Navigate back to home tab
-    router.push('/(tabs)' as any);
-  };
-
-  const checkKYCComplete = async (): Promise<boolean> => {
-    const personalInfo = await StorageService.loadPersonalInfo();
+  const checkKYCComplete = (): boolean => {
     const validation = validatePersonalInfo(personalInfo);
     return validation.isValid;
   };
@@ -227,13 +237,19 @@ export default function CardsScreen() {
   };
 
   const validateCardBalance = (balance: string) => {
-    if (!balance || !virtualCardCreationFee || !cashwyreBaseFee) return false;
+    if (
+      !balance ||
+      !virtualCardCreationFee ||
+      !cashwyreBaseFee ||
+      !speedBaseFee
+    )
+      return false;
 
     const amount = parseFloat(balance);
     if (isNaN(amount) || amount <= 0) return false;
 
     const totalRequired =
-      amount + virtualCardCreationFee * amount + cashwyreBaseFee;
+      amount + virtualCardCreationFee * amount + cashwyreBaseFee + speedBaseFee;
     return totalRequired > usdtBalance;
   };
 
@@ -307,7 +323,8 @@ export default function CardsScreen() {
         `You need at least ${formatBalance(
           balance +
             (virtualCardCreationFee || 0) * balance +
-            (cashwyreBaseFee || 0),
+            (cashwyreBaseFee || 0) +
+            (speedBaseFee || 0),
         )} USDT to create this card (including fees). You currently have ${usdtBalance.toFixed(2)} USDT.`,
         'warning',
         [
@@ -332,22 +349,12 @@ export default function CardsScreen() {
     setIsLoading(true);
 
     try {
-      // Load personal info for card creation
-      const personalInfo = await StorageService.loadPersonalInfo();
+      // Use personal info from state (fetched from backend)
       if (!personalInfo) {
         throw new Error(
           'Personal information not found. Please complete KYC verification first.',
         );
       }
-
-      // 🔍 DEBUG: Print stored address variables
-      console.log('📍 [ADDRESS DEBUG] Stored address data:');
-      console.log('  - streetNumber:', personalInfo.streetNumber);
-      console.log('  - address:', personalInfo.address);
-      console.log(
-        '  - Full personalInfo:',
-        JSON.stringify(personalInfo, null, 2),
-      );
 
       // Validate that streetNumber exists
       if (
@@ -364,7 +371,7 @@ export default function CardsScreen() {
               text: 'Update KYC',
               onPress: () => {
                 hideCustomAlert();
-                router.push('/kyc?from=spend&pinVerified=true');
+                router.push('/kyc?from=spend');
               },
               style: 'default',
             },
@@ -399,29 +406,36 @@ export default function CardsScreen() {
           selectedBrand.slice(1).toLowerCase(),
       };
 
-      // 🔍 DEBUG: Print card data being sent
-      console.log('📋 [CARD DATA DEBUG] Data being sent to backend:');
-      console.log('  - homeAddressNumber:', cardData.homeAddressNumber);
-      console.log('  - homeAddress:', cardData.homeAddress);
-      console.log('  - Full cardData:', JSON.stringify(cardData, null, 2));
+      // Calculate amount to send to Cashwyre (cardBalance + cashwyreBaseFee)
+      // Speed's fee (1% + $3) is sent separately to the fee wallet by the backend
+      const amountToCashwyre = cashwyreBaseFee
+        ? parseFloat(cardBalance) + cashwyreBaseFee
+        : parseFloat(cardBalance);
 
-      // Calculate total amount including fees (same as displayed to user)
-      const totalAmount =
-        virtualCardCreationFee && cashwyreBaseFee
+      // Calculate total amount for error messages (cardBalance + 1% fee + baseFee + speedBaseFee)
+      const totalAmountForDisplay =
+        virtualCardCreationFee && cashwyreBaseFee && speedBaseFee
           ? parseFloat(cardBalance) +
             virtualCardCreationFee * parseFloat(cardBalance) +
-            cashwyreBaseFee
+            cashwyreBaseFee +
+            speedBaseFee
           : parseFloat(cardBalance);
 
       // Send USDT to Cashwyre and register for auto card creation first
+      // The backend will add a separate transfer for Speed's fee (1% + $3) to the fee wallet
       const sendResult =
         process.env.EXPO_PUBLIC_APP_ENV === 'development'
           ? await mockSendUsdtToCashwyre({
-              amount: totalAmount.toString(),
+              amount: amountToCashwyre.toString(),
               cardData,
               simulationType,
+              cardBalance: parseFloat(cardBalance),
             })
-          : await sendUsdtToCashwyre(totalAmount.toString(), cardData);
+          : await sendUsdtToCashwyre(
+              amountToCashwyre.toString(),
+              cardData,
+              parseFloat(cardBalance),
+            );
 
       if (!sendResult.success) {
         // USDT transaction failed - show specific error based on failure type
@@ -434,7 +448,7 @@ export default function CardsScreen() {
         ) {
           showCustomAlert(
             '💰 Insufficient USDT Balance',
-            `You don't have enough USDT to create this card. You need ${formatBalance(totalAmount)} total (including fees), but your wallet has insufficient funds.`,
+            `You don't have enough USDT to create this card. You need ${formatBalance(totalAmountForDisplay)} total (including fees), but your wallet has insufficient funds.`,
             'warning',
             [
               {
@@ -456,7 +470,8 @@ export default function CardsScreen() {
         }
 
         let errorTitle = '💸 Transaction Failed';
-        let errorMessage = `Failed to send USDT: ${sendResult.error}`;
+        console.error(`Error sending USDT: ${sendResult.error}`);
+        let errorMessage = `Failed to send USDT: Try again`;
 
         // Provide more specific error messages based on the failure type
         if (sendResult.errorType === 'TRANSACTION_SUBMISSION_FAILED') {
@@ -641,7 +656,12 @@ export default function CardsScreen() {
     const hasExistingCards = cards.some(
       (c) =>
         c.id !== card.id && // Don't count current card
-        !(c.isLoading || c.status === 'new' || c.status === 'pending') && // Not loading
+        !(
+          c.isLoading ||
+          c.status === 'confirming' ||
+          c.status === 'verifying' ||
+          c.status === 'creating'
+        ) && // Not loading
         !(
           c.isFailed ||
           c.status === 'inactive' ||
@@ -651,8 +671,12 @@ export default function CardsScreen() {
     );
 
     // Determine card state based on status
+    // Backend statuses: confirming, verifying, creating, created, failed
     const isLoading =
-      card.isLoading || card.status === 'new' || card.status === 'pending';
+      card.isLoading ||
+      card.status === 'confirming' ||
+      card.status === 'verifying' ||
+      card.status === 'creating';
     const isFailed =
       card.isFailed ||
       card.status === 'inactive' ||
@@ -713,18 +737,6 @@ export default function CardsScreen() {
     );
   };
 
-  // Show PIN verification screen first
-  if (!isPinVerified) {
-    return (
-      <PinVerificationScreen
-        onVerify={handlePinVerification}
-        onBack={handleBackFromPin}
-        title="Enter PIN"
-        subtitle="Virtual cards are currently in closed beta and require a PIN to access. Contact support for access."
-      />
-    );
-  }
-
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ScreenContainer edges={['top']}>
@@ -734,8 +746,14 @@ export default function CardsScreen() {
           showBackButton={false}
         />
 
-        {/* Config Loading/Error States */}
-        {isConfigLoading ? (
+        {/* KYC Loading State */}
+        {isCheckingKYC ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#10b981" />
+            <Text style={styles.loadingText}>Verifying your account...</Text>
+          </View>
+        ) : /* Config Loading/Error States */
+        isConfigLoading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#10b981" />
           </View>
@@ -757,7 +775,8 @@ export default function CardsScreen() {
             </TouchableOpacity>
           </View>
         ) : virtualCardCreationFee === undefined ||
-          cashwyreBaseFee === undefined ? (
+          cashwyreBaseFee === undefined ||
+          speedBaseFee === undefined ? (
           <View style={styles.errorContainer}>
             <Text style={styles.errorTitle}>Configuration Missing</Text>
             <Text style={styles.errorText}>
@@ -858,7 +877,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   cardsContainer: {
-    marginBottom: 24,
+    marginBottom: 120, // Extra space for the absolutely positioned "Add New Card" button
   },
   loadingContainer: {
     flex: 1,

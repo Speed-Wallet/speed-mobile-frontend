@@ -249,16 +249,16 @@ export default function BuyScreen() {
       }
 
       // Generate signature for wallet address and token
-      const signature = await getWidgetSignature(walletAddress, 'SOL');
+      // const signature = await getWidgetSignature(walletAddress, 'SOL');
 
       // Build query parameters
       const params = new URLSearchParams({
-        walletAddress: walletAddress,
+        // walletAddress: walletAddress,
         currencyAmount: amount,
         token: 'SOL',
         network: 'SOL',
         localCurrency: countryInfo.currency,
-        signature: signature,
+        // signature: signature,
         txType: 'buy',
         channelId: selectedChannel.id,
       });

@@ -19,7 +19,7 @@ export default function DevStartupScreen({
   const handleCreateWallet = async () => {
     Alert.alert(
       'Clear Wallet Data',
-      'This will delete all existing wallet data including seed phrases. Continue?',
+      'This will delete all existing wallet data including seed phrases, KYC info, and cards. Continue?',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -27,7 +27,7 @@ export default function DevStartupScreen({
           style: 'destructive',
           onPress: async () => {
             try {
-              // Clear all wallet-related data
+              // Clear all secure wallet data, personal info, and cards
               SecureMMKVStorage.multiRemove([
                 'solanaWalletsList',
                 'solanaActiveWallet',
@@ -35,6 +35,8 @@ export default function DevStartupScreen({
                 'appSalt',
                 'appIV',
                 'masterMnemonic',
+                'personal_info', // KYC/personal info
+                'payment_cards', // Virtual cards
               ]);
               onCreateWallet();
             } catch (error) {

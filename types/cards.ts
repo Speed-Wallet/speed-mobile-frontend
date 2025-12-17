@@ -1,4 +1,4 @@
-// Card status types
+// Card status types (from Cashwyre API for completed cards)
 export type CardStatus =
   | 'new'
   | 'active'
@@ -7,13 +7,16 @@ export type CardStatus =
   | 'pending'
   | 'terminated';
 
-// Transaction status for pending cards
+// Transaction status for pending cards (from our backend)
 export type TransactionStatus =
   | 'confirming' // USDT payment pending
   | 'verifying' // KYC verification in progress
   | 'creating' // Card creation in progress
   | 'created' // Card successfully created
   | 'failed'; // Process failed at any step
+
+// Combined status type for PaymentCard (can be either CardStatus or TransactionStatus)
+export type PaymentCardStatus = CardStatus | TransactionStatus;
 
 // Get Card API types (matching backend)
 export interface GetCardData {
@@ -68,7 +71,7 @@ export interface PaymentCard {
   balance: number; // Maps to cardBalance
   isLoading?: boolean;
   isFailed?: boolean;
-  status?: CardStatus;
+  status?: PaymentCardStatus; // Can be CardStatus (completed cards) or TransactionStatus (pending cards)
   transactionStatus?: TransactionStatus; // Status from pending transactions
   failureReason?: string;
   createdAt?: string; // Maps to createdOn from API or createdAt from pending transactions

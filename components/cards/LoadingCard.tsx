@@ -51,6 +51,7 @@ export const LoadingCard: React.FC<LoadingCardProps> = ({
 
   // Constants
   const NORMAL_PROCESSING_TIME_MINUTES = 10;
+  const DISMISS_THRESHOLD_MINUTES = 30;
 
   // Determine the current step based on card status/state
   const getCreationStep = () => {
@@ -166,6 +167,16 @@ export const LoadingCard: React.FC<LoadingCardProps> = ({
     return minutesDifference > NORMAL_PROCESSING_TIME_MINUTES;
   };
 
+  // Check if card can be dismissed (over 30 minutes)
+  const canDismiss = () => {
+    if (!card.createdAt) return false;
+    const createdTime = new Date(card.createdAt).getTime();
+    const currentTime = new Date().getTime();
+    const timeDifference = currentTime - createdTime;
+    const minutesDifference = timeDifference / (1000 * 60);
+    return minutesDifference > DISMISS_THRESHOLD_MINUTES;
+  };
+
   // Format current time as HH:MM:SS
   const formatCurrentTime = () => {
     const now = new Date();
@@ -234,7 +245,8 @@ export const LoadingCard: React.FC<LoadingCardProps> = ({
                 : '--:--:--'}
             </Text>
           </View>
-          {process.env.EXPO_PUBLIC_APP_ENV === 'development' && (
+          {(process.env.EXPO_PUBLIC_APP_ENV === 'development' ||
+            canDismiss()) && (
             <TouchableOpacity
               style={styles.deleteButton}
               onPress={() => onDeleteCard(card.id)}

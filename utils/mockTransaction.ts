@@ -18,6 +18,7 @@ export interface MockSendUsdtParams {
     cardBrand: string;
   };
   simulationType?: 'simulate_usdt_failed' | 'simulate_card_failed';
+  cardBalance?: number; // The card balance amount (used to calculate 1% fee)
 }
 
 /**

@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Alert } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, StyleSheet, Alert, BackHandler } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import ScreenContainer from '@/components/ScreenContainer';
 import ProgressBar from '@/components/ProgressBar';
@@ -289,22 +290,46 @@ export default function KYCScreen({ onComplete }: KYCScreenProps = {}) {
     }
   };
 
-  const handleBack = (currentStep: KYCStep) => {
-    if (currentStep === KYCStep.COUNTRY_PHONE) {
-      // If onComplete is provided, it means we're at root level
-      // Don't allow back navigation in that case
-      if (!onComplete) {
-        // Navigate back to where we came from
-        if (fromScreen === 'spend') {
-          router.push('/(tabs)/spend' as any);
-        } else {
-          router.push('/settings');
+  const handleBack = useCallback(
+    (currentStep: KYCStep) => {
+      if (currentStep === KYCStep.COUNTRY_PHONE) {
+        // If onComplete is provided, it means we're at root level
+        // Don't allow back navigation in that case
+        if (!onComplete) {
+          // Navigate back to home screen (not spend, as that would redirect back to KYC)
+          if (fromScreen === 'spend') {
+            router.replace('/(tabs)');
+          } else {
+            router.push('/settings');
+          }
         }
+        return true; // Indicate we handled the back action
+      } else {
+        setStep(currentStep - 1);
+        return true; // Indicate we handled the back action
       }
-    } else {
-      setStep(currentStep - 1);
-    }
-  };
+    },
+    [fromScreen, onComplete, router],
+  );
+
+  // Handle Android hardware back button
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        handleBack(step);
+        return true; // Prevent default back behavior
+      };
+
+      const subscription = BackHandler.addEventListener(
+        'hardwareBackPress',
+        onBackPress,
+      );
+
+      return () => {
+        subscription.remove();
+      };
+    }, [step, handleBack]),
+  );
 
   // Helper function to get progress bar info
   const getProgressInfo = () => {

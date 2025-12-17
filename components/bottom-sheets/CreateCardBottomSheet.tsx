@@ -74,6 +74,7 @@ const CreateCardBottomSheet = forwardRef<
   const { data: config } = useConfig();
   const virtualCardCreationFee = config?.virtualCardCreationFee;
   const cashwyreBaseFee = config?.cashwyreBaseFee;
+  const speedBaseFee = config?.speedBaseFee;
 
   // Get USDT balance for validation
   const { balance: usdtBalance } = useTokenAsset(USDT_ADDRESS);
@@ -95,13 +96,19 @@ const CreateCardBottomSheet = forwardRef<
   }));
 
   const validateCardBalance = (balance: string) => {
-    if (!balance || !virtualCardCreationFee || !cashwyreBaseFee) return false;
+    if (
+      !balance ||
+      !virtualCardCreationFee ||
+      !cashwyreBaseFee ||
+      !speedBaseFee
+    )
+      return false;
 
     const amount = parseFloat(balance);
     if (isNaN(amount) || amount <= 0) return false;
 
     const totalRequired =
-      amount + virtualCardCreationFee * amount + cashwyreBaseFee;
+      amount + virtualCardCreationFee * amount + cashwyreBaseFee + speedBaseFee;
     return totalRequired > usdtBalance;
   };
 
@@ -320,7 +327,11 @@ const CreateCardBottomSheet = forwardRef<
     >
       <BottomSheetView style={styles.bottomSheetContent}>
         <View style={styles.headerContainer}>
-          <SettingsHeader title="Create New Card" onClose={handleClose} />
+          <SettingsHeader
+            title="Create New Card"
+            onClose={handleClose}
+            showCloseButton={false}
+          />
         </View>
 
         <ScrollView
@@ -432,24 +443,32 @@ const CreateCardBottomSheet = forwardRef<
             <View style={styles.feeRow}>
               <Text style={styles.feeLabel}>Total Fee</Text>
               <Text style={styles.feeValue}>
-                {cardBalance && virtualCardCreationFee && cashwyreBaseFee
+                {cardBalance &&
+                virtualCardCreationFee &&
+                cashwyreBaseFee &&
+                speedBaseFee
                   ? formatBalance(
                       virtualCardCreationFee * parseFloat(cardBalance) +
-                        cashwyreBaseFee,
+                        cashwyreBaseFee +
+                        speedBaseFee,
                     )
-                  : formatBalance(cashwyreBaseFee || 0)}
+                  : formatBalance((cashwyreBaseFee || 0) + (speedBaseFee || 0))}
               </Text>
             </View>
             <View style={styles.feeRow}>
               <Text style={styles.totalToPayLabel}>Total to Pay</Text>
               <Text style={styles.totalToPayValue}>
-                {cardBalance && virtualCardCreationFee && cashwyreBaseFee
+                {cardBalance &&
+                virtualCardCreationFee &&
+                cashwyreBaseFee &&
+                speedBaseFee
                   ? formatBalance(
                       parseFloat(cardBalance) +
                         virtualCardCreationFee * parseFloat(cardBalance) +
-                        cashwyreBaseFee,
+                        cashwyreBaseFee +
+                        speedBaseFee,
                     )
-                  : formatBalance(cashwyreBaseFee || 0)}
+                  : formatBalance((cashwyreBaseFee || 0) + (speedBaseFee || 0))}
               </Text>
             </View>
           </View>

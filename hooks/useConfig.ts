@@ -6,6 +6,7 @@ export interface AppConfig {
   swapFeeRate: number;
   virtualCardCreationFee: number;
   cashwyreBaseFee: number;
+  speedBaseFee: number;
 }
 
 const fetchConfig = async (): Promise<AppConfig> => {
