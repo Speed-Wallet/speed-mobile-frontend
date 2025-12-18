@@ -135,15 +135,15 @@ const CreateCardBottomSheet = forwardRef<
         const balance = parseFloat(validText);
         if (validText && !isNaN(balance) && balance > 0) {
           const isInvalid =
-            balance < 5 || balance > 2500 || validateCardBalance(validText);
+            balance < 10 || balance > 2500 || validateCardBalance(validText);
           setCardBalanceError(isInvalid);
         }
       }
 
-      // Validate the numeric value for range (5-2500)
+      // Validate the numeric value for range (10-2500)
       const balance = parseFloat(validText);
       if (validText && !isNaN(balance) && balance > 0) {
-        if (balance < 5 || balance > 2500) {
+        if (balance < 10 || balance > 2500) {
           setShowValidationError(true);
         } else {
           setShowValidationError(false);
@@ -160,7 +160,7 @@ const CreateCardBottomSheet = forwardRef<
     const balance = parseFloat(cardBalance);
     if (cardBalance && !isNaN(balance) && balance > 0) {
       const isInvalid =
-        balance < 5 || balance > 2500 || validateCardBalance(cardBalance);
+        balance < 10 || balance > 2500 || validateCardBalance(cardBalance);
       setCardBalanceError(isInvalid);
     } else {
       setCardBalanceError(false);
@@ -236,7 +236,7 @@ const CreateCardBottomSheet = forwardRef<
       if (
         !cardBalance ||
         parseFloat(cardBalance) <= 0 ||
-        parseFloat(cardBalance) < 5 ||
+        parseFloat(cardBalance) < 10 ||
         parseFloat(cardBalance) > 2500
       ) {
         if (cardBalanceRef.current) {
@@ -433,7 +433,7 @@ const CreateCardBottomSheet = forwardRef<
                 cardBalanceError && styles.inputHintError,
               ]}
             >
-              {cardBalanceError ? '*' : ''}Range: $5 - $2,500 USDT
+              {cardBalanceError ? '*' : ''}Range: $10 - $2,500 USDT
               {cardBalanceError ? ' *' : ''}
             </Text>
           </View>
